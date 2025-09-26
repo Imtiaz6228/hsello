@@ -1118,35 +1118,48 @@
         <% if (topStoreThisWeek) { %>
           <div class="weekly-card" style="background: white; border-radius: 20px; padding: 2rem; box-shadow: 0 20px 40px rgba(0,0,0,0.1); border: 2px solid #3b82f6; position: relative; overflow: hidden;">
             <div style="position: absolute; top: 0; right: 0; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 0.5rem 1rem; border-radius: 0 20px 0 20px; font-size: 0.8rem; font-weight: 600;">
-              🔥 HOT THIS WEEK
-            </div>
-            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
-              <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem;">
-                🏪
-              </div>
-              <div>
-                <h3 style="font-size: 1.25rem; font-weight: 700; color: #1e293b; margin: 0;">Top Store</h3>
-                <p style="color: #64748b; margin: 0.25rem 0 0 0;">Highest revenue this week</p>
-              </div>
-            </div>
-            <h4 style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin-bottom: 0.5rem;"><%= topStoreThisWeek.store.name %></h4>
-            <p style="color: #6b7280; margin-bottom: 1rem;">by <%= topStoreThisWeek.sellerName %></p>
-            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
-              <div style="text-align: center;">
-                <div style="font-size: 1.5rem; font-weight: 700; color: #10b981;">$<%= topStoreThisWeek.weeklyRevenue.toFixed(2) %></div>
-                <div style="font-size: 0.8rem; color: #6b7280;">Revenue</div>
-              </div>
-              <div style="text-align: center;">
-                <div style="font-size: 1.5rem; font-weight: 700; color: #f59e0b;"><%= topStoreThisWeek.weeklyOrders %></div>
-                <div style="font-size: 0.8rem; color: #6b7280;">Orders</div>
-              </div>
-            </div>
-            <a href="/store/<%= topStoreThisWeek.sellerId %>" style="display: inline-flex; align-items: center; gap: 0.5rem; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 0.75rem 1.5rem; border-radius: 25px; text-decoration: none; font-weight: 600; width: 100%; justify-content: center;">
-              <i class="fas fa-store"></i>
-              Visit Store
-            </a>
-          </div>
-        <% } %>
+            🔥 HOT THIS WEEK
+            
+</div>
+<div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+  <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem;">
+    🏪
+  </div>
+  <div>
+    <h3 style="font-size: 1.25rem; font-weight: 700; color: #1e293b; margin: 0;">Top Store</h3>
+    <p style="color: #64748b; margin: 0.25rem 0 0 0;">Highest revenue this week</p>
+  </div>
+</div>
+
+<h4 style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin-bottom: 0.5rem;">
+  <%= topStoreThisWeek && topStoreThisWeek.store ? topStoreThisWeek.store.name : "No store" %>
+</h4>
+<p style="color: #6b7280; margin-bottom: 1rem;">
+  by <%= topStoreThisWeek && topStoreThisWeek.sellerName ? topStoreThisWeek.sellerName : "N/A" %>
+</p>
+
+<div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+  <div style="text-align: center;">
+    <div style="font-size: 1.5rem; font-weight: 700; color: #10b981;">
+      $<%= (topStoreThisWeek && topStoreThisWeek.weeklyRevenue ? topStoreThisWeek.weeklyRevenue : 0).toFixed(2) %>
+    </div>
+    <div style="font-size: 0.8rem; color: #6b7280;">Revenue</div>
+  </div>
+  <div style="text-align: center;">
+    <div style="font-size: 1.5rem; font-weight: 700; color: #f59e0b;">
+      <%= topStoreThisWeek && topStoreThisWeek.weeklyOrders ? topStoreThisWeek.weeklyOrders : 0 %>
+    </div>
+    <div style="font-size: 0.8rem; color: #6b7280;">Orders</div>
+  </div>
+</div>
+
+<a href="/store/<%= topStoreThisWeek && topStoreThisWeek.sellerId ? topStoreThisWeek.sellerId : "#" %>" 
+   style="display: inline-flex; align-items: center; gap: 0.5rem; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 0.75rem 1.5rem; border-radius: 25px; text-decoration: none; font-weight: 600; width: 100%; justify-content: center;">
+  <i class="fas fa-store"></i>
+  Visit Store
+</a>
+</div>
+<% } %>
 
         <!-- Top Product This Week -->
         <% if (topProductThisWeek) { %>

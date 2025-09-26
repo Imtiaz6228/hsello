@@ -520,12 +520,13 @@ app.get('/', async (req, res) => {
             topProductThisWeek = null;
 
             return res.render('index', {
-                user: req.session.user,
-                topStores: demoStores,
-                productsByCategory: {},
-                topStoreThisWeek: topStoreThisWeek,
-                topProductThisWeek: topProductThisWeek,
-                dbStatus: 'disconnected'
+    user: req.session.user,
+    topStores: demoStores,
+    productsByCategory: {},
+    topStoreThisWeek: topStoreThisWeek || { weeklyRevenue: 0 },
+    topProductThisWeek: topProductThisWeek || { weeklyRevenue: 0 },
+    dbStatus: 'disconnected'
+    
             });
         }
 

@@ -348,12 +348,12 @@
                     <form id="refundForm">
                         <div class="mb-3">
                             <label class="form-label">Refund Amount</label>
-                            <input type="number" class="form-control" id="refundAmount" required>
-                            <div class="form-text">Maximum refund: $100.00</div>
+                            <input type="number" class="form-control" id="refundAmount" required min="0" step="0.01">
+                            <div class="form-text">Enter any positive amount (no upper limit)</div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Reason</label>
-                            <textarea class="form-control" id="refundReason" rows="3" placeholder="Explain the refund reason"></textarea>
+                            <label class="form-label">Reason (Optional)</label>
+                            <textarea class="form-control" id="refundReason" rows="3" placeholder="Explain the refund reason (optional)"></textarea>
                         </div>
                     </form>
                 </div>
@@ -409,8 +409,9 @@
         // Interactive functions
         function processRefund(disputeId, maxAmount) {
             currentDisputeId = disputeId;
-            document.getElementById('refundAmount').max = maxAmount;
-            document.getElementById('refundAmount').value = maxAmount;
+            // Remove max limit - allow any amount
+            document.getElementById('refundAmount').removeAttribute('max');
+            document.getElementById('refundAmount').value = maxAmount; // Default to order amount but allow any value
 
             const modal = new bootstrap.Modal(document.getElementById('refundModal'));
             modal.show();
@@ -429,11 +430,11 @@
         }
 
         async function submitRefund() {
-            const amount = document.getElementById('refundAmount').value;
-            const reason = document.getElementById('refundReason').value;
+            const amount = parseFloat(document.getElementById('refundAmount').value);
+            const reason = document.getElementById('refundReason').value.trim(); // Optional reason
 
-            if (!amount || amount <= 0) {
-                alert('Please enter a valid refund amount');
+            if (!amount || amount <= 0 || isNaN(amount)) {
+                alert('Please enter a valid refund amount greater than 0');
                 return;
             }
 
@@ -457,7 +458,13 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    location.reload();
+                    // Close the modal and redirect to show updated disputes
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('refundModal'));
+                    if (modal) {
+                        modal.hide();
+                    }
+                    // Redirect to disputes page to show updated status
+                    window.location.href = '/seller/disputes';
                 } else {
                     alert('Error processing refund: ' + result.message);
                     btn.disabled = false;

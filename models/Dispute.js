@@ -41,6 +41,7 @@ const disputeSchema = new mongoose.Schema({
       enum: ['refund', 'closed_by_buyer', 'auto-closed']
     },
     amount: Number,
+    reason: String, // Reason for refund or closure
     processedAt: Date,
     processedBy: String, // 'seller' or 'buyer' or 'admin'
     winner: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // user ID

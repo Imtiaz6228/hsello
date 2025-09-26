@@ -1047,6 +1047,145 @@
     </div>
   </section>
 
+  <!-- ================= TOP SELLING STORES SECTION ================== -->
+  <section class="top-stores-section" style="padding: 80px 0; background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Top Selling Stores</h2>
+        <p class="section-subtitle">Discover the most successful digital stores on our platform</p>
+      </div>
+
+      <div class="top-stores-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+        <% if (topStores && topStores.length > 0) { %>
+          <% topStores.slice(0, 6).forEach((store, index) => { %>
+            <div class="store-card" style="background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.1); transition: all 0.3s ease; position: relative;">
+              <% if (index === 0) { %>
+                <div style="position: absolute; top: 1rem; right: 1rem; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; z-index: 2;">
+                  🏆 #1 Store
+                </div>
+              <% } %>
+              <div class="store-banner" style="height: 140px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); position: relative;">
+                <div class="store-logo" style="position: absolute; bottom: -20px; left: 20px; width: 40px; height: 40px; border-radius: 50%; background: white; border: 3px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.15); background-size: cover; background-position: center; background-image: url('/uploads/<%= store.store.logo %>');"></div>
+              </div>
+              <div class="store-content" style="padding: 30px 20px 20px 20px;">
+                <h4 style="font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem;"><%= store.store.name %></h4>
+                <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 1rem;">by <%= store.sellerName %></p>
+                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-shopping-bag" style="color: #10b981;"></i>
+                    <span style="font-size: 0.9rem; color: #374151; font-weight: 600;"><%= store.totalSales %> sales</span>
+                  </div>
+                </div>
+                <p style="color: #6b7280; font-size: 0.85rem; line-height: 1.4; margin-bottom: 1.5rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                  <%= store.store.description || 'Premium digital products and services' %>
+                </p>
+                <a href="/store/<%= store.sellerId %>" style="display: inline-flex; align-items: center; gap: 0.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.75rem 1.5rem; border-radius: 25px; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: all 0.3s ease; width: 100%; justify-content: center;">
+                  <i class="fas fa-store"></i>
+                  Visit Store
+                </a>
+              </div>
+            </div>
+          <% }); %>
+        <% } else { %>
+          <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px;">
+            <i class="fas fa-store" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem;"></i>
+            <h3 style="color: #64748b; margin-bottom: 0.5rem;">No Stores Available Yet</h3>
+            <p style="color: #94a3b8;">Stores will appear here once sellers are approved by our admin team.</p>
+          </div>
+        <% } %>
+      </div>
+
+      <div style="text-align: center;">
+        <a href="/stores" style="display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.9); color: #667eea; padding: 1rem 2rem; border-radius: 25px; text-decoration: none; font-weight: 600; border: 2px solid #667eea; transition: all 0.3s ease;">
+          <i class="fas fa-eye"></i>
+          View All Stores
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= WEEKLY TOP PERFORMERS ================== -->
+  <% if (typeof topStoreThisWeek !== 'undefined' && typeof topProductThisWeek !== 'undefined' && (topStoreThisWeek || topProductThisWeek)) { %>
+  <section class="weekly-top-section" style="padding: 80px 0; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">🏆 This Week's Top Performers</h2>
+        <p class="section-subtitle">Celebrating our highest-achieving stores and products</p>
+      </div>
+
+      <div class="weekly-top-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem;">
+        <!-- Top Store This Week -->
+        <% if (topStoreThisWeek) { %>
+          <div class="weekly-card" style="background: white; border-radius: 20px; padding: 2rem; box-shadow: 0 20px 40px rgba(0,0,0,0.1); border: 2px solid #3b82f6; position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 0; right: 0; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 0.5rem 1rem; border-radius: 0 20px 0 20px; font-size: 0.8rem; font-weight: 600;">
+              🔥 HOT THIS WEEK
+            </div>
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+              <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem;">
+                🏪
+              </div>
+              <div>
+                <h3 style="font-size: 1.25rem; font-weight: 700; color: #1e293b; margin: 0;">Top Store</h3>
+                <p style="color: #64748b; margin: 0.25rem 0 0 0;">Highest revenue this week</p>
+              </div>
+            </div>
+            <h4 style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin-bottom: 0.5rem;"><%= topStoreThisWeek.store.name %></h4>
+            <p style="color: #6b7280; margin-bottom: 1rem;">by <%= topStoreThisWeek.sellerName %></p>
+            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+              <div style="text-align: center;">
+                <div style="font-size: 1.5rem; font-weight: 700; color: #10b981;">$<%= topStoreThisWeek.weeklyRevenue.toFixed(2) %></div>
+                <div style="font-size: 0.8rem; color: #6b7280;">Revenue</div>
+              </div>
+              <div style="text-align: center;">
+                <div style="font-size: 1.5rem; font-weight: 700; color: #f59e0b;"><%= topStoreThisWeek.weeklyOrders %></div>
+                <div style="font-size: 0.8rem; color: #6b7280;">Orders</div>
+              </div>
+            </div>
+            <a href="/store/<%= topStoreThisWeek.sellerId %>" style="display: inline-flex; align-items: center; gap: 0.5rem; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 0.75rem 1.5rem; border-radius: 25px; text-decoration: none; font-weight: 600; width: 100%; justify-content: center;">
+              <i class="fas fa-store"></i>
+              Visit Store
+            </a>
+          </div>
+        <% } %>
+
+        <!-- Top Product This Week -->
+        <% if (topProductThisWeek) { %>
+          <div class="weekly-card" style="background: white; border-radius: 20px; padding: 2rem; box-shadow: 0 20px 40px rgba(0,0,0,0.1); border: 2px solid #10b981; position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 0; right: 0; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 0.5rem 1rem; border-radius: 0 20px 0 20px; font-size: 0.8rem; font-weight: 600;">
+              ⭐ BEST SELLER
+            </div>
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+              <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem;">
+                📦
+              </div>
+              <div>
+                <h3 style="font-size: 1.25rem; font-weight: 700; color: #1e293b; margin: 0;">Top Product</h3>
+                <p style="color: #64748b; margin: 0.25rem 0 0 0;">Most popular this week</p>
+              </div>
+            </div>
+            <h4 style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin-bottom: 0.5rem;"><%= topProductThisWeek.productName %></h4>
+            <p style="color: #6b7280; margin-bottom: 0.5rem;">from <%= topProductThisWeek.storeName %></p>
+            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+              <div style="text-align: center;">
+                <div style="font-size: 1.5rem; font-weight: 700; color: #10b981;">$<%= topProductThisWeek.weeklyRevenue.toFixed(2) %></div>
+                <div style="font-size: 0.8rem; color: #6b7280;">Revenue</div>
+              </div>
+              <div style="text-align: center;">
+                <div style="font-size: 1.5rem; font-weight: 700; color: #f59e0b;"><%= topProductThisWeek.weeklyOrders %></div>
+                <div style="font-size: 0.8rem; color: #6b7280;">Sales</div>
+              </div>
+            </div>
+            <a href="/product/<%= topProductThisWeek.sellerId %>/<%= topProductThisWeek.productId %>" style="display: inline-flex; align-items: center; gap: 0.5rem; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 0.75rem 1.5rem; border-radius: 25px; text-decoration: none; font-weight: 600; width: 100%; justify-content: center;">
+              <i class="fas fa-shopping-bag"></i>
+              View Product
+            </a>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </section>
+  <% } %>
+
   <!-- ================= PRODUCTS SECTION ================== -->
   <section class="products-section">
     <div class="container">

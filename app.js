@@ -28,6 +28,7 @@ function validateAndCountFile(filePath, fileName) {
             const fileExtension = fileName.toLowerCase().split('.').pop();
             console.log(`📁 File extension: ${fileExtension}`);
 
+            // Enhanced file type detection
             if (fileExtension === 'xlsx' || fileExtension === 'xls') {
                 console.log('📊 Processing Excel file...');
 
@@ -100,8 +101,8 @@ function validateAndCountFile(filePath, fileName) {
                         reject(new Error(`Failed to read Excel file: ${fallbackError.message}`));
                     }
                 }
-            } else if (fileExtension === 'csv' || fileExtension === 'txt') {
-                console.log('📄 Processing text file...');
+            } else if (fileExtension === 'csv' || fileExtension === 'txt' || fileExtension === 'json') {
+                console.log('📄 Processing text/CSV/JSON file...');
                 readTextFileAsLines(filePath).then(result => {
                     console.log(`✅ Text file processed: ${result.totalCount} lines`);
                     resolve(result);
@@ -109,16 +110,92 @@ function validateAndCountFile(filePath, fileName) {
                     console.error('❌ Text file processing error:', err.message);
                     reject(err);
                 });
+            } else if (fileExtension === 'sql') {
+                console.log('🗄️ Processing SQL file...');
+                // For SQL files, try to count INSERT statements or data rows
+                try {
+                    const fileContent = fs.readFileSync(filePath, 'utf8');
+                    const lines = fileContent.split('\n');
+
+                    // Count INSERT statements or data rows
+                    let dataRows = 0;
+                    lines.forEach(line => {
+                        const trimmed = line.trim();
+                        if (trimmed.toUpperCase().includes('INSERT') ||
+                            trimmed.toUpperCase().includes('VALUES') ||
+                            (trimmed.startsWith('(') && trimmed.endsWith(')'))) {
+                            dataRows++;
+                        }
+                    });
+
+                    console.log(`✅ SQL file processed: ${dataRows} data entries found`);
+                    resolve({
+                        totalCount: dataRows,
+                        data: [],
+                        fileType: 'sql'
+                    });
+                } catch (sqlError) {
+                    console.error('❌ SQL file processing error:', sqlError.message);
+                    reject(new Error(`Failed to process SQL file: ${sqlError.message}`));
+                }
+            } else if (['xml', 'html', 'htm'].includes(fileExtension)) {
+                console.log('📄 Processing XML/HTML file...');
+                try {
+                    const fileContent = fs.readFileSync(filePath, 'utf8');
+                    // Try to count data entries in XML/HTML
+                    const lines = fileContent.split('\n').filter(line => line.trim().length > 0);
+                    const dataLines = lines.filter(line =>
+                        line.includes('<') && (line.includes('>') || line.includes('/>'))
+                    );
+
+                    console.log(`✅ XML/HTML file processed: ${dataLines.length} data entries found`);
+                    resolve({
+                        totalCount: dataLines.length,
+                        data: [],
+                        fileType: 'xml'
+                    });
+                } catch (xmlError) {
+                    console.error('❌ XML/HTML file processing error:', xmlError.message);
+                    reject(new Error(`Failed to process XML/HTML file: ${xmlError.message}`));
+                }
             } else {
-                console.log(`⚠️ Unknown file type: ${fileExtension}, treating as text file`);
-                // Treat unknown files as text files
-                readTextFileAsLines(filePath).then(result => {
-                    console.log(`✅ Unknown file processed as text: ${result.totalCount} lines`);
-                    resolve(result);
-                }).catch(err => {
-                    console.error('❌ Unknown file processing error:', err.message);
-                    reject(err);
-                });
+                console.log(`🔄 Unknown file type: ${fileExtension}, attempting to read as text...`);
+                // Try to read as binary first to check if it's text-based
+                try {
+                    const buffer = fs.readFileSync(filePath);
+                    const isTextFile = buffer.length === 0 || buffer.every(byte => byte < 128 || byte === 10 || byte === 13);
+
+                    if (isTextFile) {
+                        // Treat as text file
+                        const fileContent = buffer.toString('utf8');
+                        const lines = fileContent.split('\n').filter(line => line.trim().length > 0);
+
+                        console.log(`✅ Unknown file treated as text: ${lines.length} lines found`);
+                        resolve({
+                            totalCount: lines.length,
+                            data: lines,
+                            fileType: 'text-unknown'
+                        });
+                    } else {
+                        // Binary file - count as 1 item (the file itself)
+                        console.log(`📦 Binary file detected: treating as single item`);
+                        resolve({
+                            totalCount: 1,
+                            data: [fileName],
+                            fileType: 'binary',
+                            warning: 'Binary file detected - counted as 1 item'
+                        });
+                    }
+                } catch (binaryError) {
+                    console.error('❌ Binary file processing error:', binaryError.message);
+                    // Fallback: treat as single item
+                    resolve({
+                        totalCount: 1,
+                        data: [fileName],
+                        fileType: 'unknown',
+                        warning: 'Could not process file - counted as 1 item'
+                    });
+                }
             }
         } catch (error) {
             console.error('❌ File validation error:', error);
@@ -263,39 +340,9 @@ const upload = multer({
         fileSize: 10 * 1024 * 1024 // 10MB limit
     },
     fileFilter: (req, file, cb) => {
-        // Allow all file types for digital products
-        const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-        const allowedDocumentTypes = [
-            'application/pdf',
-            'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'text/plain',
-            'application/zip',
-            'application/x-zip-compressed',
-            'application/rar',
-            'application/x-rar-compressed',
-            'audio/mpeg',
-            'audio/mp3',
-            'audio/wav',
-            'video/mp4',
-            'video/avi',
-            'video/webm',
-            'video/quicktime',
-            'application/json',
-            'text/csv'
-        ];
-
-        const allAllowedTypes = [...allowedImageTypes, ...allowedDocumentTypes];
-
-        if (allAllowedTypes.includes(file.mimetype) ||
-            file.mimetype.includes('applicati') ||
-            file.mimetype.includes('audio/') ||
-            file.mimetype.includes('video/') ||
-            file.originalname.match(/\.(pdf|doc|docx|txt|zip|rar|mp3|wav|mp4|avi|webm|mov|json|csv)$/i)) {
-            cb(null, true);
-        } else {
-            cb(new Error('Unsupported file type. Please upload a valid digital file.'), false);
-        }
+        // Allow ALL file types for digital products - no restrictions
+        console.log(`📁 Allowing file upload: ${file.originalname} (${file.mimetype})`);
+        cb(null, true);
     }
 });
 
@@ -435,6 +482,10 @@ app.post('/seller/upload-product-files/:productId', [
 });
 
 app.get('/', async (req, res) => {
+    // Initialize variables to prevent ReferenceError in template
+    let topStoreThisWeek = null;
+    let topProductThisWeek = null;
+
     try {
         // Check if MongoDB is connected
         if (mongoose.connection.readyState !== 1) {
@@ -465,10 +516,15 @@ app.get('/', async (req, res) => {
                 }
             ];
 
+            topStoreThisWeek = demoStores[0];
+            topProductThisWeek = null;
+
             return res.render('index', {
                 user: req.session.user,
                 topStores: demoStores,
                 productsByCategory: {},
+                topStoreThisWeek: topStoreThisWeek,
+                topProductThisWeek: topProductThisWeek,
                 dbStatus: 'disconnected'
             });
         }
@@ -502,6 +558,80 @@ app.get('/', async (req, res) => {
 
         // Sort stores by total sales (descending)
         approvedStores.sort((a, b) => b.totalSales - a.totalSales);
+
+        // Calculate weekly statistics
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+        // Get orders from the past week
+        const weeklyOrders = await Order.find({
+            createdAt: { $gte: oneWeekAgo },
+            status: 'completed'
+        }).populate('sellerId', 'firstName lastName store');
+
+        // Calculate weekly top store
+        const weeklyStoreSales = {};
+        const weeklyProductSales = {};
+
+        weeklyOrders.forEach(order => {
+            // Weekly store sales
+            const sellerId = order.sellerId._id.toString();
+            if (!weeklyStoreSales[sellerId]) {
+                weeklyStoreSales[sellerId] = {
+                    seller: order.sellerId,
+                    totalRevenue: 0,
+                    totalOrders: 0
+                };
+            }
+            weeklyStoreSales[sellerId].totalRevenue += order.totalCost;
+            weeklyStoreSales[sellerId].totalOrders += 1;
+
+            // Weekly product sales
+            const productKey = `${sellerId}_${order.productId}`;
+            if (!weeklyProductSales[productKey]) {
+                weeklyProductSales[productKey] = {
+                    sellerId: sellerId,
+                    productId: order.productId,
+                    productName: order.productName,
+                    totalRevenue: 0,
+                    totalOrders: 0,
+                    seller: order.sellerId
+                };
+            }
+            weeklyProductSales[productKey].totalRevenue += order.totalCost;
+            weeklyProductSales[productKey].totalOrders += 1;
+        });
+
+        // Find top store this week
+        if (Object.keys(weeklyStoreSales).length > 0) {
+            const topStoreId = Object.keys(weeklyStoreSales).reduce((a, b) =>
+                weeklyStoreSales[a].totalRevenue > weeklyStoreSales[b].totalRevenue ? a : b
+            );
+            topStoreThisWeek = {
+                sellerId: topStoreId,
+                store: weeklyStoreSales[topStoreId].seller.store,
+                sellerName: `${weeklyStoreSales[topStoreId].seller.firstName} ${weeklyStoreSales[topStoreId].seller.lastName}`,
+                weeklyRevenue: weeklyStoreSales[topStoreId].totalRevenue,
+                weeklyOrders: weeklyStoreSales[topStoreId].totalOrders
+            };
+        }
+
+        // Find top product this week
+        if (Object.keys(weeklyProductSales).length > 0) {
+            const topProductKey = Object.keys(weeklyProductSales).reduce((a, b) =>
+                weeklyProductSales[a].totalRevenue > weeklyProductSales[b].totalRevenue ? a : b
+            );
+            const topProductData = weeklyProductSales[topProductKey];
+            topProductThisWeek = {
+                sellerId: topProductData.sellerId,
+                productId: topProductData.productId,
+                productName: topProductData.productName,
+                storeName: topProductData.seller.store.name,
+                storeLogo: topProductData.seller.store.logo,
+                weeklyRevenue: topProductData.totalRevenue,
+                weeklyOrders: topProductData.totalOrders
+            };
+        }
 
         // Get real products from all sellers
         const allProducts = [];
@@ -560,6 +690,8 @@ app.get('/', async (req, res) => {
             user: req.session.user,
             topStores: approvedStores.slice(0, 4),
             productsByCategory: productsByCategory,
+            topStoreThisWeek: topStoreThisWeek,
+            topProductThisWeek: topProductThisWeek,
             dbStatus: 'connected'
         });
     } catch (error) {
@@ -569,6 +701,8 @@ app.get('/', async (req, res) => {
             user: req.session.user,
             topStores: [],
             productsByCategory: {},
+            topStoreThisWeek: null,
+            topProductThisWeek: null,
             dbStatus: 'error'
         });
     }
@@ -2000,16 +2134,28 @@ app.post('/seller/upload-files/:productId', [
         await user.save();
         console.log('✅ Database save successful');
 
-        // Success message
-        const successMessage = totalQuantity > 0 ?
-            `SUCCESS: ${validatedFiles} file(s) uploaded! Stock set to ${totalQuantity} items.` :
-            `WARNING: Files uploaded but no valid data found. Stock set to 0.`;
+        // Enhanced success message with detailed feedback
+        let successMessage = `✅ Upload completed successfully!\n\n`;
+        successMessage += `📁 Files processed: ${validatedFiles}/${req.files.length}\n`;
+        successMessage += `📊 Total stock added: ${totalQuantity} items\n`;
 
-        if (validationErrors.length > 0) {
-            successMessage += ` (${validationErrors.length} issues)`;
+        if (totalQuantity > 0) {
+            successMessage += `💰 Current total stock: ${product.stockQuantity} items\n`;
         }
 
-        console.log('✅ Upload completed');
+        if (validationErrors.length > 0) {
+            successMessage += `\n⚠️ Issues encountered: ${validationErrors.length}\n`;
+            successMessage += validationErrors.slice(0, 3).join('\n'); // Show first 3 errors
+            if (validationErrors.length > 3) {
+                successMessage += `\n...and ${validationErrors.length - 3} more issues`;
+            }
+        }
+
+        // Add file type information
+        const fileTypes = [...new Set(req.files.map(f => f.originalname.split('.').pop()))];
+        successMessage += `\n📋 File types processed: ${fileTypes.join(', ')}`;
+
+        console.log('✅ Upload completed with enhanced feedback');
         req.flash('success_msg', successMessage);
         res.redirect('/my-store');
 
@@ -2040,7 +2186,7 @@ app.get('/seller/delete-file/:productId/:fileIndex', isLoggedIn, async (req, res
 
         // Remove file from uploads directory
         const fs = require('fs');
-        const filePath = path.join(__dirname, 'uploads', product.files[fileIndex].filepath);
+        const filePath = path.join(__dirname, 'uploads', path.basename(product.files[fileIndex].filepath));
         if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
             console.log('🗑️ Deleted file from server:', filePath);
@@ -2116,24 +2262,48 @@ app.post('/seller/manual-entry/:productId', isLoggedIn, async (req, res) => {
 
             lines.forEach((line, index) => {
                 const trimmedLine = line.trim();
+                if (!trimmedLine) return; // Skip empty lines
 
-                if (dataFormat === 'accounts') {
-                    // Check for email:password format
-                    if (!trimmedLine.includes(':') || trimmedLine.split(':').length !== 2) {
-                        validationErrors.push(`Line ${index + 1}: Invalid account format. Expected: email:password`);
-                    } else {
-                        const [email, password] = trimmedLine.split(':');
-                        if (!email.includes('@') || password.length < 3) {
-                            validationErrors.push(`Line ${index + 1}: Invalid email or password format`);
+                try {
+                    if (dataFormat === 'accounts' || dataFormat === 'gmail') {
+                        // Check for email:password format
+                        if (!trimmedLine.includes(':') || trimmedLine.split(':').length < 2) {
+                            validationErrors.push(`Line ${index + 1}: Invalid account format. Expected: email:password`);
+                        } else {
+                            const [email, password] = trimmedLine.split(':');
+                            if (!email.includes('@') || password.length < 3) {
+                                validationErrors.push(`Line ${index + 1}: Invalid email or password format`);
+                            }
+                        }
+                    } else if (dataFormat === 'profiles' || dataFormat === 'instagram' || dataFormat === 'facebook' || dataFormat === 'twitter' || dataFormat === 'youtube' || dataFormat === 'linkedin' || dataFormat === 'tiktok') {
+                        // Check for username:password format
+                        if (!trimmedLine.includes(':') || trimmedLine.split(':').length < 2) {
+                            validationErrors.push(`Line ${index + 1}: Invalid ${dataFormat} format. Expected: username:password`);
+                        }
+                    } else if (dataFormat === 'json') {
+                        // Try to parse as JSON
+                        JSON.parse(trimmedLine);
+                    } else if (dataFormat === 'csv') {
+                        // Basic CSV validation - should contain commas
+                        if (!trimmedLine.includes(',')) {
+                            validationErrors.push(`Line ${index + 1}: Invalid CSV format. Expected comma-separated values`);
+                        }
+                    } else if (dataFormat === 'xml') {
+                        // Basic XML validation - should contain angle brackets
+                        if (!trimmedLine.includes('<') || !trimmedLine.includes('>')) {
+                            validationErrors.push(`Line ${index + 1}: Invalid XML format. Expected XML tags`);
+                        }
+                    } else if (dataFormat === 'sql') {
+                        // Basic SQL validation - should contain INSERT or VALUES
+                        const upperLine = trimmedLine.toUpperCase();
+                        if (!upperLine.includes('INSERT') && !upperLine.includes('VALUES')) {
+                            validationErrors.push(`Line ${index + 1}: Invalid SQL format. Expected INSERT statement`);
                         }
                     }
-                } else if (dataFormat === 'profiles') {
-                    // Check for username:password format
-                    if (!trimmedLine.includes(':') || trimmedLine.split(':').length !== 2) {
-                        validationErrors.push(`Line ${index + 1}: Invalid profile format. Expected: username:password`);
-                    }
+                    // For custom format, no validation needed
+                } catch (parseError) {
+                    validationErrors.push(`Line ${index + 1}: Invalid ${dataFormat} format - ${parseError.message}`);
                 }
-                // For custom format, no validation needed
             });
 
             if (validationErrors.length > 0) {
@@ -2163,8 +2333,8 @@ app.post('/seller/manual-entry/:productId', isLoggedIn, async (req, res) => {
             console.log('🔍 Looking for existing manual file...');
             console.log('📋 Product files:', product.files.map(f => ({ filename: f.filename, dataType: f.dataType })));
 
-            // Look for any file that might contain manual data (not just dataType === 'manual')
-            let existingFile = product.files.find(f => f.dataType === 'manual');
+            // Look for any file that might contain data (use first file)
+            let existingFile = product.files[0];
 
             // If no manual file found, check if there's any uploaded file we can use
             if (!existingFile && product.files.length > 0) {
@@ -2176,7 +2346,7 @@ app.post('/seller/manual-entry/:productId', isLoggedIn, async (req, res) => {
 
             if (existingFile) {
                 try {
-                    const existingFilePath = path.join(__dirname, 'uploads', existingFile.filepath);
+                    const existingFilePath = path.join(__dirname, 'uploads', path.basename(existingFile.filepath));
                     console.log('📂 Checking file path:', existingFilePath);
 
                     if (fs.existsSync(existingFilePath)) {
@@ -2246,14 +2416,14 @@ app.post('/seller/manual-entry/:productId', isLoggedIn, async (req, res) => {
         // Update or add manual data file entry
         if (!product.files) product.files = [];
 
-        const existingManualFile = product.files.find(f => f.dataType === 'manual');
+        const existingManualFile = product.files[0]; // Use first file
         if (existingManualFile) {
             // Update existing entry
             existingManualFile.entryCount = newTotalStock;
             existingManualFile.uploadedAt = new Date();
             // Remove old file if it exists
             try {
-                const oldFilePath = path.join(__dirname, 'uploads', existingManualFile.filepath);
+                const oldFilePath = path.join(__dirname, 'uploads', path.basename(existingManualFile.filepath));
                 if (fs.existsSync(oldFilePath) && oldFilePath !== manualDataPath) {
                     fs.unlinkSync(oldFilePath);
                     console.log('🗑️ Removed old manual data file');
@@ -2301,7 +2471,7 @@ app.post('/seller/manual-entry/:productId', isLoggedIn, async (req, res) => {
         await user.save();
         console.log('✅ Database save successful');
 
-        req.flash('success_msg', `SUCCESS: Added ${newQuantity} items to stock! Total stock: ${newTotalStock} items. Format: ${dataFormat}`);
+        req.flash('success_msg', `✅ Manual entry completed successfully!\n\n📝 Entries added: ${newQuantity}\n📊 Total stock: ${newTotalStock} items\n🏷️ Data format: ${dataFormat}\n${validateData === 'on' ? '✅ Validation: Enabled' : '⚠️ Validation: Disabled'}`);
         res.redirect('/my-store');
 
     } catch (error) {
@@ -2372,7 +2542,7 @@ app.get('/seller/download-stock/:productId/:fileIndex', isLoggedIn, async (req, 
         }
 
         const file = product.files[fileIndex];
-        const filePath = path.join(__dirname, 'uploads', file.filepath);
+        const filePath = path.join(__dirname, 'uploads', path.basename(file.filepath));
 
         if (!fs.existsSync(filePath)) {
             req.flash('error_msg', 'File not found on server.');
@@ -2415,7 +2585,7 @@ app.post('/seller/delete-all-stock/:productId', isLoggedIn, async (req, res) => 
         if (product.files && product.files.length > 0) {
             product.files.forEach(file => {
                 try {
-                    const filePath = path.join(__dirname, 'uploads', file.filepath);
+                    const filePath = path.join(__dirname, 'uploads', path.basename(file.filepath));
                     if (fs.existsSync(filePath)) {
                         fs.unlinkSync(filePath);
                         console.log('🗑️ Deleted file:', file.filename);
@@ -2463,7 +2633,7 @@ app.post('/seller/edit-file-content/:productId/:fileIndex', isLoggedIn, async (r
         }
 
         const file = product.files[fileIndex];
-        const filePath = path.join(__dirname, 'uploads', file.filepath);
+        const filePath = path.join(__dirname, 'uploads', path.basename(file.filepath));
         const { newContent } = req.body;
 
         if (!fs.existsSync(filePath)) {
@@ -2873,9 +3043,10 @@ app.post('/buy-now/:sellerId/:productId', isLoggedIn, async (req, res) => {
             try {
                 console.log('📁 Creating personalized download file...');
 
-                const mainFile = product.files.find(f => f.dataType === 'manual');
+                // Use the first file as the main data file (any file, not just manual files)
+                const mainFile = product.files[0];
                 if (mainFile) {
-                    const mainFilePath = path.join(__dirname, 'uploads', mainFile.filepath);
+                    const mainFilePath = path.join(__dirname, 'uploads', path.basename(mainFile.filepath));
 
                     if (fs.existsSync(mainFilePath)) {
                         // Read the main data file
@@ -2903,11 +3074,18 @@ app.post('/buy-now/:sellerId/:productId', isLoggedIn, async (req, res) => {
                             if (allLines.length > 0) {
                                 fs.writeFileSync(mainFilePath, allLines.join('\n'), 'utf8');
                                 console.log(`📝 Updated main file with ${allLines.length} remaining entries`);
+
+                                // Update product's available quantity
+                                product.availableQuantity = allLines.length;
                             } else {
                                 // No entries left, remove the file
                                 fs.unlinkSync(mainFilePath);
                                 console.log('🗑️ Main file emptied and removed');
+                                product.availableQuantity = 0;
                             }
+
+                            // Save the updated product stock
+                            await seller.save();
 
                             console.log(`✅ Created personalized file: ${buyerFileName} with ${quantity} entries`);
                         } else {
@@ -2917,7 +3095,7 @@ app.post('/buy-now/:sellerId/:productId', isLoggedIn, async (req, res) => {
                         console.warn('⚠️ Main data file not found');
                     }
                 } else {
-                    console.warn('⚠️ No manual data file found for product');
+                    console.warn('⚠️ No data files found for product');
                 }
             } catch (fileError) {
                 console.error('❌ Error creating personalized file:', fileError);
@@ -2966,7 +3144,7 @@ app.get('/favorites', isLoggedIn, (req, res) => {
 app.get('/reviews', isLoggedIn, async (req, res) => {
     try {
         const userId = req.session.user.id;
-        const userReviews = [];
+        const reviews = [];
 
         // Find all sellers with products that have reviews by this user
         const sellers = await User.find({
@@ -2980,7 +3158,7 @@ app.get('/reviews', isLoggedIn, async (req, res) => {
                     if (product.reviews && Array.isArray(product.reviews)) {
                         const userReviewsForProduct = product.reviews.filter(review => review.userId === userId);
                         userReviewsForProduct.forEach(review => {
-                            userReviews.push({
+                            reviews.push({
                                 ...review,
                                 sellerName: `${seller.firstName} ${seller.lastName}`,
                                 productName: product.name,
@@ -2993,7 +3171,7 @@ app.get('/reviews', isLoggedIn, async (req, res) => {
         });
 
         // Sort reviews by date (newest first)
-        userReviews.sort((a, b) => new Date(b.date) - new Date(a.date));
+        reviews.sort((a, b) => new Date(b.date) - new Date(a.date));
 
         // Calculate rating statistics
         const calculateRatingStats = (reviews) => {
@@ -3049,27 +3227,27 @@ app.get('/reviews', isLoggedIn, async (req, res) => {
 
         // Calculate rating percentage for display
         const getRatingPercentage = (stars) => {
-            if (!reviews || reviews.length === 0) return 0;
+            if (!userReviews || userReviews.length === 0) return 0;
 
-            const count = reviews.filter(review => review.rating === stars).length;
-            return Math.round((count / reviews.length) * 100);
+            const count = userReviews.filter(review => review.rating === stars).length;
+            return Math.round((count / userReviews.length) * 100);
         };
 
         // Get count of reviews with specific star rating
         const getRatingCount = (stars) => {
-            return reviews.filter(review => review.rating === stars).length || 0;
+            return userReviews.filter(review => review.rating === stars).length || 0;
         };
 
         // Get overall rating
         const getOverallRating = () => {
-            if (!reviews || reviews.length === 0) return 0;
-            const total = reviews.reduce((sum, review) => sum + review.rating, 0);
-            return Math.round((total / reviews.length) * 10) / 10; // Round to 1 decimal place
+            if (!userReviews || userReviews.length === 0) return 0;
+            const total = userReviews.reduce((sum, review) => sum + review.rating, 0);
+            return Math.round((total / userReviews.length) * 10) / 10; // Round to 1 decimal place
         };
 
         // Get total reviews count
         const getTotalReviews = () => {
-            return reviews.length;
+            return userReviews.length;
         };
 
         // Get product category and price from the sellers
@@ -3101,18 +3279,18 @@ app.get('/reviews', isLoggedIn, async (req, res) => {
 
         // Check if user has pending reviews
         const hasPendingReviews = (currentUser) => {
-            return reviews.length > 0;
+            return userReviews.length > 0;
         };
 
         // Get top reviewed products
         const getTopReviewedProducts = () => {
-            const stats = calculateRatingStats(userReviews);
+            const stats = calculateRatingStats(reviews);
             return stats.topReviewedProducts;
         };
 
         res.render('reviews', {
             user: req.session.user,
-            reviews: userReviews,
+            reviews: reviews,
             error_msg: res.locals.error_msg,
             success_msg: res.locals.success_msg,
             // Helper functions for template
@@ -3132,7 +3310,17 @@ app.get('/reviews', isLoggedIn, async (req, res) => {
         res.render('reviews', {
             user: req.session.user,
             reviews: [],
-            error_msg: 'An error occurred loading reviews'
+            error_msg: 'An error occurred loading reviews',
+            getRatingPercentage: () => 0,
+            getRatingCount: () => 0,
+            getOverallRating: () => 0,
+            getTotalReviews: () => 0,
+            getProductCategory: () => 'Product',
+            getProductPrice: () => 0,
+            hasPendingReviews: () => false,
+            getTopReviewedProducts: () => [],
+            canEdit: () => false,
+            currentUser: req.session.user
         });
     }
 });
@@ -3589,60 +3777,175 @@ app.post('/dispute/:disputeId/refund', isLoggedIn, async (req, res) => {
     try {
         const disputeId = req.params.disputeId;
         const userId = req.session.user.id;
-        const { refundAmount } = req.body;
+        const { refundAmount, reason } = req.body;
+
+        console.log('🔄 Processing refund request:', { disputeId, userId, refundAmount, reason });
 
         const dispute = await Dispute.findById(disputeId);
         if (!dispute) {
+            console.error('❌ Dispute not found:', disputeId);
+            const isAjax = req.headers.accept && req.headers.accept.includes('application/json');
+            if (isAjax) {
+                return res.json({ success: false, message: 'Dispute not found' });
+            }
             req.flash('error_msg', 'Dispute not found');
             return res.redirect('/orders');
         }
 
+        console.log('📋 Dispute found:', { status: dispute.status, sellerId: dispute.sellerId, buyerId: dispute.buyerId });
+
         // Only seller can process refund
         if (dispute.sellerId.toString() !== userId) {
+            console.error('❌ Access denied - user is not the seller:', { userId, sellerId: dispute.sellerId });
+            const isAjax = req.headers.accept && req.headers.accept.includes('application/json');
+            if (isAjax) {
+                return res.json({ success: false, message: 'Only the seller can process refunds' });
+            }
             req.flash('error_msg', 'Only the seller can process refunds');
             return res.redirect(`/dispute/${dispute._id}`);
         }
 
         if (dispute.status !== 'open') {
+            console.error('❌ Dispute is not open:', dispute.status);
+            const isAjax = req.headers.accept && req.headers.accept.includes('application/json');
+            if (isAjax) {
+                return res.json({ success: false, message: 'Dispute is not open' });
+            }
             req.flash('error_msg', 'Dispute is not open');
             return res.redirect(`/dispute/${dispute._id}`);
         }
 
         // Get order and users from database
+        console.log('🔍 Fetching order and users...');
         const order = await Order.findById(dispute.orderId);
         const buyer = await User.findById(dispute.buyerId);
         const seller = await User.findById(dispute.sellerId);
 
-        const refund = parseFloat(refundAmount) || order.totalCost;
+        if (!order) {
+            console.error('❌ Order not found:', dispute.orderId);
+            const isAjax = req.headers.accept && req.headers.accept.includes('application/json');
+            if (isAjax) {
+                return res.json({ success: false, message: 'Order not found' });
+            }
+            req.flash('error_msg', 'Order not found');
+            return res.redirect('/orders');
+        }
 
-        // Check seller balance
-        if ((seller.balance || 0) < refund) {
-            req.flash('error_msg', 'Insufficient balance for refund');
+        if (!buyer || !seller) {
+            console.error('❌ Buyer or seller not found:', { buyerId: dispute.buyerId, sellerId: dispute.sellerId });
+            const isAjax = req.headers.accept && req.headers.accept.includes('application/json');
+            if (isAjax) {
+                return res.json({ success: false, message: 'User data not found' });
+            }
+            req.flash('error_msg', 'User data not found');
+            return res.redirect('/orders');
+        }
+
+        console.log('💰 Current balances:', { sellerBalance: seller.balance, buyerBalance: buyer.balance, orderTotal: order.totalCost });
+
+        // Validate refund amount - must be provided and valid (no upper limit)
+        const refund = parseFloat(refundAmount);
+        if (isNaN(refund) || refund < 0) {
+            console.error('❌ Invalid refund amount:', refundAmount);
+            const isAjax = req.headers.accept && req.headers.accept.includes('application/json');
+            if (isAjax) {
+                return res.json({ success: false, message: 'Invalid refund amount. Please enter a valid positive number.' });
+            }
+            req.flash('error_msg', 'Invalid refund amount. Please enter a valid positive number.');
             return res.redirect(`/dispute/${dispute._id}`);
         }
 
-        // Process refund
-        seller.balance -= refund;
-        buyer.balance += refund;
-        order.status = 'refunded';
+        // Check seller balance
+        if ((seller.balance || 0) < refund) {
+            console.error('❌ Insufficient seller balance:', { sellerBalance: seller.balance, refundAmount: refund });
+            const isAjax = req.headers.accept && req.headers.accept.includes('application/json');
+            if (isAjax) {
+                return res.json({ success: false, message: `Insufficient balance for refund. Available: $${(seller.balance || 0).toFixed(2)}` });
+            }
+            req.flash('error_msg', `Insufficient balance for refund. Available: $${(seller.balance || 0).toFixed(2)}`);
+            return res.redirect(`/dispute/${dispute._id}`);
+        }
+
+        console.log('✅ Validation passed, processing refund...');
+
+        // Process refund - deduct only the refunded amount from seller balance
+        const oldSellerBalance = seller.balance || 0;
+        const oldBuyerBalance = buyer.balance || 0;
+
+        seller.balance = oldSellerBalance - refund;
+        buyer.balance = oldBuyerBalance + refund;
+
+        console.log('💸 Balance changes:', {
+            seller: `${oldSellerBalance} -> ${seller.balance}`,
+            buyer: `${oldBuyerBalance} -> ${buyer.balance}`
+        });
+
+        // Update order status to refunded (only mark as refunded if full refund, otherwise keep as completed)
+        const oldOrderStatus = order.status;
+        if (refund >= order.totalCost) {
+            order.status = 'refunded';
+            console.log('📋 Order status changed to refunded');
+        }
+        // For partial refunds or over-refunds, order remains completed but with refund record
 
         // Close dispute
         dispute.status = 'closed';
         dispute.resolution = {
             type: 'refund',
             amount: refund,
+            reason: reason || '', // Include the reason if provided
             processedAt: new Date(),
             processedBy: 'seller'
         };
 
-        await Promise.all([seller.save(), buyer.save(), order.save(), dispute.save()]);
+        console.log('🔒 Closing dispute with resolution:', dispute.resolution);
 
-        req.flash('success_msg', `Refund of $${refund.toFixed(2)} processed successfully!`);
-        res.redirect('/orders');
+        // Save all changes
+        console.log('💾 Saving changes to database...');
+        await Promise.all([seller.save(), buyer.save(), order.save(), dispute.save()]);
+        console.log('✅ All database saves completed successfully');
+
+        let refundType = 'partial';
+        if (refund >= order.totalCost) {
+            refundType = 'full';
+        } else if (refund > order.totalCost) {
+            refundType = 'over';
+        }
+
+        const refundTypeText = refundType === 'over' ? 'Over' : refundType.charAt(0).toUpperCase() + refundType.slice(1);
+
+        console.log('🎉 Refund processed successfully:', {
+            type: refundType,
+            amount: refund,
+            sellerBalance: seller.balance,
+            buyerBalance: buyer.balance,
+            orderStatus: order.status,
+            disputeStatus: dispute.status
+        });
+
+        const isAjax = req.headers.accept && req.headers.accept.includes('application/json');
+        if (isAjax) {
+            return res.json({ success: true, message: `${refundTypeText} refund of $${refund.toFixed(2)} processed successfully!` });
+        }
+
+        req.flash('success_msg', `${refundTypeText} refund of $${refund.toFixed(2)} processed successfully!`);
+        res.redirect('/seller/disputes');
     } catch (error) {
-        console.error('Process refund error:', error);
-        req.flash('error_msg', 'An error occurred processing the refund');
-        res.redirect('/orders');
+        console.error('❌ Process refund error:', error);
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            disputeId: req.params.disputeId,
+            userId: req.session.user.id,
+            body: req.body
+        });
+
+        const isAjax = req.headers.accept && req.headers.accept.includes('application/json');
+        if (isAjax) {
+            return res.json({ success: false, message: 'An error occurred processing the refund. Please check the console for details.' });
+        }
+        req.flash('error_msg', 'An error occurred processing the refund. Please try again or contact support.');
+        res.redirect('/seller/disputes');
     }
 });
 
@@ -3654,17 +3957,29 @@ app.post('/dispute/:disputeId/close', isLoggedIn, async (req, res) => {
 
         const dispute = await Dispute.findById(disputeId);
         if (!dispute) {
+            const isAjax = req.headers.accept && req.headers.accept.includes('application/json');
+            if (isAjax) {
+                return res.json({ success: false, message: 'Dispute not found' });
+            }
             req.flash('error_msg', 'Dispute not found');
             return res.redirect('/orders');
         }
 
         // Only buyer can close dispute
         if (dispute.buyerId.toString() !== userId) {
+            const isAjax = req.headers.accept && req.headers.accept.includes('application/json');
+            if (isAjax) {
+                return res.json({ success: false, message: 'Only the buyer can close the dispute' });
+            }
             req.flash('error_msg', 'Only the buyer can close the dispute');
             return res.redirect(`/dispute/${dispute._id}`);
         }
 
         if (dispute.status !== 'open') {
+            const isAjax = req.headers.accept && req.headers.accept.includes('application/json');
+            if (isAjax) {
+                return res.json({ success: false, message: 'Dispute is not open' });
+            }
             req.flash('error_msg', 'Dispute is not open');
             return res.redirect(`/dispute/${dispute._id}`);
         }
@@ -3679,10 +3994,19 @@ app.post('/dispute/:disputeId/close', isLoggedIn, async (req, res) => {
 
         await dispute.save();
 
+        const isAjax = req.headers.accept && req.headers.accept.includes('application/json');
+        if (isAjax) {
+            return res.json({ success: true, message: 'Dispute closed successfully!' });
+        }
+
         req.flash('success_msg', 'Dispute closed successfully!');
         res.redirect('/orders');
     } catch (error) {
         console.error('Close dispute error:', error);
+        const isAjax = req.headers.accept && req.headers.accept.includes('application/json');
+        if (isAjax) {
+            return res.json({ success: false, message: 'An error occurred closing the dispute' });
+        }
         req.flash('error_msg', 'An error occurred closing the dispute');
         res.redirect('/orders');
     }
@@ -3701,15 +4025,39 @@ app.get('/dispute', isLoggedIn, async (req, res) => {
             ]
         }).sort({ openedAt: -1 }).populate('orderId');
 
+        // Calculate time remaining for each dispute
+        const disputesWithTimeRemaining = userDisputes.map(dispute => {
+            const disputeObj = dispute.toObject();
+
+            if (dispute.autoCloseAt) {
+                const now = new Date();
+                const closeAt = new Date(dispute.autoCloseAt);
+                const diff = closeAt.getTime() - now.getTime();
+
+                if (diff <= 0) {
+                    disputeObj.timeRemaining = 'Expired';
+                } else {
+                    const hours = Math.floor(diff / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    disputeObj.timeRemaining = `${hours}h ${minutes}m`;
+                }
+            } else {
+                disputeObj.timeRemaining = 'N/A';
+            }
+
+            return disputeObj;
+        });
+
         // For now, return empty disputes array to avoid errors
         res.render('dispute-list', {
             user: req.session.user,
-            disputes: userDisputes || [],
+            disputes: disputesWithTimeRemaining || [],
             error_msg: req.flash('error_msg'),
             success_msg: req.flash('success_msg')
         });
     } catch (error) {
         console.error('List disputes error:', error);
+
         // Fallback to empty array
         res.render('dispute-list', {
             user: req.session.user,
@@ -3964,14 +4312,15 @@ app.get('/seller/moderation', isLoggedIn, async (req, res) => {
     }
 });
 
-// Process Download (Digital Products) - WITH PERSONALIZED FILES
+// Process Download (Digital Products) - WITH PERSONALIZED FILES AND FORMAT OPTIONS
 app.get('/download/:orderId/:productId', isLoggedIn, async (req, res) => {
     try {
         const orderId = req.params.orderId;
         const productId = req.params.productId;
         const userId = req.session.user.id;
+        const format = req.query.format || 'txt'; // Default to txt
 
-        console.log('Download attempt:', { orderId, productId, userId });
+        console.log('Download attempt:', { orderId, productId, userId, format });
 
         const order = await Order.findOne({
             _id: orderId,
@@ -4015,17 +4364,69 @@ app.get('/download/:orderId/:productId', isLoggedIn, async (req, res) => {
             if (fs.existsSync(personalizedFilePath)) {
                 console.log('✅ Downloading personalized file:', order.downloadFileName);
 
-                // Download the personalized file
-                res.download(personalizedFilePath, `your_data_${order.quantity}_items.txt`, (err) => {
-                    if (err) {
-                        console.error('Personalized download error:', err);
-                        req.flash('error_msg', 'Download failed. Please try again or contact support.');
-                        res.redirect('/orders');
-                    } else {
-                        console.log('✅ Personalized download successful');
+                // Read the file content
+                const fileContent = fs.readFileSync(personalizedFilePath, 'utf8');
+
+                // Convert based on format
+                let downloadContent = fileContent;
+                let mimeType = 'text/plain';
+                let fileExtension = 'txt';
+                let fileName = `your_data_${order.quantity}_items`;
+
+                if (format === 'csv') {
+                    // Convert TXT to CSV format - parse account details
+                    const lines = fileContent.split('\n');
+                    let csvData = [];
+
+                    // Extract account information - handle multiple entries
+                    const entries = [];
+                    let currentEntry = {};
+
+                    for (const line of lines) {
+                        const trimmed = line.trim();
+                        if (trimmed.startsWith('- Email:')) {
+                            if (Object.keys(currentEntry).length > 0) {
+                                entries.push(currentEntry);
+                            }
+                            currentEntry = { email: trimmed.replace('- Email:', '').trim() };
+                        } else if (trimmed.startsWith('- Password:')) {
+                            currentEntry.password = trimmed.replace('- Password:', '').trim();
+                        } else if (trimmed.startsWith('- Recovery Email:')) {
+                            currentEntry.recoveryEmail = trimmed.replace('- Recovery Email:', '').trim();
+                        } else if (trimmed.startsWith('- Phone:')) {
+                            currentEntry.phone = trimmed.replace('- Phone:', '').trim();
+                        } else if (trimmed.startsWith('- Created:')) {
+                            currentEntry.created = trimmed.replace('- Created:', '').trim();
+                        } else if (trimmed.startsWith('- Verified:')) {
+                            currentEntry.verified = trimmed.replace('- Verified:', '').trim();
+                        } else if (trimmed.startsWith('- 2FA Enabled:')) {
+                            currentEntry.twoFA = trimmed.replace('- 2FA Enabled:', '').trim();
+                        } else if (trimmed.startsWith('- Storage Used:')) {
+                            currentEntry.storage = trimmed.replace('- Storage Used:', '').trim();
+                        }
                     }
-                });
-                return; // Exit early - personalized file handled
+
+                    // Add the last entry
+                    if (Object.keys(currentEntry).length > 0) {
+                        entries.push(currentEntry);
+                    }
+
+                    // Create CSV with headers
+                    csvData.push('Email,Password,Recovery Email,Phone,Created,Verified,2FA Enabled,Storage Used');
+                    entries.forEach(entry => {
+                        csvData.push(`"${entry.email || ''}","${entry.password || ''}","${entry.recoveryEmail || ''}","${entry.phone || ''}","${entry.created || ''}","${entry.verified || ''}","${entry.twoFA || ''}","${entry.storage || ''}"`);
+                    });
+
+                    downloadContent = csvData.join('\n');
+                    mimeType = 'text/csv';
+                    fileExtension = 'csv';
+                }
+
+                // Set headers and send
+                res.setHeader('Content-Type', mimeType);
+                res.setHeader('Content-Disposition', `attachment; filename="${fileName}.${fileExtension}"`);
+                res.send(downloadContent);
+                return;
             } else {
                 console.warn('⚠️ Personalized file not found, falling back to original files');
             }
@@ -4041,72 +4442,100 @@ app.get('/download/:orderId/:productId', isLoggedIn, async (req, res) => {
             return res.redirect('/orders');
         }
 
-        // For single file, download directly
-        if (product.files.length === 1) {
-            const filePath = path.join(__dirname, 'uploads', product.files[0].filepath);
-            const fileName = product.files[0].filename;
-
-            console.log('Single file download:', { filePath, fileName });
-
-            // Check if file exists
-            if (!fs.existsSync(filePath)) {
-                console.error('File does not exist:', filePath);
-                req.flash('error_msg', 'File not found. Please contact support.');
-                return res.redirect('/orders');
-            }
-
-            res.download(filePath, fileName, (err) => {
-                if (err) {
-                    console.error('Download error:', err);
-                    req.flash('error_msg', 'Download failed. Please try again or contact support.');
-                    res.redirect('/orders');
-                } else {
-                    console.log('Download successful');
-                }
-            });
-        } else {
-            // For multiple files, create zip
-            const fs = require('fs');
-            const archiver = require('archiver');
-            const zip = archiver('zip');
-
-            // Clean filename for zip
-            const cleanFileName = product.name.replace(/[^a-zA-Z0-9]/g, '_');
-
-            res.setHeader('Content-disposition', `attachment; filename=${cleanFileName}.zip`);
-            res.setHeader('Content-type', 'application/zip');
-
-            zip.pipe(res);
-            zip.on('error', (err) => {
-                console.error('Zip creation error:', err);
-                req.flash('error_msg', 'Download failed. Please try again.');
-                res.redirect('/orders');
-            });
-
-            zip.on('end', () => console.log('zip file created successfully'));
-
-            let filesAdded = 0;
-            product.files.forEach(file => {
-                const filePath = path.join(__dirname, 'uploads', file.filepath);
-                const fileName = file.filename;
-
-                // Only add file if it exists
-                if (fs.existsSync(filePath)) {
-                    zip.file(filePath, { name: fileName });
-                    filesAdded++;
-                    console.log('Added to zip:', fileName);
-                } else {
-                    console.warn('File not found for zip:', filePath);
-                }
-            });
-
-            if (filesAdded === 0) {
-                req.flash('error_msg', 'No downloadable files found. Please contact the seller.');
-                return res.redirect('/orders');
-            }
-
-            zip.finalize();
+        // Find the data file (prefer .txt files)
+        let dataFile = product.files.find(file => file.filename.toLowerCase().endsWith('.txt'));
+        if (!dataFile) {
+            // If no .txt file, use the first file
+            dataFile = product.files[0];
         }
+
+        const filePath = path.join(__dirname, 'uploads', path.basename(dataFile.filepath));
+
+        console.log('Data file download:', { filePath, fileName: dataFile.filename });
+
+        // Check if file exists
+        if (!fs.existsSync(filePath)) {
+            console.error('File does not exist:', filePath);
+            req.flash('error_msg', 'File not found. Please contact support.');
+            return res.redirect('/orders');
+        }
+
+        // Read the file content
+        const fullFileContent = fs.readFileSync(filePath, 'utf8');
+        const allLines = fullFileContent.split('\n').filter(line => line.trim().length > 0);
+
+        console.log(`📊 Original file has ${allLines.length} entries, order quantity: ${order.quantity}`);
+
+        // TAKE ONLY THE PURCHASED QUANTITY - first N lines
+        const purchasedLines = allLines.slice(0, order.quantity);
+        const fileContent = purchasedLines.join('\n');
+
+        console.log(`✅ Providing ${purchasedLines.length} entries for download`);
+
+        // Convert based on format
+        let downloadContent = fileContent;
+        let mimeType = 'text/plain';
+        let fileExtension = 'txt';
+        let fileName = `your_data_${order.quantity}_items`;
+
+        if (format === 'csv') {
+            // Convert TXT to CSV format - handle multiple accounts
+            const lines = fileContent.split('\n');
+            let csvData = [];
+
+            // Create CSV with headers
+            csvData.push('Email,Password,Recovery Email,Phone,Created,Verified,2FA Enabled,Storage Used');
+
+            // Parse each account block (assuming accounts are separated by empty lines or structured format)
+            let currentAccount = {};
+            let accountCount = 0;
+
+            for (const line of lines) {
+                const trimmed = line.trim();
+
+                if (trimmed.startsWith('- Email:')) {
+                    // Save previous account if exists
+                    if (Object.keys(currentAccount).length > 0) {
+                        csvData.push(`"${currentAccount.email || ''}","${currentAccount.password || ''}","${currentAccount.recoveryEmail || ''}","${currentAccount.phone || ''}","${currentAccount.created || ''}","${currentAccount.verified || ''}","${currentAccount.twoFA || ''}","${currentAccount.storage || ''}"`);
+                        accountCount++;
+                    }
+                    // Start new account
+                    currentAccount = { email: trimmed.replace('- Email:', '').trim() };
+                } else if (trimmed.startsWith('- Password:')) {
+                    currentAccount.password = trimmed.replace('- Password:', '').trim();
+                } else if (trimmed.startsWith('- Recovery Email:')) {
+                    currentAccount.recoveryEmail = trimmed.replace('- Recovery Email:', '').trim();
+                } else if (trimmed.startsWith('- Phone:')) {
+                    currentAccount.phone = trimmed.replace('- Phone:', '').trim();
+                } else if (trimmed.startsWith('- Created:')) {
+                    currentAccount.created = trimmed.replace('- Created:', '').trim();
+                } else if (trimmed.startsWith('- Verified:')) {
+                    currentAccount.verified = trimmed.replace('- Verified:', '').trim();
+                } else if (trimmed.startsWith('- 2FA Enabled:')) {
+                    currentAccount.twoFA = trimmed.replace('- 2FA Enabled:', '').trim();
+                } else if (trimmed.startsWith('- Storage Used:')) {
+                    currentAccount.storage = trimmed.replace('- Storage Used:', '').trim();
+                }
+            }
+
+            // Add the last account
+            if (Object.keys(currentAccount).length > 0) {
+                csvData.push(`"${currentAccount.email || ''}","${currentAccount.password || ''}","${currentAccount.recoveryEmail || ''}","${currentAccount.phone || ''}","${currentAccount.created || ''}","${currentAccount.verified || ''}","${currentAccount.twoFA || ''}","${currentAccount.storage || ''}"`);
+                accountCount++;
+            }
+
+            console.log(`📊 CSV conversion: ${accountCount} accounts processed`);
+
+            downloadContent = csvData.join('\n');
+            mimeType = 'text/csv';
+            fileExtension = 'csv';
+        }
+
+        // Set headers and send
+        res.setHeader('Content-Type', mimeType);
+        res.setHeader('Content-Disposition', `attachment; filename="${fileName}.${fileExtension}"`);
+        res.send(downloadContent);
+
     } catch (error) {
         console.error('Download error:', error);
         req.flash('error_msg', 'An error occurred processing the download. Please contact support.');
@@ -4534,7 +4963,23 @@ app.post('/buy-with-quantity/:sellerId/:productId', [
         const availableQuantity = product.availableQuantity || product.fileValidation?.[0]?.totalQuantity || 0;
         if (availableQuantity < quantity) {
             req.flash('error_msg', `Insufficient quantity available. Only ${availableQuantity} items remaining.`);
-            return res.redirect(`/store/${sellerId}`);
+            return res.redirect(`/product/${sellerId}/${productId}`);
+        }
+
+        // Additional check: ensure we have enough data in files
+        if (product.files && product.files.length > 0) {
+            const mainFile = product.files[0];
+            const mainFilePath = path.join(__dirname, 'uploads', path.basename(mainFile.filepath));
+
+            if (fs.existsSync(mainFilePath)) {
+                const fileContent = fs.readFileSync(mainFilePath, 'utf8');
+                const availableLines = fileContent.split('\n').filter(line => line.trim().length > 0);
+
+                if (availableLines.length < quantity) {
+                    req.flash('error_msg', `Not enough data available in file. Only ${availableLines.length} entries remaining.`);
+                    return res.redirect(`/product/${sellerId}/${productId}`);
+                }
+            }
         }
 
         // Check user balance
@@ -4632,7 +5077,7 @@ app.get('/download-quantity/:orderId/:productId', isLoggedIn, async (req, res) =
 
         // Get the main product file (assume first file is the data file)
         const mainFile = product.files[0];
-        const mainFilePath = path.join(__dirname, 'uploads', mainFile.filepath);
+        const mainFilePath = path.join(__dirname, 'uploads', path.basename(mainFile.filepath));
 
         if (!fs.existsSync(mainFilePath)) {
             console.error('Main file does not exist:', mainFilePath);

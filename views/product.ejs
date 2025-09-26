@@ -122,11 +122,12 @@
 
                             <!-- Stock Status -->
                             <div class="stock-status mb-3">
-                                <% if (product.stockQuantity > 0 || product.isDigital) { %>
+                                <% const availableStock = product.availableQuantity || product.fileValidation?.[0]?.totalQuantity || (product.isDigital ? 999999 : product.stockQuantity) || 0; %>
+                                <% if (availableStock > 0) { %>
                                     <div class="d-inline-flex align-items-center bg-success-subtle border border-success-subtle rounded-pill px-3 py-2">
                                         <i class="fas fa-check-circle text-success me-2"></i>
                                         <span class="text-success fw-medium">
-                                            <%= product.isDigital ? 'Digital Item' : product.stockQuantity + ' in stock' %>
+                                            <%= product.isDigital ? `${availableStock} available` : availableStock + ' in stock' %>
                                         </span>
                                     </div>
                                 <% } else { %>
@@ -150,12 +151,12 @@
                                 <button class="btn btn-outline-secondary btn-sm rounded-start-pill border-end-0" type="button" onclick="changeQuantity(-1)">
                                     <i class="fas fa-minus"></i>
                                 </button>
-                                <input type="number" class="form-control text-center border-0 bg-transparent quantity-input" id="quantityInput" value="1" min="1" max="10" onchange="updateTotal()">
+                                <input type="number" class="form-control text-center border-0 bg-transparent quantity-input" id="quantityInput" value="1" min="1" max="<%= Math.min(availableStock, 10) %>" onchange="updateTotal()">
                                 <button class="btn btn-outline-secondary btn-sm rounded-end-pill border-start-0" type="button" onclick="changeQuantity(1)">
                                     <i class="fas fa-plus"></i>
                                 </button>
                             </div>
-                            <small class="text-muted mt-2 d-block">Maximum 10 items per purchase</small>
+                            <small class="text-muted mt-2 d-block">Maximum <%= Math.min(availableStock, 10) %> items per purchase</small>
                         </div>
 
                         <!-- Enhanced Price Breakdown -->
@@ -396,7 +397,8 @@
     <script>
         let currentQuantity = 1;
         const basePrice = <%= product.price %>; // Dynamic price per item
-        const maxQuantity = 10;
+        const availableStock = <%= product.availableQuantity || product.fileValidation?.[0]?.totalQuantity || (product.isDigital ? 999999 : product.stockQuantity) || 0 %>;
+        const maxQuantity = Math.min(availableStock > 0 ? availableStock : 10, 10); // Max 10 or available stock
         const sellerId = '<%= seller.id %>';
         const productId = '<%= product.id %>';
 

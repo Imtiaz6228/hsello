@@ -351,12 +351,9 @@
                             <i class="fas fa-eye"></i> View
                           </a>
                           <% if (locals.user && locals.user.balance >= product.price) { %>
-                            <form method="POST" action="/buy-now/<%= storeId %>/<%= product.id %>" style="display: inline;">
-                              <input type="hidden" name="quantity" value="1">
-                              <button type="submit" class="btn btn-sm btn-success">
-                                <i class="fas fa-shopping-cart"></i> Buy Now
-                              </button>
-                            </form>
+                            <a href="/product/<%= storeId %>/<%= product.id %>" class="btn btn-sm btn-success">
+                              <i class="fas fa-shopping-cart"></i> Buy Now
+                            </a>
                           <% } else if (locals.user) { %>
                             <span class="text-danger text-sm">Low balance</span>
                           <% } else { %>

@@ -146,7 +146,7 @@
                                     <div class="time-remaining mt-2">
                                         <small class="text-muted">
                                             <i class="fas fa-clock me-1"></i>
-                                            Time remaining: <%= getTimeRemaining(dispute.autoCloseAt) %>
+                                            Time remaining: <%= dispute.timeRemaining %>
                                         </small>
                                     </div>
                                 <% } %>
@@ -246,7 +246,7 @@
                         <div class="card-footer">
                             <small class="text-muted">
                                 <i class="fas fa-info-circle me-1"></i>
-                                This dispute will automatically close in <%= getTimeRemaining(dispute.autoCloseAt) %> if no action is taken
+                                This dispute will automatically close in <%= dispute.timeRemaining %> if no action is taken
                             </small>
                         </div>
                     <% } %>
@@ -314,6 +314,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json'
                     }
                 })
                 .then(response => response.json())

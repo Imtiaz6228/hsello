@@ -141,7 +141,7 @@
                                         id="fileInput"
                                         name="productFiles"
                                         multiple
-                                        accept="application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/zip,application/x-zip-compressed,audio/mpeg,audio/mp3,audio/wav,video/mp4,video/avi,video/webm,image/jpeg,image/jpg,image/png,image/gif,application/json,text/csv,.xlsx,.xls"
+                                        accept="*/*"
                                         class="d-none"
                                     >
 
@@ -149,10 +149,10 @@
                                         <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
                                         <h5>Drop Files Here or Click to Upload</h5>
                                         <p class="text-muted mb-0">
-                                            Upload Excel (.xlsx, .xls), CSV, or text files containing your product data
+                                            Upload any file format containing your product data (Excel, CSV, TXT, JSON, or custom formats)
                                         </p>
                                         <p class="text-muted small mt-1">
-                                            Maximum 10 files • Up to 100MB total • Stock quantity will be auto-calculated
+                                            All file types supported • Maximum 10 files • Up to 100MB total • Stock quantity auto-calculated
                                         </p>
                                     </div>
 
@@ -187,7 +187,18 @@
                                                     <option value="">Select format...</option>
                                                     <option value="accounts">User Accounts (email:password)</option>
                                                     <option value="profiles">Social Media Profiles (username:password)</option>
-                                                    <option value="custom">Custom Format</option>
+                                                    <option value="gmail">Gmail Accounts</option>
+                                                    <option value="instagram">Instagram Accounts</option>
+                                                    <option value="facebook">Facebook Accounts</option>
+                                                    <option value="twitter">Twitter/X Accounts</option>
+                                                    <option value="youtube">YouTube Accounts</option>
+                                                    <option value="linkedin">LinkedIn Accounts</option>
+                                                    <option value="tiktok">TikTok Accounts</option>
+                                                    <option value="json">JSON Data</option>
+                                                    <option value="csv">CSV Data</option>
+                                                    <option value="xml">XML Data</option>
+                                                    <option value="sql">SQL Data</option>
+                                                    <option value="custom">Custom Format (any delimiter)</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -205,9 +216,18 @@
                                             placeholder="Paste your data here, one entry per line...
 
 Example formats:
-For accounts: user1@gmail.com:password123
-For profiles: @username:securepass123
-For custom: any format you prefer
+• Gmail: user@gmail.com:password123
+• Instagram: @username:securepass123
+• Facebook: user@facebook.com:pass123
+• Twitter/X: @handle:password
+• YouTube: channel@gmail.com:pass
+• LinkedIn: user@linkedin.com:pass123
+• TikTok: @tiktokuser:pass123
+• JSON: {"email":"user@example.com","pass":"password"}
+• CSV: email,password,recovery_email
+• XML: <account><email>user@example.com</email></account>
+• SQL: INSERT INTO accounts VALUES ('user@example.com','pass')
+• Custom: any format with your preferred delimiter
 
 The system will automatically:
 • Count the entries

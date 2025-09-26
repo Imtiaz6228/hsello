@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Orders - DigitalMarket Seller</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+    <style>
+        .orders-container {
+            max-width: 1400px;
+            margin: 120px auto 40px;
+            padding: 0 20px;
+        }
+        .order-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+            transition: transform 0.2s ease;
+        }
+        .order-card:hover {
+            transform: translateY(-2px);
+        }
+        .order-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 12px 12px 0 0;
+        }
+        .order-body {
+            padding: 20px;
+        }
+        .order-item {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .order-item:last-child {
+            border-bottom: none;
+        }
+        .product-image {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 2px solid #f0f0f0;
+        }
+        .order-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        .status-completed { background: #d4edda; color: #155724; }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-refunded { background: #f8d7da; color: #721c24; }
+
+        .dispute-info {
+            background: #fff6e8;
+            border: 1px solid #f39c12;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        .dispute-info h6 {
+            color: #f39c12;
+            margin: 0 0 10px 0;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        .btn-order {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        .btn-refund { background: #e74c3c; color: white; }
+        .btn-refund:hover { background: #c0392b; }
+        .btn-mark-complete { background: #27ae60; color: white; }
+        .btn-mark-complete:hover { background: #219a52; }
+        .btn-view-dispute { background: #f39c12; color: white; }
+        .btn-view-dispute:hover { background: #e67e22; }
+        .btn-contact { background: #3498db; color: white; }
+        .btn-contact:hover { background: #2980b9; }
+
+        .buyer-info {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .buyer-info h6 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+        }
+        .buyer-detail {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .buyer-detail:last-child {
+            margin-bottom: 0;
+        }
+
+        .no-orders {
+            text-align: center;
+            padding: 60px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+        }
+        .no-orders i {
+            font-size: 3em;
+            color: #95a5a6;
+            margin-bottom: 20px;
+        }
+        .no-orders h4 {
+            color: #34495e;
+            margin-bottom: 15px;
+        }
+
+        .refund-modal .btn {
+            margin: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .order-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            .action-buttons {
+                justify-content: center;
+            }
+            .buyer-detail {
+                flex-direction: column;
+                gap: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <%- include('../partials/navbar') %>
+
+    <!-- Refund Modal -->
+    <div class="modal fade" id="refundModal" tabindex="-1" aria-labelledby="refundModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="refundModalLabel">Process Refund</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="refundForm">
+                        <div class="mb-3">
+                            <label for="refundAmount" class="form-label">Refund Amount (₽)</label>
+                            <input type="number" class="form-control" id="refundAmount" step="0.01" min="0" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="refundReason" class="form-label">Reason for Refund</label>
+                            <textarea class="form-control" id="refundReason" rows="3" placeholder="Explain why you're issuing this refund..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" onclick="processRefund()">Process Refund</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="orders-container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-shopping-bag me-3"></i>Manage Orders</h1>
+            <div>
+                <a href="/seller/dashboard" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                </a>
+                <a href="/seller/balance" class="btn btn-outline-success">
+                    <i class="fas fa-wallet me-2"></i>Balance
+                </a>
+            </div>
+        </div>
+
+        <% if (orders && orders.length > 0) { %>
+            <% orders.forEach(order => { %>
+                <div class="order-card">
+                    <div class="order-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-0">Order #<%= order.id %></h5>
+                                <small><%= new Date(order.orderDate).toLocaleDateString() %> at <%= new Date(order.orderDate).toLocaleTimeString() %></small>
+                            </div>
+                            <div class="text-end">
+                                <div class="fs-5 fw-bold">₽<%= order.totalCost.toFixed(2) %></div>
+                                <span class="order-status status-<%= order.status %>">
+                                    <%= order.status.charAt(0).toUpperCase() + order.status.slice(1) %>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="order-body">
+                        <!-- Buyer Info -->
+                        <div class="buyer-info">
+                            <h6><i class="fas fa-user me-2"></i>Buyer Information</h6>
+                            <div class="buyer-detail">
+                                <span><strong>Name:</strong> <%= order.buyerName || 'Customer' %></span>
+                                <span><strong>Email:</strong> <%= order.buyerEmail || 'N/A' %></span>
+                            </div>
+                            <div class="buyer-detail">
+                                <span><strong>Order Date:</strong> <%= new Date(order.orderDate).toLocaleString() %></span>
+                                <span><strong>Quantity:</strong> <%= order.quantity %></span>
+                            </div>
+                        </div>
+
+                        <!-- Product Info -->
+                        <div class="order-item">
+                            <% if (order.isDigital) { %>
+                                <div>
+                                    <i class="fas fa-download fa-2x text-primary"></i>
+                                </div>
+                            <% } else { %>
+                                <img src="/uploads/<%= order.productImage || 'placeholder.jpg' %>"
+                                     alt="<%= order.productName %>" class="product-image" onerror="this.src='/images/placeholder.jpg'">
+                            <% } %>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1"><%= order.productName %></h6>
+                                <p class="mb-1 text-muted">Quantity: <%= order.quantity %> | Unit Price: ₽<%= order.price.toFixed(2) %></p>
+                                <% if (order.isDigital) { %>
+                                    <small class="text-success"><i class="fas fa-check-circle me-1"></i>Digital Product</small>
+                                <% } else { %>
+                                    <small class="text-info"><i class="fas fa-truck me-1"></i>Physical Product</small>
+                                <% } %>
+                            </div>
+                        </div>
+
+                        <% const orderDispute = disputes.find(d => d.orderId === order.id); %>
+                        <% if (orderDispute) { %>
+                            <div class="dispute-info">
+                                <h6><i class="fas fa-exclamation-triangle me-2"></i>Active Dispute</h6>
+                                <p class="mb-2">
+                                    <strong>Status:</strong>
+                                    <span class="badge bg-<%= orderDispute.status === 'open' ? 'warning' : orderDispute.status === 'closed' ? 'success' : orderDispute.status === 'auto-closed' ? 'secondary' : 'primary' %>">
+                                        <%= orderDispute.status.charAt(0).toUpperCase() + orderDispute.status.slice(1).replace('-', ' ') %>
+                                    </span>
+                                </p>
+                                <p class="mb-2">
+                                    <strong>Reason:</strong> <%= orderDispute.reason %>
+                                </p>
+                                <% if (orderDispute.status === 'open') { %>
+                                    <p class="mb-2">
+                                        <strong>Auto-close:</strong> <%= new Date(orderDispute.autoCloseAt).toLocaleString() %>
+                                    </p>
+                                <% } %>
+                                <a href="/dispute/<%= orderDispute._id %>" class="btn btn-sm btn-view-dispute">
+                                    <i class="fas fa-eye me-1"></i>View/Open Dispute
+                                </a>
+                            </div>
+                        <% } else if (order.status === 'completed') { %>
+                            <!-- No active dispute, can offer refund -->
+                        <% } %>
+
+                        <div class="action-buttons">
+                            <% if (order.status === 'completed' && !orderDispute) { %>
+                                <button type="button" class="btn-order btn-refund" onclick="openRefundModal(<%= order.id %>)">
+                                    <i class="fas fa-undo me-1"></i>Process Refund
+                                </button>
+                            <% } %>
+
+                            <% if (orderDispute) { %>
+                                <a href="/dispute/<%= orderDispute._id %>" class="btn-order btn-view-dispute">
+                                    <i class="fas fa-comments me-1"></i>Chat in Dispute
+                                </a>
+                            <% } %>
+
+                            <a href="/contact-seller/<%= user.id %>?buyer=<%= order.buyerId %>" class="btn-order btn-contact">
+                                <i class="fas fa-comments me-1"></i>Contact Buyer
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            <% }); %>
+        <% } else { %>
+            <div class="no-orders">
+                <i class="fas fa-shopping-cart"></i>
+                <h4>No Orders Yet</h4>
+                <p>No one has purchased from your store yet. Share your store link and start selling!</p>
+                <div class="mt-3">
+                    <a href="/my-store" class="btn btn-primary me-2">
+                        <i class="fas fa-store me-2"></i>View My Store
+                    </a>
+                    <a href="/seller/add-product" class="btn btn-outline-primary">
+                        <i class="fas fa-plus me-2"></i>Add Product
+                    </a>
+                </div>
+            </div>
+        <% } %>
+    </div>
+
+    <script>
+        let currentOrder = null;
+
+        function openRefundModal(orderId) {
+            currentOrder = orderId;
+            const modal = new bootstrap.Modal(document.getElementById('refundModal'));
+            modal.show();
+        }
+
+        function processRefund() {
+            if (!currentOrder) return;
+
+            const refundAmount = parseFloat(document.getElementById('refundAmount').value);
+            const refundReason = document.getElementById('refundReason').value;
+
+            if (!refundAmount || refundAmount <= 0) {
+                alert('Please enter a valid refund amount');
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to process a refund of ₽${refundAmount}? This will deduct from your balance and credit the buyer.`)) {
+                return;
+            }
+
+            // Create form to submit refund
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = "/dispute/" + currentOrder + "/refund";
+
+            const amountInput = document.createElement('input');
+            amountInput.type = 'hidden';
+            amountInput.name = 'refundAmount';
+            amountInput.value = refundAmount;
+
+            form.appendChild(amountInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-fill refund amount when modal opens
+            document.getElementById('refundModal').addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                if (button && button.dataset.amount) {
+                    document.getElementById('refundAmount').value = button.dataset.amount;
+                }
+            });
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

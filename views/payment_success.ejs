@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Payment Successful - DigitalMarket</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    .success-layout {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    .success-header {
+      background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+      color: white;
+      padding: 3rem 2rem;
+      border-radius: 16px;
+      margin-bottom: 2rem;
+      box-shadow: 0 8px 32px rgba(76, 175, 80, 0.3);
+    }
+
+    .success-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+    }
+
+    .success-title {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+      font-weight: 700;
+    }
+
+    .success-subtitle {
+      font-size: 1.2rem;
+      opacity: 0.9;
+    }
+
+    .payment-details {
+      background: white;
+      padding: 2.5rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
+    }
+
+    .amount-display {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #2c3e50;
+      margin: 1rem 0;
+    }
+
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+
+    .detail-item {
+      background: #f8f9fa;
+      padding: 1.5rem;
+      border-radius: 8px;
+      border-left: 4px solid #4CAF50;
+    }
+
+    .detail-item .label {
+      color: #666;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+
+    .detail-item .value {
+      color: #2c3e50;
+      font-weight: 600;
+      font-size: 1.1rem;
+    }
+
+    .balance-update {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 2rem;
+      border-radius: 12px;
+      margin: 2rem 0;
+      text-align: center;
+    }
+
+    .balance-amount {
+      font-size: 2rem;
+      font-weight: bold;
+      margin: 0.5rem 0;
+    }
+
+    .next-steps {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
+    }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+      margin: 2rem 0;
+    }
+
+    .step-card {
+      text-align: center;
+      padding: 1.5rem;
+      border-radius: 8px;
+      transition: transform 0.3s ease;
+    }
+
+    .step-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .step-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    .step-1 {
+      background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+      color: white;
+    }
+
+    .step-2 {
+      background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+      color: white;
+    }
+
+    .step-3 {
+      background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);
+      color: white;
+    }
+
+    .action-buttons {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    .action-btn {
+      display: block;
+      padding: 1rem 1.5rem;
+      border-radius: 12px;
+      text-decoration: none;
+      text-align: center;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .primary-action {
+      background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+      color: white;
+    }
+
+    .primary-action:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 30px rgba(76, 175, 80, 0.4);
+    }
+
+    .secondary-action {
+      background: white;
+      color: #667eea;
+      border: 2px solid #667eea;
+    }
+
+    .secondary-action:hover {
+      background: #667eea;
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    .transaction-info {
+      background: #f8f9fa;
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin: 1.5rem 0;
+    }
+
+    .transaction-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      font-size: 0.9rem;
+    }
+
+    .transaction-item {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .transaction-item .label {
+      color: #666;
+      font-weight: 500;
+    }
+
+    .transaction-item .value {
+      color: #2c3e50;
+      font-weight: 600;
+    }
+
+    .celebration-emoji {
+      position: fixed;
+      top: 20%;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 3rem;
+      pointer-events: none;
+      opacity: 0.8;
+      animation: celebrate 2s ease-out infinite;
+    }
+
+    @keyframes celebrate {
+      0%, 100% { transform: translateX(-50%) translateY(0px); }
+      25% { transform: translateX(-50%) translateY(-20px); }
+      50% { transform: translateX(-50%) translateY(-40px); }
+      75% { transform: translateX(-50%) translateY(-20px); }
+    }
+
+    @media (max-width: 768px) {
+      .details-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .steps-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .action-buttons {
+        grid-template-columns: 1fr;
+      }
+
+      .transaction-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- ================= PREMIUM NAVBAR ================ -->
+  <%- include('./partials/navbar.ejs') %>
+  <!-- =============== END PREMIUM NAVBAR ============== -->
+
+  <div class="page-top-space"></div>
+
+  <!-- CELEBRATION EMOJIS -->
+  <div class="celebration-emoji" style="left: 30%;">🎉</div>
+  <div class="celebration-emoji" style="left: 40%; animation-delay: 0.2s;">💰</div>
+  <div class="celebration-emoji" style="left: 60%; animation-delay: 0.4s;">✅</div>
+  <div class="celebration-emoji" style="left: 70%; animation-delay: 0.6s;">🚀</div>
+
+  <!-- PAYMENT SUCCESS PAGE -->
+  <main class="success-layout">
+    <div class="success-header">
+      <div class="success-icon">🎉</div>
+      <h1 class="success-title">Payment Successful!</h1>
+      <p class="success-subtitle">Your cryptocurrency payment has been processed successfully</p>
+    </div>
+
+    <div class="payment-details">
+      <h2>💳 Payment Receipt</h2>
+
+      <div class="amount-display">
+        <%= payment.amountRUB %> ₽ (RUB)
+      </div>
+
+      <div class="details-grid">
+        <div class="detail-item">
+          <div class="label">Payment Method</div>
+          <div class="value">Cryptocurrency (<%= payment.payCurrency || 'N/A' %>)</div>
+        </div>
+        <div class="detail-item">
+          <div class="label">Transaction ID</div>
+          <div class="value">#<%= payment.orderId %></div>
+        </div>
+        <div class="detail-item">
+          <div class="label">Payment Status</div>
+          <div class="value"><%= payment.status %> ✅</div>
+        </div>
+        <div class="detail-item">
+          <div class="label">Completed At</div>
+          <div class="value"><%= payment.paidAt ? new Date(payment.paidAt).toLocaleString() : new Date().toLocaleString() %></div>
+        </div>
+      </div>
+
+      <div class="transaction-info">
+        <h4>📋 Transaction Details</h4>
+        <div class="transaction-grid">
+          <div class="transaction-item">
+            <span class="label">Gateway:</span>
+            <span class="value">NOWPayments</span>
+          </div>
+          <div class="transaction-item">
+            <span class="label">Processing Fee:</span>
+            <span class="value">$<%= (payment.amountUSD * 0.01).toFixed(2) %> (1%)</span>
+          </div>
+          <div class="transaction-item">
+            <span class="label">Exchange Rate:</span>
+            <span class="value">$1 = 81.00 ₽</span>
+          </div>
+          <div class="transaction-item">
+            <span class="label">Received RUB:</span>
+            <span class="value"><%= payment.amountRUB %> ₽</span>
+          </div>
+          <% if (payment.actuallyPaid) { %>
+          <div class="transaction-item">
+            <span class="label">Crypto Sent:</span>
+            <span class="value"><%= typeof payment.actuallyPaid === 'number' ? payment.actuallyPaid.toFixed(8) : payment.actuallyPaid %> <%= payment.payCurrency %></span>
+          </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <div class="balance-update">
+      <h3>💰 Balance Updated!</h3>
+      <div class="balance-amount">
+        +<%= payment.amountRUB %> ₽
+      </div>
+      <p>Your account balance has been successfully topped up with <%= payment.amountRUB %> Russian Rubles.</p>
+    </div>
+
+    <!-- INSTANT DOWNLOAD SECTION -->
+    <div class="download-section bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4 mb-4">
+      <div class="text-center">
+        <div class="download-icon text-6xl mb-3">📁</div>
+        <h3 class="text-xl font-bold text-green-800 mb-2">Your Digital Product is Ready!</h3>
+        <p class="text-gray-600 mb-4">Click the download button below to instantly access your purchased item</p>
+
+        <div class="download-buttons flex justify-center gap-3">
+          <a href="/orders" class="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors duration-200 shadow-lg">
+            <i class="fas fa-download mr-2"></i>
+            Download Your Product
+          </a>
+          <button onclick="copyDownloadLink()" class="inline-flex items-center px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-200 shadow-lg">
+            <i class="fas fa-copy mr-2"></i>
+            Copy Download Link
+          </button>
+        </div>
+
+        <div class="download-info mt-4 p-3 bg-white rounded border">
+          <p class="text-sm text-gray-600 mb-1">
+            <i class="fas fa-info-circle text-blue-500 mr-1"></i>
+            <strong>Download Instructions:</strong>
+          </p>
+          <ul class="text-sm text-gray-600 text-left max-w-md mx-auto">
+            <li>• Your download link will be available in your Orders page</li>
+            <li>• Downloads are instant and secure</li>
+            <li>• You can download multiple times within 30 days</li>
+            <li>• Contact support if you have any issues</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="next-steps">
+      <h3>What would you like to do next?</h3>
+
+      <div class="steps-grid">
+        <div class="step-card step-1">
+          <div class="step-icon">🛒</div>
+          <h4>Shop Products</h4>
+          <p>Browse and purchase amazing digital products from our sellers</p>
+        </div>
+
+        <div class="step-card step-2">
+          <div class="step-icon">🏪</div>
+          <h4>Become a Seller</h4>
+          <p>Join our marketplace and start selling your own digital products</p>
+        </div>
+
+        <div class="step-card step-3">
+          <div class="step-icon">📊</div>
+          <h4>View Balance</h4>
+          <p>Check your current account balance and transaction history</p>
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <a href="/orders" class="action-btn primary-action">
+          📦 View My Orders & Downloads
+        </a>
+        <a href="/stores" class="action-btn secondary-action">
+          🛒 Continue Shopping
+        </a>
+      </div>
+    </div>
+
+    <!-- Print Receipt Button -->
+    <div style="text-align: center; margin: 2rem 0;">
+      <button onclick="window.print()" style="background: #6c757d; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 500;">
+        🖨️ Print Receipt
+      </button>
+    </div>
+
+    <div style="text-align: center; margin: 2rem 0; color: #666; font-size: 0.9rem;">
+      <p><strong>Thank you for using DigitalMarket!</strong></p>
+      <p>Your payment was processed securely through our NOWPayments gateway.</p>
+      <p>Need help? Contact our support team anytime.</p>
+    </div>
+  </main>
+
+  <script src="/js/script.js"></script>
+  <script>
+    // Auto-show success message if not displayed
+    document.addEventListener('DOMContentLoaded', function() {
+      // Add some celebration animation
+      const emojis = ['🎉', '💰', '✅', '🚀', '🎊'];
+
+      setTimeout(() => {
+        const celebrationContainer = document.createElement('div');
+        celebrationContainer.style.position = 'fixed';
+        celebrationContainer.style.top = '0';
+        celebrationContainer.style.left = '0';
+        celebrationContainer.style.width = '100%';
+        celebrationContainer.style.height = '100%';
+        celebrationContainer.style.pointerEvents = 'none';
+        celebrationContainer.style.zIndex = '9999';
+
+        for (let i = 0; i < 10; i++) {
+          setTimeout(() => {
+            const emoji = document.createElement('div');
+            emoji.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            emoji.style.position = 'absolute';
+            emoji.style.left = Math.random() * 100 + '%';
+            emoji.style.top = '-20px';
+            emoji.style.fontSize = (20 + Math.random() * 20) + 'px';
+            emoji.style.animation = 'fall 3s linear forwards';
+
+            celebrationContainer.appendChild(emoji);
+
+            setTimeout(() => emoji.remove(), 3000);
+          }, i * 200);
+        }
+
+        document.body.appendChild(celebrationContainer);
+        setTimeout(() => celebrationContainer.remove(), 5000);
+      }, 500);
+
+      // Add fall animation
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes fall {
+          to {
+            transform: translateY(calc(100vh + 20px));
+            opacity: 0;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    });
+
+    // Copy download link function
+    function copyDownloadLink() {
+      const downloadUrl = window.location.origin + '/orders';
+      navigator.clipboard.writeText(downloadUrl).then(function() {
+        // Show success message
+        const button = document.querySelector('button[onclick="copyDownloadLink()"]');
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-check mr-2"></i>Link Copied!';
+        button.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+        button.classList.add('bg-green-600', 'hover:bg-green-700');
+
+        setTimeout(() => {
+          button.innerHTML = originalText;
+          button.classList.remove('bg-green-600', 'hover:bg-green-700');
+          button.classList.add('bg-blue-600', 'hover:bg-blue-700');
+        }, 2000);
+      }).catch(function(err) {
+        console.error('Failed to copy: ', err);
+        alert('Failed to copy download link. Please copy it manually: ' + downloadUrl);
+      });
+    }
+
+    // Auto-redirect after 30 seconds
+    setTimeout(() => {
+      if (confirm('Return to homepage?')) {
+        window.location.href = '/';
+      }
+    }, 30000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Login - DigitalMarket</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    .admin-login {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .login-container {
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+      padding: 40px;
+      width: 100%;
+      max-width: 450px;
+      text-align: center;
+    }
+
+    .login-header {
+      margin-bottom: 30px;
+    }
+
+    .login-header h1 {
+      color: #2c3e50;
+      margin: 0;
+      font-size: 2.5em;
+      font-weight: 700;
+    }
+
+    .login-header h1::before {
+      content: '🛡️';
+      margin-right: 10px;
+    }
+
+    .login-header p {
+      color: #7f8c8d;
+      margin: 10px 0 0 0;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      color: #2c3e50;
+      font-weight: 600;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ecf0f1;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border-color 0.3s ease;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+
+    .btn-login:hover {
+      transform: translateY(-2px);
+    }
+
+    .admin-info {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+
+    .admin-info h3 {
+      margin: 0 0 10px 0;
+      color: #2c3e50;
+      font-size: 1.2em;
+    }
+
+    .admin-info p {
+      margin: 5px 0;
+      color: #7f8c8d;
+    }
+
+    .admin-info strong {
+      color: #667eea;
+    }
+
+    .flash-message {
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-weight: 600;
+    }
+
+    .success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+  </style>
+</head>
+<body class="admin-login">
+  <div class="login-container">
+    <div class="login-header">
+      <h1>Admin Login</h1>
+      <p>Access the administration panel</p>
+    </div>
+
+    <% if (typeof success_msg !== 'undefined' && success_msg) { %>
+      <div class="flash-message success"><%= success_msg %></div>
+    <% } %>
+
+    <% if (typeof error_msg !== 'undefined' && error_msg) { %>
+      <div class="flash-message error"><%= error_msg %></div>
+    <% } %>
+
+    <form action="/admin/login" method="POST">
+      <div class="form-group">
+        <label for="adminId">Admin ID</label>
+        <input type="text" id="adminId" name="adminId" class="form-input" placeholder="Enter your admin ID" autocomplete="off" required>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" class="form-input" placeholder="Enter your password" autocomplete="current-password" required>
+      </div>
+
+      <button type="submit" class="btn-login">Login to Admin Panel</button>
+    </form>
+
+    <div class="admin-info">
+      <h3>Demo Admin Access</h3>
+      <p><strong>Admin ID:</strong> admin</p>
+      <p><strong>Password:</strong> admin123</p>
+      <p><em>Note: This is for testing purposes only</em></p>
+    </div>
+  </div>
+</body>
+</html>

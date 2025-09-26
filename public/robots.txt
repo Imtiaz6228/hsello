@@ -1,0 +1,24 @@
+User-agent: *
+Allow: /
+
+# Block access to admin areas
+Disallow: /admin/
+Disallow: /seller/
+Disallow: /api/
+
+# Block access to sensitive files
+Disallow: /uploads/private/
+Disallow: /logs/
+Disallow: /temp/
+
+# Allow access to CSS, JS, and images
+Allow: /css/
+Allow: /js/
+Allow: /images/
+Allow: /uploads/
+
+# Crawl delay
+Crawl-delay: 1
+
+# Sitemap
+Sitemap: https://hsello.com/sitemap.xml

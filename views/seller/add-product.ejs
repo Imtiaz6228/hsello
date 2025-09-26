@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Product - Digital Market</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <%- include('../partials/navbar') %>
+    
+    <div class="container my-5">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Add New Product</h4>
+                    </div>
+                    <div class="card-body">
+                        <!-- Flash Messages -->
+                        <% if (success_msg && success_msg.length > 0) { %>
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <%= success_msg %>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        <% } %>
+                        
+                        <% if (error_msg && error_msg.length > 0) { %>
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <%= error_msg %>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        <% } %>
+
+                        <form action="/seller/add-product" method="POST" enctype="multipart/form-data">
+                            <div class="row">
+                                <!-- Product Images -->
+                                <div class="col-md-12 mb-4">
+                                    <h5 class="border-bottom pb-2 mb-3"><i class="fas fa-images me-2"></i>Product Images</h5>
+                                    <div class="mb-3">
+                                        <label for="productImages" class="form-label">Upload Product Images <span class="text-danger">*</span></label>
+                                        <input type="file" class="form-control" id="productImages" name="productImages" multiple accept="image/*" required>
+                                        <div class="form-text">Upload up to 5 images (JPG, PNG). First image will be the main product image.</div>
+                                    </div>
+                                </div>
+
+                                <!-- Basic Information -->
+                                <div class="col-md-6">
+                                    <h5 class="border-bottom pb-2 mb-3"><i class="fas fa-info-circle me-2"></i>Basic Information</h5>
+
+                                    <div class="mb-3">
+                                        <label for="productName" class="form-label">Product Name <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="productName" name="productName" placeholder="Enter product name" required>
+                                    </div>
+
+                                    <!-- Direction Category -->
+                                    <div class="mb-3">
+                                        <label for="directionCategory" class="form-label">Direction Category <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="directionCategory" name="directionCategory" required>
+                                            <option value="">Choose direction</option>
+                                            <option value="services" selected>Services</option>
+                                            <option value="accounts">Accounts</option>
+                                            <option value="digital-goods">Digital Goods</option>
+                                            <option value="games">Games</option>
+                                            <option value="ai">AI</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Item Category (dynamically populated) -->
+                                    <div class="mb-3">
+                                        <label for="itemCategory" class="form-label">Item Category <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="itemCategory" name="itemCategory" required>
+                                            <option value="">Select direction first</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Subcategory (dynamically populated) -->
+                                    <div class="mb-3">
+                                        <label for="subcategory" class="form-label">Subcategory <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="subcategory" name="subcategory" required>
+                                            <option value="">Select item category first</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Registration Method -->
+                                    <div class="mb-3">
+                                        <label for="registrationMethod" class="form-label">Registration Method <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="registrationMethod" name="registrationMethod" required>
+                                            <option value="">Select registration method</option>
+                                            <option value="manual">Manual Registration</option>
+                                            <option value="auto">Auto Registration</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Profile Fullness -->
+                                    <div class="mb-3">
+                                        <label for="profileFullness" class="form-label">Profile Fullness <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="profileFullness" name="profileFullness" required>
+                                            <option value="">Select profile fullness</option>
+                                            <option value="partial">Partial Profile</option>
+                                            <option value="full">Full Profile</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Year of Registration -->
+                                    <div class="mb-3">
+                                        <label for="yearOfRegistration" class="form-label">Year of Registration <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="yearOfRegistration" name="yearOfRegistration" required>
+                                            <option value="">Select year</option>
+                                            <% const currentYear = new Date().getFullYear(); %>
+                                            <% for (let year = currentYear; year >= 2000; year--) { %>
+                                                <option value="<%= year %>"><%= year %></option>
+                                            <% } %>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Country of Registration -->
+                                    <div class="mb-3">
+                                        <label for="countryOfRegistration" class="form-label">Country of Registration <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="countryOfRegistration" name="countryOfRegistration" required>
+                                            <option value="">Select country</option>
+                                            <option value="usa">United States</option>
+                                            <option value="russia">Russia</option>
+                                            <option value="uk">United Kingdom</option>
+                                            <option value="germany">Germany</option>
+                                            <option value="france">France</option>
+                                            <option value="canada">Canada</option>
+                                            <option value="australia">Australia</option>
+                                            <option value="spain">Spain</option>
+                                            <option value="italy">Italy</option>
+                                            <option value="netherlands">Netherlands</option>
+                                            <option value="sweden">Sweden</option>
+                                            <option value="norway">Norway</option>
+                                            <option value="denmark">Denmark</option>
+                                            <option value="finland">Finland</option>
+                                            <option value="poland">Poland</option>
+                                            <option value="czech">Czech Republic</option>
+                                            <option value="hungary">Hungary</option>
+                                            <option value="austria">Austria</option>
+                                            <option value="switzerland">Switzerland</option>
+                                            <option value="belgium">Belgium</option>
+                                            <option value="ireland">Ireland</option>
+                                            <option value="portugal">Portugal</option>
+                                            <option value="greece">Greece</option>
+                                            <option value="turkey">Turkey</option>
+                                            <option value="uae">United Arab Emirates</option>
+                                            <option value="saudi_arabia">Saudi Arabia</option>
+                                            <option value="qatar">Qatar</option>
+                                            <option value="kuwait">Kuwait</option>
+                                            <option value="bahrain">Bahrain</option>
+                                            <option value="oman">Oman</option>
+                                            <option value="jordan">Jordan</option>
+                                            <option value="lebanon">Lebanon</option>
+                                            <option value="israel">Israel</option>
+                                            <option value="egypt">Egypt</option>
+                                            <option value="morocco">Morocco</option>
+                                            <option value="tunisia">Tunisia</option>
+                                            <option value="algeria">Algeria</option>
+                                            <option value="south_africa">South Africa</option>
+                                            <option value="nigeria">Nigeria</option>
+                                            <option value="kenya">Kenya</option>
+                                            <option value="ghana">Ghana</option>
+                                            <option value="tanzania">Tanzania</option>
+                                            <option value="uganda">Uganda</option>
+                                            <option value="ethiopia">Ethiopia</option>
+                                            <option value="india">India</option>
+                                            <option value="china">China</option>
+                                            <option value="japan">Japan</option>
+                                            <option value="south_korea">South Korea</option>
+                                            <option value="philippines">Philippines</option>
+                                            <option value="indonesia">Indonesia</option>
+                                            <option value="malaysia">Malaysia</option>
+                                            <option value="singapore">Singapore</option>
+                                            <option value="thailand">Thailand</option>
+                                            <option value="vietnam">Vietnam</option>
+                                            <option value="cambodia">Cambodia</option>
+                                            <option value="laos">Laos</option>
+                                            <option value="myanmar">Myanmar</option>
+                                            <option value="bangladesh">Bangladesh</option>
+                                            <option value="pakistan">Pakistan</option>
+                                            <option value="sri_lanka">Sri Lanka</option>
+                                            <option value="nepal">Nepal</option>
+                                            <option value="bhutan">Bhutan</option>
+                                            <option value="new_zealand">New Zealand</option>
+                                            <option value="argentina">Argentina</option>
+                                            <option value="brazil">Brazil</option>
+                                            <option value="mexico">Mexico</option>
+                                            <option value="chile">Chile</option>
+                                            <option value="colombia">Colombia</option>
+                                            <option value="peru">Peru</option>
+                                            <option value="venezuela">Venezuela</option>
+                                            <option value="ecuador">Ecuador</option>
+                                            <option value="uruguay">Uruguay</option>
+                                            <option value="paraguay">Paraguay</option>
+                                            <option value="bolivia">Bolivia</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Login Method -->
+                                    <div class="mb-3">
+                                        <label for="loginMethod" class="form-label">Login Method <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="loginMethod" name="loginMethod" placeholder="Specify login method (e.g., username, email, phone)" required>
+                                        <div class="form-text">Explain how users will access this account</div>
+                                    </div>
+
+                                    <!-- Number of Subscribers (Optional) -->
+                                    <div class="mb-3">
+                                        <label for="numberOfSubscribers" class="form-label">Number of Subscribers (Optional)</label>
+                                        <input type="number" class="form-control" id="numberOfSubscribers" name="numberOfSubscribers" min="0" placeholder="Enter number of subscribers">
+                                        <div class="form-text">Leave empty if not applicable</div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="price" class="form-label">Price (RUB) <span class="text-danger">*</span></label>
+                                        <input type="number" class="form-control" id="price" name="price" step="0.01" min="0" placeholder="Enter price in rubles" required>
+                                        <div class="form-text">Price must be in Russian Rubles (RUB)</div>
+                                    </div>
+
+                                    <!-- Item Type -->
+                                    <div class="mb-3">
+                                        <label for="itemType" class="form-label">Item Type <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="itemType" name="itemType" required>
+                                            <option value="">Select item type</option>
+                                            <option value="auto">Auto Issue (automatic delivery after purchase)</option>
+                                            <option value="manual">Manual Issue (requires seller action after purchase)</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Order Completion Time -->
+                                    <div class="mb-3">
+                                        <label for="completionTime" class="form-label">Order Completion Time (Hours) <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="completionTime" name="completionTime" required>
+                                            <option value="">Select completion time</option>
+                                            <% for (let i = 1; i <= 72; i++) { %>
+                                                <option value="<%= i %>"><%= i %> hour<%= i > 1 ? 's' : '' %></option>
+                                            <% } %>
+                                        </select>
+                                        <div class="form-text">Time to deliver the product to the buyer</div>
+                                    </div>
+                                </div>
+
+                                <!-- Inventory & Settings -->
+                                <div class="col-md-6">
+                                    <h5 class="border-bottom pb-2 mb-3"><i class="fas fa-cogs me-2"></i>Inventory & Settings</h5>
+                                    
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="isDigital" name="isDigital">
+                                            <label class="form-check-label" for="isDigital">
+                                                <strong>Digital Product</strong>
+                                            </label>
+                                            <div class="form-text">Check this if your product is digital (software, ebooks, etc.)</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3" id="stockField">
+                                        <label for="stockQuantity" class="form-label">Stock Quantity</label>
+                                        <input type="number" class="form-control" id="stockQuantity" name="stockQuantity" min="0" value="0">
+                                        <div class="form-text">Leave as 0 for unlimited digital products</div>
+                                    </div>
+
+                                    <!-- Digital Product Files Section -->
+                                    <div class="mb-3" id="fileUploadSection" style="display: none;">
+                                        <label for="productFiles" class="form-label">Upload Product Files</label>
+                                        <input type="file" class="form-control" id="productFiles" name="productFiles" multiple accept="application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/zip,application/x-zip-compressed,audio/mpeg,audio/mp3,audio/wav,video/mp4,video/avi,video/webm,image/jpeg,image/jpg,image/png,image/gif">
+                                        <div class="form-text">
+                                            Upload digital files for your product (PDF, DOC, DOCX, TXT, ZIP, MP3, WAV, MP4, AVI, etc.)<br>
+                                            Max 10 files per upload, total max size: 100MB
+                                        </div>
+                                        <div id="fileList" class="mt-2"></div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="tags" class="form-label">Tags (Optional)</label>
+                                        <input type="text" class="form-control" id="tags" name="tags" placeholder="gaming, electronics, mobile">
+                                        <div class="form-text">Separate tags with commas</div>
+                                    </div>
+                                </div>
+
+                            <!-- Description -->
+                            <div class="col-md-12">
+                                <h5 class="border-bottom pb-2 mb-3"><i class="fas fa-align-left me-2"></i>Product Description</h5>
+
+                                <div class="mb-3">
+                                    <label for="shortDescription" class="form-label">Short Description <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" id="shortDescription" name="shortDescription" rows="2" placeholder="Brief summary (1-2 sentences)" required></textarea>
+                                    <div class="form-text">A concise summary that appears in product listings (max 200 characters)</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="fullDescription" class="form-label">Full Description <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" id="fullDescription" name="fullDescription" rows="6" placeholder="Detailed product description" required></textarea>
+                                    <div class="form-text">Complete description with features, specifications, benefits, and usage instructions</div>
+                                </div>
+                            </div>
+
+                            <!-- SEO & Marketing -->
+                            <div class="col-md-12">
+                                <h5 class="border-bottom pb-2 mb-3"><i class="fas fa-search me-2"></i>SEO & Marketing (Optional)</h5>
+
+                                <div class="mb-3">
+                                    <label for="seoTitle" class="form-label">SEO Title</label>
+                                    <input type="text" class="form-control" id="seoTitle" name="seoTitle" placeholder="Custom title for SEO (leave empty to use product name)">
+                                    <div class="form-text">Custom title for search engines and social sharing (recommended: 50-60 characters)</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="metaDescription" class="form-label">Meta Description</label>
+                                    <textarea class="form-control" id="metaDescription" name="metaDescription" rows="2" placeholder="Brief description for search engines"></textarea>
+                                    <div class="form-text">Description that appears in search results (recommended: 150-160 characters, leave empty to use short description)</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="seoKeywords" class="form-label">SEO Keywords</label>
+                                    <input type="text" class="form-control" id="seoKeywords" name="seoKeywords" placeholder="keyword1, keyword2, keyword3">
+                                    <div class="form-text">Comma-separated keywords for better search visibility (optional)</div>
+                                </div>
+                            </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="row">
+                                <div class="col-12">
+                                    <hr>
+                                    <div class="d-flex gap-2">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save me-2"></i>Save
+                                        </button>
+                                        <a href="/my-store" class="btn btn-secondary">
+                                            <i class="fas fa-arrow-left me-2"></i>Back to Store
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Modal for Item Addition -->
+    <div class="modal fade" id="addItemModal" tabindex="-1" aria-labelledby="addItemModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addItemModalLabel"><i class="fas fa-plus-circle me-2"></i>Add Items to Product</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-4">
+                        <h6 class="border-bottom pb-2 mb-3"><i class="fas fa-info-circle me-2"></i>Item Format Preview</h6>
+                        <div class="alert alert-info">
+                            <strong>Example Format:</strong><br>
+                            <code id="formatPreview">username:password:email</code><br>
+                            <small>Items will be parsed and stored separately for each buyer</small>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="border-bottom pb-2 mb-3"><i class="fas fa-grip-lines me-2"></i>Choose Delimiter</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Delimiter Type</label>
+                                    <select class="form-select" id="delimiterType" onchange="updateFormatPreview()">
+                                        <option value=":">Colon (:)</option>
+                                        <option value=";">Semicolon (;)</option>
+                                        <option value="I">Roman Numeral I</option>
+                                        <option value="II">Roman Numeral II</option>
+                                        <option value="">No Delimiter</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Custom Delimiter (optional)</label>
+                                    <input type="text" class="form-control" id="customDelimiter" placeholder="Enter custom delimiter" oninput="updateFormatPreview()" maxlength="5">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="border-bottom pb-2 mb-3"><i class="fas fa-upload me-2"></i>Import Items</h6>
+                        <div class="mb-3">
+                            <label for="itemFile" class="form-label">Upload Text File (.txt)</label>
+                            <input type="file" class="form-control" id="itemFile" accept=".txt" onchange="handleFileUpload()">
+                            <div class="form-text">Upload a text file with one item per line</div>
+                        </div>
+
+                        <div class="d-flex gap-2 mb-3">
+                            <button type="button" class="btn btn-outline-primary" onclick="toggleManualEntry()">
+                                <i class="fas fa-keyboard me-1"></i>Enter Manually
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="clearAllItems()">
+                                <i class="fas fa-trash me-1"></i>Clear All
+                            </button>
+                        </div>
+
+                        <div id="manualEntrySection" style="display: none;">
+                            <div class="mb-3">
+                                <label for="manualItemInput" class="form-label">Enter Item Details</label>
+                                <textarea class="form-control" id="manualItemInput" rows="3" placeholder="username:password:email&#10;username2:password2:email2&#10;(One item per line)"></textarea>
+                                <div class="form-text">Enter one item per line using the selected delimiter</div>
+                            </div>
+                            <button type="button" class="btn btn-success" onclick="addManualItems()">
+                                <i class="fas fa-plus me-1"></i>Add Items
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <h6 class="border-bottom pb-2 mb-3"><i class="fas fa-list me-2"></i>Items Preview</h6>
+                        <div id="itemsPreview" class="border rounded p-3 bg-light" style="min-height: 100px; max-height: 300px; overflow-y: auto;">
+                            <small class="text-muted">No items added yet. Upload a file or enter items manually.</small>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">Total items: <span id="itemsCount">0</span></small>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="saveItems()" id="saveItemsBtn">
+                        <i class="fas fa-save me-1"></i>Save Items
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Item Button (shown when product is in moderation) -->
+    <div class="row mt-4" id="addItemSection" style="display: none;">
+        <div class="col-12">
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <h5 class="card-title text-primary">
+                        <i class="fas fa-plus-circle me-2"></i>Add Items to Product
+                    </h5>
+                    <p class="card-text">While your product is in moderation, you can add items to your inventory.</p>
+                    <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#addItemModal">
+                        <i class="fas fa-plus me-2"></i>Add Item
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Category data based on direction
+        const categoryData = {
+            games: [
+                'Steam Games', 'Origin Games', 'Epic Games', 'Uplay Games', 'Battlenet Games', 'PSN Games', 'Xbox Games', 'Nintendo Games', 'GOG Games',
+                'Steam Gift Cards', 'PlayStation Store', 'Xbox Gift Cards', 'Nintendo eShop', 'Google Play Games', 'Apple Game Center',
+                'Rockstar Social Club', 'EA Play', 'Ubisoft Connect', 'Activision Blizzard', 'Sega Games', 'Square Enix', 'Capcom Games',
+                'Bandai Namco', 'Konami Games', 'Take-Two Interactive', 'Bethesda Softworks', 'CD Projekt RED', 'Paradox Interactive', 'Other Games'
+            ],
+            services: [
+                // Social Media Platforms (25+ items)
+                'Instagram Accounts', 'Facebook Accounts', 'Twitter (X) Accounts', 'Telegram Accounts', 'WhatsApp Business',
+                'LinkedIn Accounts', 'Pinterest Accounts', 'TikTok Accounts', 'YouTube Accounts', 'Snapchat Accounts',
+                'Reddit Accounts', 'Discord Accounts', 'Tumblr Accounts', 'Medium Accounts', 'Blogger Accounts',
+                'WordPress Sites', 'Flicker Accounts', 'Tumblr Blogs', 'VKontakte Accounts', 'Odnoklassniki Accounts',
+                'Gmail Accounts', 'Yahoo Mail Accounts', 'Outlook Accounts', 'Proton Mail Accounts', 'iCloud Accounts',
+                'Threads by Instagram', 'Mastodon Accounts', 'BlueSky Accounts', 'Parler Accounts', 'MeWe Accounts',
+                'Social Media Panels', 'Social Media Tools', 'Social Media Management', 'Social Media Growth Services',
+                'Content Creation Services', 'Video Editing Services', 'Graphic Design Services', 'SEO Services',
+                'Hosting Services', 'Domain Services', 'VPN Services', 'Proxy Services', 'Streaming Services',
+                'Software Licenses', 'Subscription Services', 'Consulting Services', 'Marketing Services', 'Other Services'
+            ],
+            accounts: [
+                // Social Media Platforms (15+ items)
+                'Google Accounts', 'Gmail Accounts', 'YouTube Accounts', 'Instagram Accounts', 'Facebook Accounts',
+                'Twitter (X) Accounts', 'TikTok Accounts', 'LinkedIn Accounts', 'Snapchat Accounts', 'Pinterest Accounts',
+                'Reddit Accounts', 'Discord Accounts', 'Telegram Accounts', 'WhatsApp Accounts', 'Tumblr Accounts',
+                'Threads by Instagram', 'Mastodon Accounts', 'BlueSky Accounts', 'Parler Accounts', 'MeWe Accounts',
+
+                // Email & Communication (10+ items)
+                'Outlook Accounts', 'Yahoo Mail Accounts', 'ProtonMail Accounts', 'iCloud Accounts', 'AOL Accounts',
+                'Zoho Mail Accounts', 'Yandex Mail Accounts', 'Mail.ru Accounts', 'GMX Accounts', 'Web.de Accounts',
+                'Tutanota Accounts', 'Posteo Accounts', 'Mailbox.org Accounts', 'Runbox Accounts', 'FastMail Accounts',
+
+                // Payment & Financial (8+ items)
+                'PayPal Accounts', 'Stripe Accounts', 'Square Accounts', 'Venmo Accounts', 'Cash App Accounts',
+                'Zelle Accounts', 'Wise Accounts', 'Revolut Accounts', 'TransferWise Accounts', 'Payoneer Accounts',
+                'Skrill Accounts', 'Neteller Accounts', 'Perfect Money Accounts', 'WebMoney Accounts', 'Bitcoin Wallets',
+
+                // Streaming & Entertainment (10+ items)
+                'Netflix Accounts', 'Spotify Accounts', 'Disney+ Accounts', 'Hulu Accounts', 'Amazon Prime Accounts',
+                'HBO Max Accounts', 'Apple TV+ Accounts', 'Paramount+ Accounts', 'Peacock Accounts', 'Crunchyroll Accounts',
+                'Audible Accounts', 'Kindle Unlimited Accounts', 'PlayStation Plus Accounts', 'Xbox Game Pass Accounts', 'Nintendo Switch Online',
+
+                // Professional & Business (8+ items)
+                'Microsoft 365 Accounts', 'Google Workspace Accounts', 'Slack Accounts', 'Zoom Accounts', 'Teams Accounts',
+                'Dropbox Accounts', 'OneDrive Accounts', 'iCloud Storage Accounts', 'Mega.nz Accounts', 'Box Accounts',
+
+                // Gaming Platforms (6+ items)
+                'Steam Accounts', 'Epic Games Accounts', 'Origin Accounts', 'Ubisoft Connect Accounts', 'Battlenet Accounts',
+                'Rockstar Social Club Accounts', 'EA Play Accounts', 'GOG Galaxy Accounts',
+
+                // Educational & Learning (5+ items)
+                'Coursera Accounts', 'Udemy Accounts', 'edX Accounts', 'Khan Academy Accounts', 'Duolingo Accounts',
+                'Codecademy Accounts', 'Pluralsight Accounts', 'LinkedIn Learning Accounts', 'MasterClass Accounts',
+
+                // Other Categories (5+ items)
+                'Dating Site Accounts', 'Job Search Accounts', 'Freelancer Accounts', 'Forum Accounts', 'Community Accounts',
+                'Auction Site Accounts', 'Classified Ads Accounts', 'Directory Accounts', 'Review Site Accounts', 'Other Accounts'
+            ],
+            "digital-goods": [
+                'E-books', 'Audiobooks', 'Digital Art', 'Stock Photos', 'Templates', 'Themes', 'Plugins', 'Fonts',
+                'Icons', 'UI Kits', 'Wireframes', 'Mockups', 'Presentations', 'Spreadsheets', 'Certificates',
+                'Contracts', 'Agreements', 'Resumes', 'Portfolios', 'Business Cards', 'Logos', 'Branding Kits',
+                'Music Samples', 'Sound Effects', 'Video Clips', 'Animations', '3D Models', 'Scripts', 'Code Snippets',
+                'Databases', 'APIs', 'Software Tools', 'Mobile Apps', 'Web Apps', 'Games', 'Learning Courses',
+                'Tutorials', 'Training Materials', 'Documentation', 'User Manuals', 'Other Digital Goods'
+            ],
+            ai: [
+                'AI Chatbots', 'AI Image Generation', 'AI Content Creation', 'AI Voice Synthesis', 'AI Code Generation',
+                'AI Data Analysis', 'AI Automation', 'AI Custom Models', 'AI Text-to-Speech', 'AI Speech-to-Text',
+                'AI Translation', 'AI Summarization', 'AI Classification', 'AI Recommendation Systems', 'AI Forecasting',
+                'AI Image Recognition', 'AI Video Analysis', 'AI Document Processing', 'AI Code Review', 'AI Testing',
+                'AI Deployment', 'AI Training', 'AI Fine-tuning', 'AI APIs', 'AI Integration Services', 'Other AI Services'
+            ],
+            other: [
+                'Books & Media', 'Templates & Themes', 'Plugins & Extensions', 'Graphics & Design', 'Music & Audio',
+                'Video Editing', 'Web Development', 'Mobile Apps', 'Database & Storage', 'Security Tools', 'Remote Access',
+                'Virtual Machines', 'Cloud Services', 'Backup Solutions', 'Monitoring Tools', 'Analytics Platforms',
+                'CRM Systems', 'Project Management', 'Collaboration Tools', 'Communication Platforms', 'Education Platforms',
+                'Learning Management', 'Assessment Tools', 'Certification Programs', 'Virtual Classrooms', 'E-commerce Platforms',
+                'Marketplaces', 'Auction Sites', 'Classified Ads', 'Dating Sites', 'Job Boards', 'Real Estate Platforms',
+                'Travel Booking', 'Event Management', 'Survey Tools', 'Feedback Systems', 'Support Ticketing', 'Help Desks',
+                'Knowledge Bases', 'Documentation Tools', 'Wiki Platforms', 'Other Categories'
+            ]
+        };
+
+        // Subcategory data based on item category
+        const subcategoryData = {
+            // Social Media Platforms
+            'google-accounts': ['Personal Google', 'Business Google', 'Workspace', 'Recovery Accounts', 'Backup Accounts', 'Other'],
+            'gmail-accounts': ['Personal Gmail', 'Business Gmail', 'Recovery Gmail', 'Secondary Gmail', 'Bulk Gmail', 'Other'],
+            'youtube-accounts': ['Personal Channels', 'Business Channels', 'Gaming Channels', 'Educational Channels', 'Vlog Channels', 'Music Channels', 'Brand Accounts', 'Other'],
+            'instagram-accounts': ['Personal Accounts', 'Business Accounts', 'Creator Accounts', 'Verified Accounts', 'Fan Accounts', 'Service Accounts', 'Influencer Accounts', 'Other'],
+            'facebook-accounts': ['Personal Profiles', 'Business Pages', 'Groups', 'Fan Pages', 'Community Pages', 'Event Pages', 'Shop Pages', 'Other'],
+            'twitter-x-accounts': ['Personal Accounts', 'Business Accounts', 'Influencer Accounts', 'Verified Accounts', 'Bot Accounts', 'News Accounts', 'Sports Accounts', 'Other'],
+            'tiktok-accounts': ['Personal Accounts', 'Business Accounts', 'Creator Accounts', 'Dance Accounts', 'Educational Accounts', 'Comedy Accounts', 'Music Accounts', 'Other'],
+            'linkedin-accounts': ['Personal Profiles', 'Company Pages', 'Business Accounts', 'Professional Services', 'Job Seeker Accounts', 'Recruiter Accounts', 'Other'],
+            'snapchat-accounts': ['Personal Accounts', 'Business Accounts', 'Creator Accounts', 'Brand Accounts', 'Promotional Accounts', 'Other'],
+            'pinterest-accounts': ['Personal Accounts', 'Business Accounts', 'Brand Accounts', 'Designer Accounts', 'Content Creator', 'Other'],
+            'reddit-accounts': ['Personal Accounts', 'Subreddit Mod', 'Community Accounts', 'Discussion Accounts', 'News Accounts', 'Other'],
+            'discord-accounts': ['Personal Accounts', 'Server Admin', 'Bot Accounts', 'Community Manager', 'Gaming Accounts', 'Other'],
+            'telegram-accounts': ['Personal Accounts', 'Channel Admin', 'Bot Accounts', 'Group Admin', 'Business Accounts', 'Other'],
+            'whatsapp-accounts': ['Personal WhatsApp', 'Business WhatsApp', 'Bulk WhatsApp', 'API Accounts', 'Other'],
+            'tumblr-accounts': ['Personal Blogs', 'Business Blogs', 'Art Blogs', 'Writing Blogs', 'Community Blogs', 'Other'],
+            'threads-by-instagram': ['Personal Threads', 'Business Threads', 'Creator Threads', 'Community Threads', 'Brand Threads', 'Other'],
+            'mastodon-accounts': ['Personal Accounts', 'Community Accounts', 'News Accounts', 'Tech Accounts', 'Art Accounts', 'Other'],
+            'bluesky-accounts': ['Personal Accounts', 'Creator Accounts', 'Business Accounts', 'Community Accounts', 'Other'],
+            'parler-accounts': ['Personal Accounts', 'Community Accounts', 'Discussion Accounts', 'News Accounts', 'Other'],
+            'mewe-accounts': ['Personal Accounts', 'Community Accounts', 'Group Accounts', 'Business Accounts', 'Other'],
+
+            // Email & Communication Platforms
+            'outlook-accounts': ['Personal Outlook', 'Business Outlook', 'Office 365', 'Hotmail', 'Live Accounts', 'Other'],
+            'yahoo-mail-accounts': ['Personal Yahoo', 'Business Yahoo', 'Premium Yahoo', 'Backup Yahoo', 'Other'],
+            'protonmail-accounts': ['Personal Proton', 'Business Proton', 'Premium Proton', 'Secure Proton', 'Other'],
+            'icloud-accounts': ['Personal iCloud', 'Family iCloud', 'Business iCloud', 'Backup iCloud', 'Other'],
+            'aol-accounts': ['Personal AOL', 'Business AOL', 'Legacy AOL', 'Backup AOL', 'Other'],
+            'zoho-mail-accounts': ['Personal Zoho', 'Business Zoho', 'Workspace Zoho', 'Mail Zoho', 'Other'],
+            'yandex-mail-accounts': ['Personal Yandex', 'Business Yandex', 'Premium Yandex', 'Backup Yandex', 'Other'],
+            'mail-ru-accounts': ['Personal Mail.ru', 'Business Mail.ru', 'VK Mail', 'Backup Mail.ru', 'Other'],
+            'gmx-accounts': ['Personal GMX', 'Business GMX', 'Premium GMX', 'Backup GMX', 'Other'],
+            'web-de-accounts': ['Personal Web.de', 'Business Web.de', 'Premium Web.de', 'Backup Web.de', 'Other'],
+            'tutanota-accounts': ['Personal Tutanota', 'Business Tutanota', 'Premium Tutanota', 'Secure Tutanota', 'Other'],
+            'posteo-accounts': ['Personal Posteo', 'Business Posteo', 'Premium Posteo', 'Secure Posteo', 'Other'],
+            'mailbox-org-accounts': ['Personal Mailbox.org', 'Business Mailbox.org', 'Premium Mailbox.org', 'Secure Mailbox.org', 'Other'],
+            'runbox-accounts': ['Personal Runbox', 'Business Runbox', 'Premium Runbox', 'Secure Runbox', 'Other'],
+            'fastmail-accounts': ['Personal Fastmail', 'Business Fastmail', 'Premium Fastmail', 'Secure Fastmail', 'Other'],
+
+            // Payment & Financial Platforms
+            'paypal-accounts': ['Personal PayPal', 'Business PayPal', 'Premier PayPal', 'Merchant PayPal', 'Verified PayPal', 'Other'],
+            'stripe-accounts': ['Personal Stripe', 'Business Stripe', 'Platform Stripe', 'Connect Stripe', 'Express Stripe', 'Other'],
+            'square-accounts': ['Personal Square', 'Business Square', 'POS Square', 'Online Square', 'Appointments Square', 'Other'],
+            'venmo-accounts': ['Personal Venmo', 'Business Venmo', 'Verified Venmo', 'Merchant Venmo', 'Other'],
+            'cash-app-accounts': ['Personal Cash App', 'Business Cash App', 'Boost Cash App', 'Merchant Cash App', 'Other'],
+            'zelle-accounts': ['Personal Zelle', 'Business Zelle', 'Verified Zelle', 'Merchant Zelle', 'Other'],
+            'wise-accounts': ['Personal Wise', 'Business Wise', 'Multi-currency Wise', 'API Wise', 'Other'],
+            'revolut-accounts': ['Personal Revolut', 'Business Revolut', 'Premium Revolut', 'Metal Revolut', 'Other'],
+            'transferwise-accounts': ['Personal TransferWise', 'Business TransferWise', 'Multi-currency TransferWise', 'API TransferWise', 'Other'],
+            'payoneer-accounts': ['Personal Payoneer', 'Business Payoneer', 'Freelancer Payoneer', 'Merchant Payoneer', 'Other'],
+            'skrill-accounts': ['Personal Skrill', 'Business Skrill', 'VIP Skrill', 'Merchant Skrill', 'Other'],
+            'neteller-accounts': ['Personal Neteller', 'Business Neteller', 'VIP Neteller', 'Merchant Neteller', 'Other'],
+            'perfect-money-accounts': ['Personal Perfect Money', 'Business Perfect Money', 'Merchant Perfect Money', 'Verified Perfect Money', 'Other'],
+            'webmoney-accounts': ['Personal WebMoney', 'Business WebMoney', 'Merchant WebMoney', 'Verified WebMoney', 'Other'],
+            'bitcoin-wallets': ['Personal Wallets', 'Business Wallets', 'Merchant Wallets', 'Exchange Wallets', 'Cold Storage', 'Other'],
+
+            // Streaming & Entertainment Platforms
+            'netflix-accounts': ['Basic Netflix', 'Standard Netflix', 'Premium Netflix', 'Ultra HD Netflix', 'Shared Netflix', 'Other'],
+            'spotify-accounts': ['Free Spotify', 'Premium Individual', 'Premium Family', 'Premium Student', 'Premium Duo', 'Other'],
+            'disney-accounts': ['Disney+ Basic', 'Disney+ Premium', 'Disney+ Bundle', 'Star+ Bundle', 'Hulu Bundle', 'Other'],
+            'hulu-accounts': ['Hulu Basic', 'Hulu + Live TV', 'Hulu (No Ads)', 'Hulu + Live TV (No Ads)', 'Disney Bundle', 'Other'],
+            'amazon-prime-accounts': ['Prime Video', 'Prime Music', 'Prime Reading', 'Prime Benefits', 'Student Prime', 'Other'],
+            'hbo-max-accounts': ['HBO Max Basic', 'HBO Max Premium', 'HBO Max Bundle', 'Warner+ Bundle', 'Discovery+ Bundle', 'Other'],
+            'apple-tv-accounts': ['Apple TV+ Individual', 'Apple TV+ Family', 'Apple One Bundle', 'Apple TV+ Student', 'Other'],
+            'paramount-accounts': ['Paramount+ Basic', 'Paramount+ Premium', 'CBS All Access', 'Showtime Bundle', 'Other'],
+            'peacock-accounts': ['Peacock Free', 'Peacock Premium', 'Peacock Premium Plus', 'NBC Bundle', 'Other'],
+            'crunchyroll-accounts': ['Crunchyroll Free', 'Crunchyroll Premium', 'Crunchyroll Mega Fan', 'Funimation Bundle', 'Other'],
+            'audible-accounts': ['Audible Basic', 'Audible Plus', 'Audible Premium', 'Audible Student', 'Other'],
+            'kindle-unlimited-accounts': ['Kindle Unlimited Basic', 'Kindle Unlimited Family', 'Kindle Unlimited Student', 'Other'],
+            'playstation-plus-accounts': ['PS Plus Essential', 'PS Plus Extra', 'PS Plus Premium', 'PS Plus Deluxe', 'Other'],
+            'xbox-game-pass-accounts': ['Game Pass Core', 'Game Pass Console', 'Game Pass PC', 'Game Pass Ultimate', 'EA Play Bundle', 'Other'],
+            'nintendo-switch-online': ['NSO Individual', 'NSO Family', 'NSO Expansion Pack', 'NSO + Expansion', 'Other'],
+
+            // Professional & Business Platforms
+            'microsoft-365-accounts': ['Personal Microsoft 365', 'Business Basic', 'Business Standard', 'Business Premium', 'Enterprise Plans', 'Other'],
+            'google-workspace-accounts': ['Business Starter', 'Business Standard', 'Business Plus', 'Enterprise Plans', 'Education Plans', 'Other'],
+            'slack-accounts': ['Free Slack', 'Pro Slack', 'Business+', 'Enterprise Grid', 'Enterprise Plans', 'Other'],
+            'zoom-accounts': ['Basic Zoom', 'Pro Zoom', 'Business Zoom', 'Enterprise Zoom', 'Education Zoom', 'Other'],
+            'teams-accounts': ['Teams Free', 'Teams Essentials', 'Microsoft 365 Business', 'Enterprise Teams', 'Other'],
+            'dropbox-accounts': ['Basic Dropbox', 'Plus Dropbox', 'Professional Dropbox', 'Business Dropbox', 'Enterprise Dropbox', 'Other'],
+            'onedrive-accounts': ['OneDrive Basic', 'OneDrive 100GB', 'OneDrive 1TB', 'OneDrive 6TB', 'Microsoft 365 Bundle', 'Other'],
+            'icloud-storage-accounts': ['50GB iCloud', '200GB iCloud', '2TB iCloud', 'iCloud Family', 'Apple One Bundle', 'Other'],
+            'mega-nz-accounts': ['MEGA Basic', 'MEGA Pro I', 'MEGA Pro II', 'MEGA Pro III', 'MEGA Business', 'Other'],
+            'box-accounts': ['Box Personal', 'Box Starter', 'Box Business', 'Box Enterprise', 'Box Education', 'Other'],
+
+            // Gaming Platforms
+            'steam-accounts': ['Steam Basic', 'Steam with Games', 'Steam Wallet', 'Steam Gift Cards', 'Steam Points', 'Other'],
+            'epic-games-accounts': ['Epic Basic', 'Epic with Games', 'Epic Wallet', 'Epic Connect', 'Other'],
+            'origin-accounts': ['Origin Basic', 'Origin Access', 'Origin Access Premier', 'EA Play', 'Other'],
+            'ubisoft-connect-accounts': ['Ubisoft Basic', 'Ubisoft+ Classic', 'Ubisoft+ Premium', 'Ubisoft+ Multi-Access', 'Other'],
+            'battlenet-accounts': ['Battle.net Basic', 'WoW Subscription', 'Diablo Immortal', 'Hearthstone', 'Other'],
+            'rockstar-social-club-accounts': ['Rockstar Basic', 'GTA Online', 'RDR2 Online', 'Rockstar Games', 'Other'],
+            'ea-play-accounts': ['EA Play Basic', 'EA Play Pro', 'EA Play Multi-Access', 'Origin Bundle', 'Other'],
+            'gog-galaxy-accounts': ['GOG Basic', 'GOG with Games', 'GOG Wallet', 'GOG Movies', 'Other'],
+
+            // Educational & Learning Platforms
+            'coursera-accounts': ['Coursera Basic', 'Coursera Plus', 'Coursera For Teams', 'Coursera For Campus', 'Other'],
+            'udemy-accounts': ['Udemy Basic', 'Udemy Personal', 'Udemy Business', 'Udemy Enterprise', 'Other'],
+            'edx-accounts': ['edX Basic', 'edX Verified', 'edX MicroMasters', 'edX Professional Certificate', 'Other'],
+            'khan-academy-accounts': ['Khan Academy Basic', 'Khan Academy Plus', 'Khan Academy for Educators', 'Other'],
+            'duolingo-accounts': ['Duolingo Basic', 'Duolingo Plus', 'Duolingo Super', 'Duolingo Family', 'Other'],
+            'codecademy-accounts': ['Codecademy Basic', 'Codecademy Pro', 'Codecademy Teams', 'Codecademy for Business', 'Other'],
+            'pluralsight-accounts': ['Pluralsight Basic', 'Pluralsight Pro', 'Pluralsight Premium', 'Pluralsight Business', 'Other'],
+            'linkedin-learning-accounts': ['LinkedIn Learning Basic', 'LinkedIn Premium', 'LinkedIn Sales Navigator', 'LinkedIn Recruiter', 'Other'],
+            'masterclass-accounts': ['MasterClass Basic', 'MasterClass All Access', 'MasterClass Teams', 'MasterClass Gift', 'Other'],
+
+            // General Subcategories for common patterns
+            'accounts': ['Personal Accounts', 'Business Accounts', 'Premium Accounts', 'Verified Accounts', 'Shared Accounts', 'Private Accounts', 'Public Accounts', 'Other'],
+            'services': ['Setup Services', 'Management Services', 'Optimization Services', 'Consulting Services', 'Support Services', 'Other'],
+            'ai': ['Chatbots', 'Image Generation', 'Content Creation', 'Automation', 'Analytics', 'Custom AI', 'Other'],
+            'games': ['PC Games', 'Console Games', 'Mobile Games', 'Browser Games', 'MMORPG', 'Strategy Games', 'Action Games', 'Other'],
+            'digital-goods': ['Templates', 'Themes', 'Assets', 'Tools', 'Resources', 'Guides', 'Tutorials', 'Other'],
+
+            // Default subcategories
+            'default': ['Basic', 'Standard', 'Premium', 'Professional', 'Enterprise', 'Custom', 'Other']
+        };
+
+        // Handle direction category change
+        document.getElementById('directionCategory').addEventListener('change', function() {
+            const direction = this.value;
+            const itemCategorySelect = document.getElementById('itemCategory');
+
+            // Clear existing options
+            itemCategorySelect.innerHTML = '<option value="">Select category</option>';
+
+            if (direction && categoryData[direction]) {
+                // Add new options
+                categoryData[direction].forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '');
+                    option.textContent = category;
+                    itemCategorySelect.appendChild(option);
+                });
+            }
+
+            // Clear subcategory
+            document.getElementById('subcategory').innerHTML = '<option value="">Select item category first</option>';
+        });
+
+        // Handle item category change
+        document.getElementById('itemCategory').addEventListener('change', function() {
+            const itemCategory = this.value;
+            const subcategorySelect = document.getElementById('subcategory');
+
+            // Clear existing options
+            subcategorySelect.innerHTML = '<option value="">Select subcategory</option>';
+
+            if (itemCategory) {
+                // Try to find specific subcategory data first
+                let subcategories = subcategoryData[itemCategory];
+
+                // If not found, try to find based on category pattern
+                if (!subcategories) {
+                    // Check for general patterns
+                    if (itemCategory.includes('account') || itemCategory.includes('profile')) {
+                        subcategories = subcategoryData.accounts;
+                    } else if (itemCategory.includes('service')) {
+                        subcategories = subcategoryData.services;
+                    } else if (itemCategory.includes('ai') || itemCategory.includes('artificial')) {
+                        subcategories = subcategoryData.ai;
+                    } else if (itemCategory.includes('game')) {
+                        subcategories = subcategoryData.games;
+                    } else if (itemCategory.includes('digital') || itemCategory.includes('good')) {
+                        subcategories = subcategoryData['digital-goods'];
+                    } else {
+                        // Use default subcategories
+                        subcategories = subcategoryData.default;
+                    }
+                }
+
+                // Add subcategory options
+                if (subcategories && Array.isArray(subcategories)) {
+                    subcategories.forEach(subcategory => {
+                        const option = document.createElement('option');
+                        option.value = subcategory.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '');
+                        option.textContent = subcategory;
+                        subcategorySelect.appendChild(option);
+                    });
+                }
+
+                // Always add "Other" option at the end
+                const otherOption = document.createElement('option');
+                otherOption.value = 'other';
+                otherOption.textContent = 'Other';
+                subcategorySelect.appendChild(otherOption);
+            }
+        });
+
+        // Handle digital product checkbox
+        document.getElementById('isDigital').addEventListener('change', function() {
+            const stockField = document.getElementById('stockField');
+            const stockInput = document.getElementById('stockQuantity');
+            const fileUploadSection = document.getElementById('fileUploadSection');
+
+            if (this.checked) {
+                stockField.style.display = 'none';
+                stockInput.value = 999999;
+                fileUploadSection.style.display = 'block';
+            } else {
+                stockField.style.display = 'block';
+                stockInput.value = 0;
+                fileUploadSection.style.display = 'none';
+            }
+        });
+
+        // Handle product files preview
+        document.getElementById('productFiles').addEventListener('change', function(e) {
+            const files = e.target.files;
+            const fileList = document.getElementById('fileList');
+            const maxFiles = 10;
+
+            if (files.length > maxFiles) {
+                alert(`You can only upload up to ${maxFiles} files.`);
+                this.value = '';
+                fileList.innerHTML = '';
+                return;
+            }
+
+            let html = '<div class="border rounded p-2 bg-light">';
+            html += '<h6 class="mb-2">Selected Files:</h6>';
+            html += '<ul class="mb-0">';
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const fileSize = (file.size / 1024 / 1024).toFixed(2); // Size in MB
+
+                html += `<li class="mb-1">
+                    <i class="fas fa-file me-2 text-primary"></i>
+                    ${file.name} (${fileSize} MB)
+                </li>`;
+            }
+
+            html += '</ul></div>';
+            fileList.innerHTML = html;
+        });
+
+        // Handle short description character limit
+        document.getElementById('shortDescription').addEventListener('input', function() {
+            const maxLength = 200;
+            if (this.value.length > maxLength) {
+                this.value = this.value.substring(0, maxLength);
+            }
+            // Update character counter (optional)
+            console.log(`${this.value.length}/${maxLength} characters`);
+        });
+
+        // Preview selected images
+        document.getElementById('productImages').addEventListener('change', function(e) {
+            const files = e.target.files;
+            const maxFiles = 5;
+
+            if (files.length > maxFiles) {
+                alert(`You can only upload up to ${maxFiles} images.`);
+                this.value = '';
+                return;
+            }
+
+            // Show preview (optional enhancement)
+            console.log(`${files.length} image(s) selected`);
+        });
+
+        // Global variables for item management
+        let itemsList = [];
+        let selectedDelimiter = ':';
+
+        // Form validation before submission
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const requiredFields = [
+                'productImages', 'productName', 'directionCategory', 'itemCategory',
+                'subcategory', 'registrationMethod', 'profileFullness', 'yearOfRegistration',
+                'countryOfRegistration', 'loginMethod', 'price', 'itemType',
+                'completionTime', 'shortDescription', 'fullDescription'
+            ];
+
+            let isValid = true;
+            let firstInvalidField = null;
+
+            requiredFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (!field.value.trim()) {
+                    field.classList.add('is-invalid');
+                    isValid = false;
+                    if (!firstInvalidField) firstInvalidField = field;
+                } else {
+                    field.classList.remove('is-invalid');
+                }
+            });
+
+            if (!isValid) {
+                e.preventDefault();
+                alert('Please fill in all required fields marked with *');
+                if (firstInvalidField) {
+                    firstInvalidField.focus();
+                    firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                return false;
+            }
+
+            // Show success message and add item section
+            setTimeout(() => {
+                document.getElementById('addItemSection').style.display = 'block';
+            }, 1000);
+        });
+
+        // Show add item section (simulate moderation state)
+        document.addEventListener('DOMContentLoaded', function() {
+            // For demonstration - in real app, check if product is in moderation
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('moderation') === 'true') {
+                document.getElementById('addItemSection').style.display = 'block';
+            }
+        });
+
+        // Item Addition Modal Functions
+        function updateFormatPreview() {
+            const delimiterType = document.getElementById('delimiterType').value;
+            const customDelimiter = document.getElementById('customDelimiter').value;
+            const delimiter = customDelimiter || delimiterType || ':';
+
+            selectedDelimiter = delimiter;
+            const preview = document.getElementById('formatPreview');
+            const example = delimiter === 'I' || delimiter === 'II'
+                ? `username${delimiter}password${delimiter}email`
+                : `username${delimiter}password${delimiter}email`;
+
+            preview.textContent = example;
+        }
+
+        function handleFileUpload() {
+            const fileInput = document.getElementById('itemFile');
+            const file = fileInput.files[0];
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const content = e.target.result;
+                    const lines = content.split('\n').filter(line => line.trim() !== '');
+
+                    itemsList = lines.map(line => line.trim());
+                    updateItemsPreview();
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function toggleManualEntry() {
+            const manualSection = document.getElementById('manualEntrySection');
+            manualSection.style.display = manualSection.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function clearAllItems() {
+            itemsList = [];
+            document.getElementById('itemFile').value = '';
+            document.getElementById('manualItemInput').value = '';
+            updateItemsPreview();
+        }
+
+        function addManualItems() {
+            const manualInput = document.getElementById('manualItemInput').value.trim();
+            if (manualInput) {
+                const lines = manualInput.split('\n').filter(line => line.trim() !== '');
+                const newItems = lines.map(line => line.trim());
+                itemsList = [...itemsList, ...newItems];
+                updateItemsPreview();
+                document.getElementById('manualItemInput').value = '';
+            }
+        }
+
+        function updateItemsPreview() {
+            const previewDiv = document.getElementById('itemsPreview');
+            const countSpan = document.getElementById('itemsCount');
+
+            countSpan.textContent = itemsList.length;
+
+            if (itemsList.length === 0) {
+                previewDiv.innerHTML = '<small class="text-muted">No items added yet. Upload a file or enter items manually.</small>';
+                return;
+            }
+
+            let html = '<div class="list-group list-group-flush">';
+            itemsList.slice(0, 10).forEach((item, index) => {
+                html += `<div class="list-group-item d-flex justify-content-between align-items-center">
+                    <small class="text-truncate">${item}</small>
+                    <button class="btn btn-sm btn-outline-danger" onclick="removeItem(${index})">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>`;
+            });
+
+            if (itemsList.length > 10) {
+                html += `<div class="list-group-item text-center">
+                    <small class="text-muted">... and ${itemsList.length - 10} more items</small>
+                </div>`;
+            }
+
+            html += '</div>';
+            previewDiv.innerHTML = html;
+        }
+
+        function removeItem(index) {
+            itemsList.splice(index, 1);
+            updateItemsPreview();
+        }
+
+        function saveItems() {
+            const saveBtn = document.getElementById('saveItemsBtn');
+            const originalText = saveBtn.innerHTML;
+
+            // Show loading state
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...';
+
+            // Simulate saving process
+            setTimeout(() => {
+                if (itemsList.length === 0) {
+                    alert('Please add at least one item before saving.');
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = originalText;
+                    return;
+                }
+
+                // In real implementation, send to backend
+                console.log('Saving items:', itemsList);
+                console.log('Delimiter used:', selectedDelimiter);
+
+                // Show success message
+                alert(`Successfully added ${itemsList.length} items to your product!`);
+
+                // Reset and close modal
+                itemsList = [];
+                document.getElementById('itemFile').value = '';
+                document.getElementById('manualItemInput').value = '';
+                updateItemsPreview();
+
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalText;
+
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addItemModal'));
+                modal.hide();
+            }, 1500);
+        }
+
+        // Initialize delimiter preview on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateFormatPreview();
+        });
+    </script>
+</body>
+</html>

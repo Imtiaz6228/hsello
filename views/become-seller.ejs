@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Become a Seller - DigitalMarket</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    .seller-application {
+      min-height: calc(100vh - 72px);
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      padding: 90px 20px 40px;
+    }
+    .become-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .hero-section {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 60px 30px;
+      border-radius: 15px;
+      margin-bottom: 40px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    .hero-section h1 {
+      margin: 0 0 20px 0;
+      font-size: 3em;
+      font-weight: 700;
+    }
+    .hero-section p {
+      margin: 0 0 30px 0;
+      font-size: 1.3em;
+      opacity: 0.9;
+    }
+    .btn-primary {
+      background: white;
+      color: #667eea;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1.2em;
+      transition: transform 0.3s ease;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(255,255,255,0.4);
+    }
+    .benefits-section {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 30px;
+      margin-bottom: 40px;
+    }
+    .benefit-card {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+      text-align: center;
+      border-top: 4px solid #667eea;
+    }
+    .benefit-card h3 {
+      margin: 0 0 15px 0;
+      color: #2c3e50;
+      font-size: 1.5em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .benefit-card p {
+      margin: 0;
+      color: #34495e;
+      line-height: 1.6;
+    }
+    .application-section {
+      background: white;
+      padding: 40px;
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    }
+    .application-section h2 {
+      margin: 0 0 30px 0;
+      color: #2c3e50;
+      font-size: 2em;
+      text-align: center;
+    }
+    .application-form {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      color: #34495e;
+      margin-bottom: 8px;
+    }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ecf0f1;
+      border-radius: 6px;
+      font-size: 1em;
+    }
+    .form-group textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    .form-submit {
+      text-align: center;
+      margin-top: 30px;
+    }
+    .btn-submit {
+      background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+      color: white;
+      border: none;
+      padding: 15px 40px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1.2em;
+      transition: transform 0.3s ease;
+    }
+    .btn-submit:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(39, 174, 96, 0.4);
+    }
+    .requirements-section {
+      background: #f8f9fa;
+      padding: 30px;
+      border-radius: 12px;
+      margin-bottom: 40px;
+      border-left: 4px solid #f39c12;
+    }
+    .requirements-section h3 {
+      margin: 0 0 15px 0;
+      color: #2c3e50;
+      font-size: 1.5em;
+    }
+    .requirements-section ul {
+      padding-left: 20px;
+      margin: 0;
+    }
+    .requirements-section li {
+      color: #34495e;
+      margin-bottom: 8px;
+    }
+    @media (max-width: 768px) {
+      .seller-application {
+        padding: 80px 15px 20px;
+      }
+      .hero-section {
+        padding: 40px 20px;
+      }
+      .hero-section h1 {
+        font-size: 2.5em;
+      }
+      .benefits-section {
+        grid-template-columns: 1fr;
+      }
+      .application-section {
+        padding: 30px 20px;
+      }
+    }
+  </style>
+</head>
+<body data-success="<%= typeof success_msg !== 'undefined' ? success_msg : '' %>" data-error="<%= typeof error_msg !== 'undefined' ? error_msg : '' %>">
+
+  <!-- ================= NAVBAR ================ -->
+  <%- include('partials/navbar') %>
+
+  <!-- ================= BECOME A SELLER CONTENT ================ -->
+  <div class="seller-application">
+    <div class="become-container">
+
+      <!-- Hero Section -->
+      <div class="hero-section">
+        <h1>Become a Seller on DigitalMarket</h1>
+        <p>Join thousands of sellers who are successfully selling digital products and earning income from their skills and creations.</p>
+        <a href="#application-form" class="btn-primary" style="text-decoration: none;">Start Your Journey</a>
+      </div>
+
+      <!-- Requirements Section -->
+      <div class="requirements-section">
+        <h3>Requirements to Become a Seller</h3>
+        <ul>
+          <li>Valid email address and phone number for contact</li>
+          <li>Store name, description, and SEO description</li>
+          <li>Professional presentation and branding (logo and banner images)</li>
+          <li>Minimum $10 balance to submit application</li>
+          <li>Compliance with our platform policies</li>
+          <li>Agreement to our terms of service</li>
+        </ul>
+      </div>
+
+      <!-- Benefits Section -->
+      <div class="benefits-section">
+        <div class="benefit-card">
+          <h3><span>💰</span> Earn Money</h3>
+          <p>Monetize your digital products and services. Keep a fair portion of profits.</p>
+        </div>
+        <div class="benefit-card">
+          <h3><span>🌍</span> Reach Global Audience</h3>
+          <p>Sell to customers worldwide through our established platform.</p>
+        </div>
+        <div class="benefit-card">
+          <h3><span>⚡</span> Easy to Start</h3>
+          <p>Simple setup process with dedicated support to help you succeed.</p>
+        </div>
+        <div class="benefit-card">
+          <h3><span>📊</span> Track Performance</h3>
+          <p>Access analytics and insights to optimize your store performance.</p>
+        </div>
+      </div>
+
+      <!-- Application Section -->
+      <div class="application-section" id="application-form">
+        <h2>Apply to Become a Seller</h2>
+        <% if (locals.user && locals.user.balance !== undefined) { %>
+          <div style="background: #e8f5e8; border: 2px solid #27ae60; border-radius: 8px; padding: 15px; margin-bottom: 30px; text-align: center;">
+            <h3 style="margin: 0; color: #27ae60;">Your Current Balance: $<%= locals.user.balance.toFixed(2) %></h3>
+            <p style="margin: 5px 0 0 0; color: #34495e;">Minimum required: $10.00</p>
+            <% if (locals.user.balance < 10) { %>
+              <a href="/topup" style="color: #e74c3c; font-weight: bold;">Add funds to your account</a>
+            <% } %>
+          </div>
+        <% } %>
+        <form class="application-form" method="POST" action="/become-seller" enctype="multipart/form-data">
+          <div class="form-group">
+            <label for="storeName">Store Name *</label>
+            <input type="text" id="storeName" name="storeName" required>
+          </div>
+          <div class="form-group">
+            <label for="category">Store Category *</label>
+            <select id="category" name="category" required>
+              <option value="">Select Category</option>
+              <option value="services">Services</option>
+              <option value="games">Games</option>
+              <option value="ai">AI Services</option>
+              <option value="software">Software</option>
+              <option value="graphics">Graphics & Design</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="contactEmail">Contact Email *</label>
+            <input type="email" id="contactEmail" name="contactEmail" required>
+          </div>
+          <div class="form-group">
+            <label for="contactPhone">Contact Phone</label>
+            <input type="tel" id="contactPhone" name="contactPhone">
+          </div>
+          <div class="form-group">
+            <label for="storeDescription">Store Description *</label>
+            <textarea id="storeDescription" name="storeDescription" required placeholder="Tell us about your store and what you'll be selling."></textarea>
+          </div>
+          <div class="form-group">
+            <label for="seoDescription">SEO Description (for search engines) *</label>
+            <textarea id="seoDescription" name="seoDescription" required placeholder="A brief description that will appear in search results (max 160 characters)."></textarea>
+          </div>
+          <div class="form-group">
+            <label for="rules">Store Rules</label>
+            <textarea id="rules" name="rules" placeholder="Optional: Specify any rules or terms for your customers."></textarea>
+          </div>
+          <div class="form-group">
+            <label for="banner">Store Banner (1920x400px recommended) *</label>
+            <input type="file" id="banner" name="banner" accept="image/jpeg,image/jpg,image/png" required>
+          </div>
+          <div class="form-group">
+            <label for="logo">Store Logo (200x200px recommended) *</label>
+            <input type="file" id="logo" name="logo" accept="image/jpeg,image/jpg,image/png" required>
+          </div>
+          <div class="form-group">
+            <label style="display: flex; align-items: center; gap: 10px;">
+              <input type="checkbox" id="agreeTerms" name="agreeTerms" required>
+              I agree to the <a href="/terms" target="_blank">Terms of Service</a> and <a href="/privacy" target="_blank">Privacy Policy</a>
+            </label>
+          </div>
+          <div class="form-submit">
+            <button type="submit" class="btn-submit">Submit Application</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= FOOTER ================ -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="#products">Products</a>
+        <a href="#games">Games</a>
+        <a href="#ai">AI</a>
+        <a href="#pricing">Pricing</a>
+        <a href="/login">Login</a>
+        <a href="/signup">Sign Up</a>
+      </div>
+      <p>&copy; 2025 DigitalMarket. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Flash messages
+    const successMsg = document.body.getAttribute('data-success');
+    const errorMsg = document.body.getAttribute('data-error');
+
+    if (successMsg) {
+      setTimeout(() => {
+        alert(successMsg);
+      }, 500);
+    }
+
+    if (errorMsg) {
+      setTimeout(() => {
+        alert(errorMsg);
+      }, 500);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Profile - DigitalMarket</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <%- include('./partials/navbar.ejs') %>
+  <section class="hero">
+    <div class="hero-content">
+      <h1>Your Profile</h1>
+      <h2><%= user.firstName %> <%= user.lastName %></h2>
+      <p><%= user.email %></p>
+      <p>Balance: $<%= user.balance || 0 %></p>
+      <a href="/">Back to Home</a>
+    </div>
+  </section>
+</body>
+</html>

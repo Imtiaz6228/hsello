@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Top Up - <%= method === 'crypto' || method === 'cryptocurrency' ? 'Cryptocurrency' : method %> - DigitalMarket</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="logo">DigitalMarket</div>
+      <div class="nav-center">
+        <ul class="nav-links">
+          <li><a href="/">Home</a></li>
+          <li><a href="#services">Services</a></li>
+          <li><a href="#products">Products</a></li>
+        </ul>
+      </div>
+      <div class="nav-right">
+        <a href="/signup" class="signup-link">Sign Up</a>
+        <a href="/login" class="login-link">Login</a>
+        <% if (locals.user) { %>
+          <div class="user-info">
+            <span>Welcome, <%= locals.user.firstName %></span>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </nav>
+
+  <div class="page-top-space"></div>
+
+  <!-- TOPUP METHOD PAGE -->
+  <main class="container">
+    <% if (method === 'crypto' || method === 'cryptocurrency') { %>
+      <!-- Cryptocurrency Payment -->
+      <h2>Select Cryptocurrency</h2>
+      <div class="crypto-options">
+        <div class="crypto-coin" data-coin="usdt-trc20">
+          <h3>USDT (TRC20)</h3>
+          <p>Minimum payment amount: 14.676000 USDT</p>
+          <p>Maximum payment amount: 1000000 USDT (TRC-20 network)</p>
+          <p>Processing fee: 0.5% + 4.626 USDT (TRC-20 network)</p>
+          <button onclick="selectCoin('usdt-trc20')">Select</button>
+        </div>
+        <!-- Add more coins here -->
+        <div class="crypto-coin" data-coin="btc">
+          <h3>BTC (Bitcoin)</h3>
+          <p>Minimum payment amount: 0.0001 BTC</p>
+          <p>Maximum payment amount: 100 BTC</p>
+          <p>Processing fee: 1%</p>
+          <button onclick="selectCoin('btc')">Select</button>
+        </div>
+      </div>
+
+      <div id="paymentDetails" style="display: none;">
+        <h3>Payment Details</h3>
+        <div class="qr-code">
+          <!-- Mock QR Code (replace with actual) -->
+          <img src="https://via.placeholder.com/200x200.png?text=QR+Code" alt="QR Code for Payment" />
+        </div>
+        <div class="wallet-address">
+          <p>Wallet Address: <span id="walletAddr">TMjEF694s5keleKdXf7McNkJzFvZaMQFpT</span></p>
+          <p>Network: TRC-20</p>
+          <p>Amount: <span id="usdtAmount">0</span> USDT</p>
+          <button onclick="copyAddress()">Copy Address</button>
+        </div>
+        <form id="confirmPaymentForm">
+          <button type="submit">Confirm Payment (Mock)</button>
+        </form>
+      </div>
+
+      <script>
+        var usdValue = "<%= usd %>";
+        const usd = parseFloat(usdValue);
+        const rubAmount = usd * 81;
+
+        function selectCoin(coin) {
+          document.getElementById('paymentDetails').style.display = 'block';
+          document.getElementById('usdtAmount').textContent = usd.toFixed(1) + '000';  // Mock approx
+          if (coin === 'usdt-trc20') {
+            document.getElementById('walletAddr').textContent = 'TMjEF694s5keleKdXf7McNkJzFvZaMQFpT';
+          } else if (coin === 'btc') {
+            document.getElementById('usdtAmount').textContent = (usd / 60000).toFixed(4);  // Mock BTC
+            document.getElementById('walletAddr').textContent = '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa';
+          }
+        }
+
+        function copyAddress() {
+          navigator.clipboard.writeText(document.getElementById('walletAddr').textContent);
+          alert('Address copied!');
+        }
+
+        document.getElementById('confirmPaymentForm').addEventListener('submit', async function(e) {
+          e.preventDefault();
+          try {
+            const res = await fetch('/confirm-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ amountRUB: rubAmount })
+            });
+            const data = await res.json();
+            if (data.success) {
+              alert('Payment confirmed! Funds added to your account.');
+              window.location.href = '/';
+            } else {
+              alert('Confirmation failed.');
+            }
+          } catch (err) {
+            alert('Error confirming payment.');
+            console.error(err);
+          }
+        });
+      </script>
+
+    <% } else { %>
+      <!-- Other Payment Methods -->
+      <h2><%= method %> Payment Method</h2>
+      <p>This payment method is still under implementation. Please use Cryptocurrency for now.</p>
+      <a href="/topup">Back to Top Up</a>
+    <% } %>
+  </main>
+
+  <script src="/js/script.js"></script>
+</body>
+</html>

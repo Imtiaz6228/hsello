@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Confirmation - Digital Market</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <div class="container my-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <!-- Success Header -->
+                <div class="card border-success mb-4">
+                    <div class="card-body text-center">
+                        <div class="mb-4">
+                            <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
+                        </div>
+                        <h2 class="text-success mb-3">Purchase Successful!</h2>
+                        <p class="text-muted mb-4">Your payment has been processed and your items are ready for download.</p>
+
+                        <div class="alert alert-info">
+                            <strong>Thank you for your purchase!</strong><br>
+                            <small>You've successfully purchased Instagram Premium Accounts. Your items will be delivered instantly below.</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Details -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-receipt me-2"></i>Order Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Order Information</h6>
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td><strong>Order ID:</strong></td>
+                                        <td id="orderId">#DM2025001</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Product:</strong></td>
+                                        <td>Instagram Premium Account</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Quantity:</strong></td>
+                                        <td id="orderQuantity">1</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Unit Price:</strong></td>
+                                        <td id="orderUnitPrice">₽ 1,500.00</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Total Price:</strong></td>
+                                        <td id="orderTotalPrice">₽ 1,500.00</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Payment Method:</strong></td>
+                                        <td>Balance</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Order Date:</strong></td>
+                                        <td id="orderDate">September 4, 2025</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Delivery Information</h6>
+                                <div class="alert alert-success">
+                                    <ul class="mb-0">
+                                        <li><i class="fas fa-check text-success me-2"></i>Instant delivery completed</li>
+                                        <li><i class="fas fa-clock text-info me-2"></i>Dispute period: 24 hours</li>
+                                        <li><i class="fas fa-shield-alt text-primary me-2"></i>Guarantee: 30 days</li>
+                                        <li><i class="fas fa-headset text-muted me-2"></i>Support available 24/7</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Download Section -->
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-download me-2"></i>Your Items - Ready for Download</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-success">
+                            <strong><i class="fas fa-info-circle me-2"></i>Important:</strong>
+                            Download your items now. For security reasons, downloads will expire in 24 hours.
+                        </div>
+
+                        <div class="mb-3">
+                            <h6>Download Options</h6>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <button class="btn btn-success" onclick="downloadAsText()">
+                                    <i class="fas fa-file-text me-1"></i>Download as Text (.txt)
+                                </button>
+                                <button class="btn btn-outline-success" onclick="downloadAsCSV()">
+                                    <i class="fas fa-file-csv me-1"></i>Download as CSV (.csv)
+                                </button>
+                                <button class="btn btn-outline-success" onclick="downloadAsJSON()">
+                                    <i class="fas fa-file-code me-1"></i>Download as JSON (.json)
+                                </button>
+                                <button class="btn btn-outline-success" onclick="downloadAsPDF()">
+                                    <i class="fas fa-file-pdf me-1"></i>Download as PDF (.pdf)
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <h6>Your Items Preview</h6>
+                            <div class="bg-light p-3 rounded" style="max-height: 300px; overflow-y: auto;">
+                                <div id="itemsPreview">
+                                    <!-- Items will be displayed here -->
+                                </div>
+                            </div>
+                            <small class="text-muted">
+                                <strong>Format:</strong> Username:Password:Email
+                            </small>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <strong><i class="fas fa-exclamation-triangle me-2"></i>Security Notice:</strong><br>
+                            - Change passwords immediately after accessing accounts<br>
+                            - Do not share login credentials with others<br>
+                            - Report any issues within 24 hours for dispute resolution<br>
+                            - Keep download records for future reference
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Need Help?</h6>
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-outline-primary" onclick="contactSeller()">
+                                        <i class="fas fa-envelope me-2"></i>Contact Seller
+                                    </button>
+                                    <button class="btn btn-outline-info" onclick="openDispute()">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>Open Dispute
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Quick Links</h6>
+                                <div class="d-grid gap-2">
+                                    <a href="/products" class="btn btn-outline-secondary">
+                                        <i class="fas fa-shopping-bag me-2"></i>Browse More Products
+                                    </a>
+                                    <a href="/orders" class="btn btn-outline-secondary">
+                                        <i class="fas fa-history me-2"></i>View My Orders
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+                        <div class="text-center">
+                            <p class="mb-2"><strong>Happy with your purchase?</strong></p>
+                            <div class="rating-stars mb-3">
+                                <i class="fas fa-star text-warning fs-4 me-1" onclick="ratePurchase(1)"></i>
+                                <i class="fas fa-star text-warning fs-4 me-1" onclick="ratePurchase(2)"></i>
+                                <i class="fas fa-star text-warning fs-4 me-1" onclick="ratePurchase(3)"></i>
+                                <i class="fas fa-star text-warning fs-4 me-1" onclick="ratePurchase(4)"></i>
+                                <i class="fas fa-star text-warning fs-4 me-1" onclick="ratePurchase(5)"></i>
+                            </div>
+                            <small class="text-muted">Rate this product</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Sample purchase items (in real app, this would come from server)
+        const purchasedItems = [
+            "user_instagram1:password123:email@gmail.com",
+            "user_instagram2:password456:email2@gmail.com",
+            "user_instagram3:password789:email3@gmail.com"
+        ];
+
+        let userRating = 0;
+
+        // Populate order details
+        document.getElementById('orderId').textContent = `#DM${Date.now()}`;
+        document.getElementById('orderDate').textContent = new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        function displayItems() {
+            const container = document.getElementById('itemsPreview');
+            let html = '<div class="mb-3 p-3 bg-white rounded border">';
+
+            purchasedItems.forEach((item, index) => {
+                html += `
+                    <div class="item-entry mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <code class="text-primary">${item}</code>
+                            </div>
+                            <div>
+                                <button class="btn btn-sm btn-outline-secondary me-1" onclick="copyToClipboard('${item}')">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <span class="badge bg-success">Delivered</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function downloadAsText() {
+            downloadFile(purchasedItems.join('\n'), 'instagram-accounts.txt', 'text/plain');
+        }
+
+        function downloadAsCSV() {
+            const csvContent = 'Username,Password,Email\n' +
+                purchasedItems.map(item => {
+                    const parts = item.split(':');
+                    return `"${parts[0]}","${parts[1]}","${parts[2]}"`;
+                }).join('\n');
+
+            downloadFile(csvContent, 'instagram-accounts.csv', 'text/csv');
+        }
+
+        function downloadAsJSON() {
+            const jsonItems = purchasedItems.map(item => {
+                const parts = item.split(':');
+                return {
+                    username: parts[0],
+                    password: parts[1],
+                    email: parts[2],
+                    purchaseDate: new Date().toISOString(),
+                    productType: "Instagram Premium Account"
+                };
+            });
+
+            const jsonContent = JSON.stringify({
+                orderId: document.getElementById('orderId').textContent,
+                items: jsonItems,
+                totalPrice: document.getElementById('orderTotalPrice').textContent,
+                purchaseDate: new Date().toISOString()
+            }, null, 2);
+
+            downloadFile(jsonContent, 'instagram-accounts.json', 'application/json');
+        }
+
+        function downloadAsPDF() {
+            // This would require a PDF generation library in production
+            alert('PDF download feature would be implemented with a PDF generation library like jsPDF or Puppeteer.');
+            downloadAsText(); // Fallback to text
+        }
+
+        function downloadFile(content, filename, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            // Show success message
+            showAlert('Download started successfully!', 'success');
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showAlert('Copied to clipboard!', 'success');
+            });
+        }
+
+        function contactSeller() {
+            window.location.href = '/contact-seller/1'; // Update this with actual seller ID if available
+        }
+
+        function openDispute() {
+            window.location.href = '/dispute/new';
+        }
+
+        function ratePurchase(rating) {
+            userRating = rating;
+            const stars = document.querySelectorAll('.rating-stars i');
+            stars.forEach((star, index) => {
+                if (index < rating) {
+                    star.classList.add('fas');
+                    star.classList.remove('far');
+                } else {
+                    star.classList.remove('fas');
+                    star.classList.add('far');
+                }
+            });
+
+            // Submit rating (would be AJAX in real app)
+            showAlert(`Thank you for rating ${rating} stars!`, 'success');
+        }
+
+        function showAlert(message, type = 'info') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+
+            document.body.appendChild(alertDiv);
+
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            displayItems();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Reviews - Digital Market</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+    <style>
+        .review-card {
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .review-card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .review-stars {
+            color: #ffd700;
+        }
+
+        .review-header {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 20px;
+            border-radius: 12px 12px 0 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .product-card {
+            border: 2px solid #f0f0f0;
+            border-radius: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .product-card:hover {
+            border-color: #007bff;
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0,123,255,0.15);
+        }
+
+        .rating-breakdown {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .rating-bar {
+            height: 8px;
+            border-radius: 4px;
+            margin: 5px 0;
+        }
+
+        .sort-filter-header {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+        }
+
+        .user-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .helpful-btn {
+            border: 1px solid #dee2e6;
+            background: none;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .helpful-btn:hover {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        .helpful-btn.active {
+            background: #28a745;
+            border-color: #28a745;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <div class="container-fluid my-5">
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/">Home</a></li>
+                        <li class="breadcrumb-item active">Product Reviews</li>
+                    </ol>
+                </nav>
+                <h1><i class="fas fa-comments text-primary me-2"></i>Product Reviews</h1>
+                <p class="text-muted">Read and write reviews for products you've purchased</p>
+            </div>
+        </div>
+
+        <!-- Sort & Filter -->
+        <div class="sort-filter-header">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h5 class="mb-0">All Reviews</h5>
+                    <small class="text-muted">Showing <%= reviews ? reviews.length : 0 %> reviews</small>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex gap-2 justify-content-end">
+                        <select class="form-select" style="width: auto;">
+                            <option>Most Recent</option>
+                            <option>Highest Rated</option>
+                            <option>Lowest Rated</option>
+                            <option>Most Helpful</option>
+                        </select>
+                        <button class="btn btn-outline-primary" onclick="toggleFilters()">
+                            <i class="fas fa-filter me-1"></i>Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters (Hidden by default) -->
+        <div class="row mb-4" id="filtersRow" style="display: none;">
+            <div class="col-12">
+                <div class="card p-4">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Rating</label>
+                            <select class="form-select">
+                                <option>All Ratings</option>
+                                <option>5 Stars</option>
+                                <option>4 Stars & Up</option>
+                                <option>3 Stars & Up</option>
+                                <option>1-2 Stars</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Category</label>
+                            <select class="form-select">
+                                <option>All Categories</option>
+                                <option>Social Media Accounts</option>
+                                <option>Software & Tools</option>
+                                <option>Digital Content</option>
+                                <option>Games & Gaming</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Time Period</label>
+                            <select class="form-select">
+                                <option>Any Time</option>
+                                <option>Last Week</option>
+                                <option>Last Month</option>
+                                <option>Last 3 Months</option>
+                                <option>Last Year</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">&nbsp;</label>
+                            <div class="d-grid">
+                                <button class="btn btn-primary">Apply Filters</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Reviews List -->
+            <div class="col-lg-8">
+                <% if (!reviews || reviews.length === 0) { %>
+                    <div class="empty-state">
+                        <div class="mb-4">
+                            <i class="fas fa-comments fa-4x text-muted"></i>
+                        </div>
+                        <h4 class="text-muted">No reviews yet</h4>
+                        <p class="text-muted">Be the first to review a product after purchasing!</p>
+                        <a href="/stores" class="btn btn-primary">Browse Products</a>
+                    </div>
+                <% } else { %>
+                    <% reviews.forEach(review => { %>
+                        <div class="review-card">
+                            <div class="review-header">
+                                <div class="row align-items-center">
+                                    <div class="col-auto">
+                                        <div class="user-avatar">
+                                            <%= review.userName ? review.userName.charAt(0).toUpperCase() : 'U' %>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <div class="d-flex align-items-center mb-1">
+                                            <h6 class="mb-0 me-3"><%= review.userName %></h6>
+                                            <div class="review-stars">
+                                                <% for(let i = 0; i < 5; i++) { %>
+                                                    <i class="fas fa-star <%= i < review.rating ? '' : '' %>" style="<%= i >= review.rating ? 'color: #e4e5e9;' : '' %>"></i>
+                                                <% } %>
+                                            </div>
+                                            <small class="text-muted ms-2"><%= review.rating %>/5</small>
+                                        </div>
+                                        <div class="text-muted small" style="color: #6c757d !important;">
+                                            <%= new Date(review.date).toLocaleDateString() %> •
+                                            Verified Purchase •
+                                            <%= getProductCategory(review.productId) %>
+                                        </div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <% if (canEdit(review, currentUser)) { %>
+                                            <button class="btn btn-sm btn-outline-secondary" onclick="editReview('<%= review._id %>')">
+                                                <i class="fas fa-edit me-1"></i>Edit
+                                            </button>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card-header">
+                                <div class="row align-items-center">
+                                    <div class="col-auto">
+                                        <% if (review.product && review.product.images && review.product.images.length > 0) { %>
+                                            <img src="/uploads/<%= review.product.images[0] %>" alt="<%= review.productName %>" class="rounded" style="width: 60px; height: 60px; object-fit: cover;">
+                                        <% } else { %>
+                                            <div class="bg-secondary rounded d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                                <i class="fas fa-image text-white"></i>
+                                            </div>
+                                        <% } %>
+                                    </div>
+                                    <div class="col">
+                                        <h6 class="mb-1 fw-semibold">
+                                            <%= review.productName || 'Product' %>
+                                            <small class="text-muted fw-normal">by <%= review.sellerName || 'Seller' %></small>
+                                        </h6>
+                                        <small class="text-muted">$<%= getProductPrice(review.productId) %> • <%= getProductCategory(review.productId) %></small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card-body">
+                                <blockquote class="mb-3" style="font-size: 16px; line-height: 1.5;">
+                                    <%= review.comment %>
+                                </blockquote>
+
+                                <!-- Images from Review -->
+                                <% if (review.images && review.images.length > 0) { %>
+                                    <div class="d-flex gap-2 mb-3 flex-wrap">
+                                        <% review.images.forEach(image => { %>
+                                            <img src="/uploads/<%= image %>" alt="Review image" class="rounded" style="width: 80px; height: 80px; object-fit: cover; cursor: pointer;" onclick="zoomImage(this.src)">
+                                        <% }); %>
+                                    </div>
+                                <% } %>
+
+                                <!-- Seller Reply -->
+                                <% if (review.sellerReply) { %>
+                                    <div class="seller-reply mt-4 p-3 bg-light rounded">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="fas fa-reply text-primary me-2"></i>
+                                            <strong class="small text-primary">Seller Response</strong>
+                                            <small class="text-muted ms-2"><%= new Date(review.sellerReply.date).toLocaleDateString() %></small>
+                                        </div>
+                                        <p class="mb-0 ms-4"><%= review.sellerReply.message %></p>
+                                    </div>
+                                <% } %>
+
+                                <!-- Action Buttons -->
+                                <div class="mt-3 d-flex gap-2">
+                                    <button class="helpful-btn" onclick="markHelpful('<%= review._id %>')">
+                                        <i class="fas fa-thumbs-up me-1"></i>Helpful
+                                        <% if (review.helpfulCount) { %>
+                                            (<%= review.helpfulCount %>)
+                                        <% } %>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="reportReview('<%= review._id %>')">
+                                        <i class="fas fa-flag me-1"></i>Report
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    <% }); %>
+                <% } %>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Rating Summary -->
+                <div class="rating-breakdown mb-4">
+                    <h5 class="mb-3">Rating Breakdown</h5>
+                    <% for(let stars = 5; stars >= 1; stars--) { %>
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="me-3" style="min-width: 50px;">
+                                <span class="small"><%= stars %> star<%= stars > 1 ? 's' : '' %></span>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="rating-bar bg-light">
+                                    <div class="rating-bar bg-warning" style="width: <%= getRatingPercentage(stars) %>%"></div>
+                                </div>
+                            </div>
+                            <div class="ms-2 small text-muted" style="min-width: 30px;">
+                                <%= getRatingCount(stars) %>
+                            </div>
+                        </div>
+                    <% } %>
+
+                    <hr class="my-3">
+
+                    <div class="text-center">
+                        <h4 class="mb-0"><%= getOverallRating() %></h4>
+                        <div class="review-stars mb-1">
+                            <% for(let i = 0; i < 5; i++) { %>
+                                <i class="fas fa-star <%= i < Math.floor(getOverallRating()) ? '' : (i < getOverallRating() ? 'fa-star-half-alt' : '') %>"></i>
+                            <% } %>
+                        </div>
+                        <small class="text-muted">Based on <%= getTotalReviews() %> reviews</small>
+                    </div>
+                </div>
+
+                <!-- Top Reviewed Products -->
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0"><i class="fas fa-trophy me-2"></i>Top Reviewed Products</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <%
+                        const topProducts = getTopReviewedProducts();
+                        topProducts.forEach((product, index) => {
+                        %>
+                            <div class="p-3 border-bottom">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3 text-primary fw-bold"><%= index + 1 %>.</div>
+                                    <img src="/uploads/<%= product.image %>" alt="<%= product.name %>" class="rounded me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                    <div class="flex-grow-1">
+                                        <div class="fw-semibold small mb-1"><%= product.name %></div>
+                                        <div class="text-warning small">
+                                            <% for(let i = 0; i < 5; i++) { %>
+                                                <i class="fas fa-star <%= i < Math.floor(product.rating) ? '' : '' %>"></i>
+                                            <% } %>
+                                            (<%= product.reviewCount %>)
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <% }); %>
+                    </div>
+                </div>
+
+                <!-- Write Review CTA -->
+                <% if (user && hasPendingReviews(user)) { %>
+                    <div class="card mt-4 bg-success-subtle border-success">
+                        <div class="card-body text-center">
+                            <i class="fas fa-edit fa-2x text-success mb-3"></i>
+                            <h6 class="card-title">Write a Review</h6>
+                            <p class="card-text small mb-3">Share your experience with products you've purchased</p>
+                            <a href="/my-reviews" class="btn btn-success">Write Review</a>
+                        </div>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div class="modal fade" id="imageModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-body p-0">
+                    <img id="zoomedImage" src="" alt="Zoomed image" class="w-100">
+                </div>
+                <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" style="z-index: 999;"></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Template helper functions
+        function getOverallRating() {
+            return 4.2;
+        }
+
+        function getTotalReviews() {
+            return 48;
+        }
+
+        function getRatingPercentage(stars) {
+            return 75; // Mock percentage
+        }
+
+        function getRatingCount(stars) {
+            return 20; // Mock count
+        }
+
+        function canEdit(review, user) {
+            return user && review.userId === user.id;
+        }
+
+        function getProductCategory(productId) {
+            return "Social Media Account";
+        }
+
+        function getProductPrice(productId) {
+            return "25.00";
+        }
+
+        function getTopReviewedProducts() {
+            return [
+                { name: "Instagram Premium Account", rating: 4.8, reviewCount: 12, image: "placeholder.jpg" },
+                { name: "Facebook Business Page", rating: 4.5, reviewCount: 8, image: "placeholder.jpg" },
+                { name: "Twitter Verified Account", rating: 4.2, reviewCount: 6, image: "placeholder.jpg" }
+            ];
+        }
+
+        function hasPendingReviews(user) {
+            return true;
+        }
+
+        // Interactive functions
+        function toggleFilters() {
+            const filtersRow = document.getElementById('filtersRow');
+            filtersRow.style.display = filtersRow.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function editReview(reviewId) {
+            window.location.href = `/review/${reviewId}/edit`;
+        }
+
+        function markHelpful(reviewId) {
+            // This would mark review as helpful
+            console.log('Marked review as helpful:', reviewId);
+        }
+
+        function reportReview(reviewId) {
+            if (confirm('Are you sure you want to report this review?')) {
+                // This would report the review
+                console.log('Reported review:', reviewId);
+                alert('Review reported successfully');
+            }
+        }
+
+        function zoomImage(src) {
+            document.getElementById('zoomedImage').src = src;
+            const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+            modal.show();
+        }
+    </script>
+</body>
+</html>

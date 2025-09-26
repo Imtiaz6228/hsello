@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Product Files - Digital Market</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+    <style>
+        .upload-area {
+            border: 3px dashed #007bff;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: #f8f9fa;
+        }
+        .upload-area:hover, .upload-area.dragover {
+            background: #e3f2fd;
+            border-color: #0056b3;
+        }
+        .uploaded-files {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .file-item:hover {
+            background: #f8f9fa;
+        }
+        .file-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 6px;
+            background: #007bff;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+        }
+        .moderation-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        .status-draft { background: #e9ecef; color: #6c757d; }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-approved { background: #d4edda; color: #155724; }
+        .status-rejected { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <%- include('../partials/navbar') %>
+
+    <div class="container my-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">
+                            <i class="fas fa-upload me-2"></i>Upload Product Files
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <!-- Flash Messages -->
+                        <% if (success_msg && success_msg.length > 0) { %>
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <%= success_msg %>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        <% } %>
+
+                        <% if (error_msg && error_msg.length > 0) { %>
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <%= error_msg %>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        <% } %>
+
+                        <!-- Product Info -->
+                        <div class="product-info card mb-4">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <h5 class="mb-1">
+                                            <i class="fas fa-box me-2"></i><%= product.name %>
+                                        </h5>
+                                        <p class="mb-2 text-muted"><%= product.shortDescription %></p>
+                                        <div>
+                                            <span class="badge bg-primary me-2"><%= product.category || product.itemCategory %></span>
+                                            <span class="badge bg-info">Digital Product</span>
+                                            <span class="moderation-status status-<%= product.moderationStatus %> ms-2">
+                                                <%= product.moderationStatus.replace('_', ' ').toUpperCase() %>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <div class="h4 text-primary">$<%= product.price.toFixed(2) %></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tabs for Upload Methods -->
+                        <ul class="nav nav-tabs mb-4" id="uploadTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active btn-outline-primary" id="file-upload-tab" data-bs-toggle="tab" data-bs-target="#file-upload" type="button" role="tab" style="border: 2px solid #007bff; font-weight: bold;">
+                                    <i class="fas fa-upload me-2"></i>File Upload
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link btn-outline-success" id="manual-entry-tab" data-bs-toggle="tab" data-bs-target="#manual-entry" type="button" role="tab" style="border: 2px solid #28a745; font-weight: bold; background-color: #f8f9fa;">
+                                    <i class="fas fa-keyboard me-2"></i>📝 Manual Entry
+                                </button>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content" id="uploadTabsContent">
+                            <!-- File Upload Tab -->
+                            <div class="tab-pane fade show active" id="file-upload" role="tabpanel">
+                                <form
+                                    id="uploadForm"
+                                    action="/seller/upload-files/<%= product.id %>"
+                                    method="POST"
+                                    enctype="multipart/form-data"
+                                >
+                                    <!-- Hidden file input that stays intact -->
+                                    <input
+                                        type="file"
+                                        id="fileInput"
+                                        name="productFiles"
+                                        multiple
+                                        accept="application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/zip,application/x-zip-compressed,audio/mpeg,audio/mp3,audio/wav,video/mp4,video/avi,video/webm,image/jpeg,image/jpg,image/png,image/gif,application/json,text/csv,.xlsx,.xls"
+                                        class="d-none"
+                                    >
+
+                                    <div class="upload-area mb-4" id="uploadArea">
+                                        <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                                        <h5>Drop Files Here or Click to Upload</h5>
+                                        <p class="text-muted mb-0">
+                                            Upload Excel (.xlsx, .xls), CSV, or text files containing your product data
+                                        </p>
+                                        <p class="text-muted small mt-1">
+                                            Maximum 10 files • Up to 100MB total • Stock quantity will be auto-calculated
+                                        </p>
+                                    </div>
+
+                                    <!-- Upload Instructions -->
+                                    <% if (!product.files || product.files.length === 0) { %>
+                                        <div class="alert alert-info mb-4">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            <strong>Get Started:</strong> Upload files containing your product data. The system will automatically count entries and set your stock quantity.
+                                        </div>
+                                    <% } %>
+
+                                    <!-- Upload Button -->
+                                    <div class="text-center mb-4">
+                                        <button type="submit" id="uploadBtn" class="btn btn-primary btn-lg" disabled>
+                                            <i class="fas fa-upload me-2"></i>Upload & Calculate Stock
+                                        </button>
+                                        <small class="d-block mt-2 text-muted" id="fileCount">Please select at least one file to continue</small>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <!-- Manual Entry Tab -->
+                            <div class="tab-pane fade" id="manual-entry" role="tabpanel">
+                                <form id="manualEntryForm" action="/seller/manual-entry/<%= product.id %>" method="POST">
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label for="dataFormat" class="form-label">
+                                                    <i class="fas fa-list me-2"></i>Data Format
+                                                </label>
+                                                <select class="form-select" id="dataFormat" name="dataFormat" required>
+                                                    <option value="">Select format...</option>
+                                                    <option value="accounts">User Accounts (email:password)</option>
+                                                    <option value="profiles">Social Media Profiles (username:password)</option>
+                                                    <option value="custom">Custom Format</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="dataContent" class="form-label">
+                                            <i class="fas fa-edit me-2"></i>Paste Your Data
+                                        </label>
+                                        <textarea
+                                            class="form-control"
+                                            id="dataContent"
+                                            name="dataContent"
+                                            rows="12"
+                                            placeholder="Paste your data here, one entry per line...
+
+Example formats:
+For accounts: user1@gmail.com:password123
+For profiles: @username:securepass123
+For custom: any format you prefer
+
+The system will automatically:
+• Count the entries
+• Add to existing stock (if any)
+• Validate format (optional)"
+                                            required
+                                        ></textarea>
+                                        <div class="form-text">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            Each line represents one item. The system will automatically detect quantity and add to existing stock.
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="validateData" name="validateData" checked>
+                                            <label class="form-check-label" for="validateData">
+                                                Validate data format before saving
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Current Stock Info -->
+                                    <% if (product.stockQuantity && product.stockQuantity > 0) { %>
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            <strong>Current Stock:</strong> <%= product.stockQuantity %> items
+                                            <br>
+                                            <small class="text-muted">New entries will be added to existing stock</small>
+                                        </div>
+                                    <% } %>
+
+                                    <div class="text-center">
+                                        <button type="submit" class="btn btn-success btn-lg">
+                                            <i class="fas fa-plus me-2"></i>Add to Stock (<span id="lineCount">0</span> entries)
+                                        </button>
+                                        <div class="mt-2">
+                                            <small class="text-muted">
+                                                <span id="totalStock">0</span> total items in stock after upload
+                                            </small>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Uploaded Files Display -->
+                        <% if (product.files && product.files.length > 0) { %>
+                            <div class="uploaded-files">
+                                <h6 class="border-bottom pb-2 mb-3">
+                                    <i class="fas fa-files me-2"></i>
+                                    Uploaded Files (<%= product.files.length %>)
+                                </h6>
+
+                                <% product.files.forEach((file, index) => { %>
+                                    <div class="file-item">
+                                        <div class="file-icon">
+                                            <% if (file.filename.match(/\.(pdf)$/i)) { %>
+                                                <i class="fas fa-file-pdf"></i>
+                                            <% } else if (file.filename.match(/\.(doc|docx)$/i)) { %>
+                                                <i class="fas fa-file-word"></i>
+                                            <% } else if (file.filename.match(/\.(xls|xlsx)$/i)) { %>
+                                                <i class="fas fa-file-excel"></i>
+                                            <% } else if (file.filename.match(/\.(jpg|jpeg|png|gif)$/i)) { %>
+                                                <i class="fas fa-file-image"></i>
+                                            <% } else if (file.filename.match(/\.(zip|rar)$/i)) { %>
+                                                <i class="fas fa-file-archive"></i>
+                                            <% } else { %>
+                                                <i class="fas fa-file"></i>
+                                            <% } %>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="fw-semibold"><%= file.filename %></div>
+                                            <small class="text-muted">
+                                                Uploaded: <%= new Date(file.uploadedAt).toLocaleString() %>
+                                            </small>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm btn-outline-danger"
+                                            onclick="confirmDelete(<%= index %>)"
+                                            title="Delete file"
+                                        >
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                <% }); %>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="mt-4 text-center">
+                                <% if (product.moderationStatus === 'draft') { %>
+                                    <form method="POST" action="/seller/submit-moderation/<%= product.id %>" class="d-inline">
+                                        <button type="submit" class="btn btn-success btn-lg">
+                                            <i class="fas fa-paper-plane me-2"></i>Submit for Moderation
+                                        </button>
+                                    </form>
+                                <% } %>
+                            </div>
+                        <% } %>
+
+                        <!-- Back Button -->
+                        <div class="text-center mt-4">
+                            <a href="/my-store" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to My Store
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete File Modal -->
+    <div class="modal fade" id="deleteFileModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete File</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this file? This action cannot be undone.</p>
+                    <p class="text-muted small">File will be permanently removed from the server.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete File</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        let selectedFiles = [];
+        let fileToDelete = null;
+
+        // Server-side data for JavaScript
+        const currentUploadedFilesCount = parseInt('<%= (product.files && product.files.length) || 0 %>') || 0;
+
+        // Debug logging
+        console.log('Current uploaded files count:', currentUploadedFilesCount);
+
+        // Initialize button state based on existing files
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, updating upload button');
+            updateUploadButton();
+        });
+
+        // Drag and drop functionality
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const fileCount = document.getElementById('fileCount');
+        const uploadForm = document.getElementById('uploadForm');
+
+        // Click upload area to trigger file input
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // Drag and drop events
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight() {
+            uploadArea.classList.add('dragover');
+        }
+
+        function unhighlight() {
+            uploadArea.classList.remove('dragover');
+        }
+
+        uploadArea.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+
+        // Handle file selection
+        fileInput.addEventListener('change', function(e) {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            selectedFiles = Array.from(files);
+            updateFileDisplay();
+            updateUploadButton();
+        }
+
+        function updateFileDisplay() {
+            if (selectedFiles.length === 0) {
+                // Show initial upload area - don't recreate file input
+                uploadArea.innerHTML = '<i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>' +
+                    '<h5>Drop Files Here or Click to Upload</h5>' +
+                    '<p class="text-muted mb-0">Upload documents, spreadsheets, PDF files, images, or any digital content</p>' +
+                    '<p class="text-muted small mt-1">Maximum 10 files • Up to 100MB total</p>';
+                fileCount.textContent = 'Please select at least one file to continue';
+                return;
+            }
+
+            // Check file limits
+            if (selectedFiles.length > 10) {
+                alert('Maximum 10 files allowed. Please select fewer files.');
+                selectedFiles = selectedFiles.slice(0, 10);
+            }
+
+            // Check total size (100MB)
+            const totalSize = selectedFiles.reduce((sum, file) => sum + file.size, 0);
+            const maxSize = 100 * 1024 * 1024; // 100MB
+            if (totalSize > maxSize) {
+                alert('Total file size exceeds 100MB limit. Please select smaller files.');
+                fileInput.value = '';
+                selectedFiles = [];
+                updateFileDisplay(); // Reset display
+                return;
+            }
+
+            // Create file list HTML
+            const fileListHtml = selectedFiles.map((file, index) => {
+                return '<div class="d-flex align-items-center justify-content-between p-2 border-bottom">' +
+                    '<div class="d-flex align-items-center">' +
+                        '<i class="fas fa-file me-2 text-primary"></i>' +
+                        '<div>' +
+                            '<div class="fw-semibold">' + file.name + '</div>' +
+                            '<small class="text-muted">' + (file.size / 1024 / 1024).toFixed(2) + ' MB</small>' +
+                        '</div>' +
+                    '</div>' +
+                    '<button type="button" class="btn btn-sm btn-outline-danger" onclick="removeFile(' + index + ')">' +
+                        '<i class="fas fa-times"></i>' +
+                    '</button>' +
+                '</div>';
+            }).join('');
+
+            // Show selected files
+            uploadArea.innerHTML = '<i class="fas fa-files fa-3x text-success mb-3"></i>' +
+                '<h5>Files Ready to Upload</h5>' +
+                '<div class="border rounded p-2 bg-light" style="max-height: 200px; overflow-y: auto;">' +
+                    fileListHtml +
+                '</div>';
+
+            fileCount.textContent = selectedFiles.length + ' file(s) selected • Total: ' + (totalSize / 1024 / 1024).toFixed(2) + ' MB';
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            updateFileDisplay();
+            updateUploadButton();
+        }
+
+        function updateUploadButton() {
+            const hasFilesToUpload = selectedFiles.length > 0;
+            const hasExistingFiles = currentUploadedFilesCount > 0;
+
+            // Enable button if there are files to upload OR if there are existing files (for re-upload)
+            uploadBtn.disabled = !hasFilesToUpload && !hasExistingFiles;
+        }
+
+        function confirmDelete(index) {
+            const modal = new bootstrap.Modal(document.getElementById('deleteFileModal'));
+            document.getElementById('confirmDeleteBtn').onclick = function() {
+                window.location.href = `/seller/delete-file/<%= product.id %>/${index}`;
+            };
+            modal.show();
+        }
+
+        // Validate form before submission
+        uploadForm.addEventListener('submit', function(e) {
+            const totalFiles = selectedFiles.length + currentUploadedFilesCount;
+            if (totalFiles > 10) {
+                e.preventDefault();
+                alert('Maximum 10 files total. Please remove some files before uploading.');
+                return false;
+            }
+        });
+
+        // Manual entry functionality
+        const dataContent = document.getElementById('dataContent');
+        const lineCount = document.getElementById('lineCount');
+        const totalStock = document.getElementById('totalStock');
+        const manualEntryForm = document.getElementById('manualEntryForm');
+
+        // Get current stock from server
+        const currentStock = parseInt('<%= product.stockQuantity || 0 %>') || 0;
+
+        // Update line count and total stock as user types
+        dataContent.addEventListener('input', function() {
+            const lines = this.value.split('\n').filter(line => line.trim().length > 0);
+            const newEntries = lines.length;
+            const newTotal = currentStock + newEntries;
+
+            lineCount.textContent = newEntries;
+            totalStock.textContent = newTotal;
+        });
+
+        // Manual entry form validation
+        manualEntryForm.addEventListener('submit', function(e) {
+            const dataContentValue = document.getElementById('dataContent').value.trim();
+
+            if (!dataContentValue) {
+                e.preventDefault();
+                alert('Please enter some data.');
+                return false;
+            }
+
+            const lines = dataContentValue.split('\n').filter(line => line.trim().length > 0);
+
+            if (lines.length === 0) {
+                e.preventDefault();
+                alert('No valid data entries found. Please enter data with one entry per line.');
+                return false;
+            }
+
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+            submitBtn.disabled = true;
+
+            // Re-enable after a delay (in case of error)
+            setTimeout(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }, 10000);
+        });
+    </script>
+</body>
+</html>

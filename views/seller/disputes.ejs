@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Disputes - Seller Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+    <style>
+        .dispute-card {
+            border: 1px solid #dee2e6;
+            border-left: 4px solid;
+            transition: all 0.3s ease;
+        }
+
+        .dispute-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .status-open {
+            border-left-color: #ffc107;
+        }
+
+        .status-closed {
+            border-left-color: #28a745;
+            opacity: 0.7;
+        }
+
+        .badge-status {
+            font-size: 11px;
+            padding: 4px 8px;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .timeline-marker {
+            position: absolute;
+            left: -12px;
+            top: 6px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #dee2e6;
+        }
+
+        .timeline-marker.active {
+            background-color: #007bff;
+        }
+
+        .timeline-marker.success {
+            background-color: #28a745;
+        }
+
+        .timeline-marker.warning {
+            background-color: #ffc107;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: 20px;
+            width: 2px;
+            height: calc(100% - 6px);
+            background-color: #dee2e6;
+        }
+
+        .timeline-item:last-child::before {
+            display: none;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .action-btn {
+            font-size: 12px;
+            padding: 6px 12px;
+        }
+
+        .time-remaining {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            border: 1px solid #fff3cd;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin: 8px 0;
+        }
+
+        .star {
+            color: #ddd;
+            font-size: 14px;
+            margin-right: 2px;
+        }
+
+        .star.filled {
+            color: #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <%- include('../partials/navbar') %>
+
+    <div class="container-fluid my-5">
+        <!-- Flash Messages -->
+        <% if (success_msg && success_msg.length > 0) { %>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <%= success_msg %>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <% } %>
+        <% if (error_msg && error_msg.length > 0) { %>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <%= error_msg %>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <% } %>
+
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/seller/dashboard">Dashboard</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">My Disputes</li>
+                    </ol>
+                </nav>
+                <h2><i class="fas fa-gavel text-danger me-2"></i>My Disputes</h2>
+                <p class="text-muted">Manage customer disputes and refunds</p>
+            </div>
+        </div>
+
+        <!-- Stats Overview -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+                        <h4 class="mb-0"><%= getOpenDisputes() %></h4>
+                        <small class="text-muted">Open Disputes</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                        <h4 class="mb-0"><%= getResolvedDisputes() %></h4>
+                        <small class="text-muted">Resolved</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-dollar-sign fa-2x text-success mb-2"></i>
+                        <h4 class="mb-0">$<%= getTotalRefunds() %></h4>
+                        <small class="text-muted">Refunds Paid</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-clock fa-2x text-info mb-2"></i>
+                        <h4 class="mb-0"><%= getAvgResolutionTime() %></h4>
+                        <small class="text-muted">Avg Resolution</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Disputes List -->
+        <% if (!disputes || disputes.length === 0) { %>
+            <div class="empty-state">
+                <div class="mb-4">
+                    <i class="fas fa-gavel fa-4x text-muted"></i>
+                </div>
+                <h4 class="text-muted">No disputes found</h4>
+                <p class="text-muted">All clear! You don't have any active disputes.</p>
+                <a href="/seller/dashboard" class="btn btn-primary">Go to Dashboard</a>
+            </div>
+        <% } else { %>
+            <% disputes.forEach(dispute => { %>
+                <div class="card mb-4 dispute-card <%= dispute.status === 'open' ? 'status-open' : 'status-closed' %>">
+                    <!-- Dispute Header -->
+                    <div class="card-header">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h5 class="mb-1">Dispute #<%= dispute.orderNumber %></h5>
+                                <small class="text-muted">
+                                    Product: <%= dispute.orderId ? (dispute.orderId.productName || 'Unknown Product') : 'Unknown Product' %>
+                                </small>
+                                <div class="mt-2">
+                                    <strong>Order Details:</strong><br>
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        Order Date: <%= dispute.orderId ? new Date(dispute.orderId.orderDate).toLocaleDateString() : 'N/A' %><br>
+                                        <i class="fas fa-shopping-bag me-1"></i>
+                                        Quantity: <%= dispute.orderId ? dispute.orderId.quantity : 0 %><br>
+                                        <i class="fas fa-dollar-sign me-1"></i>
+                                        Total Cost: $<%= dispute.orderId ? dispute.orderId.totalCost.toFixed(2) : '0.00' %>
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <span class="badge <%= dispute.status === 'open' ? 'bg-warning' : 'bg-success' %> badge-status">
+                                    <%= dispute.status === 'open' ? 'Open' : 'Closed' %>
+                                </span>
+                                <% if (dispute.status === 'open') { %>
+                                    <div class="time-remaining mt-2">
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock me-1"></i>
+                                            Time remaining: <%= getTimeRemaining(dispute.autoCloseAt) %>
+                                        </small>
+                                    </div>
+                                <% } %>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <!-- Dispute Details -->
+                                <div class="mb-3">
+                                    <strong>Issue:</strong> <%= dispute.reason %>
+                                    <% if (dispute.description) { %>
+                                        <p class="mt-1 mb-0 text-muted small"><%= dispute.description %></p>
+                                    <% } %>
+                                </div>
+
+                                <!-- Chat Messages Preview -->
+                                <% if (dispute.chat && dispute.chat.length > 0) { %>
+                                    <div class="mb-3">
+                                        <strong>Recent Messages:</strong>
+                                        <div class="mt-2 p-2 bg-light rounded" style="max-height: 100px; overflow-y: auto;">
+                                            <% dispute.chat.slice(-3).forEach(message => { %>
+                                                <small class="d-block mb-1">
+                                                    <strong><%= message.fromName %>:</strong> <%= message.message %>
+                                                </small>
+                                            <% }); %>
+                                        </div>
+                                    </div>
+                                <% } %>
+
+                                <!-- Evidence Files -->
+                                <% if (dispute.evidence && dispute.evidence.length > 0) { %>
+                                    <div class="mb-3">
+                                        <strong>Evidence Files:</strong> <%= dispute.evidence.length %> files
+                                        <button class="btn btn-sm btn-outline-info ms-2" onclick="viewEvidence('<%= dispute._id %>')">View Files</button>
+                                    </div>
+                                <% } %>
+
+                                <!-- Buyer Reviews for this Product -->
+                                <% if (dispute.buyerReviews && dispute.buyerReviews.length > 0) { %>
+                                    <div class="mb-3">
+                                        <strong>Buyer's Reviews for this Product:</strong>
+                                        <div class="card mt-2">
+                                            <div class="card-body p-3">
+                                                <% dispute.buyerReviews.forEach(review => { %>
+                                                    <div class="border-bottom pb-2 mb-2">
+                                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                                            <div class="rating">
+                                                                <% for (let i = 1; i <= 5; i++) { %>
+                                                                    <span class="star <%= i <= review.rating ? 'filled' : '' %>">★</span>
+                                                                <% } %>
+                                                                <small class="text-muted ms-2">(<%= review.rating %>/5)</small>
+                                                            </div>
+                                                            <small class="text-muted"><%= new Date(review.date).toLocaleDateString() %></small>
+                                                        </div>
+                                                        <% if (review.comment) { %>
+                                                            <p class="text-muted small mb-0"><%= review.comment %></p>
+                                                        <% } %>
+                                                        <small class="text-muted">By: <%= dispute.buyerId ? dispute.buyerId.firstName + ' ' + dispute.buyerId.lastName : 'Unknown' %></small>
+                                                    </div>
+                                                <% }); %>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <% } %>
+                            </div>
+
+                            <div class="col-md-4">
+                                <!-- Action Buttons -->
+                                <% if (dispute.status === 'open') { %>
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-success action-btn" onclick="processRefund('<%= dispute._id %>', '<%= dispute.orderId ? dispute.orderId.totalCost : 0 %>')">
+                                            <i class="fas fa-dollar-sign me-1"></i>Process Refund
+                                        </button>
+                                        <button class="btn btn-outline-secondary action-btn" onclick="viewDispute('<%= dispute._id %>')">
+                                            <i class="fas fa-eye me-1"></i>View Details
+                                        </button>
+                                        <button class="btn btn-outline-primary action-btn" onclick="contactBuyer('<%= dispute._id %>')">
+                                            <i class="fas fa-envelope me-1"></i>Contact Buyer
+                                        </button>
+                                    </div>
+                                <% } else { %>
+                                    <div class="p-3 bg-light rounded">
+                                        <small class="text-muted">
+                                            <strong>Resolution:</strong><br>
+                                            <% if (dispute.resolution && dispute.resolution.type === 'refund') { %>
+                                                Refund of $<%= dispute.resolution.amount %> approved
+                                            <% } else if (dispute.resolution && dispute.resolution.type === 'closed_by_buyer') { %>
+                                                Closed by buyer
+                                            <% } else { %>
+                                                Dispute was closed
+                                            <% } %>
+                                        </small>
+                                    </div>
+                                <% } %>
+                            </div>
+                        </div>
+                    </div>
+
+                    <% if (dispute.status === 'open') { %>
+                        <div class="card-footer">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                This dispute will automatically close in <%= getTimeRemaining(dispute.autoCloseAt) %> if no action is taken
+                            </small>
+                        </div>
+                    <% } %>
+                </div>
+            <% }); %>
+        <% } %>
+    </div>
+
+    <!-- Process Refund Modal -->
+    <div class="modal fade" id="refundModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Process Refund</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="refundForm">
+                        <div class="mb-3">
+                            <label class="form-label">Refund Amount</label>
+                            <input type="number" class="form-control" id="refundAmount" required>
+                            <div class="form-text">Maximum refund: $100.00</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Reason</label>
+                            <textarea class="form-control" id="refundReason" rows="3" placeholder="Explain the refund reason"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="submitRefund()" id="submitRefundBtn">Process Refund</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        let currentDisputeId = null;
+
+        // Helper functions for template
+        function getOpenDisputes() {
+            // This would count open disputes
+            return 3;
+        }
+
+        function getResolvedDisputes() {
+            // This would count resolved disputes
+            return 12;
+        }
+
+        function getTotalRefunds() {
+            // This would sum all refund amounts
+            return '1,450';
+        }
+
+        function getAvgResolutionTime() {
+            // This would calculate average resolution time
+            return '18h';
+        }
+
+        function getTimeRemaining(autoCloseAt) {
+            if (!autoCloseAt) return 'N/A';
+
+            const now = new Date();
+            const closeAt = new Date(autoCloseAt);
+            const diff = closeAt.getTime() - now.getTime();
+
+            if (diff <= 0) return 'Expired';
+
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+            return `${hours}h ${minutes}m`;
+        }
+
+        // Interactive functions
+        function processRefund(disputeId, maxAmount) {
+            currentDisputeId = disputeId;
+            document.getElementById('refundAmount').max = maxAmount;
+            document.getElementById('refundAmount').value = maxAmount;
+
+            const modal = new bootstrap.Modal(document.getElementById('refundModal'));
+            modal.show();
+        }
+
+        function viewDispute(disputeId) {
+            window.location.href = `/dispute/${disputeId}`;
+        }
+
+        function contactBuyer(disputeId) {
+            window.location.href = `/dispute/${disputeId}`;
+        }
+
+        function viewEvidence(disputeId) {
+            alert('Evidence viewing would be implemented here');
+        }
+
+        async function submitRefund() {
+            const amount = document.getElementById('refundAmount').value;
+            const reason = document.getElementById('refundReason').value;
+
+            if (!amount || amount <= 0) {
+                alert('Please enter a valid refund amount');
+                return;
+            }
+
+            // Disable button to prevent double submission
+            const btn = document.getElementById('submitRefundBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
+
+            try {
+                const response = await fetch(`/dispute/${currentDisputeId}/refund`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        refundAmount: amount,
+                        reason: reason
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    location.reload();
+                } else {
+                    alert('Error processing refund: ' + result.message);
+                    btn.disabled = false;
+                    btn.innerHTML = 'Process Refund';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error processing refund');
+                btn.disabled = false;
+                btn.innerHTML = 'Process Refund';
+            }
+        }
+    </script>
+</body>
+</html>

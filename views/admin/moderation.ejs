@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Product Moderation - DigitalMarket Admin</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    .moderation-dashboard {
+      min-height: calc(100vh - 72px);
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      padding: 90px 20px 40px;
+    }
+    .moderation-container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .moderation-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 15px;
+      margin-bottom: 30px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    .moderation-header h1 {
+      margin: 0 0 10px 0;
+      font-size: 2.5em;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    .moderation-header h1::before {
+      content: '🔍';
+    }
+    .moderation-content {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 30px;
+    }
+    .pending-products {
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+    .section-header {
+      background: #f8f9fa;
+      padding: 20px 30px;
+      border-bottom: 1px solid #ecf0f1;
+    }
+    .section-header h2 {
+      margin: 0;
+      color: #2c3e50;
+      font-size: 1.5em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-header h2::before {
+      content: '⏳';
+    }
+    .product-list {
+      padding: 0;
+    }
+    .product-item {
+      border-bottom: 1px solid #ecf0f1;
+      display: grid;
+      grid-template-columns: 80px 1fr auto;
+      gap: 20px;
+      padding: 20px 30px;
+      align-items: center;
+    }
+    .product-item:last-child {
+      border-bottom: none;
+    }
+    .product-image-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .product-image {
+      width: 60px;
+      height: 60px;
+      border-radius: 6px;
+      object-fit: cover;
+      border: 2px solid #ecf0f1;
+    }
+    .product-seller {
+      font-size: 0.8em;
+      color: #7f8c8d;
+    }
+    .product-details h3 {
+      margin: 0 0 8px 0;
+      color: #2c3e50;
+      font-weight: 600;
+    }
+    .product-details p {
+      margin: 4px 0;
+      color: #7f8c8d;
+      font-size: 0.9em;
+    }
+    .product-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-top: 10px;
+    }
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.9em;
+      color: #7f8c8d;
+    }
+    .meta-item::before {
+      content: '•';
+    }
+    .first-meta::before {
+      content: '';
+    }
+    .product-actions {
+      display: flex;
+      gap: 10px;
+      flex-direction: column;
+    }
+    .action-btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9em;
+      transition: transform 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+      text-align: center;
+    }
+    .approve-btn {
+      background: #27ae60;
+      color: white;
+    }
+    .approve-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 3px 10px rgba(39, 174, 96, 0.4);
+    }
+    .reject-btn {
+      background: #e74c3c;
+      color: white;
+    }
+    .reject-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 3px 10px rgba(231, 76, 60, 0.4);
+    }
+    .no-products {
+      text-align: center;
+      padding: 80px 30px;
+      color: #7f8c8d;
+    }
+    .no-products h3 {
+      margin: 0 0 10px 0;
+      font-size: 1.3em;
+      color: #34495e;
+    }
+    .no-products p {
+      font-size: 1.1em;
+      margin: 0;
+    }
+    .stats-section {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+    .stat-card {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+      text-align: center;
+      border-left: 4px solid #667eea;
+    }
+    .stat-number {
+      font-size: 2.5em;
+      font-weight: 700;
+      color: #2c3e50;
+      margin-bottom: 8px;
+    }
+    .stat-label {
+      color: #7f8c8d;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-size: 0.9em;
+    }
+    .navigation-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 30px;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .tab-link {
+      flex: 1;
+      padding: 15px 20px;
+      text-decoration: none;
+      color: #7f8c8d;
+      text-align: center;
+      font-weight: 600;
+      background: white;
+      transition: all 0.3s ease;
+      border: none;
+    }
+    .tab-link:hover {
+      background: #f8f9fa;
+    }
+    .tab-link.active {
+      background: #667eea;
+      color: white;
+    }
+    @media (max-width: 768px) {
+      .product-item {
+        grid-template-columns: 1fr;
+        gap: 15px;
+        text-align: center;
+      }
+      .product-actions {
+        flex-direction: row;
+        justify-content: center;
+      }
+      .stats-section {
+        grid-template-columns: 1fr;
+      }
+      .navigation-tabs {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body data-success="<%= typeof success_msg !== 'undefined' ? success_msg : '' %>" data-error="<%= typeof error_msg !== 'undefined' ? error_msg : '' %>">
+
+  <!-- ================= NAVBAR ================ -->
+  <%- include('../partials/navbar') %>
+
+  <!-- ================= MODERATION CONTENT ================ -->
+  <div class="moderation-dashboard">
+    <div class="moderation-container">
+
+      <!-- Header -->
+      <div class="moderation-header">
+        <h1>Product Moderation</h1>
+        <p class="subtitle">Review and manage seller products requiring approval</p>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-section">
+        <div class="stat-card">
+          <div class="stat-number"><%= pendingProducts.length %></div>
+          <div class="stat-label">Products Pending</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">0</div>
+          <div class="stat-label">Approved Today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">0</div>
+          <div class="stat-label">Rejected Today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">0</div>
+          <div class="stat-label">Avg Review Time</div>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="navigation-tabs">
+        <a href="/admin/sellers" class="tab-link">Seller Applications</a>
+        <a href="/admin/moderation" class="tab-link active">Product Moderation</a>
+        <a href="/admin/withdrawals" class="tab-link">Withdrawals</a>
+      </div>
+
+      <!-- Main Content -->
+      <div class="moderation-content">
+
+        <!-- Pending Products -->
+        <div class="pending-products">
+          <div class="section-header">
+            <h2>Products Awaiting Review</h2>
+          </div>
+
+          <% if (pendingProducts && pendingProducts.length > 0) { %>
+            <div class="product-list">
+              <% pendingProducts.forEach(product => { %>
+                <div class="product-item">
+                  <div class="product-image-container">
+                    <img src="/uploads/<%= product.images ? product.images[0] : 'default-product.jpg' %>"
+                         alt="<%= product.name %>"
+                         class="product-image">
+                    <div class="product-seller"><%= product.sellerName %></div>
+                  </div>
+
+                  <div class="product-details">
+                    <h3><%= product.name %></h3>
+                    <div class="product-meta">
+                      <div class="meta-item first-meta">Category: <%= product.itemCategory %></div>
+                      <div class="meta-item">Price: $<%= product.price %></div>
+                      <div class="meta-item">Digital: <%= product.isDigital ? 'Yes' : 'No' %></div>
+                    </div>
+                    <p><%= product.shortDescription || 'No description provided' %></p>
+                  </div>
+
+                  <div class="product-actions">
+                    <form method="POST" action="/admin/product/<%= product.sellerId %>/<%= product.id %>/approve" style="margin: 0;">
+                      <button type="submit" class="action-btn approve-btn">✅ Approve</button>
+                    </form>
+                    <form method="POST" action="/admin/product/<%= product.sellerId %>/<%= product.id %>/reject" style="margin: 0;">
+                      <textarea name="reason" placeholder="Rejection reason..." style="width: 100%; height: 40px; margin-bottom: 5px; border: 1px solid #ecf0f1; border-radius: 4px; padding: 5px; font-size: 0.8em;" maxlength="200"></textarea>
+                      <button type="submit" class="action-btn reject-btn">❌ Reject</button>
+                    </form>
+                  </div>
+                </div>
+              <% }); %>
+            </div>
+          <% } else { %>
+            <div class="no-products">
+              <h3>🎉 All Caught Up!</h3>
+              <p>There are no products currently pending moderation. Great job keeping the marketplace clean!</p>
+            </div>
+          <% } %>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= FOOTER ================ -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="#products">Products</a>
+        <a href="#games">Games</a>
+        <a href="#ai">AI</a>
+        <a href="#pricing">Pricing</a>
+        <a href="/login">Login</a>
+        <a href="/signup">Sign Up</a>
+      </div>
+      <p>&copy; 2025 DigitalMarket. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Flash messages
+    const successMsg = document.body.getAttribute('data-success');
+    const errorMsg = document.body.getAttribute('data-error');
+
+    if (successMsg) {
+      setTimeout(() => {
+        alert(successMsg);
+      }, 500);
+    }
+
+    if (errorMsg) {
+      setTimeout(() => {
+        alert(errorMsg);
+      }, 500);
+    }
+  </script>
+</body>
+</html>

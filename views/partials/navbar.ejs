@@ -1,0 +1,660 @@
+﻿<!-- ================= MOBILE-FRIENDLY PROFESSIONAL NAVBAR ================ -->
+<nav class="navbar">
+  <div class="nav-container professional-nav">
+    <!-- Mobile Menu Toggle -->
+    <div class="mobile-menu-toggle" id="mobileMenuToggle">
+      <span class="hamburger-line"></span>
+      <span class="hamburger-line"></span>
+      <span class="hamburger-line"></span>
+    </div>
+
+    <!-- Left -->
+    <div class="nav-left">
+      <a href="/" class="logo professional-logo">
+        <span class="logo-icon">🚀</span>
+        <span class="logo-text">Hsello</span>
+      </a>
+    </div>
+
+    <!-- Center - Main Navigation -->
+    <div class="nav-center">
+      <ul class="nav-links professional-links">
+        <li><a href="/" class="nav-link">Home</a></li>
+        <li><a href="/stores" class="nav-link">Stores</a></li>
+        <li><a href="/products" class="nav-link">Products</a></li>
+        <li><a href="/services" class="nav-link">Services</a></li>
+      </ul>
+    </div>
+
+    <!-- Right - User Actions & Search -->
+    <div class="nav-right professional-right">
+      <!-- Search -->
+      <div class="search-container professional-search">
+        <input type="text" id="searchInput" placeholder="Search..." class="search-input">
+        <button id="searchBtn" class="search-btn">🔍</button>
+      </div>
+
+      <!-- User Menu -->
+      <% if (locals.user) { %>
+        <div class="user-section">
+          <!-- Balance - Always visible but compact on mobile -->
+          <div class="top-balance">
+            <span class="balance-icon">💰</span>
+            <span class="balance-text"><%= typeof locals.user.balance !== 'undefined' ? Number(locals.user.balance).toFixed(2) : '0.00' %>₽</span>
+          </div>
+
+          <!-- User Dropdown -->
+          <div class="user-menu">
+            <button class="user-menu-trigger" id="userMenuTrigger">
+              <div class="avatar">
+                <span class="avatar-text"><%= (locals.user.firstName || 'U')[0].toUpperCase() %></span>
+              </div>
+              <span class="user-name"><%= locals.user.firstName || 'User' %></span>
+              <span class="menu-arrow">▼</span>
+            </button>
+
+            <div class="user-dropdown" id="userDropdown">
+              <div class="dropdown-header">
+                <div class="user-full-name"><%= `${locals.user.firstName || ''} ${locals.user.lastName || ''}`.trim() || 'User' %></div>
+                <div class="user-email"><%= locals.user.email %></div>
+              </div>
+
+              <div class="dropdown-menu">
+                <a href="/profile" class="dropdown-item">
+                  <span class="item-icon">👤</span>
+                  <span class="item-text">Profile</span>
+                </a>
+
+                <a href="/orders" class="dropdown-item">
+                  <span class="item-icon">📦</span>
+                  <span class="item-text">My Orders</span>
+                </a>
+
+                <a href="/user/downloads" class="dropdown-item">
+                  <span class="item-icon">⬇️</span>
+                  <span class="item-text">Downloads</span>
+                </a>
+
+                <% if (locals.user.isSeller) { %>
+                  <a href="/seller/balance" class="dropdown-item">
+                    <span class="item-icon">💰</span>
+                    <span class="item-text">Balance</span>
+                  </a>
+                <% } else { %>
+                  <a href="/topup" class="dropdown-item">
+                    <span class="item-icon">💰</span>
+                    <span class="item-text">Balance</span>
+                  </a>
+                <% } %>
+
+                <a href="/favorites" class="dropdown-item">
+                  <span class="item-icon">❤️</span>
+                  <span class="item-text">Favorites</span>
+                </a>
+
+                <a href="/reviews" class="dropdown-item">
+                  <span class="item-icon">⭐</span>
+                  <span class="item-text">Reviews</span>
+                </a>
+
+                <a href="/dispute" class="dropdown-item">
+                  <span class="item-icon">⚖️</span>
+                  <span class="item-text">Dispute</span>
+                </a>
+
+                <% if (locals.user.isSeller) { %>
+                  <div class="dropdown-divider"></div>
+                  <a href="/my-store" class="dropdown-item">
+                    <span class="item-icon">🏪</span>
+                    <span class="item-text">My Store</span>
+                  </a>
+                  <a href="/seller/dashboard" class="dropdown-item">
+                    <span class="item-icon">📊</span>
+                    <span class="item-text">Dashboard</span>
+                  </a>
+                  <a href="/seller/orders" class="dropdown-item">
+                    <span class="item-icon">📦</span>
+                    <span class="item-text">Orders</span>
+                  </a>
+                  <a href="/seller/disputes" class="dropdown-item">
+                    <span class="item-icon">⚖️</span>
+                    <span class="item-text">Disputes</span>
+                  </a>
+                  <a href="/seller/moderation" class="dropdown-item">
+                    <span class="item-icon">🔍</span>
+                    <span class="item-text">Pending Products</span>
+                  </a>
+                  <a href="/seller/balance" class="dropdown-item">
+                    <span class="item-icon">💰</span>
+                    <span class="item-text">Balance & Withdrawals</span>
+                  </a>
+                  <div class="dropdown-divider"></div>
+                  <a href="/seller/dashboard" class="dropdown-item" onclick="showTab('Reviews')" style="display: none;">
+                    <span class="item-icon">⭐</span>
+                    <span class="item-text">Reviews</span>
+                  </a>
+                <% } %>
+
+                <% if (!locals.user.isSeller) { %>
+                  <div class="dropdown-divider"></div>
+                  <a href="/become-seller" class="dropdown-item highlighted">
+                    <span class="item-icon">🚀</span>
+                    <span class="item-text">Become Seller</span>
+                  </a>
+                  <a href="/become-seller" class="dropdown-item">
+                    <span class="item-icon">🏗️</span>
+                    <span class="item-text">Create a Store</span>
+                  </a>
+                <% } %>
+
+                <a href="/topup" class="dropdown-item">
+                  <span class="item-icon">💳</span>
+                  <span class="item-text">Top Up Balance</span>
+                </a>
+
+                <% if (locals.adminUser) { %>
+                  <div class="dropdown-divider"></div>
+                  <a href="/admin/sellers" class="dropdown-item admin-item">
+                    <span class="item-icon">🛡️</span>
+                    <span class="item-text">Admin Panel</span>
+                  </a>
+                  <a href="/admin/moderation" class="dropdown-item admin-item">
+                    <span class="item-icon">🔍</span>
+                    <span class="item-text">Product Moderation</span>
+                  </a>
+                <% } %>
+
+                <div class="dropdown-divider"></div>
+                <form action="/logout" method="POST" class="logout-form">
+                  <button type="submit" class="dropdown-item logout-item">
+                    <span class="item-icon">🚪</span>
+                    <span class="item-text">Logout</span>
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% } else { %>
+        <div class="auth-buttons">
+          <a href="/login" class="auth-btn login-btn">Login</a>
+          <a href="/signup" class="auth-btn signup-btn">Sign Up</a>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Mobile Navigation Overlay -->
+  <div class="mobile-nav-overlay" id="mobileNavOverlay">
+    <div class="mobile-nav-content">
+      <div class="mobile-nav-header">
+        <span class="mobile-nav-title">Menu</span>
+        <button class="mobile-nav-close" id="mobileNavClose">✕</button>
+      </div>
+
+      <div class="mobile-nav-links">
+        <a href="/" class="mobile-nav-link">🏠 Home</a>
+        <a href="/stores" class="mobile-nav-link">🏪 Stores</a>
+        <a href="/products" class="mobile-nav-link">📦 Products</a>
+        <a href="/services" class="mobile-nav-link">🛠️ Services</a>
+      </div>
+
+      <% if (locals.user) { %>
+        <div class="mobile-nav-user">
+          <div class="mobile-user-info">
+            <div class="mobile-avatar">
+              <span class="mobile-avatar-text"><%= (locals.user.firstName || 'U')[0].toUpperCase() %></span>
+            </div>
+            <div class="mobile-user-details">
+              <div class="mobile-user-name"><%= locals.user.firstName || 'User' %></div>
+              <div class="mobile-user-email"><%= locals.user.email %></div>
+            </div>
+          </div>
+
+          <div class="mobile-balance">
+            <span class="mobile-balance-icon">💰</span>
+            <span class="mobile-balance-text"><%= typeof locals.user.balance !== 'undefined' ? Number(locals.user.balance).toFixed(2) : '0.00' %>₽</span>
+          </div>
+        </div>
+
+        <div class="mobile-nav-user-links">
+          <a href="/profile" class="mobile-nav-link">👤 Profile</a>
+          <a href="/orders" class="mobile-nav-link">📦 My Orders</a>
+          <a href="/user/downloads" class="mobile-nav-link">⬇️ Downloads</a>
+          <% if (locals.user.isSeller) { %>
+            <a href="/seller/balance" class="mobile-nav-link">💰 Balance</a>
+            <a href="/my-store" class="mobile-nav-link">🏪 My Store</a>
+            <a href="/seller/dashboard" class="mobile-nav-link">📊 Dashboard</a>
+          <% } else { %>
+            <a href="/topup" class="mobile-nav-link">💰 Balance</a>
+            <a href="/become-seller" class="mobile-nav-link">🚀 Become Seller</a>
+          <% } %>
+          <a href="/favorites" class="mobile-nav-link">❤️ Favorites</a>
+          <a href="/reviews" class="mobile-nav-link">⭐ Reviews</a>
+          <form action="/logout" method="POST" class="mobile-logout-form">
+            <button type="submit" class="mobile-logout-btn">🚪 Logout</button>
+          </form>
+        </div>
+      <% } else { %>
+        <div class="mobile-nav-auth">
+          <a href="/login" class="mobile-auth-btn mobile-login-btn">Login</a>
+          <a href="/signup" class="mobile-auth-btn mobile-signup-btn">Sign Up</a>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</nav>
+
+<style>
+/* Navbar Basic Styles */
+.navbar {
+  background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+  padding: 15px 0;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  position: relative;
+  z-index: 1000;
+}
+
+.nav-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+}
+
+.logo {
+  color: white;
+  font-size: 1.5em;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.nav-links {
+  display: flex;
+  list-style: none;
+  gap: 20px;
+}
+
+.nav-link {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.nav-link:hover {
+  color: #f39c12;
+}
+
+.auth-buttons {
+  display: flex;
+  gap: 15px;
+}
+
+.auth-btn {
+  padding: 8px 16px;
+  border-radius: 5px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: background 0.3s ease;
+}
+
+.login-btn {
+  color: white;
+  border: 2px solid white;
+}
+
+.signup-btn {
+  background: #f39c12;
+  color: white;
+}
+
+.login-btn:hover {
+  background: white;
+  color: #3498db;
+}
+
+.signup-btn:hover {
+  background: #e67e22;
+}
+
+/* User Section */
+.user-section {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.top-balance {
+  background: rgba(255,255,255,0.1);
+  padding: 8px 12px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.balance-text {
+  font-weight: 600;
+  color: #f39c12;
+}
+
+/* User Menu */
+.user-menu {
+  position: relative;
+}
+
+.user-menu-trigger {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: white;
+  font-size: 1em;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background 0.3s ease;
+}
+
+.user-menu-trigger:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+}
+
+.user-dropdown {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  min-width: 250px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+}
+
+.user-dropdown.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.dropdown-header {
+  padding: 15px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 10px 10px 0 0;
+  border-bottom: 1px solid #ddd;
+}
+
+.dropdown-divider {
+  border-top: 1px solid #eee;
+  margin: 8px 0;
+}
+
+.dropdown-menu {
+  padding: 10px 0;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  color: #333;
+  text-decoration: none;
+  transition: background 0.3s ease;
+  font-size: 0.9em;
+}
+
+.dropdown-item:hover {
+  background: #f8f9fa;
+}
+
+.item-icon {
+  margin-right: 10px;
+  width: 20px;
+  text-align: center;
+  font-size: 1em;
+}
+
+.highlighted {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  color: white;
+}
+
+.highlighted:hover {
+  background: linear-gradient(135deg, #38f9d7 0%, #43e97b 100%);
+}
+
+.admin-item {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ffa500 100%);
+  color: white;
+  font-weight: 600;
+}
+
+.admin-item:hover {
+  background: linear-gradient(135deg, #ffa500 0%, #ff6b6b 100%);
+}
+
+.logout-item {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+.logout-item:hover {
+  background: #ffeaea;
+}
+
+.logout-form {
+  width: 100%;
+}
+
+.logout-form .logout-item {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+/* JavaScript Toggle for dropdown */
+.user-menu-trigger {
+  position: relative;
+}
+
+.user-dropdown {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  transform: translateY(-10px) !important;
+  transition: all 0.3s ease !important;
+  pointer-events: none;
+}
+
+.user-menu:hover .user-dropdown,
+.user-menu-trigger:focus + .user-dropdown,
+.user-dropdown:focus-within {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translateY(0) !important;
+  pointer-events: all;
+}
+
+/* ========== MOBILE RESPONSIVE BREAKPOINTS ========== */
+
+/* Tablet and smaller desktop */
+@media (max-width: 1024px) {
+  .nav-center {
+    display: none;
+  }
+
+  .professional-search {
+    display: none;
+  }
+
+  .mobile-menu-toggle {
+    display: flex;
+  }
+}
+
+/* Mobile landscape */
+@media (max-width: 768px) {
+  .professional-nav {
+    padding: 0 15px;
+    height: 56px;
+  }
+
+  .professional-logo {
+    font-size: 1.1em;
+  }
+
+  .logo-text {
+    display: none;
+  }
+
+  .user-section {
+    gap: 8px;
+  }
+
+  .top-balance {
+    padding: 4px 8px;
+    font-size: 0.8em;
+  }
+
+  .user-name {
+    display: none;
+  }
+
+  .mobile-nav-content {
+    width: 260px;
+  }
+}
+
+/* Mobile portrait */
+@media (max-width: 480px) {
+  .professional-nav {
+    height: 50px;
+    padding: 0 12px;
+  }
+
+  .professional-logo {
+    font-size: 1em;
+  }
+
+  .user-section {
+    gap: 6px;
+  }
+
+  .top-balance {
+    display: none;
+  }
+
+  .mobile-nav-content {
+    width: 100%;
+  }
+
+  .mobile-nav-header {
+    padding: 15px;
+  }
+
+  .mobile-nav-links {
+    padding: 15px;
+  }
+
+  .mobile-nav-link {
+    padding: 12px 0;
+    font-size: 0.9em;
+  }
+
+  .mobile-nav-user {
+    padding: 15px;
+  }
+
+  .mobile-user-info {
+    gap: 10px;
+  }
+
+  .mobile-avatar {
+    width: 45px;
+    height: 45px;
+    font-size: 1em;
+  }
+
+  .mobile-user-name {
+    font-size: 0.9em;
+  }
+
+  .mobile-user-email {
+    font-size: 0.8em;
+  }
+
+  .mobile-balance {
+    padding: 8px 12px;
+    font-size: 0.8em;
+  }
+
+  .mobile-nav-user-links {
+    padding: 0 15px 15px 15px;
+  }
+
+  .mobile-nav-auth {
+    padding: 15px;
+  }
+
+  .mobile-auth-btn {
+    padding: 10px 16px;
+    font-size: 0.9em;
+  }
+}
+
+/* Small mobile */
+@media (max-width: 360px) {
+  .professional-nav {
+    height: 48px;
+  }
+
+  .mobile-menu-toggle {
+    padding: 6px;
+  }
+
+  .hamburger-line {
+    width: 20px;
+    height: 2px;
+    margin: 2px 0;
+  }
+
+  .mobile-nav-content {
+    width: 100%;
+  }
+
+  .mobile-nav-header {
+    padding: 12px;
+  }
+
+  .mobile-nav-title {
+    font-size: 1.1em;
+  }
+
+  .mobile-nav-links {
+    padding: 12px;
+  }
+
+  .mobile-nav-link {
+    padding: 10px 0;
+    font-size: 0.85em;
+  }
+}
+</style>

@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= typeof product !== 'undefined' && product.seoTitle ? product.seoTitle : 'Premium Digital Product - DigitalMarket' %></title>
+    <meta name="description" content="<%= typeof product !== 'undefined' && product.metaDescription ? product.metaDescription : 'Professional digital marketplace for premium accounts and services.' %>">
+    <% if (typeof product !== 'undefined' && product.seoKeywords && product.seoKeywords.length > 0) { %>
+        <meta name="keywords" content="<%= product.seoKeywords.join(', ') %>">
+    <% } %>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <!-- Professional Banner Section -->
+    <section class="product-banner py-4">
+        <div class="container">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="/"><i class="fas fa-home me-1"></i>Home</a></li>
+                    <li class="breadcrumb-item"><a href="/<%= seller.id %>">Store</a></li>
+                    <li class="breadcrumb-item active" aria-current="page"><%= product.name %></li>
+                </ol>
+            </nav>
+        </div>
+    </section>
+
+    <div class="container my-5">
+        <div class="row g-4">
+            <!-- Enhanced Product Images -->
+            <div class="col-lg-6">
+                <div class="product-media-card shadow-sm">
+                    <div class="product-media-body text-center p-4">
+                        <% if (product && product.images && product.images.length > 0) { %>
+                            <div class="main-image-container mb-4">
+                                <img src="/uploads/<%= product.images[0] %>" class="img-fluid rounded-3 shadow" alt="<%= product.name %>" id="mainProductImage"
+                                     style="max-height: 400px; width: 100%; object-fit: cover;">
+                                <div class="image-overlay">
+                                    <button class="btn btn-light btn-sm rounded-circle" onclick="openFullscreen()">
+                                        <i class="fas fa-expand"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <% if (product.images.length > 1) { %>
+                            <div class="thumbnail-gallery d-flex justify-content-center gap-3" id="productImages">
+                                <% product.images.forEach(function(image, index) { %>
+                                    <div class="thumbnail-item <%= index === 0 ? 'active' : '' %>">
+                                        <img src="/uploads/<%= image %>" class="rounded-2" style="width: 80px; height: 80px; cursor: pointer; object-fit: cover;" alt="Product Image <%= index + 1 %>"
+                                           data-image="<%= image.replace(/'/g, '\\\'') %>" data-index="<%= index %>" onclick="changeMainImage(this)">
+                                    </div>
+                                <% }); %>
+                            </div>
+                            <% } %>
+                        <% } else { %>
+                            <div class="placeholder-image d-flex align-items-center justify-content-center bg-light rounded-3" style="height: 400px;">
+                                <div class="text-center">
+                                    <i class="fas fa-image fa-4x text-secondary mb-3"></i>
+                                    <p class="text-muted">No images available</p>
+                                </div>
+                            </div>
+                        <% } %>
+                    </div>
+                </div>
+
+                <!-- Product Quick Stats -->
+                <div class="d-flex justify-content-around mt-4">
+                    <div class="text-center">
+                        <i class="fas fa-clock text-primary mb-2 d-block" style="font-size: 1.5em;"></i>
+                        <span class="d-block fw-semibold"><%= product.completionTime %>h</span>
+                        <small class="text-muted">Delivery</small>
+                    </div>
+                    <div class="text-center">
+                        <i class="fas fa-star text-warning mb-2 d-block" style="font-size: 1.5em;"></i>
+                        <span class="d-block fw-semibold">4.<%= Math.floor(Math.random() * 9) + 1 %></span>
+                        <small class="text-muted">Rating</small>
+                    </div>
+                    <div class="text-center">
+                        <i class="<%= product.isDigital ? 'fas fa-cloud text-success' : 'fas fa-box text-info' %> mb-2 d-block" style="font-size: 1.5em;"></i>
+                        <span class="d-block fw-semibold"><%= product.isDigital ? 'Digital' : 'Physical' %></span>
+                        <small class="text-muted">Type</small>
+                    </div>
+                    <div class="text-center">
+                        <i class="fas fa-shield-alt text-success mb-2 d-block" style="font-size: 1.5em;"></i>
+                        <span class="d-block fw-semibold">24h</span>
+                        <small class="text-muted">Refund</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enhanced Product Info & Purchase -->
+            <div class="col-lg-6">
+                <div class="product-info-card shadow-sm h-100">
+                    <div class="product-info-body p-4">
+                        <!-- Product Header -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div class="flex-grow-1 me-3">
+                                    <h1 class="product-title mb-0"><%= product.name %></h1>
+                                    <div class="product-badges mt-2">
+                                        <span class="badge badge-category bg-primary-subtle text-primary me-2">
+                                            <i class="fas fa-tag me-1"></i><%= product.itemCategory %>
+                                        </span>
+                                        <span class="badge badge-category bg-secondary-subtle text-secondary">
+                                            <i class="fas fa-arrow-right me-1"></i><%= product.directionCategory %>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="product-price-display">
+                                        <span class="currency-symbol text-muted">₽</span>
+                                        <span class="price-amount fw-bold display-6 text-success" id="productPrice">
+                                            <%= product.price.toLocaleString() %>
+                                        </span>
+                                        <div class="price-subtitle text-muted small">per item</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Stock Status -->
+                            <div class="stock-status mb-3">
+                                <% if (product.stockQuantity > 0 || product.isDigital) { %>
+                                    <div class="d-inline-flex align-items-center bg-success-subtle border border-success-subtle rounded-pill px-3 py-2">
+                                        <i class="fas fa-check-circle text-success me-2"></i>
+                                        <span class="text-success fw-medium">
+                                            <%= product.isDigital ? 'Digital Item' : product.stockQuantity + ' in stock' %>
+                                        </span>
+                                    </div>
+                                <% } else { %>
+                                    <div class="d-inline-flex align-items-center bg-danger-subtle border border-danger-subtle rounded-pill px-3 py-2">
+                                        <i class="fas fa-times-circle text-danger me-2"></i>
+                                        <span class="text-danger fw-medium">Out of stock</span>
+                                    </div>
+                                <% } %>
+                            </div>
+
+                            <!-- Product Description Preview -->
+                            <p class="product-description text-muted mb-4 lh-base">
+                                <%= product.shortDescription || product.description.substring(0, 150) + '...' %>
+                            </p>
+                        </div>
+
+                        <!-- Quantity Selector -->
+                        <div class="quantity-section mb-4">
+                            <label class="form-label fw-semibold mb-3">Select Quantity</label>
+                            <div class="quantity-selector d-flex align-items-center">
+                                <button class="btn btn-outline-secondary btn-sm rounded-start-pill border-end-0" type="button" onclick="changeQuantity(-1)">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <input type="number" class="form-control text-center border-0 bg-transparent quantity-input" id="quantityInput" value="1" min="1" max="10" onchange="updateTotal()">
+                                <button class="btn btn-outline-secondary btn-sm rounded-end-pill border-start-0" type="button" onclick="changeQuantity(1)">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted mt-2 d-block">Maximum 10 items per purchase</small>
+                        </div>
+
+                        <!-- Enhanced Price Breakdown -->
+                        <div class="price-breakdown-card card border-0 bg-light mb-4">
+                            <div class="card-body p-3">
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <div class="text-muted small mb-1">Price per item</div>
+                                        <div class="fw-semibold text-primary" id="unitPrice">₽ <%= product.price.toLocaleString() %></div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-muted small mb-1">Quantity</div>
+                                        <div class="fw-semibold" id="selectedQuantity">1</div>
+                                    </div>
+                                </div>
+                                <hr class="my-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold h5 mb-0">Total Amount</span>
+                                    <span class="fw-bold h4 mb-0 text-success" id="totalPrice">₽ <%= product.price.toLocaleString() %></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="action-buttons mb-4">
+                            <button class="btn btn-primary btn-lg w-100 mb-3 purchase-btn" onclick="purchaseProduct()" id="buyButton">
+                                <i class="fas fa-shopping-cart me-2"></i>
+                                Purchase Now
+                                <span class="ms-2 fw-semibold">₽ <span id="buttonPrice"><%= product.price.toLocaleString() %></span></span>
+                            </button>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-outline-primary flex-grow-1" onclick="contactSeller()">
+                                    <i class="fas fa-envelope me-2"></i>Contact Seller
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="addToFavorites()">
+                                    <i class="fas fa-heart me-2"></i>Favorite
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Delivery Guarantee -->
+                        <div class="delivery-guarantee alert alert-info border-0 bg-gradient">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-shield-alt text-info me-3 fa-2x"></i>
+                                <div>
+                                    <h6 class="mb-1 fw-semibold">Delivery Guarantee</h6>
+                                    <ul class="mb-0 small text-muted">
+                                        <li>Instant delivery for digital items</li>
+                                        <li>24-hour refund protection</li>
+                                        <li>Premium account access guaranteed</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Seller Info -->
+                        <div class="seller-info mt-4 pt-4 border-top">
+                            <div class="d-flex align-items-center">
+                                <div class="seller-avatar me-3">
+                                    <div class="avatar-circle bg-primary text-white d-inline-flex align-items-center justify-content-center fw-bold">
+                                        <%= seller.name.charAt(0).toUpperCase() %>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-semibold mb-0">Sold by <a href="/<%= seller.id %>" class="text-decoration-none"><%= seller.name %></a></div>
+                                    <small class="text-muted">Trusted Seller • Response < 1h</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Details Tabs -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <ul class="nav nav-tabs" id="productTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="description-tab" data-bs-toggle="tab" data-bs-target="#description" type="button" role="tab">Description</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="specifications-tab" data-bs-toggle="tab" data-bs-target="#specifications" type="button" role="tab">Specifications</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button" role="tab">Reviews</button>
+                            </li>
+                        </ul>
+                        <div class="tab-content mt-3" id="productTabsContent">
+                            <!-- Description Tab -->
+                            <div class="tab-pane fade show active" id="description" role="tabpanel">
+                                <h5>Product Description</h5>
+                                <div id="shortDescription">
+                                    <p><strong>High-quality Instagram Premium account with full profile setup and 2FA enabled for security.</strong></p>
+                                </div>
+                                <hr>
+                                <div id="fullDescription">
+                                    <h6>Features:</h6>
+                                    <ul>
+                                        <li>✅ Verified premium account</li>
+                                        <li>✅ Full profile with bio and picture</li>
+                                        <li>✅ 2FA security enabled</li>
+                                        <li>✅ No login issues guaranteed</li>
+                                        <li>✅ 24/7 support available</li>
+                                        <li>✅ Account age: 2024 registration</li>
+                                        <li>✅ Country: Russia</li>
+                                    </ul>
+
+                                    <h6>Delivery Process:</h6>
+                                    <ol>
+                                        <li>After successful payment, you'll receive instant access credentials</li>
+                                        <li>Format: Username:Password:Email</li>
+                                        <li>You can open a dispute within 24 hours if any issues</li>
+                                        <li>Full refund guaranteed for any account issues</li>
+                                    </ol>
+
+                                    <h6>Important Notes:</h6>
+                                    <ul>
+                                        <li>This is a digital product, instant delivery</li>
+                                        <li>All accounts are verified and tested before delivery</li>
+                                        <li>Change password immediately after receiving credentials</li>
+                                        <li>Contact us immediately if you experience any issues</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- Specifications Tab -->
+                            <div class="tab-pane fade" id="specifications" role="tabpanel">
+                                <h5>Technical Specifications</h5>
+                                <table class="table table-striped">
+                                    <tbody>
+                                        <tr>
+                                            <th>Account Type</th>
+                                            <td>Instagram Premium</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Registration Year</th>
+                                            <td>2024</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Country</th>
+                                            <td>Russia</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Profile Fullness</th>
+                                            <td>Full Profile</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Login Method</th>
+                                            <td>Username + Password + Email</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Subscribers</th>
+                                            <td>50+ followers included</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Security</th>
+                                            <td>2FA Enabled</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Delivery Time</th>
+                                            <td>Instant</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Dispute Period</th>
+                                            <td>24 hours</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Reviews Tab -->
+                            <div class="tab-pane fade" id="reviews" role="tabpanel">
+                                <h5>Customer Reviews</h5>
+                                <div id="reviewsContainer">
+                                    <div class="review-item border-bottom pb-3 mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <div>
+                                                <strong>John D.</strong>
+                                                <small class="text-muted ms-2">2 days ago</small>
+                                            </div>
+                                            <div class="rating">
+                                                <i class="fas fa-star text-warning"></i>
+                                                <i class="fas fa-star text-warning"></i>
+                                                <i class="fas fa-star text-warning"></i>
+                                                <i class="fas fa-star text-warning"></i>
+                                                <i class="fas fa-star text-warning"></i>
+                                            </div>
+                                        </div>
+                                        <p>Perfect account! Worked immediately after purchase. No issues with login.</p>
+                                    </div>
+
+                                    <div class="review-item border-bottom pb-3 mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <div>
+                                                <strong>Maria S.</strong>
+                                                <small class="text-muted ms-2">1 week ago</small>
+                                            </div>
+                                            <div class="rating">
+                                                <i class="fas fa-star text-warning"></i>
+                                                <i class="fas fa-star text-warning"></i>
+                                                <i class="fas fa-star text-warning"></i>
+                                                <i class="fas fa-star text-warning"></i>
+                                                <i class="fas fa-star text-warning"></i>
+                                            </div>
+                                        </div>
+                                        <p>Great quality account. Exactly as described. Will buy again!</p>
+                                    </div>
+
+                                    <div class="review-item pb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <div>
+                                                <strong>Alex K.</strong>
+                                                <small class="text-muted ms-2">2 weeks ago</small>
+                                            </div>
+                                            <div class="rating">
+                                                <i class="fas fa-star text-warning"></i>
+                                                <i class="fas fa-star text-warning"></i>
+                                                <i class="fas fa-star text-warning"></i>
+                                                <i class="fas fa-star text-warning"></i>
+                                                <i class="fas fa-star-half-alt text-warning"></i>
+                                            </div>
+                                        </div>
+                                        <p>Good account, minor delay in delivery but support was helpful.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentQuantity = 1;
+        const basePrice = <%= product.price %>; // Dynamic price per item
+        const maxQuantity = 10;
+        const sellerId = '<%= seller.id %>';
+        const productId = '<%= product.id %>';
+
+        function changeQuantity(delta) {
+            currentQuantity += delta;
+            if (currentQuantity < 1) currentQuantity = 1;
+            if (currentQuantity > maxQuantity) currentQuantity = maxQuantity;
+
+            document.getElementById('quantityInput').value = currentQuantity;
+            updateTotal();
+        }
+
+        function updateTotal() {
+            currentQuantity = parseInt(document.getElementById('quantityInput').value) || 1;
+            if (currentQuantity < 1) currentQuantity = 1;
+            if (currentQuantity > maxQuantity) currentQuantity = maxQuantity;
+
+            const total = basePrice * currentQuantity;
+
+            document.getElementById('selectedQuantity').textContent = currentQuantity;
+            document.getElementById('totalPrice').textContent = `₽ ${total.toLocaleString()}`;
+
+            // Update button price display
+            document.getElementById('buttonPrice').textContent = total.toLocaleString();
+
+            // Update unit price display
+            document.getElementById('unitPrice').textContent = `₽ ${basePrice.toLocaleString()}`;
+        }
+
+        function changeMainImage(element) {
+            const imageName = element.getAttribute('data-image');
+            document.getElementById('mainProductImage').src = `/uploads/${imageName}`;
+        }
+
+        function purchaseProduct() {
+            if (confirm(`Purchase ${currentQuantity} item(s) for ₽ ${(basePrice * currentQuantity).toLocaleString()}?`)) {
+                // Create form to submit to buy-now route
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/buy-now/${sellerId}/${productId}`;
+
+                const quantityInput = document.createElement('input');
+                quantityInput.type = 'hidden';
+                quantityInput.name = 'quantity';
+                quantityInput.value = currentQuantity;
+
+                form.appendChild(quantityInput);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+        function contactSeller() {
+            // Open chat modal or redirect to contact page
+            window.location.href = '/contact-seller/<%= seller.id %>';
+        }
+
+        function addToFavorites() {
+            // Add to favorites functionality
+            alert('Added to favorites! (This would integrate with a backend system)');
+        }
+
+        function openFullscreen() {
+            // Open image in fullscreen (could be expanded to modal)
+            const mainImage = document.getElementById('mainProductImage');
+            if (mainImage) {
+                alert('Fullscreen functionality would open a modal viewer for the image');
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateTotal();
+
+            // Update product description dynamically if available
+            const descriptionTab = document.getElementById('shortDescription');
+            if (descriptionTab && typeof product !== 'undefined' && product.description) {
+                descriptionTab.innerHTML = `<p>${product.description}</p>`;
+            }
+
+            const fullDescriptionTab = document.getElementById('fullDescription');
+            if (fullDescriptionTab && typeof product !== 'undefined' && product.fullDescription) {
+                fullDescriptionTab.innerHTML = `<div>${product.fullDescription}</div>`;
+            }
+        });
+    </script>
+</body>
+</html>

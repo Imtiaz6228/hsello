@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Services - DigitalMarket</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+  <!-- ================= PREMIUM NAVBAR ================ -->
+  <%- include('./partials/navbar.ejs') %>
+  <!-- =============== END PREMIUM NAVBAR ============== -->
+
+  <!-- ================= SERVICES SECTION ================ -->
+  <section id="services" class="services-section">
+    <div class="container">
+      <div class="section-header">
+        <h1 class="section-title">Digital Services Marketplace</h1>
+        <p class="section-subtitle">Connect with expert freelancers and service providers across various digital domains</p>
+      </div>
+
+      <!-- Search & Categories -->
+      <div class="service-categories">
+        <!-- Search Bar -->
+        <div class="search-container mb-4">
+          <div class="search-input-wrapper">
+            <input type="text" id="serviceSearch" placeholder="Search services by name or seller..." class="form-control" value="">
+            <button class="search-btn" id="searchBtn">
+              <i class="fas fa-search"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="category-tabs">
+          <button class="category-tab active" data-category="all">All Services</button>
+          <button class="category-tab" data-category="accounts">Accounts</button>
+          <button class="category-tab" data-category="games">Games</button>
+          <button class="category-tab" data-category="ai">AI</button>
+          <button class="category-tab" data-category="development">Development</button>
+          <button class="category-tab" data-category="marketing">Marketing</button>
+        </div>
+      </div>
+
+      <!-- Services Grid -->
+      <div class="services-grid">
+        <!-- Accounts Services -->
+        <div class="service-item" data-category="accounts" data-name="Instagram Account Setup" data-seller="TechPro Services">
+          <a href="/contact-seller/<%= typeof locals.user !== 'undefined' && 'sample-seller-id' %>" class="service-link">
+            <div class="service-card">
+              <div class="service-icon">📸</div>
+              <h3>Instagram Account Setup</h3>
+              <p>Professional Instagram account setup with complete profile optimization</p>
+              <div class="service-seller">
+                <small>by <strong>TechPro Services</strong></small>
+              </div>
+              <div class="service-meta">
+                <span class="service-price">From $50</span>
+                <span class="service-rating">⭐ 4.9 (325)</span>
+              </div>
+              <div class="service-features">
+                <span class="feature-tag">Setup</span>
+                <span class="feature-tag">Optimization</span>
+                <span class="feature-tag">Analytics</span>
+                <span class="feature-tag">Growth</span>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div class="service-item" data-category="accounts" data-name="Facebook Business Page" data-seller="Digital Masters">
+          <a href="/contact-seller/<%= typeof locals.user !== 'undefined' && 'sample-seller-id2' %>" class="service-link">
+            <div class="service-card">
+              <div class="service-icon">👥</div>
+              <h3>Facebook Business Page</h3>
+              <p>Complete Facebook business page creation with marketing strategy</p>
+              <div class="service-seller">
+                <small>by <strong>Digital Masters</strong></small>
+              </div>
+              <div class="service-meta">
+                <span class="service-price">From $75</span>
+                <span class="service-rating">⭐ 4.8 (287)</span>
+              </div>
+              <div class="service-features">
+                <span class="feature-tag">Design</span>
+                <span class="feature-tag">Setup</span>
+                <span class="feature-tag">Content</span>
+                <span class="feature-tag">Marketing</span>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div class="service-item" data-category="accounts" data-name="Twitter Optimization" data-seller="Social Boost">
+          <a href="/contact-seller/<%= typeof locals.user !== 'undefined' && 'sample-seller-id3' %>" class="service-link">
+            <div class="service-card">
+              <div class="service-icon">🐦</div>
+              <h3>Twitter Optimization</h3>
+              <p>Twitter account growth and optimization services for brands</p>
+              <div class="service-seller">
+                <small>by <strong>Social Boost</strong></small>
+              </div>
+              <div class="service-meta">
+                <span class="service-price">From $60</span>
+                <span class="service-rating">⭐ 4.7 (198)</span>
+              </div>
+              <div class="service-features">
+                <span class="feature-tag">Growth</span>
+                <span class="feature-tag">Optimization</span>
+                <span class="feature-tag">Engagement</span>
+                <span class="feature-tag">Analytics</span>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div class="service-item" data-category="accounts" data-name="LinkedIn Profile Premium" data-seller="Career Pros">
+          <a href="/contact-seller/<%= typeof locals.user !== 'undefined' && 'sample-seller-id4' %>" class="service-link">
+            <div class="service-card">
+              <div class="service-icon">💼</div>
+              <h3>LinkedIn Profile Premium</h3>
+              <p>Professional LinkedIn profile optimization and networking strategy</p>
+              <div class="service-seller">
+                <small>by <strong>Career Pros</strong></small>
+              </div>
+              <div class="service-meta">
+                <span class="service-price">From $100</span>
+                <span class="service-rating">⭐ 4.6 (315)</span>
+              </div>
+              <div class="service-features">
+                <span class="feature-tag">Profile</span>
+                <span class="feature-tag">Networking</span>
+                <span class="feature-tag">Strategy</span>
+                <span class="feature-tag">Visibility</span>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <!-- More Accounts Services (showing 5 of 25+) -->
+        <div class="service-item" data-category="accounts" data-name="TikTok Setup" data-seller="Viral Media">
+          <a href="/contact-seller/<%= typeof locals.user !== 'undefined' && 'sample-seller-id5' %>" class="service-link">
+            <div class="service-card">
+              <div class="service-icon">🎵</div>
+              <h3>TikTok Setup</h3>
+              <p>TikTok account creation and viral content strategy</p>
+              <div class="service-seller">
+                <small>by <strong>Viral Media</strong></small>
+              </div>
+              <div class="service-meta">
+                <span class="service-price">From $85</span>
+                <span class="service-rating">⭐ 4.8 (234)</span>
+              </div>
+              <div class="service-features">
+                <span class="feature-tag">Setup</span>
+                <span class="feature-tag">Content</span>
+                <span class="feature-tag">Viral</span>
+                <span class="feature-tag">Growth</span>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div class="service-item" data-category="accounts" data-name="YouTube Channel Optimization" data-seller="Video Pros">
+          <a href="/contact-seller/<%= typeof locals.user !== 'undefined' && 'sample-seller-id6' %>" class="service-link">
+            <div class="service-card">
+              <div class="service-icon">🎥</div>
+              <h3>YouTube Channel Optimization</h3>
+              <p>YouTube channel SEO and growth optimization services</p>
+              <div class="service-seller">
+                <small>by <strong>Video Pros</strong></small>
+              </div>
+              <div class="service-meta">
+                <span class="service-price">From $120</span>
+                <span class="service-rating">⭐ 4.9 (156)</span>
+              </div>
+              <div class="service-features">
+                <span class="feature-tag">SEO</span>
+                <span class="feature-tag">Growth</span>
+                <span class="feature-tag">Monetization</span>
+                <span class="feature-tag">Analytics</span>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <!-- Games Services -->
+        <div class="service-item" data-category="games" data-name="Game Character Design" data-seller="Pixel Artists">
+          <a href="/contact-seller/<%= typeof locals.user !== 'undefined' && 'sample-seller-id7' %>" class="service-link">
+            <div class="service-card">
+              <div class="service-icon">🎮</div>
+              <h3>Game Character Design</h3>
+              <p>Custom game character design and animation services</p>
+              <div class="service-seller">
+                <small>by <strong>Pixel Artists</strong></small>
+              </div>
+              <div class="service-meta">
+                <span class="service-price">From $200</span>
+                <span class="service-rating">⭐ 4.8 (289)</span>
+              </div>
+              <div class="service-features">
+                <span class="feature-tag">Design</span>
+                <span class="feature-tag">Animation</span>
+                <span class="feature-tag">Characters</span>
+                <span class="feature-tag">2D/3D</span>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div class="service-item" data-category="games" data-name="Unity Development" data-seller="Game Dev Studio">
+          <a href="/contact-seller/<%= typeof locals.user !== 'undefined' && 'sample-seller-id8' %>" class="service-link">
+            <div class="service-card">
+              <div class="service-icon">🎯</div>
+              <h3>Unity Development</h3>
+              <p>Professional Unity game development and bug fixing</p>
+              <div class="service-seller">
+                <small>by <strong>Game Dev Studio</strong></small>
+              </div>
+              <div class="service-meta">
+                <span class="service-price">From $150/hour</span>
+                <span class="service-rating">⭐ 4.7 (342)</span>
+              </div>
+              <div class="service-features">
+                <span class="feature-tag">Unity</span>
+                <span class="feature-tag">C#</span>
+                <span class="feature-tag">Multiplayer</span>
+                <span class="feature-tag">Mobile</span>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div class="service-item" data-category="games" data-name="Unreal Engine Assets" data-seller="Epic Creations">
+          <a href="/contact-seller/<%= typeof locals.user !== 'undefined' && 'sample-seller-id9' %>" class="service-link">
+            <div class="service-card">
+              <div class="service-icon">🌟</div>
+              <h3>Unreal Engine Assets</h3>
+              <p>Premium 3D assets and environments for Unreal Engine</p>
+              <div class="service-seller">
+                <small>by <strong>Epic Creations</strong></small>
+              </div>
+              <div class="service-meta">
+                <span class="service-price">From $300</span>
+                <span class="service-rating">⭐ 4.6 (198)</span>
+              </div>
+              <div class="service-features">
+                <span class="feature-tag">3D</span>
+                <span class="feature-tag">Assets</span>
+                <span class="feature-tag">Environments</span>
+                <span class="feature-tag">Unreal</span>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <!-- AI Services -->
+        <div class="service-item" data-category="ai" data-name="AI Content Writer" data-seller="AI Writers Co">
+          <a href="/contact-seller/<%= typeof locals.user !== 'undefined' && 'sample-seller-id10' %>" class="service-link">
+            <div class="service-card">
+              <div class="service-icon">🤖</div>
+              <h3>AI Content Writer</h3>
+              <p>AI-powered content writing and copywriting services</p>
+              <div class="service-seller">
+                <small>by <strong>AI Writers Co</strong></small>
+              </div>
+              <div class="service-meta">
+                <span class="service-price">From $25</span>
+                <span class="service-rating">⭐ 4.9 (432)</span>
+              </div>
+              <div class="service-features">
+                <span class="feature-tag">Content</span>
+                <span class="feature-tag">SEO</span>
+                <span class="feature-tag">Blog Posts</span>
+                <span class="feature-tag">Marketing</span>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div class="service-item" data-category="ai" data-name="Machine Learning Consulting" data-seller="Data Experts">
+          <a href="/contact-seller/<%= typeof locals.user !== 'undefined' && 'sample-seller-id11' %>" class="service-link">
+            <div class="service-card">
+              <div class="service-icon">🧠</div>
+              <h3>Machine Learning Consulting</h3>
+              <p>ML model development and AI strategy consulting</p>
+              <div class="service-seller">
+                <small>by <strong>Data Experts</strong></small>
+              </div>
+              <div class="service-meta">
+                <span class="service-price">From $200/hour</span>
+                <span class="service-rating">⭐ 4.7 (187)</span>
+              </div>
+              <div class="service-features">
+                <span class="feature-tag">Python</span>
+                <span class="feature-tag">TensorFlow</span>
+                <span class="feature-tag">Strategy</span>
+                <span class="feature-tag">Analytics</span>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <!-- Development Services -->
+        <div class="service-item" data-category="development" data-name="Web Development" data-seller="TechPro Services">
+          <a href="/contact-seller/<%= typeof locals.user !== 'undefined' && 'sample-seller-id12' %>" class="service-link">
+            <div class="service-card">
+              <div class="service-icon">💻</div>
+              <h3>Web Development</h3>
+              <p>Custom website development, e-commerce platforms, CMS</p>
+              <div class="service-seller">
+                <small>by <strong>TechPro Services</strong></small>
+              </div>
+              <div class="service-meta">
+                <span class="service-price">From $500</span>
+                <span class="service-rating">⭐ 4.8 (245)</span>
+              </div>
+              <div class="service-features">
+                <span class="feature-tag">PHP</span>
+                <span class="feature-tag">JavaScript</span>
+                <span class="feature-tag">React</span>
+                <span class="feature-tag">Node.js</span>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div class="service-item" data-category="development" data-name="Mobile App Development" data-seller="App Masters">
+          <a href="/contact-seller/<%= typeof locals.user !== 'undefined' && 'sample-seller-id13' %>" class="service-link">
+            <div class="service-card">
+              <div class="service-icon">📱</div>
+              <h3>Mobile App Development</h3>
+              <p>Native and cross-platform mobile applications for iOS and Android</p>
+              <div class="service-seller">
+                <small>by <strong>App Masters</strong></small>
+              </div>
+              <div class="service-meta">
+                <span class="service-price">From $800</span>
+                <span class="service-rating">⭐ 4.7 (189)</span>
+              </div>
+              <div class="service-features">
+                <span class="feature-tag">React Native</span>
+                <span class="feature-tag">Flutter</span>
+                <span class="feature-tag">iOS</span>
+                <span class="feature-tag">Android</span>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <!-- Marketing Services -->
+        <div class="service-item" data-category="marketing" data-name="SEO Optimization" data-seller="SEO Masters">
+          <a href="/contact-seller/<%= typeof locals.user !== 'undefined' && 'sample-seller-id14' %>" class="service-link">
+            <div class="service-card">
+              <div class="service-icon">🔍</div>
+              <h3>SEO Optimization</h3>
+              <p>Complete SEO optimization and keyword research services</p>
+              <div class="service-seller">
+                <small>by <strong>SEO Masters</strong></small>
+              </div>
+              <div class="service-meta">
+                <span class="service-price">From $150</span>
+                <span class="service-rating">⭐ 4.9 (312)</span>
+              </div>
+              <div class="service-features">
+                <span class="feature-tag">SEO</span>
+                <span class="feature-tag">Keywords</span>
+                <span class="feature-tag">Optimization</span>
+                <span class="feature-tag">Analytics</span>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <!-- Additional Services for each category -->
+        <div class="service-item" data-category="accounts" data-name="Pinterest Management" data-seller="Visual Pins">
+          <a href="/contact-seller/<%= typeof locals.user !== 'undefined' && 'sample-seller-id15' %>" class="service-link">
+            <div class="service-card">
+              <div class="service-icon">📌</div>
+              <h3>Pinterest Management</h3>
+              <p>Pinterest business account setup and visual marketing</p>
+              <div class="service-seller">
+                <small>by <strong>Visual Pins</strong></small>
+              </div>
+              <div class="service-meta">
+                <span class="service-price">From $45</span>
+                <span class="service-rating">⭐ 4.5 (87)</span>
+              </div>
+              <div class="service-features">
+                <span class="feature-tag">Pins</span>
+                <span class="feature-tag">Visual</span>
+                <span class="feature-tag">Marketing</span>
+                <span class="feature-tag">Traffic</span>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div class="service-item" data-category="games" data-name="Game Testing Services" data-seller="QA Gamers">
+          <a href="/contact-seller/<%= typeof locals.user !== 'undefined' && 'sample-seller-id16' %>" class="service-link">
+            <div class="service-card">
+              <div class="service-icon">🧪</div>
+              <h3>Game Testing Services</h3>
+              <p>Professional game testing and quality assurance</p>
+              <div class="service-seller">
+                <small>by <strong>QA Gamers</strong></small>
+              </div>
+              <div class="service-meta">
+                <span class="service-price">From $80/hour</span>
+                <span class="service-rating">⭐ 4.6 (167)</span>
+              </div>
+              <div class="service-features">
+                <span class="feature-tag">Testing</span>
+                <span class="feature-tag">QA</span>
+                <span class="feature-tag">Bugs</span>
+                <span class="feature-tag">Feedback</span>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <!-- Continue with more services for each category -->
+        <div class="service-item" data-category="accounts" data-name="Reddit Community Management" data-seller="Reddit Pros">
+          <a href="/contact-seller/<%= typeof locals.user !== 'undefined' && 'sample-seller-id17' %>" class="service-link">
+            <div class="service-card">
+              <div class="service-icon">🤖</div>
+              <h3>Reddit Community Management</h3>
+              <p>Reddit account creation and community building</p>
+              <div class="service-seller">
+                <small>by <strong>Reddit Pros</strong></small>
+              </div>
+              <div class="service-meta">
+                <span class="service-price">From $70</span>
+                <span class="service-rating">⭐ 4.4 (145)</span>
+              </div>
+              <div class="service-features">
+                <span class="feature-tag">Reddit</span>
+                <span class="feature-tag">Community</span>
+                <span class="feature-tag">Karma</span>
+                <span class="feature-tag">Growth</span>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div class="service-item" data-category="ai" data-name="ChatGPT Integration" data-seller="AI Solutions">
+          <a href="/contact-seller/<%= typeof locals.user !== 'undefined' && 'sample-seller-id18' %>" class="service-link">
+            <div class="service-card">
+              <div class="service-icon">💬</div>
+              <h3>ChatGPT Integration</h3>
+              <p>Custom ChatGPT and AI chatbot development services</p>
+              <div class="service-seller">
+                <small>by <strong>AI Solutions</strong></small>
+              </div>
+              <div class="service-meta">
+                <span class="service-price">From $300</span>
+                <span class="service-rating">⭐ 4.8 (234)</span>
+              </div>
+              <div class="service-features">
+                <span class="feature-tag">ChatGPT</span>
+                <span class="feature-tag">Integration</span>
+                <span class="feature-tag">API</span>
+                <span class="feature-tag">Automation</span>
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Call to Action -->
+      <div class="services-cta">
+        <div class="cta-content">
+          <h2>Ready to Get Started?</h2>
+          <p>Join thousands of satisfied clients who found expert help on our platform</p>
+          <% if (locals.user) { %>
+            <% if (locals.user.isSeller) { %>
+              <a href="/seller/dashboard" class="cta-button">Go to Dashboard</a>
+            <% } else { %>
+              <a href="/become-seller" class="cta-button">Become a Seller</a>
+            <% } %>
+          <% } else { %>
+            <a href="/signup" class="cta-button">Get Started</a>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FOOTER ================ -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="/stores">Stores</a>
+        <a href="/products">Products</a>
+        <a href="/services">Services</a>
+        <% if (locals.user) { %>
+          <a href="/orders">My Orders</a>
+          <% if (locals.user.isSeller) { %>
+            <a href="/seller/dashboard">Dashboard</a>
+          <% } %>
+        <% } else { %>
+          <a href="/login">Login</a>
+        <% } %>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2025 DigitalMarket. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/script.js"></script>
+  <script>
+    // Service filtering functionality
+    document.addEventListener('DOMContentLoaded', function() {
+      const categoryTabs = document.querySelectorAll('.category-tab');
+      const serviceItems = document.querySelectorAll('.service-item');
+      const searchInput = document.getElementById('serviceSearch');
+      const searchBtn = document.getElementById('searchBtn');
+
+      // Function to filter services
+      function filterServices(category = 'all', searchTerm = '') {
+        serviceItems.forEach(item => {
+          const itemCategory = item.dataset.category;
+          const itemName = item.dataset.name.toLowerCase();
+          const itemSeller = item.dataset.seller.toLowerCase();
+
+          const matchesCategory = category === 'all' || itemCategory === category;
+          const matchesSearch = searchTerm === '' ||
+            itemName.includes(searchTerm.toLowerCase()) ||
+            itemSeller.includes(searchTerm.toLowerCase());
+
+          if (matchesCategory && matchesSearch) {
+            item.style.display = 'block';
+          } else {
+            item.style.display = 'none';
+          }
+        });
+      }
+
+      // Category tabs click handlers
+      categoryTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+          // Remove active class from all tabs
+          categoryTabs.forEach(t => t.classList.remove('active'));
+          // Add active class to clicked tab
+          this.classList.add('active');
+
+          const category = this.dataset.category;
+          const currentSearch = searchInput.value.trim();
+
+          filterServices(category, currentSearch);
+        });
+      });
+
+      // Search input handler
+      searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.trim();
+        const activeTab = document.querySelector('.category-tab.active');
+        const category = activeTab ? activeTab.dataset.category : 'all';
+
+        filterServices(category, searchTerm);
+      });
+
+      // Search button handler
+      searchBtn.addEventListener('click', function() {
+        const searchTerm = searchInput.value.trim();
+        const activeTab = document.querySelector('.category-tab.active');
+        const category = activeTab ? activeTab.dataset.category : 'all';
+
+        filterServices(category, searchTerm);
+      });
+
+      // Enter key handler for search
+      searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          const searchTerm = this.value.trim();
+          const activeTab = document.querySelector('.category-tab.active');
+          const category = activeTab ? activeTab.dataset.category : 'all';
+
+          filterServices(category, searchTerm);
+        }
+      });
+    });
+  </script>
+
+  <style>
+    /* Services Page Styles */
+    .services-section {
+      padding: 80px 0;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    .section-title {
+      font-size: 2.5em;
+      color: #2c3e50;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    .section-subtitle {
+      font-size: 1.2em;
+      color: #7f8c8d;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Search Bar */
+    .search-container {
+      position: relative;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .search-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-input-wrapper input {
+      width: 100%;
+      padding: 15px 20px;
+      padding-right: 60px;
+      border: 2px solid #e9ecef;
+      border-radius: 50px;
+      font-size: 1.1em;
+      transition: all 0.3s ease;
+      background: white;
+    }
+
+    .search-input-wrapper input:focus {
+      border-color: #3498db;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .search-btn {
+      position: absolute;
+      right: 8px;
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .search-btn:hover {
+      background: #2980b9;
+      transform: scale(1.05);
+    }
+
+    /* Service Links */
+    .service-link {
+      text-decoration: none;
+      color: inherit;
+      display: block;
+      height: 100%;
+    }
+
+    .service-link:focus,
+    .service-link:hover {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    /* Category Tabs */
+    .service-categories {
+      margin-bottom: 40px;
+    }
+
+    .category-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .category-tab {
+      padding: 12px 24px;
+      background: white;
+      border: 2px solid #3498db;
+      border-radius: 25px;
+      color: #3498db;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .category-tab:hover,
+    .category-tab.active {
+      background: #3498db;
+      color: white;
+    }
+
+    /* Services Grid */
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 30px;
+      margin-bottom: 60px;
+    }
+
+    .service-item {
+      transition: transform 0.3s ease;
+    }
+
+    .service-item:hover {
+      transform: translateY(-5px);
+    }
+
+    .service-card {
+      background: white;
+      border-radius: 15px;
+      padding: 30px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+      transition: box-shadow 0.3s ease;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .service-card:hover {
+      box-shadow: 0 12px 35px rgba(0,0,0,0.15);
+    }
+
+    .service-icon {
+      font-size: 3em;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .service-card h3 {
+      color: #2c3e50;
+      font-size: 1.4em;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+
+    .service-card p {
+      color: #7f8c8d;
+      line-height: 1.6;
+      margin-bottom: 20px;
+      text-align: center;
+      flex-grow: 1;
+    }
+
+    .service-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .service-price {
+      font-size: 1.2em;
+      font-weight: 700;
+      color: #3498db;
+    }
+
+    .service-rating {
+      color: #f39c12;
+      font-weight: 600;
+    }
+
+    .service-features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .feature-tag {
+      background: #ecf0f1;
+      color: #3498db;
+      padding: 4px 12px;
+      border-radius: 15px;
+      font-size: 0.85em;
+      font-weight: 500;
+    }
+
+    /* Call to Action */
+    .services-cta {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 20px;
+      padding: 60px 40px;
+      text-align: center;
+      color: white;
+    }
+
+    .cta-content h2 {
+      font-size: 2.2em;
+      margin-bottom: 15px;
+    }
+
+    .cta-content p {
+      font-size: 1.1em;
+      margin-bottom: 30px;
+      opacity: 0.9;
+    }
+
+    .cta-button {
+      display: inline-block;
+      padding: 15px 40px;
+      background: white;
+      color: #667eea;
+      text-decoration: none;
+      border-radius: 25px;
+      font-weight: 600;
+      font-size: 1.1em;
+      transition: all 0.3s ease;
+    }
+
+    .cta-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .services-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+
+      .section-title {
+        font-size: 2em;
+      }
+
+      .category-tabs {
+        gap: 8px;
+      }
+
+      .category-tab {
+        padding: 10px 20px;
+        font-size: 0.9em;
+      }
+
+      .service-card {
+        padding: 20px;
+      }
+
+      .services-cta {
+        padding: 40px 20px;
+      }
+
+      .cta-content h2 {
+        font-size: 1.8em;
+      }
+    }
+  </style>
+</body>
+</html>

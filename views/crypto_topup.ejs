@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Top Up with Cryptocurrency - DigitalMarket</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    .crypto-topup-layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+
+    .topup-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .topup-header h1 {
+      color: #333;
+      margin-bottom: 0.5rem;
+    }
+
+    .topup-header p {
+      color: #666;
+      font-size: 1.1rem;
+    }
+
+    .amount-selection {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
+    }
+
+    .amount-form {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .amount-form input {
+      flex: 1;
+      padding: 0.75rem;
+      border: 2px solid #e1e5e9;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .amount-form button {
+      padding: 0.75rem 1.5rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .amount-form button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .calculated-amount {
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: #2c3e50;
+      margin: 1rem 0;
+    }
+
+    .crypto-benefits {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .benefit-card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      text-align: center;
+      transition: transform 0.3s ease;
+    }
+
+    .benefit-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .benefit-card .icon {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .benefit-card h3 {
+      color: #333;
+      margin-bottom: 0.5rem;
+    }
+
+    .benefit-card p {
+      color: #666;
+      font-size: 0.95rem;
+    }
+
+    .proceed-btn {
+      display: block;
+      width: 100%;
+      max-width: 300px;
+      margin: 2rem auto;
+      padding: 1rem;
+      background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+      color: white;
+      text-decoration: none;
+      text-align: center;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      transition: all 0.3s ease;
+    }
+
+    .proceed-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 30px rgba(76, 175, 80, 0.4);
+    }
+
+    .supported-cryptos {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    .crypto-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .crypto-item {
+      padding: 0.5rem;
+      background: #f8f9fa;
+      border-radius: 8px;
+      font-weight: 500;
+      color: #495057;
+    }
+
+    .security-notice {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1.5rem;
+      border-radius: 12px;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      .crypto-topup-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .amount-form {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- ================= PREMIUM NAVBAR ================ -->
+  <%- include('./partials/navbar.ejs') %>
+  <!-- =============== END PREMIUM NAVBAR ============== -->
+
+  <div class="page-top-space"></div>
+
+  <!-- CRYPTO TOPUP PAGE -->
+  <main class="crypto-topup-layout">
+    <div class="topup-header">
+      <h1>💰 Top Up with Cryptocurrency</h1>
+      <p>Fast, secure, and instant balance crediting with low fees</p>
+    </div>
+
+    <div class="amount-selection">
+      <h2>Choose Amount</h2>
+
+      <div class="amount-form">
+        <input type="number" id="amountUSD" name="amountUSD" min="3" max="20000" value="3" placeholder="$0.00" required />
+        <button type="button" onclick="calculateAmount()">Calculate</button>
+      </div>
+
+      <div class="calculated-amount" id="calculatedAmount">
+        Amount: 243.00 ₽
+      </div>
+
+      <div style="margin-top: 1rem;">
+        <small style="color: #666;">Minimum: 243 ₽ | Maximum: 1,620,000 ₽ | All transactions in Russian Rubles (RUB)</small>
+      </div>
+    </div>
+
+    <div class="crypto-benefits">
+      <div class="benefit-card">
+        <div class="icon">⚡</div>
+        <h3>Instant Processing</h3>
+        <p>Your balance is credited automatically once the cryptocurrency transaction is confirmed</p>
+      </div>
+
+      <div class="benefit-card">
+        <div class="icon">🔒</div>
+        <h3>Highly Secure</h3>
+        <p>Bank-level security with NO KYC required for purchases</p>
+      </div>
+
+      <div class="benefit-card">
+        <div class="icon">💸</div>
+        <h3>Low Fees</h3>
+        <p>Cheapest crypto-to-fiat conversion rates available</p>
+      </div>
+
+      <div class="benefit-card">
+        <div class="icon">🌐</div>
+        <h3>Global Access</h3>
+        <p>Accept payments from anywhere in the world 24/7</p>
+      </div>
+    </div>
+
+    <div class="security-notice">
+      <h3>🛡️ Protected by NOWPayments Integration</h3>
+      <p>All transactions are secured and processed through our professional payment gateway</p>
+    </div>
+
+    <div class="supported-cryptos">
+      <h3>Supported Cryptocurrencies</h3>
+      <div class="crypto-grid">
+        <div class="crypto-item">BTC</div>
+        <div class="crypto-item">ETH</div>
+        <div class="crypto-item">USDT</div>
+        <div class="crypto-item">BNB</div>
+        <div class="crypto-item">USDC</div>
+        <div class="crypto-item">ADA</div>
+        <div class="crypto-item">SOL</div>
+        <div class="crypto-item">DOGE</div>
+        <div class="crypto-item">XRP</div>
+        <div class="crypto-item">LTC</div>
+        <div class="crypto-item">AVA</div>
+        <div class="crypto-item">AVAX</div>
+        <div class="crypto-item">DOT</div>
+        <div class="crypto-item">SAND</div>
+        <div class="crypto-item">MANA</div>
+        <div class="crypto-item">BAC</div>
+      </div>
+    </div>
+
+    <a href="/topup/cryptocurrency?usd=3" id="proceedLink" class="proceed-btn">
+      Proceed to Payment 💳
+    </a>
+  </main>
+
+  <script src="/js/script.js"></script>
+  <script>
+    function calculateAmount() {
+      const usdInput = document.getElementById('amountUSD');
+      const calculatedDisplay = document.getElementById('calculatedAmount');
+      const proceedLink = document.getElementById('proceedLink');
+
+      const usd = parseFloat(usdInput.value);
+
+      if (usd >= 3 && usd <= 20000) {
+        const rub = usd * 81; // Convert USD to RUB for display
+        calculatedDisplay.textContent = `Amount: ${rub.toFixed(2)} ₽`;
+        calculatedDisplay.style.color = '#2c3e50';
+
+        proceedLink.href = `/topup/cryptocurrency?usd=${usd}`;
+        proceedLink.style.pointerEvents = 'auto';
+        proceedLink.style.opacity = '1';
+      } else {
+        calculatedDisplay.textContent = 'Please enter amount between 243 ₽ and 1,620,000 ₽';
+        calculatedDisplay.style.color = '#e74c3c';
+
+        proceedLink.style.pointerEvents = 'none';
+        proceedLink.style.opacity = '0.6';
+      }
+    }
+
+    // Set initial values
+    document.addEventListener('DOMContentLoaded', function() {
+      calculateAmount();
+
+      document.getElementById('amountUSD').addEventListener('input', calculateAmount);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Application Under Review - DigitalMarket</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    .review-application {
+      min-height: calc(100vh - 72px);
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      padding: 100px 20px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .review-container {
+      max-width: 800px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .review-card {
+      background: white;
+      padding: 60px 40px;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .review-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #f39c12 0%, #e74c3c 50%, #9b59b6 100%);
+    }
+    .review-icon {
+      font-size: 4em;
+      margin-bottom: 20px;
+      display: block;
+    }
+    .review-card h1 {
+      color: #2c3e50;
+      font-size: 2.5em;
+      font-weight: 700;
+      margin: 0 0 20px 0;
+    }
+    .review-card p {
+      color: #34495e;
+      font-size: 1.2em;
+      line-height: 1.6;
+      margin: 0 0 30px 0;
+    }
+    .review-details {
+      background: #f8f9fa;
+      padding: 25px;
+      border-radius: 12px;
+      margin: 30px 0;
+      text-align: left;
+      border-left: 4px solid #f39c12;
+    }
+    .review-details h3 {
+      margin: 0 0 15px 0;
+      color: #2c3e50;
+      font-size: 1.3em;
+    }
+    .detail-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #ecf0f1;
+    }
+    .detail-item:last-child {
+      border-bottom: none;
+    }
+    .detail-label {
+      font-weight: 600;
+      color: #34495e;
+    }
+    .detail-value {
+      color: #7f8c8d;
+    }
+    .timeline {
+      margin: 40px 0;
+      position: relative;
+    }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #ecf0f1;
+      transform: translateX(-50%);
+    }
+    .timeline-item {
+      position: relative;
+      margin: 40px 0;
+      clear: both;
+    }
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #ecf0f1;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1;
+    }
+    .timeline-item.active::before {
+      background: #27ae60;
+    }
+    .timeline-content {
+      width: 45%;
+      padding: 0 20px;
+    }
+    .timeline-content.left {
+      float: left;
+      text-align: right;
+    }
+    .timeline-content.right {
+      float: right;
+      text-align: left;
+    }
+    .step-number {
+      display: inline-block;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #ecf0f1;
+      color: #7f8c8d;
+      font-weight: 700;
+      line-height: 40px;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    .timeline-item.active .step-number {
+      background: #27ae60;
+      color: white;
+    }
+    .step-title {
+      font-weight: 700;
+      color: #2c3e50;
+      margin-bottom: 5px;
+    }
+    .step-desc {
+      color: #7f8c8d;
+      font-size: 0.9em;
+      line-height: 1.4;
+    }
+    .actions {
+      margin-top: 40px;
+    }
+    .btn-secondary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1em;
+      transition: transform 0.3s ease;
+      margin: 0 10px;
+    }
+    .btn-secondary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    .btn-outline {
+      background: transparent;
+      color: #667eea;
+      border: 2px solid #667eea;
+    }
+    .btn-outline:hover {
+      background: #667eea;
+      color: white;
+    }
+    .contact-info {
+      margin-top: 40px;
+      padding: 20px;
+      background: #e8f4fd;
+      border-radius: 12px;
+      border-left: 4px solid #3498db;
+    }
+    .contact-info h3 {
+      margin: 0 0 10px 0;
+      color: #2c3e50;
+      font-size: 1.2em;
+    }
+    .contact-info p {
+      margin: 0;
+      color: #34495e;
+    }
+    .contact-info a {
+      color: #3498db;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .contact-info a:hover {
+      text-decoration: underline;
+    }
+    @media (max-width: 768px) {
+      .review-application {
+        padding: 80px 15px 20px;
+      }
+      .review-card {
+        padding: 40px 20px;
+      }
+      .review-card h1 {
+        font-size: 2em;
+      }
+      .timeline::before {
+        left: 20px;
+      }
+      .timeline-item::before {
+        left: 20px;
+      }
+      .timeline-content {
+        width: 100%;
+        padding-left: 60px;
+        float: none;
+        text-align: left;
+      }
+      .actions .btn-secondary {
+        display: block;
+        margin: 10px auto;
+        width: 200px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ================= NAVBAR ================ -->
+  <%- include('partials/navbar') %>
+
+  <!-- ================= APPLICATION REVIEW CONTENT ================ -->
+  <div class="review-application">
+    <div class="review-container">
+      <div class="review-card">
+        <!-- Review Icon -->
+        <span class="review-icon">⏳</span>
+
+        <!-- Main Message -->
+        <h1>Application Under Review</h1>
+        <p>Thank you for your interest in becoming a seller on DigitalMarket! Your application has been successfully submitted and is currently being reviewed by our team.</p>
+
+        <!-- Application Details -->
+        <% if (typeof application !== 'undefined' && application) { %>
+          <div class="review-details">
+            <h3>Application Details:</h3>
+            <div class="detail-item">
+              <span class="detail-label">Store Name:</span>
+              <span class="detail-value"><%= application.storeName %></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Category:</span>
+              <span class="detail-value"><%= application.category %></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Submitted:</span>
+              <span class="detail-value"><%= new Date(application.submittedAt).toLocaleDateString() %></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Status:</span>
+              <span class="detail-value">Under Review</span>
+            </div>
+          </div>
+        <% } %>
+
+        <!-- Review Process Timeline -->
+        <div class="timeline">
+          <div class="timeline-item active">
+            <div class="timeline-content left">
+              <span class="step-number">1</span>
+              <div class="step-title">Application Submitted</div>
+              <div class="step-desc">Your application has been received and added to our review queue.</div>
+            </div>
+          </div>
+
+          <div class="timeline-item">
+            <div class="timeline-content right">
+              <span class="step-number">2</span>
+              <div class="step-title">Documentation Review</div>
+              <div class="step-desc">Our team reviews your store details, branding, and documentation.</div>
+            </div>
+          </div>
+
+          <div class="timeline-item">
+            <div class="timeline-content left">
+              <span class="step-number">3</span>
+              <div class="step-title">Verification Process</div>
+              <div class="step-desc">We verify the information provided and check compliance with our policies.</div>
+            </div>
+          </div>
+
+          <div class="timeline-item">
+            <div class="timeline-content right">
+              <span class="step-number">4</span>
+              <div class="step-title">Final Decision</div>
+              <div class="step-desc">We'll notify you via email once the review is complete (1-2 business days).</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="actions">
+          <a href="/" class="btn-secondary">Return to Home</a>
+          <a href="/profile" class="btn-secondary btn-outline">View Profile</a>
+        </div>
+
+        <!-- Contact Information -->
+        <div class="contact-info">
+          <h3>Need Help?</h3>
+          <p>If you have any questions about your application or the seller program, please don't hesitate to contact our support team.</p>
+          <p><strong>Email:</strong> <a href="mailto:sellers@digitalmarket.com">sellers@digitalmarket.com</a></p>
+          <p><strong>Response Time:</strong> We aim to respond within 24 hours during business days.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= FOOTER ================ -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="/stores">Stores</a>
+        <a href="#products">Products</a>
+        <a href="#services">Services</a>
+        <a href="/login">Login</a>
+        <a href="/signup">Sign Up</a>
+      </div>
+      <p>&copy; 2025 DigitalMarket. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Auto-refresh or update timeline periodically
+    setTimeout(() => {
+      // Optional: Add animation or progress indication
+    }, 500);
+  </script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Manual Entry</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Manual Entry Test</h1>
+
+        <!-- Tabs for Upload Methods -->
+        <ul class="nav nav-tabs mb-4" id="uploadTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="file-upload-tab" data-bs-toggle="tab" data-bs-target="#file-upload" type="button" role="tab">
+                    <i class="fas fa-upload me-2"></i>File Upload
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="manual-entry-tab" data-bs-toggle="tab" data-bs-target="#manual-entry" type="button" role="tab">
+                    <i class="fas fa-keyboard me-2"></i>Manual Entry
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="uploadTabsContent">
+            <!-- File Upload Tab -->
+            <div class="tab-pane fade show active" id="file-upload" role="tabpanel">
+                <h3>File Upload Tab</h3>
+                <p>This is the file upload section.</p>
+            </div>
+
+            <!-- Manual Entry Tab -->
+            <div class="tab-pane fade" id="manual-entry" role="tabpanel">
+                <h3>Manual Entry Tab</h3>
+                <p>This is the manual entry section.</p>
+
+                <form>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="dataFormat" class="form-label">
+                                    <i class="fas fa-list me-2"></i>Data Format
+                                </label>
+                                <select class="form-select" id="dataFormat" name="dataFormat" required>
+                                    <option value="">Select format...</option>
+                                    <option value="accounts">User Accounts (email:password)</option>
+                                    <option value="profiles">Social Media Profiles (username:password)</option>
+                                    <option value="custom">Custom Format</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="manualQuantity" class="form-label">
+                                    <i class="fas fa-hashtag me-2"></i>Stock Quantity
+                                </label>
+                                <input type="number" class="form-control" id="manualQuantity" name="quantity" min="1" placeholder="Enter total quantity" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="dataContent" class="form-label">
+                            <i class="fas fa-edit me-2"></i>Paste Your Data
+                        </label>
+                        <textarea
+                            class="form-control"
+                            id="dataContent"
+                            name="dataContent"
+                            rows="12"
+                            placeholder="Paste your data here, one entry per line...
+
+Example formats:
+For accounts: user1@gmail.com:password123
+For profiles: @username:securepass123
+For custom: any format you prefer"
+                            required
+                        ></textarea>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Each line represents one item. The system will count the lines and set your stock quantity.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="validateData" name="validateData" checked>
+                            <label class="form-check-label" for="validateData">
+                                Validate data format before saving
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-save me-2"></i>Save Manual Data & Set Stock
+                        </button>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <span id="lineCount">0</span> entries detected
+                            </small>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <script>
+        // Manual entry functionality
+        const dataContent = document.getElementById('dataContent');
+        const lineCount = document.getElementById('lineCount');
+
+        // Update line count as user types
+        dataContent.addEventListener('input', function() {
+            const lines = this.value.split('\n').filter(line => line.trim().length > 0);
+            lineCount.textContent = lines.length;
+        });
+
+        console.log('Manual entry test loaded successfully!');
+    </script>
+</body>
+</html>

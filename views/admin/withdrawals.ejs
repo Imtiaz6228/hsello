@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin - Withdrawal Management</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    .admin-panel {
+      min-height: calc(100vh - 72px);
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      padding: 40px 20px;
+      padding-top: 120px;
+    }
+    .admin-container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .admin-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 15px;
+      text-align: center;
+      margin-bottom: 40px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    .admin-header h1 {
+      margin: 0;
+      font-size: 2.5em;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+    }
+    .admin-header h1::before {
+      content: '💰';
+    }
+    .admin-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+    .stat-card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+      transition: transform 0.3s ease;
+    }
+    .stat-card:hover {
+      transform: translateY(-4px);
+    }
+    .stat-number {
+      font-size: 2.5em;
+      font-weight: 700;
+      color: #2c3e50;
+      margin-bottom: 5px;
+    }
+    .stat-label {
+      color: #7f8c8d;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .withdrawals-section {
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    .section-header {
+      background: #f8f9fa;
+      padding: 20px 30px;
+      border-bottom: 1px solid #ecf0f1;
+    }
+    .section-title {
+      margin: 0;
+      font-size: 1.5em;
+      color: #2c3e50;
+      font-weight: 700;
+    }
+    .withdrawals-grid {
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+    .withdrawal-item {
+      border-bottom: 1px solid #ecf0f1;
+      padding: 25px 30px;
+      transition: background 0.3s ease;
+    }
+    .withdrawal-item:last-child {
+      border-bottom: none;
+    }
+    .withdrawal-item:hover {
+      background: #f8f9fa;
+    }
+    .withdrawal-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .seller-info {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .seller-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 1.2em;
+    }
+    .seller-details h3 {
+      margin: 0;
+      font-size: 1.2em;
+      color: #2c3e50;
+      font-weight: 700;
+    }
+    .seller-details p {
+      margin: 5px 0;
+      color: #7f8c8d;
+      font-size: 0.9em;
+    }
+    .withdrawal-status {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 0.85em;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .status-pending {
+      background: #fff3cd;
+      color: #856404;
+    }
+    .status-approved {
+      background: #d4edda;
+      color: #155724;
+    }
+    .status-rejected {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .withdrawal-content {
+      display: grid;
+      grid-template-columns: 1fr 200px 200px auto;
+      gap: 20px;
+      align-items: center;
+    }
+    .withdrawal-details {
+      margin-left: 80px;
+    }
+    .withdrawal-details h4 {
+      margin: 0 0 10px 0;
+      color: #2c3e50;
+      font-weight: 600;
+    }
+    .withdrawal-details p {
+      margin: 5px 0;
+      color: #34495e;
+      font-size: 0.9em;
+      line-height: 1.4;
+    }
+    .amount-display {
+      font-size: 1.5em;
+      font-weight: 700;
+      color: #27ae60;
+      text-align: center;
+    }
+    .wallet-address {
+      background: #ecf0f1;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 0.8em;
+      color: #2c3e50;
+      word-break: break-all;
+      max-width: 180px;
+    }
+    .action-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .btn-approve, .btn-reject {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.9em;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .btn-approve {
+      background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+      color: white;
+    }
+    .btn-approve:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(39, 174, 96, 0.4);
+    }
+    .btn-reject {
+      background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+      color: white;
+    }
+    .btn-reject:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+    }
+    .no-withdrawals {
+      text-align: center;
+      padding: 60px;
+      color: #7f8c8d;
+    }
+    .no-withdrawals h3 {
+      margin: 0 0 10px 0;
+      font-size: 1.5em;
+      color: #34495e;
+    }
+    .no-withdrawals p {
+      font-size: 1.1em;
+      margin: 0;
+    }
+    .timestamp {
+      font-size: 0.8em;
+      color: #95a5a6;
+      margin-top: 5px;
+    }
+    .processed-info {
+      background: #ecf0f1;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
+    }
+    .processed-info p {
+      margin: 5px 0;
+      font-size: 0.9em;
+      color: #34495e;
+    }
+    @media (max-width: 768px) {
+      .withdrawal-content {
+        grid-template-columns: 1fr;
+        gap: 15px;
+        text-align: center;
+      }
+      .withdrawal-header-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+      }
+      .action-buttons {
+        flex-direction: row;
+        justify-content: center;
+      }
+      .wallet-address {
+        max-width: none;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body data-success="<%= typeof success_msg !== 'undefined' ? success_msg : '' %>" data-error="<%= typeof error_msg !== 'undefined' ? error_msg : '' %>">
+
+  <!-- ================= NAVBAR ================ -->
+  <%- include('../partials/navbar') %>
+
+  <!-- ================= ADMIN CONTENT ================ -->
+  <div class="admin-panel">
+    <div class="admin-container">
+      <!-- Admin Header -->
+      <div class="admin-header">
+        <h1>Withdrawal Management</h1>
+        <p>Review and manage seller withdrawal requests - Admin: <%= adminUser.adminId %></p>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="admin-stats">
+        <div class="stat-card">
+          <div class="stat-number status-pending"><%= withdrawalRequests.filter(req => req.status === 'pending').length %></div>
+          <div class="stat-label">Pending</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number status-approved"><%= withdrawalRequests.filter(req => req.status === 'approved').length %></div>
+          <div class="stat-label">Approved</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number status-rejected"><%= withdrawalRequests.filter(req => req.status === 'rejected').length %></div>
+          <div class="stat-label">Rejected</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">$<%= withdrawalRequests.filter(req => req.status === 'approved').reduce((sum, req) => sum + req.amount, 0).toFixed(2) %></div>
+          <div class="stat-label">Total Processed</div>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div style="display: flex; gap: 0; margin-bottom: 30px; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+        <a href="/admin/sellers" style="flex: 1; padding: 15px 20px; text-decoration: none; color: #7f8c8d; text-align: center; font-weight: 600; background: white;">Seller Applications</a>
+        <a href="/admin/moderation" style="flex: 1; padding: 15px 20px; text-decoration: none; color: #7f8c8d; text-align: center; font-weight: 600; background: white;">Product Moderation</a>
+        <a href="/admin/withdrawals" style="flex: 1; padding: 15px 20px; text-decoration: none; color: white; text-align: center; font-weight: 600; background: #667eea;">Withdrawals</a>
+      </div>
+
+      <!-- Withdrawals Section -->
+      <div class="withdrawals-section">
+        <div class="section-header">
+          <h2 class="section-title">Withdrawal Requests</h2>
+        </div>
+
+        <div class="withdrawals-grid">
+          <% if (withdrawalRequests.length === 0) { %>
+            <div class="no-withdrawals">
+              <h3>No withdrawal requests yet</h3>
+              <p>Withdrawal requests will appear here once sellers request fund withdrawals.</p>
+            </div>
+          <% } else { %>
+            <% withdrawalRequests.forEach(withdrawal => { %>
+              <div class="withdrawal-item" data-withdrawal-id="<%= withdrawal._id.toString() %>">
+                <div class="withdrawal-header-row">
+                  <div class="seller-info">
+                    <div class="seller-avatar">
+                      <%= withdrawal.sellerId ? withdrawal.sellerId.firstName.charAt(0) + withdrawal.sellerId.lastName.charAt(0) : 'U' %>
+                    </div>
+                    <div class="seller-details">
+                      <h3><%= withdrawal.sellerId ? `${withdrawal.sellerId.firstName} ${withdrawal.sellerId.lastName}` : 'Unknown Seller' %></h3>
+                      <p><%= withdrawal.sellerId ? withdrawal.sellerId.email : '' %></p>
+                      <div class="timestamp">
+                        Requested: <%= withdrawal.requestedAt.toLocaleDateString() %> at <%= withdrawal.requestedAt.toLocaleTimeString() %>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="withdrawal-status status-<%= withdrawal.status %>">
+                    <%= withdrawal.status.charAt(0).toUpperCase() + withdrawal.status.slice(1) %>
+                  </div>
+                </div>
+
+                <div class="withdrawal-content">
+                  <div class="withdrawal-details">
+                    <h4>Withdrawal Details</h4>
+                    <div class="amount-display">$<%= withdrawal.amount.toFixed(2) %></div>
+                    <p><strong>Status:</strong> <%= withdrawal.status.charAt(0).toUpperCase() + withdrawal.status.slice(1) %></p>
+                    <% if (withdrawal.transactionId) { %>
+                      <p><strong>Transaction ID:</strong> <%= withdrawal.transactionId %></p>
+                    <% } %>
+                    <% if (withdrawal.processedAt) { %>
+                      <div class="processed-info">
+                        <p><strong>Processed At:</strong> <%= withdrawal.processedAt.toLocaleDateString() %> <%= withdrawal.processedAt.toLocaleTimeString() %></p>
+                      </div>
+                    <% } %>
+                  </div>
+
+                    <div class="wallet-address" title="<%= withdrawal.cryptoWalletAddress %>">
+                      <strong><%= withdrawal.blockchain || 'USDT_TRC20' %></strong><br>
+                      <%= withdrawal.cryptoWalletAddress.substring(0, 10) %>...<%= withdrawal.cryptoWalletAddress.slice(-6) %>
+                    </div>
+
+                  <div class="action-buttons">
+                    <% if (withdrawal.status === 'pending') { %>
+                      <button class="btn-approve" onclick="processWithdrawal('<%= withdrawal._id.toString() %>', 'approve')">
+                        ✅ Approve
+                      </button>
+                      <button class="btn-reject" onclick="processWithdrawal('<%= withdrawal._id.toString() %>', 'reject')">
+                        ❌ Reject
+                      </button>
+                    <% } else { %>
+                      <div style="color: #7f8c8d; font-size: 0.9em; text-align: center;">
+                        <% if (withdrawal.processedAt) { %>
+                          <%= withdrawal.processedAt.toLocaleDateString() %>
+                        <% } else { %>
+                          Processed
+                        <% } %>
+                      </div>
+                    <% } %>
+                  </div>
+                </div>
+              </div>
+            <% }); %>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= FOOTER ================ -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="#products">Products</a>
+        <a href="#games">Games</a>
+        <a href="#ai">AI</a>
+        <a href="#pricing">Pricing</a>
+        <a href="/login">Login</a>
+        <a href="/signup">Sign Up</a>
+      </div>
+      <p>&copy; 2025 DigitalMarket. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    async function processWithdrawal(withdrawalId, action) {
+      if (!confirm(`Are you sure you want to ${action} this withdrawal request?`)) {
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('action', action);
+
+      try {
+        const response = await fetch(`/admin/withdrawal/${withdrawalId}/${action}`, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (response.ok) {
+          window.location.reload();
+        } else {
+          alert('Error processing withdrawal request. Please try again.');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+      }
+    }
+
+    // Flash messages
+    const successMsg = document.body.getAttribute('data-success');
+    const errorMsg = document.body.getAttribute('data-error');
+
+    if (successMsg) {
+      setTimeout(() => {
+        alert(successMsg);
+      }, 500);
+    }
+
+    if (errorMsg) {
+      setTimeout(() => {
+        alert(errorMsg);
+      }, 500);
+    }
+  </script>
+</body>
+</html>

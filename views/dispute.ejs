@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dispute Management - Digital Market</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <div class="container my-5">
+        <div class="row">
+            <div class="col-md-8">
+                <!-- Dispute Header -->
+                <div class="card mb-4">
+                    <div class="card-header <%= dispute.status === 'open' ? 'bg-warning text-dark' : 'bg-success text-white' %>">
+                        <h5 class="mb-0">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Dispute #<%= dispute._id.toString().substring(-8).toUpperCase() %> - <%= order ? order.productName : 'Unknown Product' %>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Dispute Information</h6>
+                                <ul class="list-unstyled">
+                                    <li><strong>Status:</strong>
+                                        <% if (dispute.status === 'open') { %>
+                                            <span class="badge bg-warning">Open</span>
+                                        <% } else { %>
+                                            <span class="badge bg-success">Closed</span>
+                                        <% } %>
+                                    </li>
+                                    <li><strong>Opened:</strong>
+                                        <%= new Date(dispute.openedAt).toLocaleDateString() %>
+                                    </li>
+                                    <li><strong>Order ID:</strong>
+                                        <%= order ? '#' + order._id.toString().substring(-8).toUpperCase() : 'N/A' %>
+                                    </li>
+                                    <li><strong>Amount in Dispute:</strong>
+                                        $<%= order ? order.totalCost?.toFixed(2) || '0.00' : '0.00' %>
+                                    </li>
+                                    <% if (dispute.status === 'open' && timeRemaining) { %>
+                                        <li><strong>Time Remaining:</strong>
+                                            <span id="timeRemaining">
+                                                <%= timeRemaining.hours %> hours <%= timeRemaining.minutes %> mins
+                                            </span>
+                                        </li>
+                                        <li><strong>Auto-Close Warning:</strong>
+                                            <small class="text-<%= timeRemaining.total < 3600000 ? 'danger' : 'warning' %>" id="autoCloseWarning">
+                                                If no response in 24 hours, dispute closes in favor of other party
+                                            </small>
+                                        </li>
+                                    <% } %>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Dispute Reason</h6>
+                                <div class="alert alert-<%= dispute.reason.toLowerCase().includes('refund') ? 'warning' : 'danger' %>">
+                                    <strong><%= dispute.reason %></strong>
+                                    <% if (dispute.description) { %>
+                                        <br><small><%= dispute.description %></small>
+                                    <% } %>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <strong>Evidence Files:</strong>
+                            <div class="d-flex gap-2 mt-2 flex-wrap">
+                                <% if (dispute.evidence && dispute.evidence.length > 0) { %>
+                                    <% dispute.evidence.forEach(evidence => { %>
+                                        <button class="btn btn-sm btn-outline-secondary" onclick="viewEvidence('<%= evidence.id %>')">
+                                            <i class="fas <%= evidence.filename.toLowerCase().includes('image') || evidence.filename.match(/\.(jpg|jpeg|png|gif)$/i) ? 'fa-image' : (evidence.filename.toLowerCase().includes('pdf') ? 'fa-file-pdf' : 'fa-file-alt') %> me-1"></i>
+                                            <%= evidence.filename.length > 20 ? evidence.filename.substring(0, 17) + '...' : evidence.filename %>
+                                        </button>
+                                    <% }); %>
+                                <% } else { %>
+                                    <small class="text-muted">No evidence files uploaded</small>
+                                <% } %>
+                                <% if (dispute.status === 'open') { %>
+                                    <button class="btn btn-sm btn-outline-success" onclick="uploadEvidence()">
+                                        <i class="fas fa-plus me-1"></i>Add Evidence
+                                    </button>
+                                <% } %>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Interface -->
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">
+                            <i class="fas fa-comments me-2"></i>
+                            Communication Between Buyer & Seller
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Messages Container -->
+                        <div id="chatMessages" class="chat-messages mb-3" style="height: 400px; overflow-y: auto; border: 1px solid #dee2e6; padding: 15px; border-radius: 5px;">
+                            <!-- Sample Messages -->
+                            <div class="message buyer-message mb-3">
+                                <div class="d-flex">
+                                    <div class="flex-shrink-0 me-2">
+                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="bg-light p-2 rounded">
+                                            <small class="text-muted">Buyer • September 3, 2025 10:30 AM</small>
+                                            <p class="mb-0">Hi, I just purchased an Instagram account but the login credentials aren't working. The username and password provided are incorrect.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="message seller-message mb-3">
+                                <div class="d-flex justify-content-end">
+                                    <div class="flex-grow-1 text-end me-2">
+                                        <div class="bg-success text-white p-2 rounded">
+                                            <small class="text-white-50">Seller • September 3, 2025 11:15 AM</small>
+                                            <p class="mb-0">Hello! I'm sorry to hear you're having issues. Let me check the account. Please provide the username you're trying to use and I'll verify it immediately.</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
+                                            <i class="fas fa-store"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="message buyer-message mb-3">
+                                <div class="d-flex">
+                                    <div class="flex-shrink-0 me-2">
+                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="bg-light p-2 rounded">
+                                            <small class="text-muted">Buyer • September 3, 2025 11:30 AM</small>
+                                            <p class="mb-0">Username: @instagram_user_12345<br>I've attached screenshots of the error I'm getting.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="message seller-message mb-3">
+                                <div class="d-flex justify-content-end">
+                                    <div class="flex-grow-1 text-end me-2">
+                                        <div class="bg-success text-white p-2 rounded">
+                                            <small class="text-white-50">Seller • September 3, 2025 12:00 PM</small>
+                                            <p class="mb-0">Thank you for the details. I'm investigating this issue right now. The account appears to be working on our end. Could you please try again? Sometimes there are temporary Instagram login restrictions.</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
+                                            <i class="fas fa-store"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Message Input -->
+                        <div class="message-input">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="messageInput" placeholder="Type your message here..." onkeypress="handleKeyPress(event)">
+                                <button class="btn btn-outline-secondary" type="button" onclick="attachFile()">
+                                    <i class="fas fa-paperclip"></i>
+                                </button>
+                                <button class="btn btn-primary" type="button" onclick="sendMessage()">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted mt-1 d-block">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Both parties can communicate here. All messages are logged for dispute resolution.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <!-- Dispute Actions -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-tools me-2"></i>Dispute Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-primary" onclick="requestRefund()">
+                                <i class="fas fa-undo me-2"></i>Request Full Refund
+                            </button>
+                            <button class="btn btn-outline-info" onclick="requestReplacement()">
+                                <i class="fas fa-exchange-alt me-2"></i>Request Replacement
+                            </button>
+                            <button class="btn btn-outline-success" onclick="escalateDispute()">
+                                <i class="fas fa-level-up-alt me-2"></i>Escalate to Admin
+                            </button>
+                            <button class="btn btn-outline-danger" onclick="closeDispute()">
+                                <i class="fas fa-times me-2"></i>Close Dispute
+                            </button>
+                        </div>
+
+                        <hr class="my-3">
+                        <div class="text-center">
+                            <small class="text-muted">
+                                Dispute must be resolved within 24 hours of opening, or it will be auto-escalated to admin.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resolution History -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-history me-2"></i>Resolution History</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="timeline">
+                            <div class="timeline-item mb-3">
+                                <div class="timeline-marker bg-primary"></div>
+                                <div class="timeline-content">
+                                    <small class="text-muted">Sep 3, 10:30 AM</small>
+                                    <p class="mb-0"><strong>Dispute Opened</strong> - Buyer reported account login issues</p>
+                                </div>
+                            </div>
+                            <div class="timeline-item mb-3">
+                                <div class="timeline-marker bg-info"></div>
+                                <div class="timeline-content">
+                                    <small class="text-muted">Sep 3, 11:15 AM</small>
+                                    <p class="mb-0"><strong>Seller Response</strong> - Investigating account status</p>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-marker bg-warning"></div>
+                                <div class="timeline-content">
+                                    <small class="text-muted">Sep 4, 2:00 PM</small>
+                                    <p class="mb-0"><strong>Evidence Uploaded</strong> - Buyer provided screenshots</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Upload Modal -->
+    <div class="modal fade" id="fileUploadModal" tabindex="-1" aria-labelledby="fileUploadModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="fileUploadModalLabel">Attach File</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="fileInput" class="form-label">Select File</label>
+                        <input type="file" class="form-control" id="fileInput" accept="image/*,.txt,.pdf,.doc,.docx">
+                        <div class="form-text">Supported formats: Images, Text files, PDF, Word documents (Max 5MB)</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="fileDescription" class="form-label">Description (optional)</label>
+                        <input type="text" class="form-control" id="fileDescription" placeholder="Describe this file...">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="uploadFile()">Upload</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .chat-messages {
+            background-color: #f8f9fa;
+        }
+        .message {
+            margin-bottom: 15px;
+        }
+        .timeline {
+            position: relative;
+        }
+        .timeline-item {
+            position: relative;
+            padding-left: 30px;
+        }
+        .timeline-marker {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .timeline-marker::before {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 12px;
+            width: 2px;
+            height: calc(100% + 10px);
+            background-color: #dee2e6;
+        }
+        .timeline-item:last-child .timeline-marker::before {
+            display: none;
+        }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize with actual data from server
+        let messages = <%- JSON.stringify(dispute.chat || []) %>;
+        let currentUser = '<%= user.id === dispute.buyerId.toString() ? "buyer" : "seller" %>';
+        let disputeId = '<%= dispute._id %>';
+        let disputeTimer;
+        let lastMessageTime = new Date('<%= new Date(dispute.lastActivity || dispute.openedAt).toISOString() %>');
+        let lastRespondingParty = '<%= dispute.chat && dispute.chat.length > 0 ? dispute.chat[dispute.chat.length-1].fromName : (user.id === dispute.buyerId.toString() ? "buyer" : "seller") %>';
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+
+            if (message) {
+                addMessage(message, currentUser);
+                input.value = '';
+                scrollToBottom();
+            }
+        }
+
+        function addMessage(text, sender) {
+            const timestamp = new Date().toLocaleString();
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message mb-3`;
+
+            if (sender === 'buyer') {
+                messageDiv.innerHTML = `
+                    <div class="d-flex">
+                        <div class="flex-shrink-0 me-2">
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
+                                <i class="fas fa-user"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="bg-light p-2 rounded">
+                                <small class="text-muted">${sender === 'buyer' ? 'Buyer' : 'Seller'} • ${timestamp}</small>
+                                <p class="mb-0">${text}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="d-flex justify-content-end">
+                        <div class="flex-grow-1 text-end me-2">
+                            <div class="bg-success text-white p-2 rounded">
+                                <small class="text-white-50">${sender === 'buyer' ? 'Buyer' : 'Seller'} • ${timestamp}</small>
+                                <p class="mb-0">${text}</p>
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
+                                <i class="fas fa-store"></i>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            document.getElementById('chatMessages').appendChild(messageDiv);
+            messages.push({ text, sender, timestamp });
+
+            // Update timer for auto-close
+            updateLastMessageTime(sender);
+        }
+
+        function updateLastMessageTime(sender) {
+            lastMessageTime = new Date();
+            lastRespondingParty = sender;
+            restartAutoCloseTimer();
+        }
+
+        function restartAutoCloseTimer() {
+            if (disputeTimer) {
+                clearInterval(disputeTimer);
+            }
+
+            // Start 24-hour countdown
+            let remainingTime = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+            disputeTimer = setInterval(() => {
+                remainingTime -= 1000; // Decrease by 1 second
+
+                if (remainingTime <= 0) {
+                    autoCloseDispute();
+                    clearInterval(disputeTimer);
+                    return;
+                }
+
+                updateTimeDisplay(remainingTime);
+            }, 1000);
+        }
+
+        function updateTimeDisplay(remainingTime) {
+            const hours = Math.floor(remainingTime / (1000 * 60 * 60));
+            const minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
+
+            const timeString = `${hours.toString().padStart(2, '0')} hours ${minutes.toString().padStart(2, '0')} mins`;
+            document.getElementById('timeRemaining').textContent = timeString;
+
+            // Update warning message
+            const warningElement = document.getElementById('autoCloseWarning');
+
+            if (remainingTime <= 1 * 60 * 60 * 1000) { // Less than 1 hour
+                warningElement.innerHTML = `<span class="text-danger fw-bold">⚠️ CRITICAL: Only ${Math.floor(remainingTime / (1000 * 60))} minutes remaining! Dispute will auto-close in favor of ${lastRespondingParty === 'buyer' ? 'BUYER' : 'SELLER'}</span>`;
+                warningElement.className = 'text-danger fw-bold';
+            } else if (remainingTime <= 6 * 60 * 60 * 1000) { // Less than 6 hours
+                warningElement.innerHTML = `<span class="text-warning fw-bold">⚠️ WARNING: Only ${hours} hours remaining! Respond or dispute closes in favor of ${lastRespondingParty === 'buyer' ? 'buyer' : 'seller'}</span>`;
+                warningElement.className = 'text-warning fw-bold';
+            } else {
+                const opponent = lastRespondingParty === 'buyer' ? 'seller' : 'buyer';
+                warningElement.innerHTML = `If no response in 24 hours, dispute closes in favor of ${lastRespondingParty === 'buyer' ? 'BUYER' : 'SELLER'}`;
+                warningElement.className = 'text-muted';
+            }
+        }
+
+        function autoCloseDispute() {
+            const winner = lastRespondingParty;
+            const loser = winner === 'buyer' ? 'seller' : 'buyer';
+            const action = winner === 'buyer' ? 'REFUND APPROVED' : 'DISPUTE DENIED';
+
+            // Disable message input
+            document.getElementById('messageInput').disabled = true;
+            document.querySelector('.message-input .btn-primary').disabled = true;
+            document.getElementById('messageInput').placeholder = 'Dispute has been automatically closed';
+
+            // Update dispute status
+            document.querySelector('.badge').textContent = 'Auto-Closed';
+            document.querySelector('.badge').className = 'badge bg-secondary';
+
+            // Add auto-close system message
+            const systemMessage = document.createElement('div');
+            systemMessage.innerHTML = `
+                <div class="alert alert-info mb-3">
+                    <h6><i class="fas fa-clock me-2"></i>AUTOMATIC DISPUTE CLOSURE</h6>
+                    <p class="mb-0">
+                        No response received within 24 hours. Dispute automatically closed in favor of <strong>${winner.toUpperCase()}</strong>.<br>
+                        <strong>Action:</strong> ${action} - ₽1,500.00 ${winner === 'buyer' ? 'refunded to buyer' : 'kept by seller'}
+                    </p>
+                </div>
+            `;
+            document.getElementById('chatMessages').appendChild(systemMessage);
+
+            // Show final alert
+            showAlert(`Dispute automatically closed! ${winner === 'buyer' ? 'Refund processed.' : 'Seller keeps the funds.'}`, 'info');
+
+            scrollToBottom();
+
+            // In production, this would trigger backend actions for refund/payment processing
+        }
+
+        function attachFile() {
+            const modal = new bootstrap.Modal(document.getElementById('fileUploadModal'));
+            modal.show();
+        }
+
+        function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const description = document.getElementById('fileDescription').value;
+
+            if (fileInput.files[0]) {
+                const fileName = fileInput.files[0].name;
+                const message = `📎 File attached: ${fileName}${description ? ` (${description})` : ''}`;
+
+                addMessage(message, currentUser);
+                scrollToBottom();
+
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('fileUploadModal'));
+                modal.hide();
+
+                // Reset form
+                fileInput.value = '';
+                document.getElementById('fileDescription').value = '';
+            }
+        }
+
+        function scrollToBottom() {
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function requestRefund() {
+            if (confirm('Are you sure you want to request a full refund? This will notify the seller and admin.')) {
+                addMessage('🔄 REFUND REQUESTED: Please process a full refund for this dispute.', currentUser);
+                showAlert('Refund request sent successfully!', 'success');
+            }
+        }
+
+        function requestReplacement() {
+            if (confirm('Request a replacement account? The seller will need to provide a working alternative.')) {
+                addMessage('🔄 REPLACEMENT REQUESTED: Please provide a working alternative account.', currentUser);
+                showAlert('Replacement request sent successfully!', 'success');
+            }
+        }
+
+        function escalateDispute() {
+            if (confirm('Escalate this dispute to admin? Admin will review and make a final decision.')) {
+                addMessage('⚠️ DISPUTE ESCALATED: Requesting admin intervention for resolution.', currentUser);
+                showAlert('Dispute escalated to admin!', 'warning');
+            }
+        }
+
+        function closeDispute() {
+            if (confirm('Are you satisfied with the resolution? Closing the dispute will finalize the outcome.')) {
+                addMessage('✅ DISPUTE CLOSED: Both parties agree on the resolution.', currentUser);
+                showAlert('Dispute closed successfully!', 'success');
+                setTimeout(() => {
+                    window.location.href = '/disputes';
+                }, 2000);
+            }
+        }
+
+        function uploadEvidence() {
+            attachFile(); // Reuse the file upload modal
+        }
+
+        function showAlert(message, type = 'info') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+
+            document.body.appendChild(alertDiv);
+
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            scrollToBottom();
+            restartAutoCloseTimer(); // Start the 24-hour auto-close timer
+        });
+    </script>
+</body>
+</html>

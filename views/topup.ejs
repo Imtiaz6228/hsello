@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Top Up - DigitalMarket</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <!-- ================= PREMIUM NAVBAR ================ -->
+  <%- include('./partials/navbar.ejs') %>
+  <!-- =============== END PREMIUM NAVBAR ============== -->
+
+  <div class="page-top-space"></div>
+
+  <!-- TOPUP PAGE -->
+  <main class="container">
+    <div class="topup-layout">
+      <!-- Left side: Exchange Rates -->
+      <div class="exchange-rates">
+        <h3>Exchange Rate:</h3>
+        <p>$1 = 81₽</p>
+        <p>$1 = 7.24¥</p>
+      </div>
+
+      <!-- Right side: Top Up Form & Payment Methods -->
+      <div class="topup-section">
+        <div class="funder">
+          <h2>Fund Your Account ( Russian Rubles ₽ )</h2>
+          <!-- Amount Input -->
+          <form id="amountForm">
+            <label for="amountUSD">Enter the amount in $ *</label>
+            <input type="number" id="amountUSD" name="amountUSD" min="3" max="20000" value="3" required />
+            <button type="button" onclick="calculateRUB()">Calculate</button>
+            <p id="calculatedRUB"></p>
+          </form>
+          <p>Minimum payment amount: $3.00</p>
+          <p>Maximum payment amount: $20000.00</p>
+          <p>Processing fee: 10%</p>
+        </div>
+
+        <div class="payment-methods">
+          <h3>Choose Payment Method</h3>
+          <a href="/topup/cryptocurrency?usd=3" id="cryptoLink" class="method-btn">Cryptocurrency</a>
+          <a href="/topup/wechatpay" class="method-btn">WeChat Pay</a>
+          <a href="/topup/alipay" class="method-btn">AliPay</a>
+          <a href="/topup/grabpay" class="method-btn">Grab Pay</a>
+          <a href="/topup/boost" class="method-btn">Boost</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/script.js"></script>
+  <script>
+    function calculateRUB() {
+      const usd = parseFloat(document.getElementById('amountUSD').value);
+      if (usd >= 3 && usd <= 20000) {
+        const rub = usd * 81;
+        document.getElementById('calculatedRUB').textContent = `Amount: ${rub.toFixed(2)} ₽`;
+        document.getElementById('cryptoLink').href = `/topup/cryptocurrency?usd=${usd}`;
+      } else {
+        alert('Amount must be between $3 and $20000');
+      }
+    }
+  </script>
+</body>
+</html>

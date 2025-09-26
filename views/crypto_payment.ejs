@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Select Cryptocurrency - DigitalMarket</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    .crypto-selection-layout {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .payment-header {
+      text-align: center;
+      margin-bottom: 2rem;
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+
+    .amount-display {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1.5rem;
+      border-radius: 12px;
+      text-align: center;
+      margin-bottom: 2rem;
+      font-size: 1.2rem;
+    }
+
+    .crypto-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .crypto-card {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+
+    .crypto-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+      border-color: #667eea;
+    }
+
+    .crypto-card.selected {
+      border-color: #667eea;
+      background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+    }
+
+    .crypto-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .crypto-icon {
+      font-size: 2.5rem;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f8f9fa;
+      border-radius: 12px;
+    }
+
+    .crypto-details h3 {
+      margin: 0;
+      color: #333;
+      font-size: 1.25rem;
+    }
+
+    .crypto-details .symbol {
+      color: #666;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .crypto-rate {
+      font-weight: 600;
+      color: #2c3e50;
+      font-size: 1.1rem;
+    }
+
+    .selected-indicator {
+      display: none;
+      color: #667eea;
+      font-weight: bold;
+      margin-top: 0.5rem;
+    }
+
+    .crypto-card.selected .selected-indicator {
+      display: block;
+    }
+
+    .proceed-section {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    .proceed-btn {
+      display: inline-block;
+      padding: 1rem 2rem;
+      background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+      color: white;
+      text-decoration: none;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      transition: all 0.3s ease;
+      margin-top: 1rem;
+    }
+
+    .proceed-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 30px rgba(76, 175, 80, 0.4);
+    }
+
+    .proceed-btn:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .fee-notice {
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      color: #856404;
+      padding: 1rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+
+    .back-link {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .back-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <!-- ================= PREMIUM NAVBAR ================ -->
+  <%- include('./partials/navbar.ejs') %>
+  <!-- =============== END PREMIUM NAVBAR ============== -->
+
+  <div class="page-top-space"></div>
+
+  <!-- CRYPTO PAYMENT SELECTION -->
+  <main class="crypto-selection-layout">
+    <div class="payment-header">
+      <h1>💳 Select Cryptocurrency Payment</h1>
+      <p>Choose your preferred cryptocurrency for secure and instant payment</p>
+      <a href="/topup" class="back-link">← Back to amount selection</a>
+    </div>
+
+    <div class="amount-display">
+      💰 Payment Amount: <%= parseFloat(usd) * 81 %> ₽ (RUB)
+    </div>
+
+    <form id="cryptoForm" action="/topup/cryptocurrency" method="POST">
+      <input type="hidden" name="usd_amount" value="<%= usd %>" />
+      <input type="hidden" name="preferred_crypto" id="selectedCrypto" value="" />
+
+      <div class="crypto-options" id="cryptoOptions">
+        <!-- Bitcoin -->
+        <div class="crypto-card" data-crypto="btc">
+          <div class="crypto-info">
+            <div class="crypto-icon">₿</div>
+            <div class="crypto-details">
+              <h3>Bitcoin</h3>
+              <div class="symbol">BTC</div>
+              <div class="crypto-rate">Best for large payments</div>
+            </div>
+          </div>
+          <div class="selected-indicator">✓ Selected</div>
+        </div>
+
+        <!-- Ethereum -->
+        <div class="crypto-card" data-crypto="eth">
+          <div class="crypto-info">
+            <div class="crypto-icon">⟠</div>
+            <div class="crypto-details">
+              <h3>Ethereum</h3>
+              <div class="symbol">ETH</div>
+              <div class="crypto-rate">Fast & reliable network</div>
+            </div>
+          </div>
+          <div class="selected-indicator">✓ Selected</div>
+        </div>
+
+        <!-- USDT (Tether) -->
+        <div class="crypto-card" data-crypto="usdt_trc20">
+          <div class="crypto-info">
+            <div class="crypto-icon">₮</div>
+            <div class="crypto-details">
+              <h3>Tether (USDT-TRC20)</h3>
+              <div class="symbol">USDT-TRC20</div>
+              <div class="crypto-rate">Lowest fees</div>
+            </div>
+          </div>
+          <div class="selected-indicator">✓ Selected</div>
+        </div>
+
+        <!-- BNB -->
+        <div class="crypto-card" data-crypto="bnb">
+          <div class="crypto-info">
+            <div class="crypto-icon">💎</div>
+            <div class="crypto-details">
+              <h3>BNB</h3>
+              <div class="symbol">BNB</div>
+              <div class="crypto-rate">Fast & cheap</div>
+            </div>
+          </div>
+          <div class="selected-indicator">✓ Selected</div>
+        </div>
+
+        <!-- Cardano -->
+        <div class="crypto-card" data-crypto="ada">
+          <div class="crypto-info">
+            <div class="crypto-icon">₳</div>
+            <div class="crypto-details">
+              <h3>Cardano</h3>
+              <div class="symbol">ADA</div>
+              <div class="crypto-rate">Sustainable blockchain</div>
+            </div>
+          </div>
+          <div class="selected-indicator">✓ Selected</div>
+        </div>
+
+        <!-- Solana -->
+        <div class="crypto-card" data-crypto="sol">
+          <div class="crypto-info">
+            <div class="crypto-icon">◎</div>
+            <div class="crypto-details">
+              <h3>Solana</h3>
+              <div class="symbol">SOL</div>
+              <div class="crypto-rate">Ultra-fast transactions</div>
+            </div>
+          </div>
+          <div class="selected-indicator">✓ Selected</div>
+        </div>
+
+        <!-- USDT ERC20 -->
+        <div class="crypto-card" data-crypto="usdt_erc20">
+          <div class="crypto-info">
+            <div class="crypto-icon">₮</div>
+            <div class="crypto-details">
+              <h3>Tether (USDT-ERC20)</h3>
+              <div class="symbol">USDT-ERC20</div>
+              <div class="crypto-rate">ERC20 network</div>
+            </div>
+          </div>
+          <div class="selected-indicator">✓ Selected</div>
+        </div>
+
+        <!-- DOGE -->
+        <div class="crypto-card" data-crypto="doge">
+          <div class="crypto-info">
+            <div class="crypto-icon">🐕</div>
+            <div class="crypto-details">
+              <h3>Dogecoin</h3>
+              <div class="symbol">DOGE</div>
+              <div class="crypto-rate">Fun & affordable</div>
+            </div>
+          </div>
+          <div class="selected-indicator">✓ Selected</div>
+        </div>
+      </div>
+
+      <div class="proceed-section">
+        <div class="fee-notice">
+          <strong>Notice:</strong> Cryptocurrency exchange rates are dynamic and may vary at the time of payment.
+          The final amount will be calculated when you proceed to the payment gateway.
+        </div>
+
+        <p><strong>You will be redirected to NOWPayments gateway for secure processing.</strong></p>
+
+        <button type="submit" id="submitBtn" class="proceed-btn" disabled>
+          Proceed to Payment Gateway 🔗
+        </button>
+      </div>
+    </form>
+  </main>
+
+  <script src="/js/script.js"></script>
+  <script>
+    let selectedCrypto = null;
+
+    // Handle crypto selection
+    document.querySelectorAll('.crypto-card').forEach(card => {
+      card.addEventListener('click', function() {
+        // Remove selected class from all cards
+        document.querySelectorAll('.crypto-card').forEach(c => c.classList.remove('selected'));
+
+        // Add selected class to clicked card
+        this.classList.add('selected');
+
+        // Update selected crypto value
+        selectedCrypto = this.dataset.crypto;
+        document.getElementById('selectedCrypto').value = selectedCrypto;
+
+        // Enable submit button
+        document.getElementById('submitBtn').disabled = false;
+      });
+    });
+
+    // Auto-select Bitcoin by default
+    document.addEventListener('DOMContentLoaded', function() {
+      const defaultCard = document.querySelector('.crypto-card[data-crypto="btc"]');
+      if (defaultCard) {
+        defaultCard.click();
+      }
+    });
+  </script>
+</body>
+</html>

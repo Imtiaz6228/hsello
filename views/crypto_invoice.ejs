@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Payment Invoice - DigitalMarket</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    .invoice-layout {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .payment-status {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 2rem;
+      border-radius: 12px;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .status-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    .invoice-details {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
+    }
+
+    .amount-breakdown {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin: 2rem 0;
+      padding: 1.5rem;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+
+    .breakdown-item {
+      text-align: center;
+    }
+
+    .breakdown-item .label {
+      color: #666;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .breakdown-item .value {
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+
+    .wallet-address {
+      background: #f8f9fa;
+      padding: 2rem;
+      border-radius: 12px;
+      margin: 2rem 0;
+      text-align: center;
+    }
+
+    .address-display {
+      background: white;
+      padding: 1rem;
+      border-radius: 8px;
+      border: 2px solid #e1e5e9;
+      font-family: 'Courier New', monospace;
+      font-size: 1rem;
+      word-break: break-all;
+      margin: 1rem 0;
+      text-align: center;
+      font-weight: 500;
+    }
+
+    .copy-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-left: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .copy-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .warning-notice {
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      color: #856404;
+      padding: 1rem;
+      border-radius: 8px;
+      margin: 1.5rem 0;
+      font-size: 0.95rem;
+    }
+
+    .warning-notice ul {
+      margin: 0.5rem 0 0 0;
+      padding-left: 1.5rem;
+    }
+
+    .payment-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+
+    .action-btn {
+      display: block;
+      padding: 1rem;
+      border-radius: 12px;
+      text-align: center;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .primary-btn {
+      background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+      color: white;
+    }
+
+    .primary-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 30px rgba(76, 175, 80, 0.4);
+    }
+
+    .secondary-btn {
+      background: #6c757d;
+      color: white;
+    }
+
+    .secondary-btn:hover {
+      background: #5a6268;
+    }
+
+    .payment-info {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin: 1.5rem 0;
+    }
+
+    .info-item {
+      padding: 1rem;
+      background: #f8f9fa;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .info-item .label {
+      color: #666;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .info-item .value {
+      font-weight: bold;
+      color: #2c3e50;
+    }
+
+    .status-checker {
+      background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+      color: white;
+      padding: 2rem;
+      border-radius: 12px;
+      text-align: center;
+      margin: 2rem 0;
+    }
+
+    .status-checker button {
+      background: white;
+      color: #17a2b8;
+      border: none;
+      padding: 1rem 2rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .status-checker button:hover {
+      background: #e9ecef;
+    }
+
+    .expiration-notice {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+      padding: 1rem;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 500;
+    }
+
+    @media (max-width: 768px) {
+      .amount-breakdown {
+        grid-template-columns: 1fr;
+      }
+
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .payment-actions {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- ================= PREMIUM NAVBAR ================ -->
+  <%- include('./partials/navbar.ejs') %>
+  <!-- =============== END PREMIUM NAVBAR ============== -->
+
+  <div class="page-top-space"></div>
+
+  <!-- CRYPTO PAYMENT INVOICE -->
+  <main class="invoice-layout">
+    <div class="payment-status">
+      <div class="status-icon">⏳</div>
+      <h1>Payment Pending</h1>
+      <p>Send cryptocurrency to the address below to complete your payment</p>
+    </div>
+
+    <div class="payment-info">
+      <h2 style="text-align: center; margin-bottom: 2rem;">💰 Payment Details</h2>
+
+      <div class="amount-breakdown">
+        <div class="breakdown-item">
+          <div class="label">Amount in RUB</div>
+          <div class="value"><%= rub %> ₽</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="label">Amount in USD</div>
+          <div class="value">$<%= usd %></div>
+        </div>
+      </div>
+
+      <div class="wallet-address">
+        <h3>Send exactly this amount:</h3>
+        <div style="font-size: 1.5rem; font-weight: bold; color: #2c3e50; margin: 0.5rem 0;">
+          <%= typeof invoice !== 'undefined' && invoice ? invoice.pay_amount : payment.payAmount %> <%= typeof invoice !== 'undefined' && invoice ? invoice.pay_currency : payment.payCurrency %>
+        </div>
+
+        <h3>To this wallet address:</h3>
+        <div class="address-display" id="walletAddress">
+          <%= typeof invoice !== 'undefined' && invoice ? (invoice.deposit_address || invoice.pay_address) : payment.paymentAddress %>
+        </div>
+        <button class="copy-btn" onclick="copyAddress()">📋 Copy Address</button>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="label">Payment Method</div>
+          <div class="value"><%= typeof invoice !== 'undefined' && invoice ? invoice.pay_currency : payment.payCurrency %></div>
+        </div>
+        <div class="info-item">
+          <div class="label">Transaction ID</div>
+          <div class="value">#<%= payment.orderId %></div>
+        </div>
+        <div class="info-item">
+          <div class="label">Payment Status</div>
+          <div class="value"><%= payment.status %> ⏳</div>
+        </div>
+        <div class="info-item">
+          <div class="label">Created At</div>
+          <div class="value"><%= new Date(payment.createdAt).toLocaleString() %></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="warning-notice">
+      <h4>⚠️ Important Payment Instructions:</h4>
+      <ul>
+        <li><strong>Send only <%= typeof invoice !== 'undefined' && invoice ? invoice.pay_currency : payment.payCurrency %> to this address</strong></li>
+        <li><strong>Send exactly <%= typeof invoice !== 'undefined' && invoice ? invoice.pay_amount : payment.payAmount %> <%= typeof invoice !== 'undefined' && invoice ? invoice.pay_currency : payment.payCurrency %></strong></li>
+        <li>Do NOT send more or less than the exact amount</li>
+        <li>Payment must be made within 24 hours</li>
+        <li>After sending, wait for confirmations (may take 10-60 minutes)</li>
+        <li>Use a cryptocurrency wallet or exchange to send the payment</li>
+      </ul>
+    </div>
+
+    <div class="status-checker">
+      <h3>Check Payment Status</h3>
+      <p>Click below to refresh the payment status after sending your cryptocurrency:</p>
+      <button onclick="checkStatus()">
+        🔄 Check Payment Status
+      </button>
+    </div>
+
+    <div class="payment-actions">
+      <a href="<%= typeof invoice !== 'undefined' && invoice ? invoice.invoice_url : `/topup/cryptocurrency?usd=${payment.amountUSD}` %>" class="action-btn primary-btn" target="_blank">
+        🔗 <%= typeof invoice !== 'undefined' && invoice ? 'Open Payment Gateway' : 'Buy Crypto Now' %>
+      </a>
+      <a href="<%- typeof invoice !== 'undefined' && invoice ? invoice.pay_address : payment.paymentAddress %>?amount=<%= typeof invoice !== 'undefined' && invoice ? invoice.pay_amount : payment.payAmount %>" class="action-btn secondary-btn">
+        💳 Send from Wallet
+      </a>
+      <a href="https://buy.crypto.com/" class="action-btn secondary-btn" target="_blank">
+        🏦 Buy Crypto
+      </a>
+    </div>
+
+    <div class="expiration-notice">
+      <strong>Payment expires:</strong> This payment must be completed before <%= new Date(payment.expiredAt).toLocaleString() %>
+    </div>
+  </main>
+
+  <div id="successModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 3rem; border-radius: 16px; max-width: 400px; margin: 2rem; text-align: center;">
+      <div style="font-size: 4rem; margin-bottom: 1rem;">✅</div>
+      <h3>Payment Successful!</h3>
+      <p>Your balance has been credited with <%= rub %> ₽</p>
+      <a href="<%= typeof invoice !== 'undefined' && invoice ? (invoice.success_url || '/topup') : '/topup' %>" style="display: inline-block; padding: 1rem 2rem; background: #4CAF50; color: white; text-decoration: none; border-radius: 8px; margin-top: 1rem;">Continue</a>
+    </div>
+  </div>
+
+  <script src="/js/script.js"></script>
+  <script>
+    function copyAddress() {
+      const address = document.getElementById('walletAddress').textContent.trim();
+      navigator.clipboard.writeText(address).then(() => {
+        // Show success feedback
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = '✅ Copied!';
+        btn.style.background = '#28a745';
+        setTimeout(() => {
+          btn.textContent = originalText;
+          btn.style.background = '';
+        }, 2000);
+      }).catch(err => {
+        console.error('Failed to copy: ', err);
+        alert('Failed to copy address. Please select and copy manually.');
+      });
+    }
+
+    async function checkStatus() {
+      const btn = event.target;
+      const originalText = btn.textContent;
+      btn.textContent = '🔄 Checking...';
+      btn.disabled = true;
+
+      try {
+        const response = await fetch('/payment-status/<%= payment._id %>', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          if (data.payment.status === 'paid') {
+            // Show success modal
+            document.getElementById('successModal').style.display = 'flex';
+            location.reload();
+          } else {
+            alert(`Payment Status: ${data.payment.status}\n\nYour current balance: ${data.balance} ₽\n\nIf payment was sent, please wait for confirmations and try again.`);
+          }
+        } else {
+          alert('Unable to check payment status. Please try again.');
+        }
+      } catch (error) {
+        console.error('Status check error:', error);
+        alert('Error checking payment status. Please try again.');
+      } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }
+    }
+
+    // Auto-refresh status every 30 seconds
+    let statusCheckInterval = setInterval(checkStatus, 30000);
+
+    // Clear interval when page is not visible
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden) {
+        clearInterval(statusCheckInterval);
+      } else {
+        statusCheckInterval = setInterval(checkStatus, 30000);
+      }
+    });
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', function() {
+      clearInterval(statusCheckInterval);
+    });
+  </script>
+</body>
+</html>

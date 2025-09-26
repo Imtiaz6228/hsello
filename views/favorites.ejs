@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Favorites - DigitalMarket</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+  <!-- ================= NAVBAR ================ -->
+  <%- include('./partials/navbar.ejs') %>
+  <!-- =============== END NAVBAR ============== -->
+
+  <!-- ================= FAVORITES SECTION ================ -->
+  <section id="favorites-section" class="favorites-section">
+    <div class="container">
+      <div class="section-header">
+        <h1 class="section-title">My Favorites</h1>
+        <p class="section-subtitle">Products and stores you've saved for later</p>
+      </div>
+
+      <!-- Favorites Grid -->
+      <div class="favorites-grid">
+        <div class="empty-favorites">
+          <div class="empty-icon">❤️</div>
+          <h3>No favorites yet</h3>
+          <p>Start browsing and save your favorite products and stores!</p>
+          <a href="/stores" class="btn-primary">Browse Stores</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FOOTER ================ -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="/stores">Stores</a>
+        <a href="/products">Products</a>
+        <a href="/services">Services</a>
+        <% if (locals.user) { %>
+          <a href="/orders">My Orders</a>
+          <% if (locals.user.isSeller) { %>
+            <a href="/seller/dashboard">Dashboard</a>
+          <% } %>
+        <% } else { %>
+          <a href="/login">Login</a>
+        <% } %>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2025 DigitalMarket. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <style>
+    .favorites-section {
+      padding: 80px 0;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 70vh;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    .section-title {
+      font-size: 2.5em;
+      color: #2c3e50;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    .section-subtitle {
+      font-size: 1.1em;
+      color: #7f8c8d;
+    }
+
+    .favorites-grid {
+      display: grid;
+      place-items: center;
+      min-height: 300px;
+    }
+
+    .empty-favorites {
+      text-align: center;
+      padding: 60px 40px;
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+
+    .empty-icon {
+      font-size: 4em;
+      margin-bottom: 20px;
+      opacity: 0.5;
+    }
+
+    .empty-favorites h3 {
+      color: #2c3e50;
+      margin-bottom: 15px;
+      font-size: 1.5em;
+    }
+
+    .empty-favorites p {
+      color: #7f8c8d;
+      margin-bottom: 30px;
+    }
+
+    .btn-primary {
+      display: inline-block;
+      padding: 12px 30px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: transform 0.3s ease;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+    }
+  </style>
+</body>
+</html>

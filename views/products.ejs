@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Products - DigitalMarket</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+  <!-- ================= PREMIUM NAVBAR ================ -->
+  <%- include('./partials/navbar.ejs') %>
+  <!-- =============== END PREMIUM NAVBAR ============== -->
+
+  <!-- ================= PRODUCTS SECTION ================ -->
+  <section id="products-page" class="products-section">
+    <div class="container">
+      <div class="section-header">
+        <h1 class="section-title">Digital Products Marketplace</h1>
+        <p class="section-subtitle">Discover premium digital goods, software templates, assets, and services</p>
+      </div>
+
+      <!-- Product Categories -->
+      <div class="product-categories">
+        <div class="category-tabs">
+          <button class="category-tab active" data-category="all">All Products</button>
+          <button class="category-tab" data-category="software">Software</button>
+          <button class="category-tab" data-category="templates">Templates</button>
+          <button class="category-tab" data-category="assets">Assets</button>
+          <button class="category-tab" data-category="services">Services</button>
+        </div>
+      </div>
+
+      <!-- Products Grid -->
+      <div class="products-grid">
+        <% if (products && products.length > 0) { %>
+          <% products.forEach(product => { %>
+            <% if (product.status === 'active') { %>
+              <div class="product-card" data-category="<%= product.itemCategory || 'general' %>">
+                <div class="product-image">
+                  <% if (product.images && product.images.length > 0) { %>
+                    <img src="/uploads/<%= product.images[0] %>" alt="<%= product.name %>">
+                  <% } else { %>
+                    <div class="product-placeholder">
+                      <% if (product.itemCategory === 'Instagram') { %>
+                        <i class="fab fa-instagram"></i>
+                      <% } else if (product.itemCategory === 'GMail') { %>
+                        <i class="fas fa-envelope"></i>
+                      <% } else { %>
+                        <i class="fas fa-shopping-bag"></i>
+                      <% } %>
+                    </div>
+                  <% } %>
+                </div>
+                <div class="product-info">
+                  <h3><%= product.name %></h3>
+                  <p class="product-description">
+                    <% if (product.shortDescription) { %>
+                      <%= product.shortDescription.length > 100 ? product.shortDescription.substring(0, 100) + '...' : product.shortDescription %>
+                    <% } else if (product.description) { %>
+                      <%= product.description.length > 100 ? product.description.substring(0, 100) + '...' : product.description %>
+                    <% } else { %>
+                      Premium digital product
+                    <% } %>
+                  </p>
+                  <div class="product-meta">
+                    <span class="product-price">$<%= product.price %></span>
+                    <span class="product-rating">
+                      ⭐
+                      <% if (product.reviews && product.reviews.length > 0) { %>
+                        <% const avgRating = product.reviews.reduce((sum, review) => sum + review.rating, 0) / product.reviews.length %>
+                        <%= avgRating.toFixed(1) %> (<%= product.reviews.length %>)
+                      <% } else { %>
+                        4.8 (0)
+                      <% } %>
+                    </span>
+                  </div>
+                  <div class="product-stock">
+                    <span class="stock-info">
+                      <% if (product.stockQuantity > 0) { %>
+                        <i class="fas fa-check-circle"></i> <%= product.stockQuantity %> in stock
+                      <% } else { %>
+                        <i class="fas fa-clock"></i> Out of stock
+                      <% } %>
+                    </span>
+                  </div>
+                </div>
+                <div class="product-actions">
+                  <a href="/store/<%= product.sellerId %>" class="btn-secondary">
+                    <i class="fas fa-store"></i> Visit Store
+                  </a>
+                  <a href="/product/<%= product.sellerId %>/<%= product.id %>" class="btn-primary">
+                    View Details
+                  </a>
+                </div>
+              </div>
+            <% } %>
+          <% }); %>
+        <% } else { %>
+          <!-- No products message -->
+          <div class="no-products">
+            <div class="no-products-icon">
+              <i class="fas fa-shopping-bag"></i>
+            </div>
+            <h3>No Products Available</h3>
+            <p>Products will appear here once sellers add them to their stores.</p>
+            <a href="/stores" class="btn-primary">Browse Stores</a>
+          </div>
+        <% } %>
+      </div>
+
+      <!-- No Products Message (when filtered) -->
+      <div class="no-products-message" style="display: none;">
+        <h3>No products found</h3>
+        <p>Try changing your filter criteria or check back later for new products.</p>
+        <a href="/stores" class="btn-primary">Browse All Stores</a>
+      </div>
+
+      <!-- Load More -->
+      <div class="load-more-container">
+        <button class="load-more-btn">Load More Products</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FOOTER ================ -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="/stores">Stores</a>
+        <a href="/products">Products</a>
+        <a href="/services">Services</a>
+        <% if (locals.user) { %>
+          <a href="/orders">My Orders</a>
+          <% if (locals.user.isSeller) { %>
+            <a href="/seller/dashboard">Dashboard</a>
+          <% } %>
+        <% } else { %>
+          <a href="/login">Login</a>
+        <% } %>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2025 DigitalMarket. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/script.js"></script>
+  <script>
+    // Product filtering functionality
+    document.addEventListener('DOMContentLoaded', function() {
+      const categoryTabs = document.querySelectorAll('.category-tab');
+      const productCards = document.querySelectorAll('.product-card');
+      const noProductsMessage = document.querySelector('.no-products-message');
+
+      categoryTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+          // Remove active class from all tabs
+          categoryTabs.forEach(t => t.classList.remove('active'));
+          // Add active class to clicked tab
+          this.classList.add('active');
+
+          const category = this.dataset.category;
+          let visibleCount = 0;
+
+          productCards.forEach(card => {
+            if (category === 'all' || card.dataset.category === category) {
+              card.style.display = 'block';
+              visibleCount++;
+            } else {
+              card.style.display = 'none';
+            }
+          });
+
+          // Show/hide no products message
+          if (visibleCount === 0) {
+            noProductsMessage.style.display = 'block';
+          } else {
+            noProductsMessage.style.display = 'none';
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

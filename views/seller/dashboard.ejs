@@ -1,0 +1,814 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Seller Dashboard - DigitalMarket</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    .seller-dashboard {
+      min-height: calc(100vh - 72px);
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      padding: 90px 20px 40px;
+    }
+    .dashboard-container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .dashboard-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 15px;
+      margin-bottom: 30px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    .dashboard-header h1 {
+      margin: 0 0 10px 0;
+      font-size: 2.5em;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    .dashboard-header h1::before {
+      content: 'ðŸª';
+    }
+    .dashboard-header .subtitle {
+      opacity: 0.9;
+      font-size: 1.1em;
+    }
+    .store-info {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+      margin-bottom: 30px;
+      border-left: 4px solid #667eea;
+    }
+    .store-info-grid {
+      display: grid;
+      grid-template-columns: auto 200px auto;
+      gap: 30px;
+      align-items: center;
+    }
+    .store-details h2 {
+      margin: 0 0 15px 0;
+      color: #2c3e50;
+      font-size: 1.8em;
+      font-weight: 700;
+    }
+    .store-details p {
+      margin: 8px 0;
+      color: #34495e;
+      font-size: 1.1em;
+    }
+    .store-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+    .stat-item {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .stat-number {
+      font-size: 1.5em;
+      font-weight: 700;
+      color: #2c3e50;
+      margin-bottom: 5px;
+    }
+    .stat-label {
+      font-size: 0.9em;
+      color: #7f8c8d;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .store-images {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .store-image {
+      border-radius: 8px;
+      border: 2px solid #ecf0f1;
+      overflow: hidden;
+    }
+    .store-image.banner {
+      width: 150px;
+      height: 75px;
+      object-fit: cover;
+    }
+    .store-image.logo {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+    .dashboard-main {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 30px;
+    }
+    .main-content {
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+    .content-tabs {
+      display: flex;
+      background: #f8f9fa;
+      border-bottom: 1px solid #ecf0f1;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 20px;
+      border: none;
+      background: none;
+      font-weight: 600;
+      font-size: 1.1em;
+      color: #7f8c8d;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border-bottom: 3px solid transparent;
+    }
+    .tab-btn.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+      background: white;
+    }
+    .tab-content {
+      padding: 30px;
+      min-height: 400px;
+    }
+    .tab-panel {
+      display: none;
+    }
+    .tab-panel.active {
+      display: block;
+    }
+    .products-section h3 {
+      margin: 0 0 20px 0;
+      color: #2c3e50;
+      font-size: 1.5em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .products-section h3::before {
+      content: 'ðŸ“¦';
+    }
+    .add-product-btn {
+      background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+      color: white;
+      border: none;
+      padding: 15px 25px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1em;
+      transition: transform 0.3s ease;
+      margin-bottom: 25px;
+    }
+    .add-product-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(39, 174, 96, 0.4);
+    }
+    .product-item {
+      display: grid;
+      grid-template-columns: 80px 1fr auto;
+      gap: 20px;
+      padding: 20px;
+      border: 1px solid #ecf0f1;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      align-items: center;
+    }
+    .product-image {
+      width: 60px;
+      height: 60px;
+      border-radius: 6px;
+      object-fit: cover;
+      border: 2px solid #ecf0f1;
+    }
+    .product-details h4 {
+      margin: 0 0 5px 0;
+      color: #2c3e50;
+      font-weight: 600;
+    }
+    .product-details p {
+      margin: 5px 0;
+      color: #7f8c8d;
+      font-size: 0.9em;
+    }
+    .product-price {
+      font-weight: 700;
+      color: #27ae60;
+      font-size: 1.2em;
+    }
+    .product-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-edit, .btn-delete {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9em;
+      transition: transform 0.3s ease;
+    }
+    .btn-edit {
+      background: #3498db;
+      color: white;
+    }
+    .btn-edit:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 3px 10px rgba(52, 152, 219, 0.4);
+    }
+    .btn-delete {
+      background: #e74c3c;
+      color: white;
+    }
+    .btn-delete:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 3px 10px rgba(231, 76, 60, 0.4);
+    }
+    .no-products {
+      text-align: center;
+      padding: 60px;
+      color: #7f8c8d;
+    }
+    .no-products h4 {
+      margin: 0 0 10px 0;
+      font-size: 1.2em;
+      color: #34495e;
+    }
+    .no-products p {
+      font-size: 1.1em;
+      margin: 0;
+    }
+    .analytics-section h3 {
+      margin: 0 0 20px 0;
+      color: #2c3e50;
+      font-size: 1.5em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .analytics-section h3::before {
+      content: 'ðŸ“Š';
+    }
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+    .analytics-card {
+      background: #f8f9fa;
+      padding: 25px;
+      border-radius: 8px;
+      text-align: center;
+      border-left: 4px solid #667eea;
+    }
+    .analytics-number {
+      font-size: 2.5em;
+      font-weight: 700;
+      color: #2c3e50;
+      margin-bottom: 8px;
+    }
+    .analytics-label {
+      color: #7f8c8d;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-size: 0.9em;
+    }
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+    }
+    .sidebar-card {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+      border-left: 4px solid #f39c12;
+    }
+    .sidebar-card h4 {
+      margin: 0 0 15px 0;
+      color: #2c3e50;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .sidebar-card h4::before {
+      content: 'âš™ï¸';
+    }
+    .sidebar-card p {
+      margin: 8px 0;
+      color: #34495e;
+      font-size: 0.9em;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.95em;
+      transition: transform 0.3s ease;
+      width: 100%;
+      margin-top: 15px;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    .recent-activity h4::before {
+      content: 'ðŸ””';
+    }
+    .activity-item {
+      padding: 12px 0;
+      border-bottom: 1px solid #ecf0f1;
+      font-size: 0.9em;
+    }
+    .activity-item:last-child {
+      border-bottom: none;
+    }
+    .activity-item .timestamp {
+      color: #95a5a6;
+      font-size: 0.8em;
+      margin-top: 5px;
+    }
+    @media (max-width: 1200px) {
+      .dashboard-main {
+        grid-template-columns: 1fr;
+      }
+      .store-info-grid {
+        grid-template-columns: auto 200px;
+      }
+    }
+    @media (max-width: 768px) {
+      .seller-dashboard {
+        padding: 80px 15px 20px;
+      }
+      .store-info-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+      .store-images {
+        flex-direction: row;
+        justify-content: center;
+      }
+      .content-tabs {
+        flex-direction: column;
+      }
+      .tab-btn {
+        border-bottom: none;
+        border-right: 3px solid transparent;
+      }
+      .tab-btn.active {
+        border-bottom: none;
+        border-right-color: #667eea;
+      }
+      .analytics-grid {
+        grid-template-columns: 1fr;
+      }
+      .tab-content {
+        padding: 20px;
+      }
+    }
+    @media (max-width: 480px) {
+      .seller-dashboard {
+        padding: 75px 10px 20px;
+      }
+      .dashboard-header {
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+      .dashboard-header h1 {
+        font-size: 2em;
+      }
+      .store-info {
+        padding: 20px;
+      }
+      .tab-content {
+        padding: 15px;
+      }
+    }
+  </style>
+</head>
+<body data-success="<%= typeof success_msg !== 'undefined' ? success_msg : '' %>" data-error="<%= typeof error_msg !== 'undefined' ? error_msg : '' %>">
+
+  <!-- ================= NAVBAR ================ -->
+  <%- include('../partials/navbar') %>
+
+  <!-- ================= SELLER DASHBOARD CONTENT ================ -->
+  <div class="seller-dashboard">
+    <div class="dashboard-container">
+
+      <!-- Dashboard Header -->
+      <div class="dashboard-header">
+        <h1>Welcome back, <%= user.firstName %>!</h1>
+        <p class="subtitle">Manage your store and track your sales performance</p>
+      </div>
+
+      <!-- Store Information -->
+      <div class="store-info">
+        <div class="store-info-grid">
+          <div class="store-details">
+            <h2><%= user.store.name %></h2>
+            <p><strong>Category:</strong> <%= user.store.category %></p>
+
+            <div class="store-stats">
+              <div class="stat-item">
+                <div class="stat-number"><%= (user.store.items || []).length %></div>
+                <div class="stat-label">Products</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-number">0</div>
+                <div class="stat-label">Sales</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-number">$<%= Number(user.balance || 0).toFixed(2) %></div>
+                <div class="stat-label">Balance</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="store-images">
+            <div>
+              <p style="margin: 0 0 8px 0; font-weight: 600; color: #34495e;">Banner</p>
+              <img src="/uploads/<%= user.store.banner %>" alt="Store Banner" class="store-image banner">
+            </div>
+            <div>
+              <p style="margin: 0 0 8px 0; font-weight: 600; color: #34495e;">Logo</p>
+              <img src="/uploads/<%= user.store.logo %>" alt="Store Logo" class="store-image logo">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Dashboard Content -->
+      <div class="dashboard-main">
+
+        <!-- Main Content (Tabs) -->
+        <div class="main-content">
+          <div class="content-tabs">
+            <button class="tab-btn active" onclick="showTab('products')">Products</button>
+            <button class="tab-btn" onclick="showTab('analytics')">Analytics</button>
+            <button class="tab-btn" onclick="showTab('orders')">Orders & Disputes</button>
+            <button class="tab-btn" onclick="showTab('reviews')">Reviews</button>
+            <button class="tab-btn" onclick="showTab('balance')">Balance</button>
+            <button class="tab-btn" onclick="showTab('settings')">Store Settings</button>
+          </div>
+
+          <!-- Products Tab -->
+          <div id="products-tab" class="tab-panel active">
+            <div class="products-section">
+              <a href="/seller/add-product" class="add-product-btn">
+                âž• Add New Product
+              </a>
+
+              <% if (user.store.items && user.store.items.length > 0) { %>
+                <% user.store.items.forEach(product => { %>
+                  <div class="product-item">
+                    <img src="/uploads/<%= product.images ? product.images[0] : product.image %>" alt="<%= product.name %>" class="product-image">
+                    <div class="product-details">
+                      <h4><%= product.name %></h4>
+                      <p><%= (product.shortDescription || product.description || '').substring(0, 100) %>...</p>
+                      <p><strong>Category:</strong> <%= product.itemCategory %></p>
+                    </div>
+                    <div>
+                      <div class="product-price">$<%= product.price %></div>
+                      <div style="color: #7f8c8d; font-size: 0.9em;">
+                        <%= product.status === 'active' ? 'âœ… Active' : 'â¸ï¸ Inactive' %>
+                      </div>
+                    </div>
+                    <div class="product-actions">
+                      <button class="btn-edit" onclick="editProduct('<%= product.id %>')">Edit</button>
+                      <button class="btn-delete" onclick="deleteProduct('<%= product.id %>', '<%= product.name %>')">Delete</button>
+                    </div>
+                  </div>
+                <% }); %>
+              <% } else { %>
+                <div class="no-products">
+                  <h4>No products yet</h4>
+                  <p>Get started by adding your first product to your store!</p>
+                </div>
+              <% } %>
+            </div>
+          </div>
+
+          <!-- Analytics Tab -->
+          <div id="analytics-tab" class="tab-panel">
+            <div class="analytics-section">
+              <h3>Sales Analytics</h3>
+              <div class="analytics-grid">
+                <div class="analytics-card">
+                  <div class="analytics-number">0</div>
+                  <div class="analytics-label">Total Sales</div>
+                </div>
+                <div class="analytics-card">
+                  <div class="analytics-number">0</div>
+                  <div class="analytics-label">Revenue</div>
+                </div>
+                <div class="analytics-card">
+                  <div class="analytics-number">0</div>
+                  <div class="analytics-label">Orders</div>
+                </div>
+                <div class="analytics-card">
+                  <div class="analytics-number">0</div>
+                  <div class="analytics-label">Views</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Orders & Disputes Tab -->
+          <div id="orders-tab" class="tab-panel">
+            <div class="orders-section">
+              <h3 style="margin: 0 0 20px 0; color: #2c3e50; font-size: 1.5em; display: flex; align-items: center; gap: 10px;">
+                <span>📦</span> Orders & Disputes
+              </h3>
+
+              <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <a href="/seller/orders" style="background: #27ae60; color: white; padding: 12px 20px; border-radius: 6px; text-decoration: none; display: inline-block; margin-bottom: 15px;">
+                  📋 View All Orders & Disputes
+                </a>
+                <p style="margin: 0; color: #34495e;">Access detailed order tracking, dispute management, and customer communication.</p>
+              </div>
+
+              <div class="orders-grid">
+                <!-- Recent Orders -->
+                <div class="analytics-card">
+                  <div class="analytics-number">3</div>
+                  <div class="analytics-label">Total Orders</div>
+                </div>
+                <div class="analytics-card">
+                  <div class="analytics-number">0</div>
+                  <div class="analytics-label">Active Disputes</div>
+                </div>
+                <div class="analytics-card">
+                  <div class="analytics-number">$199.97</div>
+                  <div class="analytics-label">Total Revenue</div>
+                </div>
+                <div class="analytics-card">
+                  <div class="analytics-number">0</div>
+                  <div class="analytics-label">Pending Disputes</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Reviews Tab -->
+          <div id="reviews-tab" class="tab-panel">
+            <div class="reviews-section">
+              <h3 style="margin: 0 0 20px 0; color: #2c3e50; font-size: 1.5em; display: flex; align-items: center; gap: 10px;">
+                <span>⭐</span> Store Reviews & Ratings
+              </h3>
+
+              <% if (user.store.items && user.store.items.length > 0) { %>
+                <% user.store.items.forEach(product => { %>
+                  <% if (product.reviews && product.reviews.length > 0) { %>
+                    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ecf0f1;">
+                      <h4 style="margin: 0 0 10px 0; color: #2c3e50; display: flex; align-items: center; gap: 8px;">
+                        <img src="/uploads/<%= product.images ? product.images[0] : product.image %>" style="width: 40px; height: 40px; border-radius: 4px; object-fit: cover;">
+                        <%= product.name %>
+                      </h4>
+                      <% product.reviews.forEach(review => { %>
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin: 10px 0;">
+                          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span style="font-weight: 600; color: #2c3e50;"><%= review.userName %></span>
+                            <div style="color: #f39c12;">
+                              <% for (let i = 1; i <= 5; i++) { %>
+                                <% if (i <= review.rating) { %>★<% } else { %>☆<% } %>
+                              <% } %>
+                              <span style="color: #7f8c8d; font-size: 0.9em;">(<%= review.rating %>)</span>
+                            </div>
+                          </div>
+                          <p style="margin: 0; color: #34495e;"><%= review.comment %></p>
+                          <div style="color: #95a5a6; font-size: 0.8em; margin-top: 8px;">
+                            <%= new Date(review.date).toLocaleDateString() %>
+                          </div>
+                        </div>
+                      <% }); %>
+                    </div>
+                  <% } %>
+                <% }); %>
+              <% } else { %>
+                <div style="text-align: center; padding: 60px; color: #7f8c8d;">
+                  <h4 style="margin: 0 0 10px 0; font-size: 1.2em; color: #34495e;">No Reviews Yet</h4>
+                  <p>You don't have any products with reviews yet. Start selling to collect customer feedback!</p>
+                </div>
+              <% } %>
+            </div>
+          </div>
+
+          <!-- Balance Tab -->
+          <div id="balance-tab" class="tab-panel">
+            <div class="balance-section">
+              <h3 style="margin: 0 0 20px 0; color: #2c3e50; font-size: 1.5em; display: flex; align-items: center; gap: 10px;">
+                <span>💰</span> Balance & Withdrawals
+              </h3>
+
+              <div style="background: white; padding: 25px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ecf0f1;">
+                <h4 style="margin: 0 0 15px 0; color: #2c3e50;">Current Balance</h4>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <div style="font-size: 2.5em; font-weight: 700; color: #27ae60; margin-bottom: 5px;">
+                      $<%= Number(user.balance || 0).toFixed(2) %>
+                    </div>
+                    <div style="color: #7f8c8d; font-size: 0.9em;">Available for withdrawal</div>
+                  </div>
+                  <a href="/seller/balance" style="background: #3498db; color: white; padding: 12px 25px; border-radius: 6px; text-decoration: none;">
+                    💸 Request Withdrawal
+                  </a>
+                </div>
+              </div>
+
+              <div class="analytics-grid" style="margin-bottom: 20px;">
+                <div class="analytics-card">
+                  <div class="analytics-number">$0.00</div>
+                  <div class="analytics-label">Pending Withdrawals</div>
+                </div>
+                <div class="analytics-card">
+                  <div class="analytics-number">$0.00</div>
+                  <div class="analytics-label">Total Withdrawn</div>
+                </div>
+                <div class="analytics-card">
+                  <div class="analytics-number">$0.00</div>
+                  <div class="analytics-label">This Month</div>
+                </div>
+              </div>
+
+              <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px;">
+                <h4 style="margin: 0 0 10px 0; color: #856404;">💡 Withdrawal Information</h4>
+                <p style="margin: 5px 0; color: #856404; font-size: 0.9em;">
+                  • Minimum withdrawal amount: $50.00<br>
+                  • Processing time: 1-3 business days<br>
+                  • Fees: Free for amounts under $500<br>
+                  • Admin approval required for all withdrawals
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Settings Tab -->
+          <div id="settings-tab" class="tab-panel">
+            <div class="settings-section">
+              <h3 style="margin: 0 0 20px 0; color: #2c3e50; font-size: 1.5em; display: flex; align-items: center; gap: 10px;">
+                <span>âš™ï¸</span> Store Settings
+              </h3>
+
+              <div style="background: #f8f9fa; padding: 25px; border-radius: 8px; margin-bottom: 20px;">
+                <h4 style="margin: 0 0 15px 0; color: #2c3e50;">Store Information</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                  <div>
+                    <label style="display: block; font-weight: 600; color: #34495e; margin-bottom: 8px;">Store Name</label>
+                    <input type="text" value="<%= user.store.name %>" style="width: 100%; padding: 10px; border: 2px solid #ecf0f1; border-radius: 6px; font-size: 1em;">
+                  </div>
+                  <div>
+                    <label style="display: block; font-weight: 600; color: #34495e; margin-bottom: 8px;">Category</label>
+                    <select style="width: 100%; padding: 10px; border: 2px solid #ecf0f1; border-radius: 6px; font-size: 1em;">
+                      <option value="<%= user.store.category %>" selected><%= user.store.category %></option>
+                      <option value="services">Services</option>
+                      <option value="games">Games</option>
+                      <option value="ai">AI Services</option>
+                      <option value="software">Software</option>
+                      <option value="graphics">Graphics & Design</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+
+
+              <div style="background: #f8f9fa; padding: 25px; border-radius: 8px;">
+                <h4 style="margin: 0 0 15px 0; color: #2c3e50;">Store Description</h4>
+                <textarea style="width: 100%; padding: 10px; border: 2px solid #ecf0f1; border-radius: 6px; font-size: 1em; min-height: 120px; resize: vertical;"><%= user.store.description %></textarea>
+              </div>
+
+              <button style="margin-top: 20px;" class="btn-primary">Save Changes</button>
+            </div>
+          </div>
+        </div>
+
+          <!-- Sidebar -->
+          <div class="sidebar">
+
+            <!-- Store Tools -->
+            <div class="sidebar-card">
+              <h4>Quick Actions</h4>
+              <p><strong>Add Product:</strong> Create and list new products in your store.</p>
+              <p><strong>Manage Orders:</strong> Track and fulfill customer orders.</p>
+              <p><strong>View Analytics:</strong> Monitor your store performance.</p>
+              <a href="/my-store" class="btn-primary" style="display: inline-block; text-decoration: none;">Manage Store</a>
+            </div>
+
+          <!-- Recent Activity -->
+          <div class="sidebar-card recent-activity">
+            <h4>Recent Activity</h4>
+            <p>You became a seller!</p>
+            <div class="activity-item">
+              <div>Store "<%= user.store.name %>" was approved</div>
+              <div class="timestamp">Recently</div>
+            </div>
+            <div class="activity-item">
+              <div>Application fee of $10 was deducted</div>
+              <div class="timestamp">Recently</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= FOOTER ================ -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="#products">Products</a>
+        <a href="#games">Games</a>
+        <a href="#ai">AI</a>
+        <a href="#pricing">Pricing</a>
+        <a href="/login">Login</a>
+        <a href="/signup">Sign Up</a>
+      </div>
+      <p>&copy; 2025 DigitalMarket. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    function showTab(tabName) {
+      // Hide all tab panels
+      const tabPanels = document.querySelectorAll('.tab-panel');
+      tabPanels.forEach(panel => panel.classList.remove('active'));
+
+      // Show selected tab panel
+      document.getElementById(tabName + '-tab').classList.add('active');
+
+      // Update tab buttons
+      const tabBtns = document.querySelectorAll('.tab-btn');
+      tabBtns.forEach(btn => btn.classList.remove('active'));
+
+      // Find and activate the clicked tab button
+      EventTarget = event.target;
+      EventTarget.classList.add('active');
+    }
+
+    // Product management functions
+    function editProduct(productId) {
+      window.location.href = `/seller/edit-product/${productId}`;
+    }
+
+    function deleteProduct(productId, productName) {
+      if (confirm(`Are you sure you want to delete "${productName}"? This action cannot be undone.`)) {
+        // Create a form to submit the delete request
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/seller/delete-product/${productId}`;
+
+        // Add CSRF token if needed (method override for DELETE)
+        const methodInput = document.createElement('input');
+        methodInput.type = 'hidden';
+        methodInput.name = '_method';
+        methodInput.value = 'DELETE';
+        form.appendChild(methodInput);
+
+        document.body.appendChild(form);
+        form.submit();
+      }
+    }
+
+    // Flash messages
+    const successMsg = document.body.getAttribute('data-success');
+    const errorMsg = document.body.getAttribute('data-error');
+
+    if (successMsg) {
+      setTimeout(() => {
+        alert(successMsg);
+      }, 500);
+    }
+
+    if (errorMsg) {
+      setTimeout(() => {
+        alert(errorMsg);
+      }, 500);
+    }
+  </script>
+</body>
+</html>

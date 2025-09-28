@@ -746,6 +746,13 @@ app.post('/login', async (req, res) => {
     try {
         const user = await User.findOne({ email: email.toLowerCase().trim() });
         console.log('👤 Found user:', user ? user.email : 'Not found');
+        
+        if (user) {
+            console.log('📋 User details:');
+            console.log('   - Email verified:', user.isEmailVerified);
+            console.log('   - Has password:', !!user.password);
+            console.log('   - Created:', user.createdAt);
+        }
 
         if (!user) {
             console.log('❌ User not found for:', email);
@@ -755,21 +762,36 @@ app.post('/login', async (req, res) => {
 
         // Check if email verification is required and if email is verified
         const requireEmailVerification = process.env.REQUIRE_EMAIL_VERIFICATION === 'true';
+        console.log('⚙️ Email verification required:', requireEmailVerification);
+        
         if (requireEmailVerification && !user.isEmailVerified) {
             console.log('❌ Email not verified for:', email);
             req.flash('error_msg', 'Please verify your email address before logging in. Check your email for the verification link.');
             return res.redirect('/login');
         }
 
-        // Password verification with enhanced security
+        // Password verification with enhanced security and debugging
         let passwordMatch = false;
+        
+        console.log('🔑 Testing password...');
         
         // For demo purposes, allowing password123 to work (remove in production)
         if (password === 'password123' && process.env.NODE_ENV !== 'production') {
             console.log('⚠️ Demo password used');
             passwordMatch = true;
-        } else if (user.password && await bcrypt.compare(password, user.password)) {
-            passwordMatch = true;
+        } else if (user.password) {
+            try {
+                passwordMatch = await bcrypt.compare(password, user.password);
+                console.log('🔑 Password comparison result:', passwordMatch);
+            } catch (bcryptError) {
+                console.error('❌ Bcrypt error:', bcryptError.message);
+                req.flash('error_msg', 'Password verification error. Please try again.');
+                return res.redirect('/login');
+            }
+        } else {
+            console.log('❌ User has no password hash');
+            req.flash('error_msg', 'Account setup incomplete. Please contact support.');
+            return res.redirect('/login');
         }
 
         if (passwordMatch) {
@@ -800,6 +822,12 @@ app.post('/login', async (req, res) => {
             res.redirect(redirectTo);
         } else {
             console.log('❌ Invalid password for:', email);
+            console.log('💡 Debug info:');
+            console.log('   - Password provided length:', password.length);
+            console.log('   - User has password hash:', !!user.password);
+            console.log('   - Email verified:', user.isEmailVerified);
+            console.log('   - Verification required:', requireEmailVerification);
+            
             req.flash('error_msg', 'Invalid email or password');
             res.redirect('/login');
         }

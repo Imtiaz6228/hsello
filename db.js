@@ -28,7 +28,6 @@ const connectDB = async () => {
       w: 'majority',
       // Additional options for production
       bufferCommands: false,
-      bufferMaxEntries: 0,
     };
 
     const conn = await mongoose.connect(mongoURI, connectionOptions);

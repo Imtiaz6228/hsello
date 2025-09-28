@@ -616,6 +616,12 @@ function handleMobileNavLinkClick() {
   }, 150);
 }
 
+// Coming soon function for backward compatibility
+function comingSoon(event) {
+    if (event) event.preventDefault();
+    alert('This feature is coming soon!');
+}
+
 // On DOM ready
 document.addEventListener('DOMContentLoaded', function() {
   // wire auth forms

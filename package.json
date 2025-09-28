@@ -6,18 +6,24 @@
   "scripts": {
     "start": "node app.js",
     "start-simple": "node app-simple.js",
+    "start-postgres": "node app-postgres.js",
     "dev": "node app.js",
     "dev-simple": "node app-simple.js",
+    "dev-postgres": "node app-postgres.js",
     "test-auth": "node test-auth.js",
     "test-db": "node test-auth.js --db-only",
     "test-email": "node test-auth.js --email-only",
     "check-config": "node test-auth.js --config-only",
     "setup": "npm install && node test-auth.js",
+    "db-generate": "npx prisma generate",
+    "db-push": "npx prisma db push",
+    "db-migrate": "npx prisma migrate dev",
     "fix-login": "node fix-login.js",
     "fix-users": "node fix-existing-users.js",
     "debug-login": "node debug-login.js",
     "pm2-start": "pm2 start app.js --name digitalmarket",
     "pm2-start-simple": "pm2 start app-simple.js --name digitalmarket-simple",
+    "pm2-start-postgres": "pm2 start app-postgres.js --name digitalmarket-postgres",
     "pm2-stop": "pm2 stop digitalmarket",
     "pm2-restart": "pm2 restart digitalmarket",
     "pm2-logs": "pm2 logs digitalmarket"
@@ -30,6 +36,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@prisma/client": "^5.7.0",
     "archiver": "^7.0.1",
     "axios": "^1.11.0",
     "bcrypt": "^5.1.1",
@@ -40,8 +47,9 @@
     "express-session": "^1.18.2",
     "ig-panel-enterprise": "file:..",
     "method-override": "^3.0.0",
-    "mongoose": "^8.0.3",
     "multer": "^2.0.2",
-    "nodemailer": "^6.9.8"
+    "nodemailer": "^6.9.8",
+    "pg": "^8.11.3",
+    "prisma": "^5.7.0"
   }
 }

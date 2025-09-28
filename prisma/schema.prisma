@@ -1,0 +1,248 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String   @unique
+  password  String
+
+  isSeller   Boolean @default(false)
+  balance    Float   @default(0)
+
+  // Email verification
+  isEmailVerified         Boolean @default(false)
+  emailVerificationToken   String?
+  emailVerificationExpires DateTime?
+
+  // Login tracking
+  lastLoginAt   DateTime?
+  loginAttempts Int       @default(0)
+  lockUntil     DateTime?
+
+  // Seller application
+  sellerApplicationPending   Boolean @default(false)
+  sellerApplicationApproved  Boolean @default(false)
+  sellerApplicationId        String?
+
+  // Store data (JSON for nested structure)
+  storeName         String?
+  storeCategory     String?
+  storeBanner       String?
+  storeLogo         String?
+  storeDescription  String?
+  storeSeoDescription String?
+  storeRules        String?
+  storeContactEmail String?
+  storeContactPhone String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  ordersAsBuyer     Order[]     @relation("BuyerOrders")
+  ordersAsSeller    Order[]     @relation("SellerOrders")
+  disputesAsBuyer   Dispute[]   @relation("BuyerDisputes")
+  disputesAsSeller  Dispute[]   @relation("SellerDisputes")
+  sellerApplications SellerApplication[]
+  payments          Payment[]
+  withdrawalRequests WithdrawalRequest[]
+
+  @@map("users")
+}
+
+model Order {
+  id         String   @id @default(cuid())
+  buyerId    String
+  sellerId   String
+  productId  String
+  productName String
+  quantity   Int      @default(1)
+  price      Float
+  totalCost  Float
+  status     OrderStatus @default(COMPLETED)
+  orderDate  DateTime @default(now())
+  isDigital  Boolean  @default(true)
+
+  // Additional fields for file handling
+  downloadReady     Boolean @default(false)
+  downloadFileName  String?
+  fileSplitCreated  Boolean @default(false)
+  quantityPurchased Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  buyer   User     @relation("BuyerOrders", fields: [buyerId], references: [id])
+  seller  User     @relation("SellerOrders", fields: [sellerId], references: [id])
+  disputes Dispute[]
+
+  @@map("orders")
+}
+
+model Dispute {
+  id          String   @id @default(cuid())
+  orderId     String
+  buyerId     String
+  sellerId    String
+  reason      String
+  description String
+  status      DisputeStatus @default(OPEN)
+  openedAt    DateTime @default(now())
+  lastActivity DateTime @default(now())
+  autoCloseAt DateTime
+
+  // Resolution (JSON for nested structure)
+  resolutionType     String?
+  resolutionAmount   Float?
+  resolutionReason   String?
+  resolutionProcessedAt DateTime?
+  resolutionProcessedBy String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  order  Order @relation(fields: [orderId], references: [id])
+  buyer  User  @relation("BuyerDisputes", fields: [buyerId], references: [id])
+  seller User  @relation("SellerDisputes", fields: [sellerId], references: [id])
+
+  @@map("disputes")
+}
+
+model SellerApplication {
+  id            String   @id @default(cuid())
+  userId        String
+  userName      String
+  userEmail     String
+  storeName     String
+  category      String
+  contactEmail  String
+  contactPhone  String?
+  rules         String?
+  storeDescription String
+  seoDescription String
+
+  bannerPath    String
+  logoPath      String
+
+  status        ApplicationStatus @default(PENDING)
+  submittedAt   DateTime @default(now())
+  reviewedBy    String?
+  reviewedAt    DateTime?
+  reviewNotes   String?
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("seller_applications")
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  userId        String
+  amountUSD     Float
+  amountRUB     Float
+  status        PaymentStatus @default(WAITING_FOR_PAYMENT)
+  orderId       String   @unique
+
+  // Payment details
+  paymentId     String?
+  paymentAddress String?
+  payUrl        String?
+  payAmount     Float?
+  payCurrency   String?
+  expectedDeposit Float?
+  expiredAt     DateTime?
+
+  paidAt        DateTime?
+  actuallyPaid  Float?
+  balanceUpdated Boolean @default(false)
+
+  // Webhook data
+  webhooksReceived Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("payments")
+}
+
+model WithdrawalRequest {
+  id            String   @id @default(cuid())
+  sellerId      String
+  amount        Float    // RUB amount
+  netAmount     Float    // RUB amount after fee
+  cryptoAmount  Float    // Crypto amount to send
+  fee           Float    // Fee in RUB
+  cryptoWalletAddress String
+  blockchain    String
+  status        WithdrawalStatus @default(PENDING)
+  requestedAt   DateTime @default(now())
+  processedAt   DateTime?
+  transactionId String?
+
+  // Relations
+  seller User @relation(fields: [sellerId], references: [id])
+
+  @@map("withdrawal_requests")
+}
+
+model AdminUser {
+  id       String @id @default(cuid())
+  adminId  String @unique
+  username String
+  email    String @unique
+  password String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("admin_users")
+}
+
+// Enums
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  REFUNDED
+  CANCELLED
+}
+
+enum DisputeStatus {
+  OPEN
+  CLOSED
+  AUTO_CLOSED
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PaymentStatus {
+  WAITING_FOR_PAYMENT
+  PAID
+  PARTIALLY_PAID
+  FAILED
+  EXPIRED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}

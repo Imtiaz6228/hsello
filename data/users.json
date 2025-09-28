@@ -1,0 +1,19 @@
+[
+  {
+    "_id": "mg3hx3a41ji1r70bcfz",
+    "firstName": "rehmat",
+    "lastName": "khan",
+    "email": "hotpvaaass@gmail.com",
+    "password": "$2b$12$Zk3cKsycnW/8MMT/YeHcPeBC4/ivG/FpYRmbVwmdTmrcZiTiI8vZm",
+    "isSeller": false,
+    "balance": 0,
+    "isEmailVerified": true,
+    "createdAt": "2025-09-28T09:27:03.388Z",
+    "lastLoginAt": "2025-09-28T09:27:06.272Z",
+    "store": null,
+    "sellerApplication": {
+      "pending": false,
+      "approved": false
+    }
+  }
+]

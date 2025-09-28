@@ -753,8 +753,16 @@ app.post('/login', async (req, res) => {
             return res.redirect('/login');
         }
 
-        // SKIP EMAIL VERIFICATION COMPLETELY
-        console.log('⚙️ Email verification DISABLED for all users');
+        // Check if email verification is required
+        const requireEmailVerification = process.env.REQUIRE_EMAIL_VERIFICATION !== 'false';
+
+        if (requireEmailVerification && !user.isEmailVerified) {
+            console.log('❌ Email verification required but user is not verified');
+            req.flash('error_msg', 'Please verify your email address before logging in. Check your email for the verification link.');
+            return res.redirect('/login');
+        }
+
+        console.log('⚙️ Email verification check passed');
 
         // Password verification with enhanced debugging
         let passwordMatch = false;
@@ -944,7 +952,7 @@ app.post('/signup', async (req, res) => {
             isSeller: false,
             sellerApplication: { pending: false, approved: false },
             balance: 0,
-            isEmailVerified: true, // ALWAYS TRUE - NO EMAIL VERIFICATION
+            isEmailVerified: process.env.REQUIRE_EMAIL_VERIFICATION !== 'false', // Respect env setting
             emailVerificationToken: undefined,
             emailVerificationExpires: undefined
         });

@@ -14,6 +14,7 @@
     "check-config": "node test-auth.js --config-only",
     "setup": "npm install && node test-auth.js",
     "fix-login": "node fix-login.js",
+    "fix-users": "node fix-existing-users.js",
     "debug-login": "node debug-login.js",
     "pm2-start": "pm2 start app.js --name digitalmarket",
     "pm2-start-simple": "pm2 start app-simple.js --name digitalmarket-simple",

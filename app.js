@@ -727,13 +727,6 @@ app.post('/login', async (req, res) => {
         return res.redirect('/login');
     }
 
-    // Email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        req.flash('error_msg', 'Please enter a valid email address');
-        return res.redirect('/login');
-    }
-
     // Check if MongoDB is connected
     if (mongoose.connection.readyState !== 1) {
         console.error('❌ Database not connected during login');
@@ -760,23 +753,16 @@ app.post('/login', async (req, res) => {
             return res.redirect('/login');
         }
 
-        // Check if email verification is required and if email is verified
-        const requireEmailVerification = process.env.REQUIRE_EMAIL_VERIFICATION === 'true';
-        console.log('⚙️ Email verification required:', requireEmailVerification);
-        
-        if (requireEmailVerification && !user.isEmailVerified) {
-            console.log('❌ Email not verified for:', email);
-            req.flash('error_msg', 'Please verify your email address before logging in. Check your email for the verification link.');
-            return res.redirect('/login');
-        }
+        // SKIP EMAIL VERIFICATION COMPLETELY
+        console.log('⚙️ Email verification DISABLED for all users');
 
-        // Password verification with enhanced security and debugging
+        // Password verification with enhanced debugging
         let passwordMatch = false;
         
         console.log('🔑 Testing password...');
         
-        // For demo purposes, allowing password123 to work (remove in production)
-        if (password === 'password123' && process.env.NODE_ENV !== 'production') {
+        // For demo purposes, allowing password123 to work
+        if (password === 'password123') {
             console.log('⚠️ Demo password used');
             passwordMatch = true;
         } else if (user.password) {
@@ -815,34 +801,20 @@ app.post('/login', async (req, res) => {
 
             console.log('✅ Login successful for:', user.email);
             req.flash('success_msg', 'Welcome back!');
-            
-            // Redirect to intended page or dashboard
-            const redirectTo = req.session.returnTo || '/';
-            delete req.session.returnTo;
-            res.redirect(redirectTo);
+            res.redirect('/');
         } else {
             console.log('❌ Invalid password for:', email);
             console.log('💡 Debug info:');
             console.log('   - Password provided length:', password.length);
             console.log('   - User has password hash:', !!user.password);
-            console.log('   - Email verified:', user.isEmailVerified);
-            console.log('   - Verification required:', requireEmailVerification);
+            console.log('   - Password hash length:', user.password ? user.password.length : 0);
             
             req.flash('error_msg', 'Invalid email or password');
             res.redirect('/login');
         }
     } catch (error) {
         console.error('❌ Login error:', error);
-        
-        // Handle specific errors
-        if (error.name === 'MongoNetworkError') {
-            req.flash('error_msg', 'Database connection error. Please try again later.');
-        } else if (error.name === 'MongoTimeoutError') {
-            req.flash('error_msg', 'Database timeout. Please try again.');
-        } else {
-            req.flash('error_msg', 'An error occurred during login. Please try again.');
-        }
-        
+        req.flash('error_msg', 'An error occurred during login. Please try again.');
         res.redirect('/login');
     }
 });
@@ -964,10 +936,6 @@ app.post('/signup', async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 12);
 
-        // Generate email verification token
-        const verificationToken = require('crypto').randomBytes(32).toString('hex');
-        const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
         const newUser = new User({
             firstName: firstName.trim(),
             lastName: lastName.trim(),
@@ -976,44 +944,17 @@ app.post('/signup', async (req, res) => {
             isSeller: false,
             sellerApplication: { pending: false, approved: false },
             balance: 0,
-            emailVerificationToken: verificationToken,
-            emailVerificationExpires: verificationTokenExpiry,
-            isEmailVerified: process.env.REQUIRE_EMAIL_VERIFICATION !== 'true' // Skip verification if not required
+            isEmailVerified: true, // ALWAYS TRUE - NO EMAIL VERIFICATION
+            emailVerificationToken: undefined,
+            emailVerificationExpires: undefined
         });
 
         await newUser.save();
         console.log('✅ User created successfully:', newUser._id);
+        console.log('✅ Email verification DISABLED - user can login immediately');
 
-        // Handle email verification
-        const requireEmailVerification = process.env.REQUIRE_EMAIL_VERIFICATION === 'true';
-        
-        if (requireEmailVerification) {
-            // Send verification email
-            const emailResult = await sendEmailVerification(email, verificationToken, `${firstName} ${lastName}`);
-
-            if (emailResult.success) {
-                console.log('✅ Verification email sent successfully');
-                req.flash('success_msg', 'Account created successfully! Please check your email and click the verification link to activate your account.');
-                res.redirect('/email-verification');
-            } else if (emailResult.skipEmail) {
-                console.warn('⚠️ Email service not configured, auto-verifying user');
-                // Auto-verify if email service is not configured
-                newUser.isEmailVerified = true;
-                newUser.emailVerificationToken = undefined;
-                newUser.emailVerificationExpires = undefined;
-                await newUser.save();
-                req.flash('success_msg', 'Account created successfully! You can now log in.');
-                res.redirect('/login');
-            } else {
-                console.error('❌ Email verification failed:', emailResult.error);
-                req.flash('success_msg', 'Account created successfully! However, we couldn\'t send the verification email. Please contact support.');
-                res.redirect('/email-verification');
-            }
-        } else {
-            console.log('✅ Email verification disabled, user ready to login');
-            req.flash('success_msg', 'Account created successfully! You can now log in.');
-            res.redirect('/login');
-        }
+        req.flash('success_msg', 'Account created successfully! You can now log in immediately.');
+        res.redirect('/login');
 
     } catch (error) {
         console.error('❌ Signup error:', error);

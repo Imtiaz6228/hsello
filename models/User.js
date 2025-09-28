@@ -1,17 +1,34 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
-  firstName: { type: String, required: true },
-  lastName: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
+  firstName: { type: String, required: true, trim: true },
+  lastName: { type: String, required: true, trim: true },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    trim: true,
+    validate: {
+      validator: function(v) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+      },
+      message: 'Please enter a valid email address'
+    }
+  },
+  password: { type: String, required: true, minlength: 6 },
   isSeller: { type: Boolean, default: false },
-  balance: { type: Number, default: 0 }, // Balance in RUB (Russian Rubles)
+  balance: { type: Number, default: 0, min: 0 }, // Balance in RUB (Russian Rubles)
 
   // Email confirmation fields
   isEmailVerified: { type: Boolean, default: false },
   emailVerificationToken: { type: String },
   emailVerificationExpires: { type: Date },
+
+  // Login tracking
+  lastLoginAt: { type: Date },
+  loginAttempts: { type: Number, default: 0 },
+  lockUntil: { type: Date },
 
   // Seller application status
   sellerApplication: {

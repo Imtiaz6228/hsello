@@ -5,7 +5,16 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "dev": "node app.js"
+    "dev": "node app.js",
+    "test-auth": "node test-auth.js",
+    "test-db": "node test-auth.js --db-only",
+    "test-email": "node test-auth.js --email-only",
+    "check-config": "node test-auth.js --config-only",
+    "setup": "npm install && node test-auth.js",
+    "pm2-start": "pm2 start app.js --name digitalmarket",
+    "pm2-stop": "pm2 stop digitalmarket",
+    "pm2-restart": "pm2 restart digitalmarket",
+    "pm2-logs": "pm2 logs digitalmarket"
   },
   "keywords": [
     "express",

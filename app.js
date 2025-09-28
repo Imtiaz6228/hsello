@@ -721,15 +721,30 @@ app.post('/login', async (req, res) => {
     const { email, password } = req.body;
     console.log('🔐 Login attempt:', email);
 
+    // Enhanced validation
+    if (!email || !password) {
+        req.flash('error_msg', 'Email and password are required');
+        return res.redirect('/login');
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        req.flash('error_msg', 'Please enter a valid email address');
+        return res.redirect('/login');
+    }
+
     // Check if MongoDB is connected
     if (mongoose.connection.readyState !== 1) {
-        console.log('🔧 MongoDB not connected - database unavailable');
+        console.error('❌ Database not connected during login');
         req.flash('error_msg', 'Database connection unavailable. Please try again later or contact support.');
         return res.redirect('/login');
     }
 
+    console.log('✅ Database connection verified');
+
     try {
-        const user = await User.findOne({ email: email });
+        const user = await User.findOne({ email: email.toLowerCase().trim() });
         console.log('👤 Found user:', user ? user.email : 'Not found');
 
         if (!user) {
@@ -738,20 +753,27 @@ app.post('/login', async (req, res) => {
             return res.redirect('/login');
         }
 
-        // Check if email is verified
-        if (!user.isEmailVerified) {
+        // Check if email verification is required and if email is verified
+        const requireEmailVerification = process.env.REQUIRE_EMAIL_VERIFICATION === 'true';
+        if (requireEmailVerification && !user.isEmailVerified) {
             console.log('❌ Email not verified for:', email);
             req.flash('error_msg', 'Please verify your email address before logging in. Check your email for the verification link.');
             return res.redirect('/login');
         }
 
-        // For demo purposes, allowing password123 to work
+        // Password verification with enhanced security
         let passwordMatch = false;
-        if (password === 'password123' || (user.password && await bcrypt.compare(password, user.password))) {
+        
+        // For demo purposes, allowing password123 to work (remove in production)
+        if (password === 'password123' && process.env.NODE_ENV !== 'production') {
+            console.log('⚠️ Demo password used');
+            passwordMatch = true;
+        } else if (user.password && await bcrypt.compare(password, user.password)) {
             passwordMatch = true;
         }
 
         if (passwordMatch) {
+            // Create session
             req.session.user = {
                 id: user._id.toString(),
                 firstName: user.firstName,
@@ -760,17 +782,39 @@ app.post('/login', async (req, res) => {
                 isSeller: user.isSeller || false,
                 balance: user.balance || 0
             };
+
+            // Update last login time
+            try {
+                user.lastLoginAt = new Date();
+                await user.save();
+            } catch (updateError) {
+                console.warn('⚠️ Could not update last login time:', updateError.message);
+            }
+
             console.log('✅ Login successful for:', user.email);
-            req.flash('success_msg', 'Login successful!');
-            res.redirect('/');
+            req.flash('success_msg', 'Welcome back!');
+            
+            // Redirect to intended page or dashboard
+            const redirectTo = req.session.returnTo || '/';
+            delete req.session.returnTo;
+            res.redirect(redirectTo);
         } else {
-            console.log('❌ Login failed for:', email);
+            console.log('❌ Invalid password for:', email);
             req.flash('error_msg', 'Invalid email or password');
             res.redirect('/login');
         }
     } catch (error) {
-        console.error('Login error:', error);
-        req.flash('error_msg', 'An error occurred during login. Please try again.');
+        console.error('❌ Login error:', error);
+        
+        // Handle specific errors
+        if (error.name === 'MongoNetworkError') {
+            req.flash('error_msg', 'Database connection error. Please try again later.');
+        } else if (error.name === 'MongoTimeoutError') {
+            req.flash('error_msg', 'Database timeout. Please try again.');
+        } else {
+            req.flash('error_msg', 'An error occurred during login. Please try again.');
+        }
+        
         res.redirect('/login');
     }
 });
@@ -839,28 +883,56 @@ app.get('/verify-email/:token', async (req, res) => {
 app.post('/signup', async (req, res) => {
     const { firstName, lastName, email, password, confirmPassword, agreeTerms } = req.body;
 
+    console.log('🔐 Signup attempt:', { email, firstName, lastName });
+
+    // Enhanced validation
+    if (!firstName || !lastName || !email || !password || !confirmPassword) {
+        req.flash('error_msg', 'All fields are required');
+        return res.redirect('/signup');
+    }
+
     if (!agreeTerms) {
         req.flash('error_msg', 'You must agree to the terms and conditions');
         return res.redirect('/signup');
     }
+
     if (password !== confirmPassword) {
         req.flash('error_msg', 'Passwords do not match');
+        return res.redirect('/signup');
+    }
+
+    // Password strength validation
+    if (password.length < 6) {
+        req.flash('error_msg', 'Password must be at least 6 characters long');
+        return res.redirect('/signup');
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        req.flash('error_msg', 'Please enter a valid email address');
         return res.redirect('/signup');
     }
 
     try {
         // Check if MongoDB is connected
         if (mongoose.connection.readyState !== 1) {
-            req.flash('error_msg', 'Database connection unavailable. Please try again later.');
+            console.error('❌ Database not connected during signup');
+            req.flash('error_msg', 'Database connection unavailable. Please try again later or contact support.');
             return res.redirect('/signup');
         }
 
+        console.log('✅ Database connection verified');
+
         // Check if user already exists
-        const existingUser = await User.findOne({ email: email });
+        const existingUser = await User.findOne({ email: email.toLowerCase() });
         if (existingUser) {
-            req.flash('error_msg', 'User already exists');
+            console.log('❌ User already exists:', email);
+            req.flash('error_msg', 'An account with this email already exists. Please try logging in.');
             return res.redirect('/signup');
         }
+
+        console.log('✅ Email available, creating user...');
 
         const hashedPassword = await bcrypt.hash(password, 12);
 
@@ -869,34 +941,67 @@ app.post('/signup', async (req, res) => {
         const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
         const newUser = new User({
-            firstName,
-            lastName,
-            email,
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            email: email.toLowerCase().trim(),
             password: hashedPassword,
             isSeller: false,
             sellerApplication: { pending: false, approved: false },
             balance: 0,
             emailVerificationToken: verificationToken,
             emailVerificationExpires: verificationTokenExpiry,
-            isEmailVerified: false
+            isEmailVerified: process.env.REQUIRE_EMAIL_VERIFICATION !== 'true' // Skip verification if not required
         });
 
         await newUser.save();
+        console.log('✅ User created successfully:', newUser._id);
 
-        // Send verification email
-        const emailResult = await sendEmailVerification(email, verificationToken, `${firstName} ${lastName}`);
+        // Handle email verification
+        const requireEmailVerification = process.env.REQUIRE_EMAIL_VERIFICATION === 'true';
+        
+        if (requireEmailVerification) {
+            // Send verification email
+            const emailResult = await sendEmailVerification(email, verificationToken, `${firstName} ${lastName}`);
 
-        if (emailResult.success) {
-            req.flash('success_msg', 'Account created successfully! Please check your email and click the verification link to activate your account.');
+            if (emailResult.success) {
+                console.log('✅ Verification email sent successfully');
+                req.flash('success_msg', 'Account created successfully! Please check your email and click the verification link to activate your account.');
+                res.redirect('/email-verification');
+            } else if (emailResult.skipEmail) {
+                console.warn('⚠️ Email service not configured, auto-verifying user');
+                // Auto-verify if email service is not configured
+                newUser.isEmailVerified = true;
+                newUser.emailVerificationToken = undefined;
+                newUser.emailVerificationExpires = undefined;
+                await newUser.save();
+                req.flash('success_msg', 'Account created successfully! You can now log in.');
+                res.redirect('/login');
+            } else {
+                console.error('❌ Email verification failed:', emailResult.error);
+                req.flash('success_msg', 'Account created successfully! However, we couldn\'t send the verification email. Please contact support.');
+                res.redirect('/email-verification');
+            }
         } else {
-            console.error('Email verification failed:', emailResult.error);
-            req.flash('success_msg', 'Account created successfully! However, we couldn\'t send the verification email. Please contact support or try logging in later.');
+            console.log('✅ Email verification disabled, user ready to login');
+            req.flash('success_msg', 'Account created successfully! You can now log in.');
+            res.redirect('/login');
         }
 
-        res.redirect('/email-verification');
     } catch (error) {
-        console.error('Signup error:', error);
-        req.flash('error_msg', `An error occurred during signup: ${error.message}`);
+        console.error('❌ Signup error:', error);
+        
+        // Handle specific MongoDB errors
+        if (error.code === 11000) {
+            req.flash('error_msg', 'An account with this email already exists.');
+        } else if (error.name === 'ValidationError') {
+            const messages = Object.values(error.errors).map(err => err.message);
+            req.flash('error_msg', `Validation error: ${messages.join(', ')}`);
+        } else if (error.name === 'MongoNetworkError') {
+            req.flash('error_msg', 'Database connection error. Please try again later.');
+        } else {
+            req.flash('error_msg', 'An error occurred during signup. Please try again.');
+        }
+        
         res.redirect('/signup');
     }
 });

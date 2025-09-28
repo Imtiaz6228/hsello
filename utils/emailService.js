@@ -1,31 +1,87 @@
 const nodemailer = require('nodemailer');
 
-// Create transporter
+// Create transporter with enhanced error handling for VPS
 const createTransporter = () => {
-  // For development, we'll use a simple SMTP configuration
-  // In production, you'd use services like SendGrid, Mailgun, etc.
-  const transporter = nodemailer.createTransporter({
-    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-    port: process.env.EMAIL_PORT || 587,
-    secure: false, // true for 465, false for other ports
-    auth: {
-      user: process.env.EMAIL_USER || 'your-email@gmail.com',
-      pass: process.env.EMAIL_PASS || 'your-app-password'
+  try {
+    // Check if email configuration is provided
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.warn('⚠️ Email configuration missing. Email features will be disabled.');
+      return null;
     }
-  });
 
-  return transporter;
+    const config = {
+      host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.EMAIL_PORT) || 587,
+      secure: false, // true for 465, false for other ports
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      },
+      // Enhanced settings for VPS hosting
+      connectionTimeout: 60000, // 60 seconds
+      greetingTimeout: 30000,    // 30 seconds
+      socketTimeout: 60000,      // 60 seconds
+      // Handle self-signed certificates on VPS
+      tls: {
+        rejectUnauthorized: false
+      }
+    };
+
+    console.log(`📧 Email service configured: ${config.host}:${config.port}`);
+    return nodemailer.createTransporter(config);
+  } catch (error) {
+    console.error('❌ Failed to create email transporter:', error.message);
+    return null;
+  }
 };
 
-// Send email verification
+// Test email connection
+const testEmailConnection = async () => {
+  try {
+    const transporter = createTransporter();
+    if (!transporter) {
+      return { success: false, error: 'Email transporter not configured' };
+    }
+
+    await transporter.verify();
+    console.log('✅ Email service connection verified');
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Email service connection failed:', error.message);
+    return { success: false, error: error.message };
+  }
+};
+
+// Send email verification with enhanced error handling
 const sendEmailVerification = async (email, verificationToken, userName) => {
   try {
     const transporter = createTransporter();
+    if (!transporter) {
+      console.warn('⚠️ Email service not configured. Skipping email verification.');
+      return { 
+        success: false, 
+        error: 'Email service not configured',
+        skipEmail: true 
+      };
+    }
 
-    const verificationUrl = `${process.env.BASE_URL || 'http://localhost:3001'}/verify-email/${verificationToken}`;
+    // Test connection first
+    try {
+      await transporter.verify();
+    } catch (verifyError) {
+      console.error('❌ Email service verification failed:', verifyError.message);
+      return { 
+        success: false, 
+        error: `Email service unavailable: ${verifyError.message}`,
+        skipEmail: true 
+      };
+    }
+
+    const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3001}`;
+    const verificationUrl = `${baseUrl}/verify-email/${verificationToken}`;
 
     const mailOptions = {
-      from: `"DigitalMarket" <${process.env.EMAIL_USER || 'noreply@digitalmarket.com'}>`,
+      from: `"DigitalMarket" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: 'Verify Your Email - DigitalMarket',
       html: `
@@ -35,12 +91,13 @@ const sendEmailVerification = async (email, verificationToken, userName) => {
           <meta charset="utf-8">
           <title>Verify Your Email</title>
           <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; }
+            .container { padding: 20px; }
             .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
             .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
             .button { display: inline-block; background: #4CAF50; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
             .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }
+            .url-box { word-break: break-all; background: #f0f0f0; padding: 10px; border-radius: 5px; font-family: monospace; }
           </style>
         </head>
         <body>
@@ -57,7 +114,7 @@ const sendEmailVerification = async (email, verificationToken, userName) => {
               </div>
 
               <p>If the button above doesn't work, you can copy and paste this link into your browser:</p>
-              <p style="word-break: break-all; background: #f0f0f0; padding: 10px; border-radius: 5px;">${verificationUrl}</p>
+              <div class="url-box">${verificationUrl}</div>
 
               <p><strong>This verification link will expire in 24 hours.</strong></p>
 
@@ -90,10 +147,23 @@ const sendEmailVerification = async (email, verificationToken, userName) => {
 
     const info = await transporter.sendMail(mailOptions);
     console.log('✅ Email verification sent:', info.messageId);
+    console.log('📧 Verification URL:', verificationUrl);
     return { success: true, messageId: info.messageId };
+
   } catch (error) {
     console.error('❌ Email verification failed:', error);
-    return { success: false, error: error.message };
+    
+    // Provide specific error messages for common issues
+    let errorMessage = error.message;
+    if (error.code === 'EAUTH') {
+      errorMessage = 'Email authentication failed. Check your email credentials.';
+    } else if (error.code === 'ECONNECTION') {
+      errorMessage = 'Cannot connect to email server. Check your network connection.';
+    } else if (error.code === 'ETIMEDOUT') {
+      errorMessage = 'Email service timeout. Please try again later.';
+    }
+
+    return { success: false, error: errorMessage };
   }
 };
 
@@ -101,11 +171,20 @@ const sendEmailVerification = async (email, verificationToken, userName) => {
 const sendPasswordReset = async (email, resetToken, userName) => {
   try {
     const transporter = createTransporter();
+    if (!transporter) {
+      console.warn('⚠️ Email service not configured. Cannot send password reset.');
+      return { 
+        success: false, 
+        error: 'Email service not configured',
+        skipEmail: true 
+      };
+    }
 
-    const resetUrl = `${process.env.BASE_URL || 'http://localhost:3001'}/reset-password/${resetToken}`;
+    const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3001}`;
+    const resetUrl = `${baseUrl}/reset-password/${resetToken}`;
 
     const mailOptions = {
-      from: `"DigitalMarket" <${process.env.EMAIL_USER || 'noreply@digitalmarket.com'}>`,
+      from: `"DigitalMarket" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: 'Reset Your Password - DigitalMarket',
       html: `
@@ -115,12 +194,13 @@ const sendPasswordReset = async (email, resetToken, userName) => {
           <meta charset="utf-8">
           <title>Reset Your Password</title>
           <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; }
+            .container { padding: 20px; }
             .header { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
             .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
             .button { display: inline-block; background: #ff6b6b; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
             .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }
+            .url-box { word-break: break-all; background: #f0f0f0; padding: 10px; border-radius: 5px; font-family: monospace; }
           </style>
         </head>
         <body>
@@ -137,7 +217,7 @@ const sendPasswordReset = async (email, resetToken, userName) => {
               </div>
 
               <p>If the button above doesn't work, you can copy and paste this link into your browser:</p>
-              <p style="word-break: break-all; background: #f0f0f0; padding: 10px; border-radius: 5px;">${resetUrl}</p>
+              <div class="url-box">${resetUrl}</div>
 
               <p><strong>This password reset link will expire in 1 hour.</strong></p>
 
@@ -171,13 +251,25 @@ const sendPasswordReset = async (email, resetToken, userName) => {
     const info = await transporter.sendMail(mailOptions);
     console.log('✅ Password reset email sent:', info.messageId);
     return { success: true, messageId: info.messageId };
+
   } catch (error) {
     console.error('❌ Password reset email failed:', error);
-    return { success: false, error: error.message };
+    
+    let errorMessage = error.message;
+    if (error.code === 'EAUTH') {
+      errorMessage = 'Email authentication failed. Check your email credentials.';
+    } else if (error.code === 'ECONNECTION') {
+      errorMessage = 'Cannot connect to email server. Check your network connection.';
+    } else if (error.code === 'ETIMEDOUT') {
+      errorMessage = 'Email service timeout. Please try again later.';
+    }
+
+    return { success: false, error: errorMessage };
   }
 };
 
 module.exports = {
   sendEmailVerification,
-  sendPasswordReset
+  sendPasswordReset,
+  testEmailConnection
 };

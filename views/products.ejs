@@ -511,11 +511,13 @@
       <!-- Product Categories -->
       <div class="product-categories">
         <div class="category-tabs">
-          <button class="category-tab active" data-category="all">All Products</button>
-          <button class="category-tab" data-category="software">Software</button>
-          <button class="category-tab" data-category="templates">Templates</button>
-          <button class="category-tab" data-category="assets">Assets</button>
-          <button class="category-tab" data-category="services">Services</button>
+          <button class="category-tab <%= currentCategory === 'all' ? 'active' : '' %>" data-category="all">All Products</button>
+          <button class="category-tab <%= currentCategory === 'Accounts' ? 'active' : '' %>" data-category="accounts">Accounts</button>
+          <button class="category-tab <%= currentCategory === 'Games' ? 'active' : '' %>" data-category="games">Games</button>
+          <button class="category-tab <%= currentCategory === 'Services' ? 'active' : '' %>" data-category="services">Services</button>
+          <button class="category-tab <%= currentCategory === 'AI Tools' ? 'active' : '' %>" data-category="ai-tools">AI Tools</button>
+          <button class="category-tab <%= currentCategory === 'Channels' ? 'active' : '' %>" data-category="channels">Channels</button>
+          <button class="category-tab <%= currentCategory === 'Subscriptions' ? 'active' : '' %>" data-category="subscriptions">Subscriptions</button>
         </div>
       </div>
 
@@ -640,34 +642,26 @@
     // Product filtering functionality
     document.addEventListener('DOMContentLoaded', function() {
       const categoryTabs = document.querySelectorAll('.category-tab');
-      const productCards = document.querySelectorAll('.product-card');
-      const noProductsMessage = document.querySelector('.no-products-message');
 
       categoryTabs.forEach(tab => {
         tab.addEventListener('click', function() {
-          // Remove active class from all tabs
-          categoryTabs.forEach(t => t.classList.remove('active'));
-          // Add active class to clicked tab
-          this.classList.add('active');
-
           const category = this.dataset.category;
-          let visibleCount = 0;
 
-          productCards.forEach(card => {
-            if (category === 'all' || card.dataset.category === category) {
-              card.style.display = 'block';
-              visibleCount++;
-            } else {
-              card.style.display = 'none';
-            }
-          });
+          // Map data-category to URL category names
+          const categoryMapping = {
+            'accounts': 'Accounts',
+            'games': 'Games',
+            'services': 'Services',
+            'ai-tools': 'AI Tools',
+            'channels': 'Channels',
+            'subscriptions': 'Subscriptions'
+          };
 
-          // Show/hide no products message
-          if (visibleCount === 0) {
-            noProductsMessage.style.display = 'block';
-          } else {
-            noProductsMessage.style.display = 'none';
-          }
+          const urlCategory = category === 'all' ? '' : categoryMapping[category] || category;
+
+          // Redirect to products page with category filter
+          const url = urlCategory ? `/products?category=${encodeURIComponent(urlCategory)}` : '/products';
+          window.location.href = url;
         });
       });
     });

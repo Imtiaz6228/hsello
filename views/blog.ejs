@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Marketing Blog | Social Media Guides & Business Tips | Hsello</title>
+    <meta name="description" content="Expert digital marketing guides for Instagram, YouTube, Facebook, Twitter, LinkedIn, TikTok & Gmail business accounts. Learn social media growth strategies, SEO tips, and business communication best practices.">
+    <meta name="keywords" content="digital marketing blog, social media guides, Instagram growth, YouTube SEO, Facebook business, Twitter marketing, LinkedIn networking, TikTok business, Gmail professional, social media strategy, business communication">
+    <meta name="author" content="Hsello Digital Marketplace">
+    <meta name="robots" content="index, follow">
+    <meta property="og:title" content="Digital Marketing Blog | Social Media Guides & Business Tips | Hsello">
+    <meta property="og:description" content="Expert digital marketing guides for Instagram, YouTube, Facebook, Twitter, LinkedIn, TikTok & Gmail business accounts.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="http://localhost:3001/blog">
+    <meta property="og:image" content="/images/blog-hero.jpg">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Digital Marketing Blog | Social Media Guides & Business Tips">
+    <meta name="twitter:description" content="Expert digital marketing guides for social media growth and business communication.">
+    <link rel="canonical" href="http://localhost:3001/blog">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Blog",
+        "name": "Hsello Digital Marketing Blog",
+        "description": "Expert guides for social media marketing, business communication, and digital growth strategies",
+        "url": "http://localhost:3001/blog",
+        "publisher": {
+            "@type": "Organization",
+            "name": "Hsello Digital Marketplace",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "/images/hsello-logo.png"
+            }
+        },
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "http://localhost:3001/blog"
+        }
+    }
+    </script>
+    <style>
+        .blog-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .blog-header {
+            text-align: center;
+            margin-bottom: 50px;
+            padding: 60px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .blog-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .blog-header h1 {
+            font-size: 3.5em;
+            margin-bottom: 15px;
+            font-weight: 800;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .blog-subtitle {
+            font-size: 1.3em;
+            opacity: 0.95;
+            max-width: 700px;
+            margin: 0 auto 20px;
+            font-weight: 400;
+            position: relative;
+            z-index: 1;
+        }
+
+        .blog-meta {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            position: relative;
+            z-index: 1;
+        }
+
+        .meta-item {
+            background: rgba(255,255,255,0.15);
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-size: 0.9em;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .articles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+
+        .article-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid #e9ecef;
+        }
+
+        .article-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        .article-image {
+            height: 200px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 3em;
+        }
+
+        .article-content {
+            padding: 25px;
+        }
+
+        .article-category {
+            display: inline-block;
+            background: #f8f9fa;
+            color: #495057;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .article-title {
+            font-size: 1.4em;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            line-height: 1.3;
+        }
+
+        .article-title a {
+            color: inherit;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .article-title a:hover {
+            color: #3498db;
+        }
+
+        .article-excerpt {
+            color: #6c757d;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .article-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+
+        .article-tags {
+            margin-top: 20px;
+        }
+
+        .article-tags .tag {
+            display: inline-block;
+            background: #e9ecef;
+            color: #495057;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            margin: 2px 4px 2px 0;
+            font-weight: 500;
+        }
+
+        .read-more-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background 0.3s ease;
+            margin-top: 15px;
+        }
+
+        .read-more-btn:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            color: white;
+        }
+
+        .blog-stats {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: 700;
+            color: #3498db;
+            display: block;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            font-weight: 500;
+            margin-top: 5px;
+        }
+
+        .categories-filter {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .category-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 5px;
+            border: 2px solid #3498db;
+            border-radius: 25px;
+            text-decoration: none;
+            color: #3498db;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .category-btn:hover,
+        .category-btn.active {
+            background: #3498db;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .blog-header h1 {
+                font-size: 2em;
+            }
+
+            .articles-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .article-card {
+                margin: 0 10px;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <div class="blog-container">
+        <div class="blog-header">
+            <h1>📝 Digital Marketing Blog</h1>
+            <p class="blog-subtitle">Expert insights, guides, and strategies for digital marketing success</p>
+            <div class="blog-meta">
+                <span class="meta-item">📚 8 Comprehensive Guides</span>
+                <span class="meta-item">🎯 Social Media Marketing</span>
+                <span class="meta-item">💼 Business Growth</span>
+            </div>
+        </div>
+
+        <div class="blog-stats">
+            <h2 style="margin-bottom: 10px; color: #2c3e50;">Knowledge Hub</h2>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <span class="stat-number"><%= articles.length %></span>
+                    <span class="stat-label">Articles</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">8</span>
+                    <span class="stat-label">Categories</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">50+</span>
+                    <span class="stat-label">Tips & Strategies</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">24/7</span>
+                    <span class="stat-label">Available</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="categories-filter">
+            <a href="#all" class="category-btn active">All Articles</a>
+            <a href="#instagram" class="category-btn">Instagram</a>
+            <a href="#gmail" class="category-btn">Gmail</a>
+            <a href="#facebook" class="category-btn">Facebook</a>
+            <a href="#youtube" class="category-btn">YouTube</a>
+            <a href="#twitter" class="category-btn">Twitter</a>
+            <a href="#linkedin" class="category-btn">LinkedIn</a>
+            <a href="#tiktok" class="category-btn">TikTok</a>
+        </div>
+
+        <div class="articles-grid">
+            <% articles.forEach(article => { %>
+            <div class="article-card" data-category="<%= article.category.toLowerCase() %>">
+                <div class="article-image">
+                    <%= article.category === 'Instagram' ? '📸' :
+                        article.category === 'Gmail' ? '📧' :
+                        article.category === 'Facebook' ? '👥' :
+                        article.category === 'YouTube' ? '🎥' :
+                        article.category === 'Twitter' ? '🐦' :
+                        article.category === 'LinkedIn' ? '💼' :
+                        article.category === 'TikTok' ? '🎵' : '📱' %>
+                </div>
+                <div class="article-content">
+                    <span class="article-category"><%= article.category %></span>
+                    <h3 class="article-title">
+                        <a href="/articles/<%= article.slug %>.html"><%= article.title %></a>
+                    </h3>
+                    <p class="article-excerpt"><%= article.excerpt %></p>
+                    <div class="article-meta">
+                        <span><%= article.readTime %></span>
+                        <span><%= article.publishedDate %></span>
+                    </div>
+                    <div class="article-tags">
+                        <% article.tags.forEach(tag => { %>
+                        <span class="tag"><%= tag %></span>
+                        <% }) %>
+                    </div>
+                    <a href="/articles/<%= article.slug %>.html" class="read-more-btn">Read Article →</a>
+                </div>
+            </div>
+            <% }) %>
+        </div>
+    </div>
+
+    <script>
+        // Category filtering functionality
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                // Remove active class from all buttons
+                document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+                // Add active class to clicked button
+                this.classList.add('active');
+
+                const category = this.getAttribute('href').substring(1);
+
+                // Show/hide articles based on category
+                document.querySelectorAll('.article-card').forEach(card => {
+                    if (category === 'all' || card.getAttribute('data-category') === category) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

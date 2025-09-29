@@ -384,6 +384,7 @@ app.set('views', path.join(__dirname, 'views'));
 // Middleware
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/articles', express.static(path.join(__dirname, 'articles')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(methodOverride('_method'));
@@ -536,6 +537,112 @@ app.get('/', async (req, res) => {
             isSeller: true,
             'store.name': { $exists: true }
         }).select('firstName lastName store');
+
+        // Add demo Instagram products for demonstration
+        if (approvedSellers.length === 0) {
+            // Create demo seller with Instagram products
+            const demoSeller = {
+                _id: 'demo_seller_1',
+                firstName: 'Demo',
+                lastName: 'Seller',
+                store: {
+                    name: 'Premium Digital Accounts',
+                    category: 'Digital Marketing',
+                    description: 'High-quality verified digital accounts and social media accounts',
+                    banner: '/uploads/demo-banner.jpg',
+                    logo: '/uploads/demo-logo.jpg',
+                    contactEmail: 'demo@digitalmarket.com',
+                    contactPhone: '+1 (555) 123-4567',
+                    items: [
+                        {
+                            id: `instagram_demo_1`,
+                            name: 'Verified Instagram Account - 5K Followers',
+                            shortDescription: 'Real Instagram account with 5K genuine followers ready to use',
+                            description: 'High-quality Instagram account with 5K real followers from various demographics. Perfect for business marketing, influencer promotions, or personal use. Account comes with verified email and phone number.',
+                            seoTitle: 'Verified Instagram Account - 5K Real Followers',
+                            metaDescription: 'Premium Instagram account with 5K real followers, verified and ready to use',
+                            itemCategory: 'Instagram',
+                            directionCategory: 'Social Media',
+                            subcategory: 'Business Account',
+                            registrationMethod: 'Full Verification',
+                            profileFullness: 'Complete',
+                            yearOfRegistration: 2023,
+                            countryOfRegistration: 'USA',
+                            loginMethod: 'App + Browser',
+                            numberOfSubscribers: 5000,
+                            price: 19.99,
+                            itemType: 'Digital',
+                            completionTime: 0,
+                            isDigital: true,
+                            stockQuantity: 75,
+                            status: 'active',
+                            moderationStatus: 'approved',
+                            createdAt: new Date(),
+                            soldCount: 120,
+                            tags: ['instagram', 'verified', 'followers', 'real', 'marketing'],
+                            seoKeywords: ['instagram account', 'verified instagram', 'instagram followers', 'social media account'],
+                            images: ['/uploads/demo-instagram-5k.jpg'],
+                            files: [],
+                            reviews: [
+                                {
+                                    id: 'review_instagram_1',
+                                    userId: 5,
+                                    userName: 'Emma Taylor',
+                                    rating: 5,
+                                    comment: 'Perfect Instagram account! Real followers and looks professional.',
+                                    date: new Date('2024-09-01')
+                                }
+                            ]
+                        },
+                        {
+                            id: `instagram_demo_2`,
+                            name: 'Business Instagram Profile - 10K Followers',
+                            shortDescription: 'Complete business Instagram with custom theme and 10K followers',
+                            description: 'Premium business Instagram account with professional branding, custom theme, 10K targeted followers, and complete setup. Includes customization guide and management tips.',
+                            seoTitle: 'Business Instagram - 10K Followers Custom Brand',
+                            metaDescription: 'Complete business Instagram profile with 10K followers and custom branding',
+                            itemCategory: 'Instagram',
+                            directionCategory: 'Social Media',
+                            subcategory: 'Business Premium',
+                            registrationMethod: 'Business Verification',
+                            profileFullness: 'Professional',
+                            yearOfRegistration: 2023,
+                            countryOfRegistration: 'USA',
+                            loginMethod: 'Business Account',
+                            numberOfSubscribers: 10000,
+                            price: 34.99,
+                            itemType: 'Digital',
+                            completionTime: 0,
+                            isDigital: true,
+                            stockQuantity: 40,
+                            status: 'active',
+                            moderationStatus: 'approved',
+                            createdAt: new Date(),
+                            soldCount: 88,
+                            tags: ['instagram', 'business', 'custom', 'branding', 'professional'],
+                            seoKeywords: ['business instagram', 'instagram branding', 'professional ig', 'instagram business'],
+                            images: ['/uploads/demo-instagram-business.jpg'],
+                            files: [],
+                            reviews: [
+                                {
+                                    id: 'review_instagram_business_1',
+                                    userId: 7,
+                                    userName: 'Lisa Garcia',
+                                    rating: 5,
+                                    comment: 'Beautiful business Instagram setup! Highly recommended.',
+                                    date: new Date('2024-09-03')
+                                }
+                            ]
+                        }
+                    ],
+                    seoDescription: 'Premium digital accounts marketplace',
+                    rules: 'All sales final, instant delivery',
+                    contactEmail: 'demo@digitalmarket.com',
+                    contactPhone: '+1 (555) 123-4567'
+                }
+            };
+            approvedSellers.push(demoSeller);
+        }
 
         const approvedStores = [];
         approvedSellers.forEach(seller => {
@@ -1866,6 +1973,117 @@ app.get('/product/:sellerId/:productId', async (req, res) => {
     try {
         const sellerId = req.params.sellerId;
         const productId = req.params.productId;
+
+        // Check if MongoDB is connected
+        if (mongoose.connection.readyState !== 1) {
+            console.log('🔧 MongoDB not connected - using demo product data');
+
+            // Demo products data
+            const demoProducts = {
+                'instagram_demo_1': {
+                    id: `instagram_demo_1`,
+                    name: 'Verified Instagram Account - 5K Followers',
+                    shortDescription: 'Real Instagram account with 5K genuine followers ready to use',
+                    description: 'High-quality Instagram account with 5K real followers from various demographics. Perfect for business marketing, influencer promotions, or personal use. Account comes with verified email and phone number.',
+                    seoTitle: 'Verified Instagram Account - 5K Real Followers',
+                    metaDescription: 'Premium Instagram account with 5K real followers, verified and ready to use',
+                    itemCategory: 'Instagram',
+                    directionCategory: 'Social Media',
+                    subcategory: 'Business Account',
+                    registrationMethod: 'Full Verification',
+                    profileFullness: 'Complete',
+                    yearOfRegistration: 2023,
+                    countryOfRegistration: 'USA',
+                    loginMethod: 'App + Browser',
+                    numberOfSubscribers: 5000,
+                    price: 19.99,
+                    itemType: 'Digital',
+                    completionTime: 0,
+                    isDigital: true,
+                    stockQuantity: 75,
+                    status: 'active',
+                    moderationStatus: 'approved',
+                    createdAt: new Date(),
+                    soldCount: 120,
+                    tags: ['instagram', 'verified', 'followers', 'real', 'marketing'],
+                    seoKeywords: ['instagram account', 'verified instagram', 'instagram followers', 'social media account'],
+                    images: ['/uploads/demo-instagram-5k.jpg'],
+                    files: [],
+                    reviews: [
+                        {
+                            id: 'review_instagram_1',
+                            userId: 5,
+                            userName: 'Emma Taylor',
+                            rating: 5,
+                            comment: 'Perfect Instagram account! Real followers and looks professional.',
+                            date: new Date('2024-09-01')
+                        }
+                    ]
+                },
+                'instagram_demo_2': {
+                    id: `instagram_demo_2`,
+                    name: 'Business Instagram Profile - 10K Followers',
+                    shortDescription: 'Complete business Instagram with custom theme and 10K followers',
+                    description: 'Premium business Instagram account with professional branding, custom theme, 10K targeted followers, and complete setup. Includes customization guide and management tips.',
+                    seoTitle: 'Business Instagram - 10K Followers Custom Brand',
+                    metaDescription: 'Complete business Instagram profile with 10K followers and custom branding',
+                    itemCategory: 'Instagram',
+                    directionCategory: 'Social Media',
+                    subcategory: 'Business Premium',
+                    registrationMethod: 'Business Verification',
+                    profileFullness: 'Professional',
+                    yearOfRegistration: 2023,
+                    countryOfRegistration: 'USA',
+                    loginMethod: 'Business Account',
+                    numberOfSubscribers: 10000,
+                    price: 34.99,
+                    itemType: 'Digital',
+                    completionTime: 0,
+                    isDigital: true,
+                    stockQuantity: 40,
+                    status: 'active',
+                    moderationStatus: 'approved',
+                    createdAt: new Date(),
+                    soldCount: 88,
+                    tags: ['instagram', 'business', 'custom', 'branding', 'professional'],
+                    seoKeywords: ['business instagram', 'instagram branding', 'professional ig', 'instagram business'],
+                    images: ['/uploads/demo-instagram-business.jpg'],
+                    files: [],
+                    reviews: [
+                        {
+                            id: 'review_instagram_business_1',
+                            userId: 7,
+                            userName: 'Lisa Garcia',
+                            rating: 5,
+                            comment: 'Beautiful business Instagram setup! Highly recommended.',
+                            date: new Date('2024-09-03')
+                        }
+                    ]
+                }
+            };
+
+            const product = demoProducts[productId];
+            if (!product) {
+                req.flash('error_msg', 'Product not found or unavailable.');
+                return res.redirect('/products');
+            }
+
+            // Demo seller data
+            const demoSeller = {
+                id: 'demo_seller_1',
+                name: 'Demo Seller',
+                store: {
+                    name: 'Premium Digital Accounts',
+                    description: 'High-quality verified digital accounts and social media accounts'
+                }
+            };
+
+            return res.render('product', {
+                product: product,
+                seller: demoSeller,
+                user: req.session.user
+            });
+        }
 
         const seller = await User.findById(sellerId);
         if (!seller || !seller.isSeller || !seller.store) {
@@ -3415,43 +3633,168 @@ app.delete('/dispute/old-route', isLoggedIn, (req, res) => {
 // Products listing route
 app.get('/products', async (req, res) => {
     try {
-        // Get all approved sellers with stores
-        const approvedSellers = await User.find({
-            isSeller: true,
-            'store.name': { $exists: true }
-        }).select('firstName lastName store');
+        let allProducts = [];
 
-        // Get real products from all sellers
-        const products = [];
-        approvedSellers.forEach(seller => {
-            if (seller.store && seller.store.items && seller.store.items.length > 0) {
-                seller.store.items.forEach(product => {
-                    // Only include approved products
-                    if (product.moderationStatus === 'approved' && product.status === 'active') {
-                        products.push({
-                            ...product.toObject(),
-                            sellerId: seller._id.toString(),
-                            sellerName: `${seller.firstName} ${seller.lastName}`,
-                            storeName: seller.store.name,
-                            storeLogo: seller.store.logo
-                        });
-                    }
+        // Check if MongoDB is connected
+        if (mongoose.connection.readyState !== 1) {
+            console.log('🔧 MongoDB not connected - using demo Instagram products');
+            // Use demo Instagram products
+            allProducts = [
+                {
+                    id: `instagram_demo_1`,
+                    name: 'Verified Instagram Account - 5K Followers',
+                    shortDescription: 'Real Instagram account with 5K genuine followers ready to use',
+                    description: 'High-quality Instagram account with 5K real followers from various demographics. Perfect for business marketing, influencer promotions, or personal use. Account comes with verified email and phone number.',
+                    seoTitle: 'Verified Instagram Account - 5K Real Followers',
+                    metaDescription: 'Premium Instagram account with 5K real followers, verified and ready to use',
+                    itemCategory: 'Instagram',
+                    directionCategory: 'Social Media',
+                    subcategory: 'Business Account',
+                    registrationMethod: 'Full Verification',
+                    profileFullness: 'Complete',
+                    yearOfRegistration: 2023,
+                    countryOfRegistration: 'USA',
+                    loginMethod: 'App + Browser',
+                    numberOfSubscribers: 5000,
+                    price: 19.99,
+                    itemType: 'Digital',
+                    completionTime: 0,
+                    isDigital: true,
+                    stockQuantity: 75,
+                    status: 'active',
+                    moderationStatus: 'approved',
+                    createdAt: new Date(),
+                    soldCount: 120,
+                    tags: ['instagram', 'verified', 'followers', 'real', 'marketing'],
+                    seoKeywords: ['instagram account', 'verified instagram', 'instagram followers', 'social media account'],
+                    images: ['/uploads/demo-instagram-5k.jpg'],
+                    files: [],
+                    sellerId: 'demo_seller_1',
+                    sellerName: 'Demo Seller',
+                    storeName: 'Premium Digital Accounts',
+                    storeLogo: '/uploads/demo-logo.jpg',
+                    reviews: [
+                        {
+                            id: 'review_instagram_1',
+                            userId: 5,
+                            userName: 'Emma Taylor',
+                            rating: 5,
+                            comment: 'Perfect Instagram account! Real followers and looks professional.',
+                            date: new Date('2024-09-01')
+                        }
+                    ]
+                },
+                {
+                    id: `instagram_demo_2`,
+                    name: 'Business Instagram Profile - 10K Followers',
+                    shortDescription: 'Complete business Instagram with custom theme and 10K followers',
+                    description: 'Premium business Instagram account with professional branding, custom theme, 10K targeted followers, and complete setup. Includes customization guide and management tips.',
+                    seoTitle: 'Business Instagram - 10K Followers Custom Brand',
+                    metaDescription: 'Complete business Instagram profile with 10K followers and custom branding',
+                    itemCategory: 'Instagram',
+                    directionCategory: 'Social Media',
+                    subcategory: 'Business Premium',
+                    registrationMethod: 'Business Verification',
+                    profileFullness: 'Professional',
+                    yearOfRegistration: 2023,
+                    countryOfRegistration: 'USA',
+                    loginMethod: 'Business Account',
+                    numberOfSubscribers: 10000,
+                    price: 34.99,
+                    itemType: 'Digital',
+                    completionTime: 0,
+                    isDigital: true,
+                    stockQuantity: 40,
+                    status: 'active',
+                    moderationStatus: 'approved',
+                    createdAt: new Date(),
+                    soldCount: 88,
+                    tags: ['instagram', 'business', 'custom', 'branding', 'professional'],
+                    seoKeywords: ['business instagram', 'instagram branding', 'professional ig', 'instagram business'],
+                    images: ['/uploads/demo-instagram-business.jpg'],
+                    files: [],
+                    sellerId: 'demo_seller_1',
+                    sellerName: 'Demo Seller',
+                    storeName: 'Premium Digital Accounts',
+                    storeLogo: '/uploads/demo-logo.jpg',
+                    reviews: [
+                        {
+                            id: 'review_instagram_business_1',
+                            userId: 7,
+                            userName: 'Lisa Garcia',
+                            rating: 5,
+                            comment: 'Beautiful business Instagram setup! Highly recommended.',
+                            date: new Date('2024-09-03')
+                        }
+                    ]
+                }
+            ];
+        } else {
+            // Get all approved sellers with stores
+            const approvedSellers = await User.find({
+                isSeller: true,
+                'store.name': { $exists: true }
+            }).select('firstName lastName store');
+
+            // Get real products from all sellers
+            approvedSellers.forEach(seller => {
+                if (seller.store && seller.store.items && seller.store.items.length > 0) {
+                    seller.store.items.forEach(product => {
+                        // Only include approved products
+                        if (product.moderationStatus === 'approved' && product.status === 'active') {
+                            allProducts.push({
+                                ...product.toObject(),
+                                sellerId: seller._id.toString(),
+                                sellerName: `${seller.firstName} ${seller.lastName}`,
+                                storeName: seller.store.name,
+                                storeLogo: seller.store.logo
+                            });
+                        }
+                    });
+                }
+            });
+        }
+
+        // Handle category filtering
+        const categoryFilter = req.query.category;
+        let products = allProducts;
+
+        if (categoryFilter) {
+            // Map category names to itemCategory values
+            const categoryMapping = {
+                'Accounts': ['Instagram', 'GMail', 'Facebook', 'Twitter', 'LinkedIn', 'TikTok', 'YouTube', 'Snapchat', 'Pinterest', 'Reddit', 'Discord', 'Twitch', 'Telegram', 'WhatsApp', 'Outlook', 'Yahoo', 'ProtonMail', 'iCloud', 'Microsoft', 'Gmail', 'Social Media', 'Email'],
+                'Games': ['Steam', 'Epic Games', 'Origin', 'Gaming', 'Game', 'Gaming Accounts'],
+                'Services': ['SEO', 'Marketing', 'Development', 'Services', 'Digital Services'],
+                'AI Tools': ['ChatGPT', 'Midjourney', 'Claude', 'AI', 'Artificial Intelligence', 'AI Tools'],
+                'Channels': ['YouTube', 'Telegram', 'Discord', 'Channels', 'Social Channels'],
+                'Subscriptions': ['Netflix', 'Spotify', 'Disney+', 'Subscriptions', 'Streaming']
+            };
+
+            const allowedCategories = categoryMapping[categoryFilter];
+            if (allowedCategories) {
+                products = allProducts.filter(product => {
+                    const productCategory = product.itemCategory || product.category || '';
+                    return allowedCategories.some(cat =>
+                        productCategory.toLowerCase().includes(cat.toLowerCase())
+                    );
                 });
             }
-        });
+        }
 
         // Sort products by soldCount (descending) to show top selling first
         products.sort((a, b) => (b.soldCount || 0) - (a.soldCount || 0));
 
         res.render('products', {
             user: req.session.user,
-            products: products
+            products: products,
+            currentCategory: categoryFilter || 'all'
         });
     } catch (error) {
         console.error('Products listing error:', error);
         res.render('products', {
             user: req.session.user,
-            products: []
+            products: [],
+            currentCategory: 'all'
         });
     }
 });
@@ -3461,6 +3804,297 @@ app.get('/services', (req, res) => {
     res.render('services', {
         user: req.session.user
     });
+});
+
+// Blog route
+app.get('/blog', (req, res) => {
+    // List of blog articles
+    const articles = [
+        {
+            title: 'Why a Verified Instagram Account with 5K Followers Could Change Your Social Media Game',
+            slug: 'instagram-5k-followers-article',
+            excerpt: 'Discover how a verified Instagram account with 5K real followers can boost your social media presence and business growth.',
+            category: 'Instagram',
+            readTime: '8 min read',
+            publishedDate: 'September 29, 2025',
+            tags: ['Instagram', 'Social Media', 'Followers', 'Verified Account', 'Business Growth']
+        },
+        {
+            title: 'Building Your Brand with a Business Instagram Profile - 10K Followers Guide',
+            slug: 'instagram-business-10k-article',
+            excerpt: 'Learn how to leverage a professional Instagram business account with 10K followers for maximum brand impact.',
+            category: 'Instagram',
+            readTime: '10 min read',
+            publishedDate: 'September 29, 2025',
+            tags: ['Instagram', 'Business', 'Branding', 'Professional', 'Marketing']
+        },
+        {
+            title: 'The Ultimate Guide to Gmail Accounts for Business Communication',
+            slug: 'gmail-business-accounts-guide',
+            excerpt: 'Everything you need to know about using professional Gmail accounts for your business email needs.',
+            category: 'Gmail',
+            readTime: '12 min read',
+            publishedDate: 'September 29, 2025',
+            tags: ['Gmail', 'Business', 'Email', 'Communication', 'Professional']
+        },
+        {
+            title: 'Facebook Business Pages: Building Trust and Community',
+            slug: 'facebook-business-pages-guide',
+            excerpt: 'How to create and manage successful Facebook business pages that drive engagement and sales.',
+            category: 'Facebook',
+            readTime: '9 min read',
+            publishedDate: 'September 29, 2025',
+            tags: ['Facebook', 'Business', 'Community', 'Engagement', 'Marketing']
+        },
+        {
+            title: 'YouTube Channel Growth: From Zero to 10K Subscribers',
+            slug: 'youtube-channel-growth-guide',
+            excerpt: 'A comprehensive guide to growing your YouTube channel and reaching 10K subscribers organically.',
+            category: 'YouTube',
+            readTime: '15 min read',
+            publishedDate: 'September 29, 2025',
+            tags: ['YouTube', 'Content Creation', 'Growth', 'Subscribers', 'Video Marketing']
+        },
+        {
+            title: 'Twitter/X Professional Accounts: Building Influence in 280 Characters',
+            slug: 'twitter-professional-accounts-guide',
+            excerpt: 'Master the art of Twitter/X professional accounts for networking, branding, and thought leadership.',
+            category: 'Twitter',
+            readTime: '11 min read',
+            publishedDate: 'September 29, 2025',
+            tags: ['Twitter', 'Professional', 'Networking', 'Branding', 'Influence']
+        },
+        {
+            title: 'LinkedIn Premium Profiles: Elevating Your Professional Presence',
+            slug: 'linkedin-premium-profiles-guide',
+            excerpt: 'How premium LinkedIn profiles can accelerate your career and business networking opportunities.',
+            category: 'LinkedIn',
+            readTime: '13 min read',
+            publishedDate: 'September 29, 2025',
+            tags: ['LinkedIn', 'Professional', 'Career', 'Networking', 'Business']
+        },
+        {
+            title: 'TikTok Business Accounts: Dancing Your Way to Viral Success',
+            slug: 'tiktok-business-accounts-guide',
+            excerpt: 'Navigate the world of TikTok business accounts and learn how to create engaging content that goes viral.',
+            category: 'TikTok',
+            readTime: '10 min read',
+            publishedDate: 'September 29, 2025',
+            tags: ['TikTok', 'Viral', 'Content Creation', 'Business', 'Social Media']
+        }
+    ];
+
+    res.render('blog', {
+        user: req.session.user,
+        articles: articles
+    });
+});
+
+// Instagram products page
+app.get('/instagram', async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = 5; // 5 products per page
+        const skip = (page - 1) * limit;
+
+        // Get Instagram products from database or demo data
+        let instagramProducts = [];
+        let totalProducts = 0;
+
+        if (mongoose.connection.readyState === 1) {
+            // Real database query
+            instagramProducts = await Product.find({
+                category: { $regex: /instagram/i },
+                status: 'active'
+            })
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .populate('sellerId', 'store');
+
+            totalProducts = await Product.countDocuments({
+                category: { $regex: /instagram/i },
+                status: 'active'
+            });
+        } else {
+            // Demo data fallback
+            const demoInstagramProducts = [
+                {
+                    _id: 'demo1',
+                    name: 'Instagram Business Account - 5K Followers',
+                    description: 'Professional Instagram business account with 5K real followers. Perfect for small businesses and entrepreneurs.',
+                    price: 49.99,
+                    category: 'Instagram',
+                    image: '/uploads/demo-instagram-5k.jpg',
+                    sellerId: { store: { name: 'Premium Accounts' } },
+                    createdAt: new Date()
+                },
+                {
+                    _id: 'demo2',
+                    name: 'Instagram Influencer Account - 10K Followers',
+                    description: 'Established Instagram influencer account with 10K engaged followers. Ready for content creation.',
+                    price: 89.99,
+                    category: 'Instagram',
+                    image: '/uploads/demo-instagram-10k.jpg',
+                    sellerId: { store: { name: 'Influencer Hub' } },
+                    createdAt: new Date()
+                },
+                {
+                    _id: 'demo3',
+                    name: 'Instagram Verified Account - 25K Followers',
+                    description: 'Blue check verified Instagram account with 25K real followers. Includes phone verification.',
+                    price: 199.99,
+                    category: 'Instagram',
+                    image: '/uploads/demo-instagram-verified.jpg',
+                    sellerId: { store: { name: 'Verified Accounts' } },
+                    createdAt: new Date()
+                },
+                {
+                    _id: 'demo4',
+                    name: 'Instagram Fashion Account - 15K Followers',
+                    description: 'Fashion-focused Instagram account with 15K fashion enthusiasts following. Perfect for fashion brands.',
+                    price: 129.99,
+                    category: 'Instagram',
+                    image: '/uploads/demo-instagram-fashion.jpg',
+                    sellerId: { store: { name: 'Fashion Accounts' } },
+                    createdAt: new Date()
+                },
+                {
+                    _id: 'demo5',
+                    name: 'Instagram Food Account - 8K Followers',
+                    description: 'Food and lifestyle Instagram account with 8K food lovers. Great for restaurants and food brands.',
+                    price: 69.99,
+                    category: 'Instagram',
+                    image: '/uploads/demo-instagram-food.jpg',
+                    sellerId: { store: { name: 'Foodie Accounts' } },
+                    createdAt: new Date()
+                },
+                {
+                    _id: 'demo6',
+                    name: 'Instagram Travel Account - 12K Followers',
+                    description: 'Travel and adventure Instagram account with 12K travel enthusiasts. Perfect for travel agencies.',
+                    price: 99.99,
+                    category: 'Instagram',
+                    image: '/uploads/demo-instagram-travel.jpg',
+                    sellerId: { store: { name: 'Travel Accounts' } },
+                    createdAt: new Date()
+                },
+                {
+                    _id: 'demo7',
+                    name: 'Instagram Fitness Account - 20K Followers',
+                    description: 'Fitness and wellness Instagram account with 20K health-conscious followers.',
+                    price: 159.99,
+                    category: 'Instagram',
+                    image: '/uploads/demo-instagram-fitness.jpg',
+                    sellerId: { store: { name: 'Fitness Accounts' } },
+                    createdAt: new Date()
+                },
+                {
+                    _id: 'demo8',
+                    name: 'Instagram Tech Account - 18K Followers',
+                    description: 'Technology and gadget Instagram account with 18K tech enthusiasts.',
+                    price: 139.99,
+                    category: 'Instagram',
+                    image: '/uploads/demo-instagram-tech.jpg',
+                    sellerId: { store: { name: 'Tech Accounts' } },
+                    createdAt: new Date()
+                },
+                {
+                    _id: 'demo9',
+                    name: 'Instagram Beauty Account - 22K Followers',
+                    description: 'Beauty and makeup Instagram account with 22K beauty lovers.',
+                    price: 179.99,
+                    category: 'Instagram',
+                    image: '/uploads/demo-instagram-beauty.jpg',
+                    sellerId: { store: { name: 'Beauty Accounts' } },
+                    createdAt: new Date()
+                },
+                {
+                    _id: 'demo10',
+                    name: 'Instagram Business Account - 30K Followers',
+                    description: 'Premium business Instagram account with 30K professional followers.',
+                    price: 249.99,
+                    category: 'Instagram',
+                    image: '/uploads/demo-instagram-business.jpg',
+                    sellerId: { store: { name: 'Business Accounts' } },
+                    createdAt: new Date()
+                },
+                {
+                    _id: 'demo11',
+                    name: 'Instagram Gaming Account - 14K Followers',
+                    description: 'Gaming Instagram account with 14K gamers and gaming enthusiasts.',
+                    price: 109.99,
+                    category: 'Instagram',
+                    image: '/uploads/demo-instagram-gaming.jpg',
+                    sellerId: { store: { name: 'Gaming Accounts' } },
+                    createdAt: new Date()
+                },
+                {
+                    _id: 'demo12',
+                    name: 'Instagram Photography Account - 16K Followers',
+                    description: 'Photography and art Instagram account with 16K creative followers.',
+                    price: 119.99,
+                    category: 'Instagram',
+                    image: '/uploads/demo-instagram-photography.jpg',
+                    sellerId: { store: { name: 'Photography Accounts' } },
+                    createdAt: new Date()
+                },
+                {
+                    _id: 'demo13',
+                    name: 'Instagram Music Account - 11K Followers',
+                    description: 'Music and entertainment Instagram account with 11K music lovers.',
+                    price: 89.99,
+                    category: 'Instagram',
+                    image: '/uploads/demo-instagram-music.jpg',
+                    sellerId: { store: { name: 'Music Accounts' } },
+                    createdAt: new Date()
+                },
+                {
+                    _id: 'demo14',
+                    name: 'Instagram Sports Account - 19K Followers',
+                    description: 'Sports and fitness Instagram account with 19K sports enthusiasts.',
+                    price: 149.99,
+                    category: 'Instagram',
+                    image: '/uploads/demo-instagram-sports.jpg',
+                    sellerId: { store: { name: 'Sports Accounts' } },
+                    createdAt: new Date()
+                },
+                {
+                    _id: 'demo15',
+                    name: 'Instagram Lifestyle Account - 13K Followers',
+                    description: 'Lifestyle and wellness Instagram account with 13K engaged followers.',
+                    price: 99.99,
+                    category: 'Instagram',
+                    image: '/uploads/demo-instagram-lifestyle.jpg',
+                    sellerId: { store: { name: 'Lifestyle Accounts' } },
+                    createdAt: new Date()
+                }
+            ];
+
+            totalProducts = demoInstagramProducts.length;
+            instagramProducts = demoInstagramProducts.slice(skip, skip + limit);
+        }
+
+        const totalPages = Math.ceil(totalProducts / limit);
+
+        res.render('instagram-products', {
+            user: req.session.user,
+            products: instagramProducts,
+            currentPage: page,
+            totalPages: totalPages,
+            totalProducts: totalProducts,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1,
+            nextPage: page + 1,
+            prevPage: page - 1
+        });
+    } catch (error) {
+        console.error('Instagram products error:', error);
+        res.status(500).render('error', {
+            message: 'Error loading Instagram products',
+            error: process.env.NODE_ENV === 'development' ? error : {}
+        });
+    }
 });
 
 // Contact Seller Routes
@@ -5306,6 +5940,20 @@ app.get('/download-all-orders', isLoggedIn, async (req, res) => {
 // Add download button to user menu - redirect to orders page
 app.get('/user/downloads', isLoggedIn, (req, res) => {
     res.redirect('/orders');
+});
+
+// Route to serve individual articles
+app.get('/article/:slug', (req, res) => {
+    const slug = req.params.slug;
+    const articlePath = path.join(__dirname, 'articles', `${slug}.html`);
+
+    // Check if article file exists
+    if (fs.existsSync(articlePath)) {
+        res.sendFile(articlePath);
+    } else {
+        req.flash('error_msg', 'Article not found');
+        res.redirect('/blog');
+    }
 });
 
 // Start server

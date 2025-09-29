@@ -876,6 +876,43 @@
       border-color: var(--primary-dark);
     }
 
+    /* Categories Section */
+    .categories-section {
+      padding: 80px 0;
+      background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+    }
+
+    .category-card-large {
+      border-radius: 20px;
+      padding: 2rem;
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    }
+
+    .category-card-large:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    }
+
+    .category-card-large::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s;
+    }
+
+    .category-card-large:hover::before {
+      left: 100%;
+    }
+
     /* Responsive Design */
     @media (max-width: 768px) {
       .hero {
@@ -948,6 +985,23 @@
         padding: 0.9rem 1.5rem;
         font-size: 0.95rem;
       }
+
+      .categories-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+
+      .category-card-large {
+        padding: 1.5rem;
+      }
+
+      .category-card-large h3 {
+        font-size: 1.25rem;
+      }
+
+      .category-card-large p {
+        font-size: 0.9rem;
+      }
     }
   </style>
 </head>
@@ -1006,6 +1060,156 @@
       <div class="hero-scroll-indicator">
         <span>Scroll to discover more</span>
         <i class="fas fa-chevron-down"></i>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CATEGORIES SECTION ================== -->
+  <section class="categories-section" style="padding: 80px 0; background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Explore Categories</h2>
+        <p class="section-subtitle">Discover premium digital products across all categories</p>
+      </div>
+
+      <div class="categories-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+        <!-- Accounts Category -->
+        <div class="category-card-large" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px; padding: 2rem; color: white; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden;" onclick="window.location.href='/products?category=Accounts'">
+          <div style="position: absolute; top: 0; right: 0; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%; transform: translate(30px, -30px);"></div>
+          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+              <i class="fas fa-user-circle"></i>
+            </div>
+            <div>
+              <h3 style="font-size: 1.5rem; font-weight: 700; margin: 0;">Accounts</h3>
+              <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">Social media & email accounts</p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Instagram</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Gmail</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Facebook</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Twitter</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">LinkedIn</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">TikTok</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">YouTube</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Snapchat</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Pinterest</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Reddit</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Discord</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Twitch</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Telegram</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">WhatsApp</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Outlook</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Yahoo</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">ProtonMail</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">iCloud</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Microsoft</span>
+          </div>
+        </div>
+
+        <!-- Games Category -->
+        <div class="category-card-large" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 20px; padding: 2rem; color: white; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden;" onclick="window.location.href='/products?category=Games'">
+          <div style="position: absolute; top: 0; right: 0; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%; transform: translate(30px, -30px);"></div>
+          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+              <i class="fas fa-gamepad"></i>
+            </div>
+            <div>
+              <h3 style="font-size: 1.5rem; font-weight: 700; margin: 0;">Games</h3>
+              <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">Gaming accounts & items</p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Steam</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Epic Games</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Origin</span>
+          </div>
+        </div>
+
+        <!-- Services Category -->
+        <div class="category-card-large" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border-radius: 20px; padding: 2rem; color: white; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden;" onclick="window.location.href='/products?category=Services'">
+          <div style="position: absolute; top: 0; right: 0; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%; transform: translate(30px, -30px);"></div>
+          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+              <i class="fas fa-tools"></i>
+            </div>
+            <div>
+              <h3 style="font-size: 1.5rem; font-weight: 700; margin: 0;">Services</h3>
+              <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">Digital services & solutions</p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">SEO</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Marketing</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Development</span>
+          </div>
+        </div>
+
+        <!-- AI Tools Category -->
+        <div class="category-card-large" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); border-radius: 20px; padding: 2rem; color: white; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden;" onclick="window.location.href='/products?category=AI Tools'">
+          <div style="position: absolute; top: 0; right: 0; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%; transform: translate(30px, -30px);"></div>
+          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+              <i class="fas fa-robot"></i>
+            </div>
+            <div>
+              <h3 style="font-size: 1.5rem; font-weight: 700; margin: 0;">AI Tools</h3>
+              <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">Artificial intelligence solutions</p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">ChatGPT</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Midjourney</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Claude</span>
+          </div>
+        </div>
+
+        <!-- Channels Category -->
+        <div class="category-card-large" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); border-radius: 20px; padding: 2rem; color: white; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden;" onclick="window.location.href='/products?category=Channels'">
+          <div style="position: absolute; top: 0; right: 0; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%; transform: translate(30px, -30px);"></div>
+          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+              <i class="fas fa-broadcast-tower"></i>
+            </div>
+            <div>
+              <h3 style="font-size: 1.5rem; font-weight: 700; margin: 0;">Channels</h3>
+              <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">Social media channels & groups</p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">YouTube</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Telegram</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Discord</span>
+          </div>
+        </div>
+
+        <!-- Subscriptions Category -->
+        <div class="category-card-large" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); border-radius: 20px; padding: 2rem; color: #1e293b; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden;" onclick="window.location.href='/products?category=Subscriptions'">
+          <div style="position: absolute; top: 0; right: 0; width: 100px; height: 100px; background: rgba(0,0,0,0.05); border-radius: 50%; transform: translate(30px, -30px);"></div>
+          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+              <i class="fas fa-calendar-alt"></i>
+            </div>
+            <div>
+              <h3 style="font-size: 1.5rem; font-weight: 700; margin: 0;">Subscriptions</h3>
+              <p style="margin: 0.5rem 0 0 0; opacity: 0.8;">Premium subscription services</p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <span style="background: rgba(0,0,0,0.1); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Netflix</span>
+            <span style="background: rgba(0,0,0,0.1); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Spotify</span>
+            <span style="background: rgba(0,0,0,0.1); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Disney+</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- View All Categories Button -->
+      <div style="text-align: center;">
+        <a href="/products" style="display: inline-flex; align-items: center; gap: 0.75rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem 2rem; border-radius: 25px; text-decoration: none; font-weight: 600; font-size: 1rem; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">
+          <i class="fas fa-th-large"></i>
+          <span>Explore All Categories</span>
+        </a>
       </div>
     </div>
   </section>

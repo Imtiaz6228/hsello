@@ -495,18 +495,227 @@ const createDemoProducts = async () => {
         // Clear existing demo products
         demoSeller.store.items = [];
 
+        // Demo products for Twitter category
+        const twitterProducts = [
+            {
+                id: `twitter_${Date.now()}_1`,
+                name: 'Verified Twitter Account - 1K Followers',
+                shortDescription: 'Blue check Twitter account with 1K real followers',
+                description: 'Premium Twitter account with verified blue check, 1K targeted followers, and established posting history. Perfect for influencers and businesses.',
+                seoTitle: 'Verified Twitter Account - 1K Followers Blue Check',
+                metaDescription: 'Premium Twitter account with blue check verification and 1K followers',
+                itemCategory: 'Twitter',
+                directionCategory: 'Social Media',
+                subcategory: 'Verified Account',
+                registrationMethod: 'Premium Verification',
+                profileFullness: 'Complete',
+                yearOfRegistration: 2023,
+                countryOfRegistration: 'USA',
+                loginMethod: 'App + Browser',
+                numberOfSubscribers: 1000,
+                price: 14.99,
+                itemType: 'Digital',
+                completionTime: 0,
+                isDigital: true,
+                stockQuantity: 65,
+                status: 'active',
+                moderationStatus: 'approved',
+                createdAt: new Date(),
+                soldCount: 95,
+                tags: ['twitter', 'verified', 'blue check', 'followers', 'social media'],
+                seoKeywords: ['twitter account', 'verified twitter', 'blue check twitter', 'twitter followers'],
+                images: ['/uploads/demo-twitter.jpg'],
+                files: [
+                    {
+                        filename: 'demo-twitter-guide.pdf',
+                        filepath: '/uploads/demo-twitter-guide.pdf',
+                        uploadedAt: new Date()
+                    }
+                ],
+                reviews: [
+                    {
+                        id: 'review_twitter_1',
+                        userId: 12,
+                        userName: 'Alex Johnson',
+                        rating: 5,
+                        comment: 'Great Twitter account with blue check!',
+                        date: new Date('2024-09-05')
+                    }
+                ]
+            }
+        ];
+
+        // Demo products for LinkedIn category
+        const linkedinProducts = [
+            {
+                id: `linkedin_${Date.now()}_1`,
+                name: 'Premium LinkedIn Account - 500 Connections',
+                shortDescription: 'Professional LinkedIn account with premium features',
+                description: 'Established LinkedIn account with 500 professional connections, premium badge, and complete profile. Perfect for business networking and professional branding.',
+                seoTitle: 'Premium LinkedIn Account - 500 Professional Connections',
+                metaDescription: 'Professional LinkedIn account with premium features and connections',
+                itemCategory: 'LinkedIn',
+                directionCategory: 'Professional Network',
+                subcategory: 'Premium Account',
+                registrationMethod: 'Business Verification',
+                profileFullness: 'Professional',
+                yearOfRegistration: 2023,
+                countryOfRegistration: 'USA',
+                loginMethod: 'Browser',
+                numberOfSubscribers: 500,
+                price: 18.99,
+                itemType: 'Digital',
+                completionTime: 0,
+                isDigital: true,
+                stockQuantity: 55,
+                status: 'active',
+                moderationStatus: 'approved',
+                createdAt: new Date(),
+                soldCount: 78,
+                tags: ['linkedin', 'professional', 'premium', 'connections', 'business'],
+                seoKeywords: ['linkedin account', 'professional linkedin', 'business linkedin', 'linkedin premium'],
+                images: ['/uploads/demo-linkedin.jpg'],
+                files: [
+                    {
+                        filename: 'demo-linkedin-guide.pdf',
+                        filepath: '/uploads/demo-linkedin-guide.pdf',
+                        uploadedAt: new Date()
+                    }
+                ],
+                reviews: [
+                    {
+                        id: 'review_linkedin_1',
+                        userId: 13,
+                        userName: 'Sarah Business',
+                        rating: 5,
+                        comment: 'Perfect for professional networking!',
+                        date: new Date('2024-09-06')
+                    }
+                ]
+            }
+        ];
+
+        // Demo products for TikTok category
+        const tiktokProducts = [
+            {
+                id: `tiktok_${Date.now()}_1`,
+                name: 'TikTok Account - 2K Followers',
+                shortDescription: 'Trending TikTok account with 2K engaged followers',
+                description: 'Popular TikTok account with 2K engaged followers, trending videos, and established content niche. Ready for content creation and monetization.',
+                seoTitle: 'Trending TikTok Account - 2K Engaged Followers',
+                metaDescription: 'Popular TikTok account with 2K followers and trending content',
+                itemCategory: 'TikTok',
+                directionCategory: 'Social Media',
+                subcategory: 'Content Creator',
+                registrationMethod: 'Verified',
+                profileFullness: 'Creator',
+                yearOfRegistration: 2023,
+                countryOfRegistration: 'USA',
+                loginMethod: 'App',
+                numberOfSubscribers: 2000,
+                price: 16.99,
+                itemType: 'Digital',
+                completionTime: 0,
+                isDigital: true,
+                stockQuantity: 70,
+                status: 'active',
+                moderationStatus: 'approved',
+                createdAt: new Date(),
+                soldCount: 110,
+                tags: ['tiktok', 'trending', 'followers', 'content creator', 'viral'],
+                seoKeywords: ['tiktok account', 'tiktok followers', 'viral tiktok', 'content creator tiktok'],
+                images: ['/uploads/demo-tiktok.jpg'],
+                files: [
+                    {
+                        filename: 'demo-tiktok-guide.pdf',
+                        filepath: '/uploads/demo-tiktok-guide.pdf',
+                        uploadedAt: new Date()
+                    }
+                ],
+                reviews: [
+                    {
+                        id: 'review_tiktok_1',
+                        userId: 14,
+                        userName: 'Content Creator',
+                        rating: 5,
+                        comment: 'Amazing TikTok account! Already trending!',
+                        date: new Date('2024-09-07')
+                    }
+                ]
+            }
+        ];
+
+        // Demo products for YouTube category
+        const youtubeProducts = [
+            {
+                id: `youtube_${Date.now()}_1`,
+                name: 'YouTube Channel - 500 Subscribers',
+                shortDescription: 'Established YouTube channel with monetization enabled',
+                description: 'Ready-to-use YouTube channel with 500 subscribers, monetization enabled, and established content. Perfect for content creators and businesses.',
+                seoTitle: 'Monetized YouTube Channel - 500 Subscribers',
+                metaDescription: 'Established YouTube channel with monetization and subscribers',
+                itemCategory: 'YouTube',
+                directionCategory: 'Video Platform',
+                subcategory: 'Monetized Channel',
+                registrationMethod: 'Verified',
+                profileFullness: 'Creator',
+                yearOfRegistration: 2022,
+                countryOfRegistration: 'USA',
+                loginMethod: 'Browser',
+                numberOfSubscribers: 500,
+                price: 29.99,
+                itemType: 'Digital',
+                completionTime: 0,
+                isDigital: true,
+                stockQuantity: 35,
+                status: 'active',
+                moderationStatus: 'approved',
+                createdAt: new Date(),
+                soldCount: 65,
+                tags: ['youtube', 'monetized', 'subscribers', 'content creator', 'video'],
+                seoKeywords: ['youtube channel', 'monetized youtube', 'youtube subscribers', 'content creator'],
+                images: ['/uploads/demo-youtube.jpg'],
+                files: [
+                    {
+                        filename: 'demo-youtube-guide.pdf',
+                        filepath: '/uploads/demo-youtube-guide.pdf',
+                        uploadedAt: new Date()
+                    }
+                ],
+                reviews: [
+                    {
+                        id: 'review_youtube_1',
+                        userId: 15,
+                        userName: 'Video Maker',
+                        rating: 5,
+                        comment: 'Great YouTube channel with monetization ready!',
+                        date: new Date('2024-09-08')
+                    }
+                ]
+            }
+        ];
+
         // Add all demo products
         demoSeller.store.items.push(...gmailProducts);
         demoSeller.store.items.push(...instagramProducts);
         demoSeller.store.items.push(...facebookProducts);
+        demoSeller.store.items.push(...twitterProducts);
+        demoSeller.store.items.push(...linkedinProducts);
+        demoSeller.store.items.push(...tiktokProducts);
+        demoSeller.store.items.push(...youtubeProducts);
 
         await demoSeller.save();
 
         console.log('✅ Demo products created successfully!');
         console.log(`📦 Created ${gmailProducts.length} Gmail products`);
         console.log(`📦 Created ${instagramProducts.length} Instagram products`);
+        console.log(`📦 Created ${facebookProducts.length} Facebook products`);
+        console.log(`📦 Created ${twitterProducts.length} Twitter products`);
+        console.log(`📦 Created ${linkedinProducts.length} LinkedIn products`);
+        console.log(`📦 Created ${tiktokProducts.length} TikTok products`);
+        console.log(`📦 Created ${youtubeProducts.length} YouTube products`);
         console.log('🔑 Demo Seller Login: demo@digitalmarket.com / demo123');
-        console.log('👤 Categories available: GMail, Instagram, Facebook, YouTube');
+        console.log('👤 Categories available: GMail, Instagram, Facebook, Twitter, LinkedIn, TikTok, YouTube');
 
         process.exit(0);
     } catch (error) {

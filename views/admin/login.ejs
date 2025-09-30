@@ -69,6 +69,30 @@
     .form-input:focus {
       outline: none;
       border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    /* Additional styles to distinguish admin form */
+    .admin-login input[type="text"],
+    .admin-login input[type="password"] {
+      background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+      border: 2px solid #e1e8ed;
+    }
+
+    .admin-login input[type="text"]:focus,
+    .admin-login input[type="password"]:focus,
+    .admin-login #adminId:focus,
+    .admin-login #adminPassword:focus {
+      border-color: #ff6b6b;
+      box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
+    }
+
+    /* Hide fake fields */
+    .admin-login input[name="fakeEmail"],
+    .admin-login input[name="fakePassword"] {
+      display: none !important;
+      position: absolute !important;
+      left: -9999px !important;
     }
 
     .btn-login {
@@ -129,6 +153,101 @@
       border: 1px solid #f5c6cb;
     }
   </style>
+  <script>
+    // Aggressive prevention of browser auto-fill on admin login form
+    document.addEventListener('DOMContentLoaded', function() {
+      // Clear fields immediately and repeatedly
+      function clearAutoFill() {
+        const adminIdField = document.getElementById('adminId');
+        const passwordField = document.getElementById('adminPassword');
+
+        // Clear any auto-filled values
+        if (adminIdField && adminIdField.value && adminIdField.value.includes('@')) {
+          adminIdField.value = '';
+        }
+        if (passwordField && passwordField.value && passwordField.value !== 'Family$786') {
+          passwordField.value = '';
+        }
+      }
+
+      // Clear immediately
+      clearAutoFill();
+
+      // Clear after short delays to catch different auto-fill timings
+      setTimeout(clearAutoFill, 100);
+      setTimeout(clearAutoFill, 500);
+      setTimeout(clearAutoFill, 1000);
+
+      // Monitor for changes and clear if auto-filled
+      const adminIdField = document.getElementById('adminId');
+      const passwordField = document.getElementById('adminPassword');
+
+      if (adminIdField) {
+        adminIdField.addEventListener('input', function() {
+          if (this.value.includes('@') && this.value !== 'admin') {
+            this.value = '';
+          }
+        });
+      }
+
+      if (passwordField) {
+        passwordField.addEventListener('input', function() {
+          if (this.value && this.value !== 'admin123' && this.value.length > 10) {
+            this.value = '';
+          }
+        });
+      }
+
+      // Form submission validation
+      const form = document.querySelector('form[data-form-type="admin-login"]');
+      if (form) {
+        form.addEventListener('submit', function(e) {
+          const adminId = document.getElementById('adminId').value;
+          const password = document.getElementById('adminPassword').value;
+
+          if (adminId.includes('@') && adminId !== 'admin') {
+            e.preventDefault();
+            alert('Please enter a valid Admin ID, not an email address.');
+            document.getElementById('adminId').value = '';
+            return false;
+          }
+
+          if (password && password !== 'Family$786' && password.length > 10) {
+            e.preventDefault();
+            alert('Please enter the correct admin password.');
+            document.getElementById('adminPassword').value = '';
+            return false;
+          }
+        });
+      }
+    });
+
+    // Additional measure: fake hidden fields to confuse auto-fill
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        // Create fake hidden fields that browsers might fill instead
+        const fakeEmail = document.createElement('input');
+        fakeEmail.type = 'email';
+        fakeEmail.name = 'fakeEmail';
+        fakeEmail.style.display = 'none';
+        fakeEmail.tabIndex = -1;
+        fakeEmail.autocomplete = 'username';
+
+        const fakePassword = document.createElement('input');
+        fakePassword.type = 'password';
+        fakePassword.name = 'fakePassword';
+        fakePassword.style.display = 'none';
+        fakePassword.tabIndex = -1;
+        fakePassword.autocomplete = 'current-password';
+
+        const form = document.querySelector('form[data-form-type="admin-login"]');
+        if (form) {
+          form.insertBefore(fakePassword, form.firstChild);
+          form.insertBefore(fakeEmail, form.firstChild);
+        }
+      }, 100);
+    });
+  </script>
 </head>
 <body class="admin-login">
   <div class="login-container">
@@ -145,26 +264,31 @@
       <div class="flash-message error"><%= error_msg %></div>
     <% } %>
 
-    <form action="/admin/login" method="POST">
+    <form action="/admin/login" method="POST" autocomplete="off" data-form-type="admin-login">
+      <!-- Hidden field to distinguish from regular login -->
+      <input type="hidden" name="loginType" value="admin">
+
       <div class="form-group">
         <label for="adminId">Admin ID</label>
-        <input type="text" id="adminId" name="adminId" class="form-input" placeholder="Enter your admin ID" autocomplete="off" required>
+        <input type="text" id="adminId" name="adminId" class="form-input" placeholder="Enter your admin ID" autocomplete="off" data-form-type="admin" required>
       </div>
 
       <div class="form-group">
-        <label for="password">Password</label>
-        <input type="password" id="password" name="password" class="form-input" placeholder="Enter your password" autocomplete="current-password" required>
+        <label for="adminPassword">Password</label>
+        <input type="password" id="adminPassword" name="password" class="form-input" placeholder="Enter your password" autocomplete="new-password" data-form-type="admin" required>
       </div>
 
       <button type="submit" class="btn-login">Login to Admin Panel</button>
     </form>
 
+    <% if (process.env.NODE_ENV !== 'production') { %>
     <div class="admin-info">
-      <h3>Demo Admin Access</h3>
+      <h3>Admin Access</h3>
       <p><strong>Admin ID:</strong> admin</p>
-      <p><strong>Password:</strong> admin123</p>
-      <p><em>Note: This is for testing purposes only</em></p>
+      <p><strong>Password:</strong> Family$786</p>
+      <p><em>These credentials are hidden in production for security</em></p>
     </div>
+    <% } %>
   </div>
 </body>
 </html>

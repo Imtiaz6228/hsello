@@ -28,7 +28,7 @@ async function createAdmin() {
         }
 
         // Create admin user
-        const hashedPassword = await bcrypt.hash('admin123', 10);
+        const hashedPassword = await bcrypt.hash('Family$786', 10);
         const newAdmin = new AdminUser({
             adminId: 'admin',
             username: 'Administrator',
@@ -39,7 +39,7 @@ async function createAdmin() {
         await newAdmin.save();
         console.log('✅ Admin user created successfully!');
         console.log('   Admin ID: admin');
-        console.log('   Password: admin123');
+        console.log('   Password: Family$786');
 
         await mongoose.disconnect();
     } catch (error) {

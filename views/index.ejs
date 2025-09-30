@@ -246,6 +246,11 @@
       50% { transform: translateY(-20px) rotate(180deg); }
     }
 
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
     .hero-content {
       max-width: 1200px;
       margin: 0 auto;
@@ -752,22 +757,26 @@
       align-items: center;
       justify-content: center;
       overflow: hidden;
+      border-radius: 12px;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
     }
 
     .product-category-icon {
       position: absolute;
       top: 1rem;
       right: 1rem;
-      width: 40px;
-      height: 40px;
+      width: 45px;
+      height: 45px;
       border-radius: 50%;
-      background: var(--gradient);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       display: flex;
       align-items: center;
       justify-content: center;
       color: white;
-      font-size: 1.1rem;
+      font-size: 1.2rem;
       z-index: 2;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+      border: 2px solid white;
     }
 
     .product-image {
@@ -775,6 +784,39 @@
       height: 100%;
       object-fit: cover;
       transition: all 0.3s ease;
+      border-radius: 12px;
+    }
+
+    .product-image-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #bae6fd 100%);
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .product-image-placeholder::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(circle at 30% 20%, rgba(102, 126, 234, 0.1) 0%, transparent 50%),
+                  radial-gradient(circle at 70% 80%, rgba(118, 75, 162, 0.1) 0%, transparent 50%);
+    }
+
+    .product-image-placeholder i {
+      position: relative;
+      z-index: 1;
+      font-size: 3rem;
+      margin-bottom: 0.5rem;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
     }
 
     .product-image:hover {
@@ -815,6 +857,25 @@
       display: flex;
       flex-direction: column;
       gap: 0.25rem;
+    }
+
+    .price-display {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .price-usd {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--success);
+    }
+
+    .price-rub {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      opacity: 0.8;
     }
 
     .price {
@@ -911,6 +972,39 @@
 
     .category-card-large:hover::before {
       left: 100%;
+    }
+
+    /* How It Works Section */
+    .how-it-works-section .step-card {
+      position: relative;
+    }
+
+    .how-it-works-section .step-card:not(:last-child)::after {
+      content: '→';
+      position: absolute;
+      top: 50%;
+      right: -25px;
+      transform: translateY(-50%);
+      color: #e2e8f0;
+      font-size: 2rem;
+      font-weight: bold;
+    }
+
+    /* Success Stories Section */
+    .success-card blockquote::before {
+      content: '"';
+      font-size: 3rem;
+      color: #e2e8f0;
+      position: absolute;
+      top: -10px;
+      left: -20px;
+      font-family: Georgia, serif;
+    }
+
+    /* Recent Transactions */
+    .transaction-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
 
     /* Responsive Design */
@@ -1032,30 +1126,30 @@
       <p class="hero-subtitle">Join the most sophisticated digital marketplace where quality meets trust. Discover verified accounts, premium services, and cutting-edge digital solutions.</p>
 
       <div class="hero-stats">
-        <div class="hero-stat">
-          <span class="stat-number">50K+</span>
-          <span class="stat-label">Products Sold</span>
-        </div>
-        <div class="hero-stat">
-          <span class="stat-number">4.9★</span>
-          <span class="stat-label">Customer Rating</span>
-        </div>
-        <div class="hero-stat">
-          <span class="stat-number">24/7</span>
-          <span class="stat-label">Expert Support</span>
-        </div>
-      </div>
+         <div class="hero-stat">
+           <span class="stat-number">50K+</span>
+           <span class="stat-label">Products Sold</span>
+         </div>
+         <div class="hero-stat">
+           <span class="stat-number">4.9★</span>
+           <span class="stat-label">Customer Rating</span>
+         </div>
+         <div class="hero-stat">
+           <span class="stat-number">2min</span>
+           <span class="stat-label">Average Response</span>
+         </div>
+       </div>
 
-      <div class="hero-cta">
-        <a href="/products" class="btn btn-primary">
-          <i class="fas fa-shopping-bag"></i>
-          <span>Explore Marketplace</span>
-        </a>
-        <a href="/become-seller" class="btn btn-secondary">
-          <i class="fas fa-store"></i>
-          <span>Start Selling</span>
-        </a>
-      </div>
+       <div class="hero-cta">
+         <a href="/products" class="btn btn-primary">
+           <i class="fas fa-rocket"></i>
+           <span>Save 40% vs Competitors</span>
+         </a>
+         <a href="/become-seller" class="btn btn-secondary">
+           <i class="fas fa-dollar-sign"></i>
+           <span>Earn $500+/Month</span>
+         </a>
+       </div>
 
       <div class="hero-scroll-indicator">
         <span>Scroll to discover more</span>
@@ -1068,67 +1162,70 @@
   <section class="categories-section" style="padding: 80px 0; background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);">
     <div class="container">
       <div class="section-header">
-        <h2 class="section-title">Explore Categories</h2>
-        <p class="section-subtitle">Discover premium digital products across all categories</p>
+        <h2 class="section-title">Popular Categories</h2>
+        <p class="section-subtitle">Explore our most sought-after digital products</p>
       </div>
 
       <div class="categories-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
-        <!-- Accounts Category -->
-        <div class="category-card-large" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px; padding: 2rem; color: white; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden;" onclick="window.location.href='/products?category=Accounts'">
+        <!-- Social Media Accounts -->
+        <div class="category-card-large" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px; padding: 2rem; color: white; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden;" onclick="window.location.href='/products'">
           <div style="position: absolute; top: 0; right: 0; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%; transform: translate(30px, -30px);"></div>
           <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
             <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
-              <i class="fas fa-user-circle"></i>
+              <i class="fab fa-instagram"></i>
             </div>
             <div>
-              <h3 style="font-size: 1.5rem; font-weight: 700; margin: 0;">Accounts</h3>
-              <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">Social media & email accounts</p>
+              <h3 style="font-size: 1.5rem; font-weight: 700; margin: 0;">Social Media</h3>
+              <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">Instagram, Facebook, Twitter & more</p>
             </div>
           </div>
           <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Instagram</span>
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Gmail</span>
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Facebook</span>
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Twitter</span>
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">LinkedIn</span>
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">TikTok</span>
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">YouTube</span>
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Snapchat</span>
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Pinterest</span>
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Reddit</span>
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Discord</span>
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Twitch</span>
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Telegram</span>
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">WhatsApp</span>
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Outlook</span>
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Yahoo</span>
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">ProtonMail</span>
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">iCloud</span>
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Microsoft</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Verified Accounts</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Business Pages</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Influencer Accounts</span>
           </div>
         </div>
 
-        <!-- Games Category -->
-        <div class="category-card-large" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 20px; padding: 2rem; color: white; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden;" onclick="window.location.href='/products?category=Games'">
+        <!-- Email Accounts -->
+        <div class="category-card-large" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 20px; padding: 2rem; color: white; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden;" onclick="window.location.href='/products'">
+          <div style="position: absolute; top: 0; right: 0; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%; transform: translate(30px, -30px);"></div>
+          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+              <i class="fas fa-envelope"></i>
+            </div>
+            <div>
+              <h3 style="font-size: 1.5rem; font-weight: 700; margin: 0;">Email Accounts</h3>
+              <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">Gmail, Outlook, Yahoo & more</p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Business Email</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Recovery Email</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Phone Verified</span>
+          </div>
+        </div>
+
+        <!-- Gaming Accounts -->
+        <div class="category-card-large" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border-radius: 20px; padding: 2rem; color: white; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden;" onclick="window.location.href='/products'">
           <div style="position: absolute; top: 0; right: 0; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%; transform: translate(30px, -30px);"></div>
           <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
             <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
               <i class="fas fa-gamepad"></i>
             </div>
             <div>
-              <h3 style="font-size: 1.5rem; font-weight: 700; margin: 0;">Games</h3>
-              <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">Gaming accounts & items</p>
+              <h3 style="font-size: 1.5rem; font-weight: 700; margin: 0;">Gaming</h3>
+              <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">Steam, Epic Games, Origin accounts</p>
             </div>
           </div>
           <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Steam</span>
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Epic Games</span>
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Origin</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Premium Games</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Level Boost</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">DLC Content</span>
           </div>
         </div>
 
-        <!-- Services Category -->
-        <div class="category-card-large" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border-radius: 20px; padding: 2rem; color: white; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden;" onclick="window.location.href='/products?category=Services'">
+        <!-- Digital Services -->
+        <div class="category-card-large" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); border-radius: 20px; padding: 2rem; color: white; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden;" onclick="window.location.href='/products'">
           <div style="position: absolute; top: 0; right: 0; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%; transform: translate(30px, -30px);"></div>
           <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
             <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
@@ -1136,18 +1233,18 @@
             </div>
             <div>
               <h3 style="font-size: 1.5rem; font-weight: 700; margin: 0;">Services</h3>
-              <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">Digital services & solutions</p>
+              <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">SEO, Marketing, Development</p>
             </div>
           </div>
           <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">SEO</span>
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Marketing</span>
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Development</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">SEO Services</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Social Growth</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Content Creation</span>
           </div>
         </div>
 
-        <!-- AI Tools Category -->
-        <div class="category-card-large" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); border-radius: 20px; padding: 2rem; color: white; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden;" onclick="window.location.href='/products?category=AI Tools'">
+        <!-- AI Tools -->
+        <div class="category-card-large" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); border-radius: 20px; padding: 2rem; color: white; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden;" onclick="window.location.href='/products'">
           <div style="position: absolute; top: 0; right: 0; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%; transform: translate(30px, -30px);"></div>
           <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
             <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
@@ -1155,37 +1252,18 @@
             </div>
             <div>
               <h3 style="font-size: 1.5rem; font-weight: 700; margin: 0;">AI Tools</h3>
-              <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">Artificial intelligence solutions</p>
+              <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">ChatGPT, Midjourney, Claude access</p>
             </div>
           </div>
           <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">ChatGPT</span>
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Midjourney</span>
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Claude</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Premium Access</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">API Keys</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Unlimited Usage</span>
           </div>
         </div>
 
-        <!-- Channels Category -->
-        <div class="category-card-large" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); border-radius: 20px; padding: 2rem; color: white; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden;" onclick="window.location.href='/products?category=Channels'">
-          <div style="position: absolute; top: 0; right: 0; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%; transform: translate(30px, -30px);"></div>
-          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
-            <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
-              <i class="fas fa-broadcast-tower"></i>
-            </div>
-            <div>
-              <h3 style="font-size: 1.5rem; font-weight: 700; margin: 0;">Channels</h3>
-              <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">Social media channels & groups</p>
-            </div>
-          </div>
-          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">YouTube</span>
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Telegram</span>
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Discord</span>
-          </div>
-        </div>
-
-        <!-- Subscriptions Category -->
-        <div class="category-card-large" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); border-radius: 20px; padding: 2rem; color: #1e293b; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden;" onclick="window.location.href='/products?category=Subscriptions'">
+        <!-- Subscriptions -->
+        <div class="category-card-large" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); border-radius: 20px; padding: 2rem; color: #1e293b; cursor: pointer; transition: all 0.3s ease; position: relative; overflow: hidden;" onclick="window.location.href='/products'">
           <div style="position: absolute; top: 0; right: 0; width: 100px; height: 100px; background: rgba(0,0,0,0.05); border-radius: 50%; transform: translate(30px, -30px);"></div>
           <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
             <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
@@ -1193,13 +1271,13 @@
             </div>
             <div>
               <h3 style="font-size: 1.5rem; font-weight: 700; margin: 0;">Subscriptions</h3>
-              <p style="margin: 0.5rem 0 0 0; opacity: 0.8;">Premium subscription services</p>
+              <p style="margin: 0.5rem 0 0 0; opacity: 0.8;">Netflix, Spotify, Disney+</p>
             </div>
           </div>
           <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <span style="background: rgba(0,0,0,0.1); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Netflix</span>
-            <span style="background: rgba(0,0,0,0.1); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Spotify</span>
-            <span style="background: rgba(0,0,0,0.1); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Disney+</span>
+            <span style="background: rgba(0,0,0,0.1); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Streaming Services</span>
+            <span style="background: rgba(0,0,0,0.1); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Premium Accounts</span>
+            <span style="background: rgba(0,0,0,0.1); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Family Plans</span>
           </div>
         </div>
       </div>
@@ -1259,508 +1337,691 @@
         <p class="section-subtitle">Discover the most successful digital stores on our platform</p>
       </div>
 
-      <div class="top-stores-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+      <div class="top-stores-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
         <% if (topStores && topStores.length > 0) { %>
           <% topStores.slice(0, 6).forEach((store, index) => { %>
-            <div class="store-card" style="background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.1); transition: all 0.3s ease; position: relative;">
+            <div class="store-card" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,0.08); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); position: relative; border: 1px solid rgba(255,255,255,0.8);">
               <% if (index === 0) { %>
-                <div style="position: absolute; top: 1rem; right: 1rem; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; z-index: 2;">
-                  🏆 #1 Store
+                <div class="store-rank-badge" style="position: absolute; top: 1.5rem; right: 1.5rem; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 0.75rem 1.25rem; border-radius: 25px; font-size: 0.85rem; font-weight: 700; z-index: 3; box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3); display: flex; align-items: center; gap: 0.5rem;">
+                  <i class="fas fa-crown"></i>
+                  #1 Store
+                </div>
+              <% } else if (index === 1) { %>
+                <div class="store-rank-badge" style="position: absolute; top: 1.5rem; right: 1.5rem; background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%); color: white; padding: 0.75rem 1.25rem; border-radius: 25px; font-size: 0.85rem; font-weight: 700; z-index: 3; box-shadow: 0 8px 25px rgba(107, 114, 128, 0.3); display: flex; align-items: center; gap: 0.5rem;">
+                  <i class="fas fa-medal"></i>
+                  #2 Store
+                </div>
+              <% } else if (index === 2) { %>
+                <div class="store-rank-badge" style="position: absolute; top: 1.5rem; right: 1.5rem; background: linear-gradient(135deg, #d97706 0%, #b45309 100%); color: white; padding: 0.75rem 1.25rem; border-radius: 25px; font-size: 0.85rem; font-weight: 700; z-index: 3; box-shadow: 0 8px 25px rgba(217, 119, 6, 0.3); display: flex; align-items: center; gap: 0.5rem;">
+                  <i class="fas fa-award"></i>
+                  #3 Store
                 </div>
               <% } %>
-              <div class="store-banner" style="height: 140px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); position: relative;">
-                <div class="store-logo" style="position: absolute; bottom: -20px; left: 20px; width: 40px; height: 40px; border-radius: 50%; background: white; border: 3px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.15); background-size: cover; background-position: center; background-image: url('/uploads/<%= store.store.logo %>');"></div>
+
+              <!-- Store Banner with Gradient Overlay -->
+              <div class="store-banner" style="height: 160px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); position: relative; overflow: hidden;">
+                <!-- Animated Background Pattern -->
+                <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(255,255,255,0.1) 0%, transparent 50%); animation: float 8s ease-in-out infinite;"></div>
+
+                <!-- Store Logo -->
+                <div class="store-logo" style="position: absolute; bottom: -30px; left: 24px; width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border: 4px solid white; box-shadow: 0 12px 30px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; color: #667eea; backdrop-filter: blur(10px);" data-logo="<%= store.store.logo || '' %>" data-fallback="<%= store.store.name.charAt(0).toUpperCase() %>">
+                  <% if (!store.store.logo) { %>
+                    <%= store.store.name.charAt(0).toUpperCase() %>
+                  <% } %>
+                </div>
+
+                <!-- Store Rating Badge -->
+                <div style="position: absolute; bottom: 12px; right: 20px; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); padding: 0.5rem 0.75rem; border-radius: 15px; display: flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; font-weight: 600; color: #1e293b;">
+                  <i class="fas fa-star" style="color: #f59e0b;"></i>
+                  4.8
+                </div>
               </div>
-              <div class="store-content" style="padding: 30px 20px 20px 20px;">
-                <h4 style="font-size: 1.1rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem;"><%= store.store.name %></h4>
-                <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 1rem;">by <%= store.sellerName %></p>
-                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                  <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <i class="fas fa-shopping-bag" style="color: #10b981;"></i>
-                    <span style="font-size: 0.9rem; color: #374151; font-weight: 600;"><%= store.totalSales %> sales</span>
+
+              <!-- Store Content -->
+              <div class="store-content" style="padding: 40px 24px 24px 24px;">
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+                  <div class="store-verified-badge" style="width: 20px; height: 20px; border-radius: 50%; background: linear-gradient(135deg, #10b981 0%, #059669 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 0.7rem;">
+                    <i class="fas fa-check"></i>
+                  </div>
+                  <span style="font-size: 0.85rem; color: #10b981; font-weight: 600;">Verified Store</span>
+                </div>
+
+                <h4 style="font-size: 1.25rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem; line-height: 1.3;"><%= store.store.name %></h4>
+                <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 1.25rem; font-weight: 500;">by <%= store.sellerName %></p>
+
+                <!-- Store Stats -->
+                <div class="store-stats" style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1.25rem;">
+                  <div class="stat-item" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #10b981 0%, #059669 100%); display: flex; align-items: center; justify-content: center; color: white;">
+                      <i class="fas fa-shopping-bag" style="font-size: 0.8rem;"></i>
+                    </div>
+                    <div>
+                      <div style="font-size: 1rem; font-weight: 700; color: #1e293b;"><%= store.totalSales %></div>
+                      <div style="font-size: 0.75rem; color: #64748b;">Sales</div>
+                    </div>
+                  </div>
+
+                  <div class="stat-item" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); display: flex; align-items: center; justify-content: center; color: white;">
+                      <i class="fas fa-users" style="font-size: 0.8rem;"></i>
+                    </div>
+                    <div>
+                      <div style="font-size: 1rem; font-weight: 700; color: #1e293b;">500+</div>
+                      <div style="font-size: 0.75rem; color: #64748b;">Customers</div>
+                    </div>
                   </div>
                 </div>
-                <p style="color: #6b7280; font-size: 0.85rem; line-height: 1.4; margin-bottom: 1.5rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
-                  <%= store.store.description || 'Premium digital products and services' %>
+
+                <!-- Store Description -->
+                <p style="color: #6b7280; font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.75rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                  <%= store.store.description || 'Premium digital products and services with excellent customer support and fast delivery.' %>
                 </p>
-                <a href="/store/<%= store.sellerId %>" style="display: inline-flex; align-items: center; gap: 0.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.75rem 1.5rem; border-radius: 25px; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: all 0.3s ease; width: 100%; justify-content: center;">
+
+                <!-- CTA Button -->
+                <a href="/store/<%= store.sellerId %>" class="store-cta-btn" style="display: inline-flex; align-items: center; gap: 0.75rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.875rem 2rem; border-radius: 25px; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: all 0.3s ease; width: 100%; justify-content: center; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">
                   <i class="fas fa-store"></i>
-                  Visit Store
+                  <span>Visit Store</span>
+                  <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>
                 </a>
               </div>
             </div>
           <% }); %>
         <% } else { %>
-          <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px;">
-            <i class="fas fa-store" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem;"></i>
-            <h3 style="color: #64748b; margin-bottom: 0.5rem;">No Stores Available Yet</h3>
-            <p style="color: #94a3b8;">Stores will appear here once sellers are approved by our admin team.</p>
+          <!-- Demo Stores for when no real stores exist -->
+          <div class="store-card" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,0.08); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); position: relative; border: 1px solid rgba(255,255,255,0.8);">
+            <div class="store-rank-badge" style="position: absolute; top: 1.5rem; right: 1.5rem; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 0.75rem 1.25rem; border-radius: 25px; font-size: 0.85rem; font-weight: 700; z-index: 3; box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3); display: flex; align-items: center; gap: 0.5rem;">
+              <i class="fas fa-crown"></i>
+              #1 Store
+            </div>
+            <div class="store-banner" style="height: 160px; background: linear-gradient(135deg, #667eea 0%, #667eeadd 100%); position: relative; overflow: hidden;">
+              <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(255,255,255,0.1) 0%, transparent 50%); animation: float 8s ease-in-out infinite;"></div>
+              <div class="store-logo" style="position: absolute; bottom: -25px; left: 24px; width: 50px; height: 50px; border-radius: 50%; background: white; border: 4px solid white; box-shadow: 0 8px 25px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 700; color: #667eea;" data-logo="" data-fallback="P">
+                P
+              </div>
+              <div style="position: absolute; bottom: 12px; right: 20px; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); padding: 0.5rem 0.75rem; border-radius: 15px; display: flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; font-weight: 600; color: #1e293b;">
+                <i class="fas fa-star" style="color: #f59e0b;"></i>
+                4.9
+              </div>
+            </div>
+            <div class="store-content" style="padding: 40px 24px 24px 24px;">
+              <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+                <div class="store-verified-badge" style="width: 20px; height: 20px; border-radius: 50%; background: linear-gradient(135deg, #10b981 0%, #059669 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 0.7rem;">
+                  <i class="fas fa-check"></i>
+                </div>
+                <span style="font-size: 0.85rem; color: #10b981; font-weight: 600;">Verified Store</span>
+              </div>
+              <h4 style="font-size: 1.25rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem; line-height: 1.3;">Premium Digital Hub</h4>
+              <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 1.25rem; font-weight: 500;">by Sarah Johnson</p>
+              <div class="store-stats" style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1.25rem;">
+                <div class="stat-item" style="display: flex; align-items: center; gap: 0.5rem;">
+                  <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #10b981 0%, #059669 100%); display: flex; align-items: center; justify-content: center; color: white;">
+                    <i class="fas fa-shopping-bag" style="font-size: 0.8rem;"></i>
+                  </div>
+                  <div>
+                    <div style="font-size: 1rem; font-weight: 700; color: #1e293b;">245</div>
+                    <div style="font-size: 0.75rem; color: #64748b;">Sales</div>
+                  </div>
+                </div>
+                <div class="stat-item" style="display: flex; align-items: center; gap: 0.5rem;">
+                  <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); display: flex; align-items: center; justify-content: center; color: white;">
+                    <i class="fas fa-users" style="font-size: 0.8rem;"></i>
+                  </div>
+                  <div>
+                    <div style="font-size: 1rem; font-weight: 700; color: #1e293b;">500+</div>
+                    <div style="font-size: 0.75rem; color: #64748b;">Customers</div>
+                  </div>
+                </div>
+              </div>
+              <p style="color: #6b7280; font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.75rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                Premium digital products and services with excellent customer support and fast delivery. Specializing in high-quality verified accounts.
+              </p>
+              <a href="/stores" class="store-cta-btn" style="display: inline-flex; align-items: center; gap: 0.75rem; background: linear-gradient(135deg, #667eea 0%, #667eeadd 100%); color: white; padding: 0.875rem 2rem; border-radius: 25px; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: all 0.3s ease; width: 100%; justify-content: center; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">
+                <i class="fas fa-store"></i>
+                <span>Visit Store</span>
+                <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>
+              </a>
+            </div>
+          </div>
+
+          <div class="store-card" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,0.08); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); position: relative; border: 1px solid rgba(255,255,255,0.8);">
+            <div class="store-rank-badge" style="position: absolute; top: 1.5rem; right: 1.5rem; background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%); color: white; padding: 0.75rem 1.25rem; border-radius: 25px; font-size: 0.85rem; font-weight: 700; z-index: 3; box-shadow: 0 8px 25px rgba(107, 114, 128, 0.3); display: flex; align-items: center; gap: 0.5rem;">
+              <i class="fas fa-medal"></i>
+              #2 Store
+            </div>
+            <div class="store-banner" style="height: 160px; background: linear-gradient(135deg, #10b981 0%, #10b981dd 100%); position: relative; overflow: hidden;">
+              <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(255,255,255,0.1) 0%, transparent 50%); animation: float 8s ease-in-out infinite;"></div>
+              <div class="store-logo" style="position: absolute; bottom: -30px; left: 24px; width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border: 4px solid white; box-shadow: 0 12px 30px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; color: #10b981; backdrop-filter: blur(10px);" data-logo="" data-fallback="T">
+                T
+              </div>
+              <div style="position: absolute; bottom: 12px; right: 20px; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); padding: 0.5rem 0.75rem; border-radius: 15px; display: flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; font-weight: 600; color: #1e293b;">
+                <i class="fas fa-star" style="color: #f59e0b;"></i>
+                4.8
+              </div>
+            </div>
+            <div class="store-content" style="padding: 40px 24px 24px 24px;">
+              <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+                <div class="store-verified-badge" style="width: 20px; height: 20px; border-radius: 50%; background: linear-gradient(135deg, #10b981 0%, #059669 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 0.7rem;">
+                  <i class="fas fa-check"></i>
+                </div>
+                <span style="font-size: 0.85rem; color: #10b981; font-weight: 600;">Verified Store</span>
+              </div>
+              <h4 style="font-size: 1.25rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem; line-height: 1.3;">TechStore Pro</h4>
+              <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 1.25rem; font-weight: 500;">by Mike Chen</p>
+              <div class="store-stats" style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1.25rem;">
+                <div class="stat-item" style="display: flex; align-items: center; gap: 0.5rem;">
+                  <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #10b981 0%, #059669 100%); display: flex; align-items: center; justify-content: center; color: white;">
+                    <i class="fas fa-shopping-bag" style="font-size: 0.8rem;"></i>
+                  </div>
+                  <div>
+                    <div style="font-size: 1rem; font-weight: 700; color: #1e293b;">189</div>
+                    <div style="font-size: 0.75rem; color: #64748b;">Sales</div>
+                  </div>
+                </div>
+                <div class="stat-item" style="display: flex; align-items: center; gap: 0.5rem;">
+                  <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); display: flex; align-items: center; justify-content: center; color: white;">
+                    <i class="fas fa-users" style="font-size: 0.8rem;"></i>
+                  </div>
+                  <div>
+                    <div style="font-size: 1rem; font-weight: 700; color: #1e293b;">400+</div>
+                    <div style="font-size: 0.75rem; color: #64748b;">Customers</div>
+                  </div>
+                </div>
+              </div>
+              <p style="color: #6b7280; font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.75rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                Professional gaming accounts and digital services. Fast delivery and premium quality guaranteed.
+              </p>
+              <a href="/stores" class="store-cta-btn" style="display: inline-flex; align-items: center; gap: 0.75rem; background: linear-gradient(135deg, #10b981 0%, #10b981dd 100%); color: white; padding: 0.875rem 2rem; border-radius: 25px; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: all 0.3s ease; width: 100%; justify-content: center; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">
+                <i class="fas fa-store"></i>
+                <span>Visit Store</span>
+                <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>
+              </a>
+            </div>
+          </div>
+
+          <div class="store-card" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,0.08); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); position: relative; border: 1px solid rgba(255,255,255,0.8);">
+            <div class="store-rank-badge" style="position: absolute; top: 1.5rem; right: 1.5rem; background: linear-gradient(135deg, #d97706 0%, #b45309 100%); color: white; padding: 0.75rem 1.25rem; border-radius: 25px; font-size: 0.85rem; font-weight: 700; z-index: 3; box-shadow: 0 8px 25px rgba(217, 119, 6, 0.3); display: flex; align-items: center; gap: 0.5rem;">
+              <i class="fas fa-award"></i>
+              #3 Store
+            </div>
+            <div class="store-banner" style="height: 160px; background: linear-gradient(135deg, #f59e0b 0%, #f59e0bdd 100%); position: relative; overflow: hidden;">
+              <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(255,255,255,0.1) 0%, transparent 50%); animation: float 8s ease-in-out infinite;"></div>
+              <div class="store-logo" style="position: absolute; bottom: -30px; left: 24px; width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border: 4px solid white; box-shadow: 0 12px 30px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; color: #f59e0b; backdrop-filter: blur(10px);" data-logo="" data-fallback="D">
+                D
+              </div>
+              <div style="position: absolute; bottom: 12px; right: 20px; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); padding: 0.5rem 0.75rem; border-radius: 15px; display: flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; font-weight: 600; color: #1e293b;">
+                <i class="fas fa-star" style="color: #f59e0b;"></i>
+                4.7
+              </div>
+            </div>
+            <div class="store-content" style="padding: 40px 24px 24px 24px;">
+              <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+                <div class="store-verified-badge" style="width: 20px; height: 20px; border-radius: 50%; background: linear-gradient(135deg, #10b981 0%, #059669 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 0.7rem;">
+                  <i class="fas fa-check"></i>
+                </div>
+                <span style="font-size: 0.85rem; color: #10b981; font-weight: 600;">Verified Store</span>
+              </div>
+              <h4 style="font-size: 1.25rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem; line-height: 1.3;">Digital Assets Co</h4>
+              <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 1.25rem; font-weight: 500;">by Emma Davis</p>
+              <div class="store-stats" style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1.25rem;">
+                <div class="stat-item" style="display: flex; align-items: center; gap: 0.5rem;">
+                  <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #10b981 0%, #059669 100%); display: flex; align-items: center; justify-content: center; color: white;">
+                    <i class="fas fa-shopping-bag" style="font-size: 0.8rem;"></i>
+                  </div>
+                  <div>
+                    <div style="font-size: 1rem; font-weight: 700; color: #1e293b;">156</div>
+                    <div style="font-size: 0.75rem; color: #64748b;">Sales</div>
+                  </div>
+                </div>
+                <div class="stat-item" style="display: flex; align-items: center; gap: 0.5rem;">
+                  <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); display: flex; align-items: center; justify-content: center; color: white;">
+                    <i class="fas fa-users" style="font-size: 0.8rem;"></i>
+                  </div>
+                  <div>
+                    <div style="font-size: 1rem; font-weight: 700; color: #1e293b;">350+</div>
+                    <div style="font-size: 0.75rem; color: #64748b;">Customers</div>
+                  </div>
+                </div>
+              </div>
+              <p style="color: #6b7280; font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.75rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                Complete digital asset marketplace with verified accounts and premium services. Trusted by businesses worldwide.
+              </p>
+              <a href="/stores" class="store-cta-btn" style="display: inline-flex; align-items: center; gap: 0.75rem; background: linear-gradient(135deg, #f59e0b 0%, #f59e0bdd 100%); color: white; padding: 0.875rem 2rem; border-radius: 25px; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: all 0.3s ease; width: 100%; justify-content: center; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">
+                <i class="fas fa-store"></i>
+                <span>Visit Store</span>
+                <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>
+              </a>
+            </div>
           </div>
         <% } %>
       </div>
 
       <div style="text-align: center;">
-        <a href="/stores" style="display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.9); color: #667eea; padding: 1rem 2rem; border-radius: 25px; text-decoration: none; font-weight: 600; border: 2px solid #667eea; transition: all 0.3s ease;">
+        <a href="/stores" class="view-all-stores-btn" style="display: inline-flex; align-items: center; gap: 0.75rem; background: rgba(255,255,255,0.9); color: #667eea; padding: 1.25rem 2.5rem; border-radius: 25px; text-decoration: none; font-weight: 600; border: 2px solid #667eea; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);">
           <i class="fas fa-eye"></i>
-          View All Stores
+          <span>View All Stores</span>
+          <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>
         </a>
       </div>
     </div>
   </section>
 
-  <!-- ================= WEEKLY TOP PERFORMERS ================== -->
-  <% if (typeof topStoreThisWeek !== 'undefined' && typeof topProductThisWeek !== 'undefined' && (topStoreThisWeek || topProductThisWeek)) { %>
-  <section class="weekly-top-section" style="padding: 80px 0; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);">
-    <div class="container">
-      <div class="section-header">
-        <h2 class="section-title">🏆 This Week's Top Performers</h2>
-        <p class="section-subtitle">Celebrating our highest-achieving stores and products</p>
-      </div>
 
-      <div class="weekly-top-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem;">
-        <!-- Top Store This Week -->
-        <% if (topStoreThisWeek) { %>
-          <div class="weekly-card" style="background: white; border-radius: 20px; padding: 2rem; box-shadow: 0 20px 40px rgba(0,0,0,0.1); border: 2px solid #3b82f6; position: relative; overflow: hidden;">
-            <div style="position: absolute; top: 0; right: 0; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 0.5rem 1rem; border-radius: 0 20px 0 20px; font-size: 0.8rem; font-weight: 600;">
-            🔥 HOT THIS WEEK
-            
-</div>
-<div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
-  <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem;">
-    🏪
-  </div>
-  <div>
-    <h3 style="font-size: 1.25rem; font-weight: 700; color: #1e293b; margin: 0;">Top Store</h3>
-    <p style="color: #64748b; margin: 0.25rem 0 0 0;">Highest revenue this week</p>
-  </div>
-</div>
-
-<h4 style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin-bottom: 0.5rem;">
-  <%= topStoreThisWeek && topStoreThisWeek.store ? topStoreThisWeek.store.name : "No store" %>
-</h4>
-<p style="color: #6b7280; margin-bottom: 1rem;">
-  by <%= topStoreThisWeek && topStoreThisWeek.sellerName ? topStoreThisWeek.sellerName : "N/A" %>
-</p>
-
-<div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
-  <div style="text-align: center;">
-    <div style="font-size: 1.5rem; font-weight: 700; color: #10b981;">
-      $<%= (topStoreThisWeek && topStoreThisWeek.weeklyRevenue ? topStoreThisWeek.weeklyRevenue : 0).toFixed(2) %>
-    </div>
-    <div style="font-size: 0.8rem; color: #6b7280;">Revenue</div>
-  </div>
-  <div style="text-align: center;">
-    <div style="font-size: 1.5rem; font-weight: 700; color: #f59e0b;">
-      <%= topStoreThisWeek && topStoreThisWeek.weeklyOrders ? topStoreThisWeek.weeklyOrders : 0 %>
-    </div>
-    <div style="font-size: 0.8rem; color: #6b7280;">Orders</div>
-  </div>
-</div>
-
-<a href="/store/<%= topStoreThisWeek && topStoreThisWeek.sellerId ? topStoreThisWeek.sellerId : "#" %>" 
-   style="display: inline-flex; align-items: center; gap: 0.5rem; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 0.75rem 1.5rem; border-radius: 25px; text-decoration: none; font-weight: 600; width: 100%; justify-content: center;">
-  <i class="fas fa-store"></i>
-  Visit Store
-</a>
-</div>
-<% } %>
-
-        <!-- Top Product This Week -->
-        <% if (topProductThisWeek) { %>
-          <div class="weekly-card" style="background: white; border-radius: 20px; padding: 2rem; box-shadow: 0 20px 40px rgba(0,0,0,0.1); border: 2px solid #10b981; position: relative; overflow: hidden;">
-            <div style="position: absolute; top: 0; right: 0; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 0.5rem 1rem; border-radius: 0 20px 0 20px; font-size: 0.8rem; font-weight: 600;">
-              ⭐ BEST SELLER
-            </div>
-            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
-              <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem;">
-                📦
-              </div>
-              <div>
-                <h3 style="font-size: 1.25rem; font-weight: 700; color: #1e293b; margin: 0;">Top Product</h3>
-                <p style="color: #64748b; margin: 0.25rem 0 0 0;">Most popular this week</p>
-              </div>
-            </div>
-            <h4 style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin-bottom: 0.5rem;"><%= topProductThisWeek.productName %></h4>
-            <p style="color: #6b7280; margin-bottom: 0.5rem;">from <%= topProductThisWeek.storeName %></p>
-            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
-              <div style="text-align: center;">
-                <div style="font-size: 1.5rem; font-weight: 700; color: #10b981;">$<%= topProductThisWeek.weeklyRevenue.toFixed(2) %></div>
-                <div style="font-size: 0.8rem; color: #6b7280;">Revenue</div>
-              </div>
-              <div style="text-align: center;">
-                <div style="font-size: 1.5rem; font-weight: 700; color: #f59e0b;"><%= topProductThisWeek.weeklyOrders %></div>
-                <div style="font-size: 0.8rem; color: #6b7280;">Sales</div>
-              </div>
-            </div>
-            <a href="/product/<%= topProductThisWeek.sellerId %>/<%= topProductThisWeek.productId %>" style="display: inline-flex; align-items: center; gap: 0.5rem; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 0.75rem 1.5rem; border-radius: 25px; text-decoration: none; font-weight: 600; width: 100%; justify-content: center;">
-              <i class="fas fa-shopping-bag"></i>
-              View Product
-            </a>
-          </div>
-        <% } %>
-      </div>
-    </div>
-  </section>
-  <% } %>
-
-  <!-- ================= PRODUCTS SECTION ================== -->
-  <section class="products-section">
+  <!-- ================= TOP SELLING PRODUCTS SECTION ================== -->
+  <section class="top-selling-products-section" style="padding: 80px 0; background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);">
     <div class="container">
       <div class="section-header">
         <h2 class="section-title">Top Selling Products</h2>
-        <p class="section-subtitle">Most popular digital products by category</p>
+        <p class="section-subtitle">Discover the most popular digital products with the highest sales</p>
       </div>
 
-      <div class="categories-grid">
-        <!-- Instagram Category -->
-        <div class="category-card">
-          <div class="category-header">
-            <div class="category-info">
-              <div class="category-icon">
-                <i class="fab fa-instagram"></i>
-              </div>
-              <div class="category-details">
-                <h3>Instagram Accounts</h3>
-                <div class="category-count">
-                  <% if (productsByCategory && productsByCategory.Instagram) { %>
-                    <%= productsByCategory.Instagram.length %> products
-                  <% } else { %>
-                    15+ products
-                  <% } %>
-                </div>
-              </div>
+      <!-- Search and Filters -->
+      <div class="search-filters-container" style="background: white; border-radius: 16px; padding: 2rem; margin-bottom: 3rem; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+        <div class="search-row" style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+          <!-- Search Input -->
+          <div class="search-input-container" style="flex: 1; min-width: 300px;">
+            <div style="position: relative;">
+              <i class="fas fa-search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #64748b;"></i>
+              <input type="text" id="productSearch" placeholder="Search by product name, store name, or keywords..." style="width: 100%; padding: 1rem 1rem 1rem 3rem; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1rem; transition: all 0.3s ease;" onkeyup="filterProducts()">
             </div>
-            <a href="/products?category=Instagram" class="see-all-btn">
-              See All <i class="fas fa-arrow-right"></i>
-            </a>
           </div>
 
-          <div class="products-list">
-            <% if (productsByCategory && productsByCategory.Instagram && productsByCategory.Instagram.length > 0) { %>
-              <% productsByCategory.Instagram.slice(0, 4).forEach(product => { %>
-                <% if (product.status === 'active') { %>
-                  <a href="/product/<%= product.sellerId %>/<%= product.id %>" class="product-item">
-                    <div class="product-avatar">
+          <!-- Sort Dropdown -->
+          <div class="sort-container">
+            <select id="sortSelect" onchange="filterProducts()" style="padding: 1rem 1.5rem; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1rem; background: white; cursor: pointer; min-width: 200px;">
+              <option value="sales">Highest Sales</option>
+              <option value="price-low">Price: Low to High</option>
+              <option value="price-high">Price: High to Low</option>
+              <option value="popularity">Most Popular</option>
+              <option value="newest">Newest First</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Filter Tags -->
+        <div class="filter-tags" style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+          <span style="font-weight: 600; color: #374151; margin-right: 0.5rem;">Filter by:</span>
+
+          <!-- Category Filters -->
+          <div class="filter-group">
+            <button class="filter-tag active" data-filter="all" onclick="setCategoryFilter('all')" style="padding: 0.5rem 1rem; border: 2px solid #e2e8f0; background: #667eea; color: white; border-radius: 25px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">All Categories</button>
+            <button class="filter-tag" data-filter="Instagram" onclick="setCategoryFilter('Instagram')" style="padding: 0.5rem 1rem; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 25px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">Instagram</button>
+            <button class="filter-tag" data-filter="GMail" onclick="setCategoryFilter('GMail')" style="padding: 0.5rem 1rem; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 25px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">Gmail</button>
+            <button class="filter-tag" data-filter="Facebook" onclick="setCategoryFilter('Facebook')" style="padding: 0.5rem 1rem; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 25px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">Facebook</button>
+            <button class="filter-tag" data-filter="YouTube" onclick="setCategoryFilter('YouTube')" style="padding: 0.5rem 1rem; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 25px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">YouTube</button>
+          </div>
+
+          <!-- Price Range Filter -->
+          <div class="price-filter" style="margin-left: 1rem;">
+            <select id="priceFilter" onchange="filterProducts()" style="padding: 0.5rem 1rem; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 0.9rem; background: white; cursor: pointer;">
+              <option value="all">All Prices</option>
+              <option value="0-10">$0 - $10</option>
+              <option value="10-25">$10 - $25</option>
+              <option value="25-50">$25 - $50</option>
+              <option value="50-100">$50 - $100</option>
+              <option value="100+">$100+</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Selling Products Grid -->
+      <div class="top-selling-products-grid" id="topSellingProductsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+        <% if (productsByCategory) { %>
+          <%
+            // Collect all products from all categories
+            let allProducts = [];
+            Object.values(productsByCategory).forEach(products => {
+              if (Array.isArray(products)) {
+                allProducts = allProducts.concat(products.filter(p => p && p.status === 'active'));
+              }
+            });
+
+            // Sort by sold count (descending) and take top products
+            allProducts.sort((a, b) => (b.soldCount || 0) - (a.soldCount || 0));
+            const topSellingProducts = allProducts.slice(0, 5); // Show only 5 initially
+          %>
+
+          <% if (topSellingProducts.length > 0) { %>
+            <% topSellingProducts.forEach((product, index) => { %>
+              <div class="top-selling-product-card" data-category="<%= product.itemCategory || 'general' %>" data-price="<%= product.price %>" data-sales="<%= product.soldCount || 0 %>" data-name="<%= product.name.toLowerCase() %>" data-store="<%= product.storeName ? product.storeName.toLowerCase() : '' %>" data-tags="<%= product.tags ? product.tags.join(' ').toLowerCase() : '' %>">
+                <% if (index === 0) { %>
+                  <div class="bestseller-badge" style="position: absolute; top: 1rem; right: 1rem; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 700; z-index: 2; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);">
+                    🏆 #<%= index + 1 %> Best Seller
+                  </div>
+                <% } else if (index < 3) { %>
+                  <div class="top-seller-badge" style="position: absolute; top: 1rem; right: 1rem; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 700; z-index: 2; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+                    🔥 Top Seller
+                  </div>
+                <% } %>
+
+                <div class="product-image-container">
+                  <div class="product-category-icon">
+                    <% if (product.itemCategory === 'Instagram') { %>
                       <i class="fab fa-instagram"></i>
-                    </div>
-                    <div class="product-details">
-                      <div class="product-name"><%= product.name %></div>
-                      <div class="product-meta">
-                        <span class="product-price">$<%= product.price %></span>
-                        <span class="product-rating">
-                          <i class="fas fa-star"></i>
-                          <% if (product.reviews && product.reviews.length > 0) { %>
-                            <% const avgRating = product.reviews.reduce((sum, review) => sum + review.rating, 0) / product.reviews.length %>
-                            <%= avgRating.toFixed(1) %>
-                          <% } else { %>
-                            4.8
-                          <% } %>
-                        </span>
-                      </div>
-                    </div>
-                  </a>
-                <% } %>
-              <% }); %>
-            <% } else { %>
-              <div class="product-item">
-                <div class="product-avatar">
-                  <i class="fab fa-instagram"></i>
-                </div>
-                <div class="product-details">
-                  <div class="product-name">Verified Instagram Account</div>
-                  <div class="product-meta">
-                    <span class="product-price">$19.99</span>
-                    <span class="product-rating">
-                      <i class="fas fa-star"></i>
-                      4.9
-                    </span>
-                  </div>
-                </div>
-              </div>
-            <% } %>
-          </div>
-        </div>
-
-        <!-- Gmail Category -->
-        <div class="category-card">
-          <div class="category-header">
-            <div class="category-info">
-              <div class="category-icon">
-                <i class="fas fa-envelope"></i>
-              </div>
-              <div class="category-details">
-                <h3>Gmail Accounts</h3>
-                <div class="category-count">
-                  <% if (productsByCategory && productsByCategory.GMail) { %>
-                    <%= productsByCategory.GMail.length %> products
-                  <% } else { %>
-                    12+ products
-                  <% } %>
-                </div>
-              </div>
-            </div>
-            <a href="/products?category=Gmail" class="see-all-btn">
-              See All <i class="fas fa-arrow-right"></i>
-            </a>
-          </div>
-
-          <div class="products-list">
-            <% if (productsByCategory && productsByCategory.GMail && productsByCategory.GMail.length > 0) { %>
-              <% productsByCategory.GMail.slice(0, 4).forEach(product => { %>
-                <% if (product.status === 'active') { %>
-                  <a href="/product/<%= product.sellerId %>/<%= product.id %>" class="product-item">
-                    <div class="product-avatar">
+                    <% } else if (product.itemCategory === 'GMail') { %>
                       <i class="fas fa-envelope"></i>
-                    </div>
-                    <div class="product-details">
-                      <div class="product-name"><%= product.name %></div>
-                      <div class="product-meta">
-                        <span class="product-price">$<%= product.price %></span>
-                        <span class="product-rating">
-                          <i class="fas fa-star"></i>
-                          <% if (product.reviews && product.reviews.length > 0) { %>
-                            <% const avgRating = product.reviews.reduce((sum, review) => sum + review.rating, 0) / product.reviews.length %>
-                            <%= avgRating.toFixed(1) %>
-                          <% } else { %>
-                            4.7
-                          <% } %>
-                        </span>
-                      </div>
-                    </div>
-                  </a>
-                <% } %>
-              <% }); %>
-            <% } else { %>
-              <div class="product-item">
-                <div class="product-avatar">
-                  <i class="fas fa-envelope"></i>
-                </div>
-                <div class="product-details">
-                  <div class="product-name">Premium Gmail Account</div>
-                  <div class="product-meta">
-                    <span class="product-price">$8.99</span>
-                    <span class="product-rating">
-                      <i class="fas fa-star"></i>
-                      4.8
-                    </span>
-                  </div>
-                </div>
-              </div>
-            <% } %>
-          </div>
-        </div>
-      </div>
-
-      <!-- ================= TOP SELLING PRODUCTS GRID ================== -->
-      <div class="top-products-section">
-        <div class="section-header" style="margin-bottom: 2rem;">
-          <h2 class="section-title" style="font-size: 1.75rem;">Featured Products</h2>
-          <p class="section-subtitle">Browse our most popular digital products</p>
-        </div>
-
-        <div class="top-products-grid">
-          <% if (productsByCategory) { %>
-            <% 
-              // Collect all products from all categories
-              let allProducts = [];
-              Object.values(productsByCategory).forEach(products => {
-                if (Array.isArray(products)) {
-                  allProducts = allProducts.concat(products.filter(p => p && p.status === 'active'));
-                }
-              });
-              
-              // Sort by sold count (descending) and take top 8
-              allProducts.sort((a, b) => (b.soldCount || 0) - (a.soldCount || 0));
-              const topProducts = allProducts.slice(0, 8);
-            %>
-
-            <% if (topProducts.length > 0) { %>
-              <% topProducts.forEach(product => { %>
-                <div class="top-product-card">
-                  <div class="product-image-container">
-                    <div class="product-category-icon">
-                      <% if (product.itemCategory === 'Instagram') { %>
-                        <i class="fab fa-instagram"></i>
-                      <% } else if (product.itemCategory === 'GMail') { %>
-                        <i class="fas fa-envelope"></i>
-                      <% } else { %>
-                        <i class="fas fa-shopping-bag"></i>
-                      <% } %>
-                    </div>
-                    <% if (product.images && product.images.length > 0) { %>
-                      <img src="/uploads/<%= product.images[0] %>" alt="<%= product.name %>" class="product-image">
+                    <% } else if (product.itemCategory === 'Facebook') { %>
+                      <i class="fab fa-facebook"></i>
+                    <% } else if (product.itemCategory === 'YouTube') { %>
+                      <i class="fab fa-youtube"></i>
+                    <% } else { %>
+                      <i class="fas fa-shopping-bag"></i>
                     <% } %>
                   </div>
-
-                  <div class="product-content">
-                    <h4 class="product-title"><%= product.name %></h4>
-                    <p class="product-description">
-                      <% if (product.shortDescription) { %>
-                        <%= product.shortDescription.length > 60 ? product.shortDescription.substring(0, 60) + '...' : product.shortDescription %>
+                  <% if (product.images && product.images.length > 0) { %>
+                    <img src="/uploads/<%= product.images[0] %>" alt="<%= product.name %>" class="product-image">
+                  <% } else { %>
+                    <div class="product-image-placeholder">
+                      <% if (product.itemCategory === 'Instagram') { %>
+                        <i class="fab fa-instagram" style="font-size: 2rem; color: #E4405F;"></i>
+                      <% } else if (product.itemCategory === 'GMail') { %>
+                        <i class="fas fa-envelope" style="font-size: 2rem; color: #EA4335;"></i>
+                      <% } else if (product.itemCategory === 'Facebook') { %>
+                        <i class="fab fa-facebook" style="font-size: 2rem; color: #1877F2;"></i>
+                      <% } else if (product.itemCategory === 'YouTube') { %>
+                        <i class="fab fa-youtube" style="font-size: 2rem; color: #FF0000;"></i>
                       <% } else { %>
-                        Premium digital product
+                        <i class="fas fa-shopping-bag" style="font-size: 2rem; color: #667eea;"></i>
                       <% } %>
-                    </p>
-
-                    <div class="product-footer">
-                      <div class="product-price-rating">
-                        <span class="price">$<%= product.price %></span>
-                        <div class="rating">
-                          <i class="fas fa-star"></i>
-                          <% if (product.reviews && product.reviews.length > 0) { %>
-                            <% const avgRating = product.reviews.reduce((sum, review) => sum + review.rating, 0) / product.reviews.length %>
-                            <%= avgRating.toFixed(1) %>
-                          <% } else { %>
-                            4.8
-                          <% } %>
-                        </div>
-                      </div>
-
-                      <div class="product-actions">
-                        <a href="/store/<%= product.sellerId %>" class="visit-store-btn">
-                          <i class="fas fa-store"></i>
-                          Store
-                        </a>
-                        <a href="/product/<%= product.sellerId %>/<%= product.id %>" class="view-product-btn">
-                          View
-                        </a>
-                      </div>
                     </div>
-                  </div>
+                  <% } %>
                 </div>
-              <% }); %>
-            <% } else { %>
-              <!-- Demo products when no real products exist -->
-              <div class="top-product-card">
-                <div class="product-image-container">
-                  <div class="product-category-icon">
-                    <i class="fab fa-instagram"></i>
-                  </div>
-                </div>
+
                 <div class="product-content">
-                  <h4 class="product-title">Verified Instagram Account</h4>
-                  <p class="product-description">Premium Instagram account with 5K followers</p>
-                  <div class="product-footer">
-                    <div class="product-price-rating">
-                      <span class="price">$19.99</span>
-                      <div class="rating">
-                        <i class="fas fa-star"></i>
-                        4.9
-                      </div>
+                  <div class="product-store-info" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                    <div class="store-avatar" style="width: 24px; height: 24px; border-radius: 50%; background: var(--gradient); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: white;">
+                      <i class="fas fa-store"></i>
                     </div>
-                    <div class="product-actions">
-                      <a href="/stores" class="visit-store-btn">
-                        <i class="fas fa-store"></i>
-                        Store
-                      </a>
-                      <a href="/products" class="view-product-btn">
-                        View
-                      </a>
-                    </div>
+                    <span style="font-size: 0.85rem; color: #64748b; font-weight: 500;"><%= product.storeName || 'Premium Store' %></span>
                   </div>
-                </div>
-              </div>
 
-              <div class="top-product-card">
-                <div class="product-image-container">
-                  <div class="product-category-icon">
-                    <i class="fas fa-envelope"></i>
-                  </div>
-                </div>
-                <div class="product-content">
-                  <h4 class="product-title">Premium Gmail Account</h4>
-                  <p class="product-description">Verified Gmail account with phone verification</p>
-                  <div class="product-footer">
-                    <div class="product-price-rating">
-                      <span class="price">$8.99</span>
-                      <div class="rating">
-                        <i class="fas fa-star"></i>
+                  <h4 class="product-title"><%= product.name %></h4>
+                  <p class="product-description">
+                    <% if (product.shortDescription) { %>
+                      <%= product.shortDescription.length > 80 ? product.shortDescription.substring(0, 80) + '...' : product.shortDescription %>
+                    <% } else if (product.description) { %>
+                      <%= product.description.length > 80 ? product.description.substring(0, 80) + '...' : product.description %>
+                    <% } else { %>
+                      Premium digital product with instant delivery
+                    <% } %>
+                  </p>
+
+                  <div class="product-stats" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                    <div class="sales-count" style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.85rem; color: #059669; font-weight: 600;">
+                      <i class="fas fa-shopping-cart"></i>
+                      <%= product.soldCount || 0 %> sold
+                    </div>
+                    <div class="product-rating" style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.85rem; color: #64748b;">
+                      <i class="fas fa-star" style="color: #f59e0b;"></i>
+                      <% if (product.reviews && product.reviews.length > 0) { %>
+                        <% const avgRating = product.reviews.reduce((sum, review) => sum + review.rating, 0) / product.reviews.length %>
+                        <%= avgRating.toFixed(1) %>
+                      <% } else { %>
                         4.8
-                      </div>
-                    </div>
-                    <div class="product-actions">
-                      <a href="/stores" class="visit-store-btn">
-                        <i class="fas fa-store"></i>
-                        Store
-                      </a>
-                      <a href="/products" class="view-product-btn">
-                        View
-                      </a>
+                      <% } %>
                     </div>
                   </div>
-                </div>
-              </div>
 
-              <div class="top-product-card">
-                <div class="product-image-container">
-                  <div class="product-category-icon">
-                    <i class="fab fa-facebook"></i>
-                  </div>
-                </div>
-                <div class="product-content">
-                  <h4 class="product-title">Facebook Business Page</h4>
-                  <p class="product-description">Established Facebook page with 1K followers</p>
                   <div class="product-footer">
                     <div class="product-price-rating">
-                      <span class="price">$25.99</span>
-                      <div class="rating">
-                        <i class="fas fa-star"></i>
-                        4.7
+                      <div class="price-display">
+                        <span class="price-usd">$<%= product.price %></span>
+                        <span class="price-rub">₽<%= Math.round(product.price * 81) %></span>
                       </div>
                     </div>
-                    <div class="product-actions">
-                      <a href="/stores" class="visit-store-btn">
-                        <i class="fas fa-store"></i>
-                        Store
-                      </a>
-                      <a href="/products" class="view-product-btn">
-                        View
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
-              <div class="top-product-card">
-                <div class="product-image-container">
-                  <div class="product-category-icon">
-                    <i class="fab fa-twitter"></i>
-                  </div>
-                </div>
-                <div class="product-content">
-                  <h4 class="product-title">Twitter Verified Account</h4>
-                  <p class="product-description">Blue check Twitter account with followers</p>
-                  <div class="product-footer">
-                    <div class="product-price-rating">
-                      <span class="price">$15.99</span>
-                      <div class="rating">
-                        <i class="fas fa-star"></i>
-                        4.6
-                      </div>
-                    </div>
                     <div class="product-actions">
-                      <a href="/stores" class="visit-store-btn">
+                      <a href="/store/<%= product.sellerId %>" class="visit-store-btn" title="Visit Store">
                         <i class="fas fa-store"></i>
-                        Store
                       </a>
-                      <a href="/products" class="view-product-btn">
-                        View
+                      <a href="/product/<%= product.sellerId %>/<%= product.id %>" class="view-product-btn">
+                        View Details
                       </a>
                     </div>
                   </div>
                 </div>
               </div>
-            <% } %>
+            <% }); %>
+          <% } else { %>
+            <!-- Demo products when no real products exist -->
+            <div class="top-selling-product-card" data-category="Instagram" data-price="19.99" data-sales="120" data-name="verified instagram account" data-store="premium digital accounts">
+              <div class="bestseller-badge" style="position: absolute; top: 1rem; right: 1rem; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 700; z-index: 2;">
+                🏆 #1 Best Seller
+              </div>
+              <div class="product-image-container">
+                <div class="product-category-icon">
+                  <i class="fab fa-instagram"></i>
+                </div>
+              </div>
+              <div class="product-content">
+                <div class="product-store-info" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                  <div class="store-avatar" style="width: 24px; height: 24px; border-radius: 50%; background: var(--gradient); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: white;">
+                    <i class="fas fa-store"></i>
+                  </div>
+                  <span style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Premium Digital Accounts</span>
+                </div>
+                <h4 class="product-title">Verified Instagram Account - 5K Followers</h4>
+                <p class="product-description">High-quality Instagram account with 5K real followers from various demographics. Perfect for business marketing.</p>
+                <div class="product-stats" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                  <div class="sales-count" style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.85rem; color: #059669; font-weight: 600;">
+                    <i class="fas fa-shopping-cart"></i>
+                    120 sold
+                  </div>
+                  <div class="product-rating" style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.85rem; color: #64748b;">
+                    <i class="fas fa-star" style="color: #f59e0b;"></i>
+                    4.9
+                  </div>
+                </div>
+                <div class="product-footer">
+                  <div class="product-price-rating">
+                    <div class="price-display">
+                      <span class="price-usd">$19.99</span>
+                      <span class="price-rub">₽1619</span>
+                    </div>
+                  </div>
+                  <div class="product-actions">
+                    <a href="/stores" class="visit-store-btn">
+                      <i class="fas fa-store"></i>
+                    </a>
+                    <a href="/products" class="view-product-btn">
+                      View Details
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="top-selling-product-card" data-category="GMail" data-price="8.99" data-sales="95" data-name="premium gmail account" data-store="email solutions">
+              <div class="top-seller-badge" style="position: absolute; top: 1rem; right: 1rem; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 700; z-index: 2;">
+                🔥 Top Seller
+              </div>
+              <div class="product-image-container">
+                <div class="product-category-icon">
+                  <i class="fas fa-envelope"></i>
+                </div>
+              </div>
+              <div class="product-content">
+                <div class="product-store-info" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                  <div class="store-avatar" style="width: 24px; height: 24px; border-radius: 50%; background: var(--gradient); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: white;">
+                    <i class="fas fa-store"></i>
+                  </div>
+                  <span style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Email Solutions</span>
+                </div>
+                <h4 class="product-title">Premium Gmail Account</h4>
+                <p class="product-description">Verified Gmail account with phone verification and recovery email. Perfect for business use.</p>
+                <div class="product-stats" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                  <div class="sales-count" style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.85rem; color: #059669; font-weight: 600;">
+                    <i class="fas fa-shopping-cart"></i>
+                    95 sold
+                  </div>
+                  <div class="product-rating" style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.85rem; color: #64748b;">
+                    <i class="fas fa-star" style="color: #f59e0b;"></i>
+                    4.8
+                  </div>
+                </div>
+                <div class="product-footer">
+                  <div class="product-price-rating">
+                    <div class="price-display">
+                      <span class="price-usd">$8.99</span>
+                      <span class="price-rub">₽728</span>
+                    </div>
+                  </div>
+                  <div class="product-actions">
+                    <a href="/stores" class="visit-store-btn">
+                      <i class="fas fa-store"></i>
+                    </a>
+                    <a href="/products" class="view-product-btn">
+                      View Details
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="top-selling-product-card" data-category="Facebook" data-price="25.99" data-sales="78" data-name="facebook business page" data-store="social media pro">
+              <div class="top-seller-badge" style="position: absolute; top: 1rem; right: 1rem; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 700; z-index: 2;">
+                🔥 Top Seller
+              </div>
+              <div class="product-image-container">
+                <div class="product-category-icon">
+                  <i class="fab fa-facebook"></i>
+                </div>
+              </div>
+              <div class="product-content">
+                <div class="product-store-info" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                  <div class="store-avatar" style="width: 24px; height: 24px; border-radius: 50%; background: var(--gradient); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: white;">
+                    <i class="fas fa-store"></i>
+                  </div>
+                  <span style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Social Media Pro</span>
+                </div>
+                <h4 class="product-title">Facebook Business Page - 1K Followers</h4>
+                <p class="product-description">Established Facebook business page with 1K engaged followers. Ready for marketing campaigns.</p>
+                <div class="product-stats" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                  <div class="sales-count" style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.85rem; color: #059669; font-weight: 600;">
+                    <i class="fas fa-shopping-cart"></i>
+                    78 sold
+                  </div>
+                  <div class="product-rating" style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.85rem; color: #64748b;">
+                    <i class="fas fa-star" style="color: #f59e0b;"></i>
+                    4.7
+                  </div>
+                </div>
+                <div class="product-footer">
+                  <div class="product-price-rating">
+                    <div class="price-display">
+                      <span class="price-usd">$25.99</span>
+                      <span class="price-rub">₽2100</span>
+                    </div>
+                  </div>
+                  <div class="product-actions">
+                    <a href="/stores" class="visit-store-btn">
+                      <i class="fas fa-store"></i>
+                    </a>
+                    <a href="/products" class="view-product-btn">
+                      View Details
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="top-selling-product-card" data-category="YouTube" data-price="49.99" data-sales="45" data-name="youtube channel" data-store="content creators">
+              <div class="product-image-container">
+                <div class="product-category-icon">
+                  <i class="fab fa-youtube"></i>
+                </div>
+              </div>
+              <div class="product-content">
+                <div class="product-store-info" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                  <div class="store-avatar" style="width: 24px; height: 24px; border-radius: 50%; background: var(--gradient); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: white;">
+                    <i class="fas fa-store"></i>
+                  </div>
+                  <span style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Content Creators</span>
+                </div>
+                <h4 class="product-title">YouTube Channel - 500 Subscribers</h4>
+                <p class="product-description">Growing YouTube channel with 500 subscribers and established content niche. Monetization ready.</p>
+                <div class="product-stats" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                  <div class="sales-count" style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.85rem; color: #059669; font-weight: 600;">
+                    <i class="fas fa-shopping-cart"></i>
+                    45 sold
+                  </div>
+                  <div class="product-rating" style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.85rem; color: #64748b;">
+                    <i class="fas fa-star" style="color: #f59e0b;"></i>
+                    4.6
+                  </div>
+                </div>
+                <div class="product-footer">
+                  <div class="product-price-rating">
+                    <div class="price-display">
+                      <span class="price-usd">$49.99</span>
+                      <span class="price-rub">₽4049</span>
+                    </div>
+                  </div>
+                  <div class="product-actions">
+                    <a href="/stores" class="visit-store-btn">
+                      <i class="fas fa-store"></i>
+                    </a>
+                    <a href="/products" class="view-product-btn">
+                      View Details
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="top-selling-product-card" data-category="Instagram" data-price="34.99" data-sales="32" data-name="business instagram" data-store="brand solutions">
+              <div class="product-image-container">
+                <div class="product-category-icon">
+                  <i class="fab fa-instagram"></i>
+                </div>
+              </div>
+              <div class="product-content">
+                <div class="product-store-info" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                  <div class="store-avatar" style="width: 24px; height: 24px; border-radius: 50%; background: var(--gradient); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: white;">
+                    <i class="fas fa-store"></i>
+                  </div>
+                  <span style="font-size: 0.85rem; color: #64748b; font-weight: 500;">Brand Solutions</span>
+                </div>
+                <h4 class="product-title">Business Instagram - 10K Followers</h4>
+                <p class="product-description">Professional business Instagram account with 10K targeted followers and custom branding.</p>
+                <div class="product-stats" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                  <div class="sales-count" style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.85rem; color: #059669; font-weight: 600;">
+                    <i class="fas fa-shopping-cart"></i>
+                    32 sold
+                  </div>
+                  <div class="product-rating" style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.85rem; color: #64748b;">
+                    <i class="fas fa-star" style="color: #f59e0b;"></i>
+                    4.9
+                  </div>
+                </div>
+                <div class="product-footer">
+                  <div class="product-price-rating">
+                    <div class="price-display">
+                      <span class="price-usd">$34.99</span>
+                      <span class="price-rub">₽2834</span>
+                    </div>
+                  </div>
+                  <div class="product-actions">
+                    <a href="/stores" class="visit-store-btn">
+                      <i class="fas fa-store"></i>
+                    </a>
+                    <a href="/products" class="view-product-btn">
+                      View Details
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
           <% } %>
-        </div>
+        <% } %>
+      </div>
 
-        <!-- See All Products Button -->
-        <div style="text-align: center; margin-top: 3rem;">
-          <a href="/products" class="btn btn-primary" style="padding: 1.25rem 3rem; font-size: 1.1rem;">
-            <i class="fas fa-eye"></i>
-            See All Products
-          </a>
-        </div>
+      <!-- See All Products Button -->
+      <div style="text-align: center;">
+        <a href="/products" class="btn btn-primary" style="padding: 1.25rem 3rem; font-size: 1.1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 25px; color: white; text-decoration: none; display: inline-flex; align-items: center; gap: 0.75rem; box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3); transition: all 0.3s ease;">
+          <i class="fas fa-eye"></i>
+          <span>See All Products</span>
+        </a>
       </div>
     </div>
   </section>
@@ -1778,24 +2039,8 @@
           <div class="feature-icon">
             <i class="fas fa-shield-alt"></i>
           </div>
-          <h3 class="feature-title">Secure Transactions</h3>
-          <p class="feature-description">All transactions are protected with advanced security measures and escrow system to ensure your money is safe.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon">
-            <i class="fas fa-check-circle"></i>
-          </div>
-          <h3 class="feature-title">Verified Products</h3>
-          <p class="feature-description">Every product goes through our verification process to ensure quality and authenticity before being listed.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon">
-            <i class="fas fa-headset"></i>
-          </div>
-          <h3 class="feature-title">24/7 Support</h3>
-          <p class="feature-description">Our dedicated support team is available around the clock to help you with any questions or issues.</p>
+          <h3 class="feature-title">Secure & Safe</h3>
+          <p class="feature-description">Advanced encryption, escrow protection, and verified sellers ensure your transactions are completely secure.</p>
         </div>
 
         <div class="feature-card">
@@ -1803,15 +2048,7 @@
             <i class="fas fa-rocket"></i>
           </div>
           <h3 class="feature-title">Instant Delivery</h3>
-          <p class="feature-description">Get instant access to your digital products immediately after successful payment confirmation.</p>
-        </div>
-
-        <div class="feature-card">
-          <div class="feature-icon">
-            <i class="fas fa-users"></i>
-          </div>
-          <h3 class="feature-title">Trusted Community</h3>
-          <p class="feature-description">Join thousands of satisfied customers and verified sellers in our growing digital marketplace community.</p>
+          <p class="feature-description">Get immediate access to your digital products after payment. No waiting, no delays, instant gratification.</p>
         </div>
 
         <div class="feature-card">
@@ -1819,7 +2056,381 @@
             <i class="fas fa-award"></i>
           </div>
           <h3 class="feature-title">Quality Guarantee</h3>
-          <p class="feature-description">We stand behind every product with our quality guarantee. If you're not satisfied, get your money back.</p>
+          <p class="feature-description">100% satisfaction guarantee. If you're not happy with your purchase, get your money back.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="fas fa-headset"></i>
+          </div>
+          <h3 class="feature-title">24/7 Support</h3>
+          <p class="feature-description">Round-the-clock customer support via live chat, email, and multiple communication channels.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TRUST INDICATORS & STATS ================== -->
+  <section class="trust-section" style="padding: 80px 0; background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);">
+    <div class="container">
+      <!-- Live Stats Dashboard -->
+      <div class="live-stats" style="text-align: center; margin-bottom: 4rem;">
+        <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 2rem;">Live Marketplace Stats</h3>
+        <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 2rem; max-width: 800px; margin: 0 auto;">
+          <div class="live-stat-item" style="background: white; padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid var(--border);">
+            <div class="stat-number" style="font-size: 2rem; font-weight: 800; color: var(--primary); margin-bottom: 0.5rem;">1,247</div>
+            <div class="stat-label" style="color: var(--text-secondary); font-weight: 600; font-size: 0.9rem;">Users Online</div>
+            <div style="width: 100%; height: 4px; background: #e2e8f0; border-radius: 2px; margin-top: 0.5rem; overflow: hidden;">
+              <div style="width: 70%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 2px; animation: pulse 2s infinite;"></div>
+            </div>
+          </div>
+          <div class="live-stat-item" style="background: white; padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid var(--border);">
+            <div class="stat-number" style="font-size: 2rem; font-weight: 800; color: var(--success); margin-bottom: 0.5rem;">47</div>
+            <div class="stat-label" style="color: var(--text-secondary); font-weight: 600; font-size: 0.9rem;">Sales Today</div>
+            <div style="width: 100%; height: 4px; background: #e2e8f0; border-radius: 2px; margin-top: 0.5rem; overflow: hidden;">
+              <div style="width: 85%; height: 100%; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 2px; animation: pulse 2s infinite 0.5s;"></div>
+            </div>
+          </div>
+          <div class="live-stat-item" style="background: white; padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid var(--border);">
+            <div class="stat-number" style="font-size: 2rem; font-weight: 800; color: var(--warning); margin-bottom: 0.5rem;">12</div>
+            <div class="stat-label" style="color: var(--text-secondary); font-weight: 600; font-size: 0.9rem;">New Sellers</div>
+            <div style="width: 100%; height: 4px; background: #e2e8f0; border-radius: 2px; margin-top: 0.5rem; overflow: hidden;">
+              <div style="width: 60%; height: 100%; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 2px; animation: pulse 2s infinite 1s;"></div>
+            </div>
+          </div>
+          <div class="live-stat-item" style="background: white; padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid var(--border);">
+            <div class="stat-number" style="font-size: 2rem; font-weight: 800; color: var(--accent); margin-bottom: 0.5rem;">2min</div>
+            <div class="stat-label" style="color: var(--text-secondary); font-weight: 600; font-size: 0.9rem;">Avg Response</div>
+            <div style="width: 100%; height: 4px; background: #e2e8f0; border-radius: 2px; margin-top: 0.5rem; overflow: hidden;">
+              <div style="width: 95%; height: 100%; background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); border-radius: 2px; animation: pulse 2s infinite 1.5s;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Security Badges & Trust Signals -->
+      <div class="trust-badges" style="text-align: center; margin-bottom: 4rem;">
+        <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 2rem;">Trusted & Secure</h3>
+        <div class="badges-grid" style="display: flex; justify-content: center; align-items: center; gap: 3rem; flex-wrap: wrap;">
+          <div class="badge-item" style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
+            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);">
+              <i class="fas fa-lock"></i>
+            </div>
+            <span style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;">SSL Encrypted</span>
+          </div>
+          <div class="badge-item" style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
+            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);">
+              <i class="fas fa-shield-alt"></i>
+            </div>
+            <span style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;">Escrow Protection</span>
+          </div>
+          <div class="badge-item" style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
+            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);">
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <span style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;">Verified Sellers</span>
+          </div>
+          <div class="badge-item" style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
+            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);">
+              <i class="fas fa-clock"></i>
+            </div>
+            <span style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;">24/7 Support</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Customer Testimonials -->
+      <div class="testimonials-section">
+        <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); text-align: center; margin-bottom: 2rem;">What Our Customers Say</h3>
+        <div class="testimonials-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+          <div class="testimonial-card" style="background: white; padding: 2rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid var(--border); position: relative;">
+            <div style="position: absolute; top: 1rem; right: 1rem; color: #f59e0b; font-size: 1.2rem;">
+              <i class="fas fa-quote-right"></i>
+            </div>
+            <p style="color: var(--text-secondary); font-style: italic; line-height: 1.6; margin-bottom: 1.5rem;">"Amazing platform! Got my Instagram account instantly after payment. The quality is exactly as described. Highly recommend!"</p>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <div style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">SM</div>
+              <div>
+                <div style="font-weight: 600; color: var(--text-primary);">Sarah Mitchell</div>
+                <div style="color: var(--text-muted); font-size: 0.9rem;">Verified Buyer</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="testimonial-card" style="background: white; padding: 2rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid var(--border); position: relative;">
+            <div style="position: absolute; top: 1rem; right: 1rem; color: #f59e0b; font-size: 1.2rem;">
+              <i class="fas fa-quote-right"></i>
+            </div>
+            <p style="color: var(--text-secondary); font-style: italic; line-height: 1.6; margin-bottom: 1.5rem;">"Been selling on Hsello for 6 months now. The platform is secure, payments are fast, and customer support is excellent."</p>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <div style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #10b981 0%, #059669 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">JD</div>
+              <div>
+                <div style="font-weight: 600; color: var(--text-primary);">John Davis</div>
+                <div style="color: var(--text-muted); font-size: 0.9rem;">Verified Seller</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="testimonial-card" style="background: white; padding: 2rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid var(--border); position: relative;">
+            <div style="position: absolute; top: 1rem; right: 1rem; color: #f59e0b; font-size: 1.2rem;">
+              <i class="fas fa-quote-right"></i>
+            </div>
+            <p style="color: var(--text-secondary); font-style: italic; line-height: 1.6; margin-bottom: 1.5rem;">"Purchased multiple Gmail accounts for my business. All working perfectly and support was very helpful when I had questions."</p>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <div style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">LC</div>
+              <div>
+                <div style="font-weight: 600; color: var(--text-primary);">Lisa Chen</div>
+                <div style="color: var(--text-muted); font-size: 0.9rem;">Business Owner</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= HOW IT WORKS ================== -->
+  <section class="how-it-works-section" style="padding: 80px 0; background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">How It Works</h2>
+        <p class="section-subtitle">Get premium digital products in 3 simple steps</p>
+      </div>
+
+      <div class="how-it-works-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 3rem; margin-top: 4rem;">
+        <!-- Step 1 -->
+        <div class="step-card" style="text-align: center; position: relative;">
+          <div class="step-number" style="width: 80px; height: 80px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem; font-weight: 700; margin: 0 auto 2rem; box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);">
+            1
+          </div>
+          <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1rem;">Browse & Select</h3>
+          <p style="color: var(--text-secondary); line-height: 1.6; font-size: 1rem;">Explore thousands of verified digital products from trusted sellers. Use our advanced filters to find exactly what you need.</p>
+          <div style="position: absolute; top: 40px; right: -20px; color: #e2e8f0; font-size: 2rem;">→</div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step-card" style="text-align: center; position: relative;">
+          <div class="step-number" style="width: 80px; height: 80px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem; font-weight: 700; margin: 0 auto 2rem; box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);">
+            2
+          </div>
+          <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1rem;">Secure Payment</h3>
+          <p style="color: var(--text-secondary); line-height: 1.6; font-size: 1rem;">Pay safely with cryptocurrency or other secure methods. Your payment is held in escrow until you confirm delivery.</p>
+          <div style="position: absolute; top: 40px; right: -20px; color: #e2e8f0; font-size: 2rem;">→</div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="step-card" style="text-align: center;">
+          <div class="step-number" style="width: 80px; height: 80px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem; font-weight: 700; margin: 0 auto 2rem; box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);">
+            3
+          </div>
+          <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1rem;">Instant Delivery</h3>
+          <p style="color: var(--text-secondary); line-height: 1.6; font-size: 1rem;">Receive your digital product instantly after payment confirmation. Access your files immediately and start using them right away.</p>
+        </div>
+      </div>
+
+      <!-- Quick Benefits -->
+      <div class="quick-benefits" style="margin-top: 4rem; text-align: center;">
+        <div class="benefits-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; max-width: 1000px; margin: 0 auto;">
+          <div class="benefit-item" style="display: flex; align-items: center; gap: 1rem; justify-content: center;">
+            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">
+              <i class="fas fa-shield-alt"></i>
+            </div>
+            <div style="text-align: left;">
+              <div style="font-weight: 700; color: var(--text-primary);">100% Secure</div>
+              <div style="font-size: 0.9rem; color: var(--text-secondary);">Escrow Protection</div>
+            </div>
+          </div>
+
+          <div class="benefit-item" style="display: flex; align-items: center; gap: 1rem; justify-content: center;">
+            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">
+              <i class="fas fa-rocket"></i>
+            </div>
+            <div style="text-align: left;">
+              <div style="font-weight: 700; color: var(--text-primary);">Instant Access</div>
+              <div style="font-size: 0.9rem; color: var(--text-secondary);">Immediate Delivery</div>
+            </div>
+          </div>
+
+          <div class="benefit-item" style="display: flex; align-items: center; gap: 1rem; justify-content: center;">
+            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">
+              <i class="fas fa-undo-alt"></i>
+            </div>
+            <div style="text-align: left;">
+              <div style="font-weight: 700; color: var(--text-primary);">Money Back</div>
+              <div style="font-size: 0.9rem; color: var(--text-secondary);">30-Day Guarantee</div>
+            </div>
+          </div>
+
+          <div class="benefit-item" style="display: flex; align-items: center; gap: 1rem; justify-content: center;">
+            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">
+              <i class="fas fa-headset"></i>
+            </div>
+            <div style="text-align: left;">
+              <div style="font-weight: 700; color: var(--text-primary);">24/7 Support</div>
+              <div style="font-size: 0.9rem; color: var(--text-secondary);">Always Available</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SUCCESS STORIES ================== -->
+  <section class="success-stories-section" style="padding: 80px 0; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Success Stories</h2>
+        <p class="section-subtitle">Real customers achieving real results</p>
+      </div>
+
+      <div class="success-stories-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem; margin-top: 4rem;">
+        <!-- Success Story 1 -->
+        <div class="success-card" style="background: white; border-radius: 16px; padding: 2rem; box-shadow: 0 8px 32px rgba(0,0,0,0.08); border: 1px solid var(--border); position: relative; overflow: hidden;">
+          <div style="position: absolute; top: 0; right: 0; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 0.5rem 1rem; border-radius: 0 16px 0 16px; font-size: 0.8rem; font-weight: 600;">
+            SUCCESS STORY
+          </div>
+          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; font-weight: 600;">
+              MJ
+            </div>
+            <div>
+              <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0;">Marketing Agency</h4>
+              <p style="color: var(--text-secondary); margin: 0.25rem 0 0 0; font-size: 0.9rem;">Saved $2,400/month on social media accounts</p>
+            </div>
+          </div>
+          <blockquote style="color: var(--text-secondary); font-style: italic; line-height: 1.6; margin-bottom: 1.5rem; position: relative;">
+            "We were spending $2,400/month on social media management tools. Now we save 70% by buying verified accounts directly from Hsello. Our Instagram engagement increased by 300%!"
+          </blockquote>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <div style="color: #10b981; font-weight: 700; font-size: 1.2rem;">$2,400</div>
+            <div style="color: var(--text-secondary); font-size: 0.9rem;">monthly savings</div>
+          </div>
+        </div>
+
+        <!-- Success Story 2 -->
+        <div class="success-card" style="background: white; border-radius: 16px; padding: 2rem; box-shadow: 0 8px 32px rgba(0,0,0,0.08); border: 1px solid var(--border); position: relative; overflow: hidden;">
+          <div style="position: absolute; top: 0; right: 0; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 0.5rem 1rem; border-radius: 0 16px 0 16px; font-size: 0.8rem; font-weight: 600;">
+            SUCCESS STORY
+          </div>
+          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #10b981 0%, #059669 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; font-weight: 600;">
+              GS
+            </div>
+            <div>
+              <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0;">Gaming Store Owner</h4>
+              <p style="color: var(--text-secondary); margin: 0.25rem 0 0 0; font-size: 0.9rem;">Started making $800/week selling gaming accounts</p>
+            </div>
+          </div>
+          <blockquote style="color: var(--text-secondary); font-style: italic; line-height: 1.6; margin-bottom: 1.5rem; position: relative;">
+            "I started with just $50 investment and now make $800/week selling verified gaming accounts. The platform is secure and the community is amazing!"
+          </blockquote>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <div style="color: #f59e0b; font-weight: 700; font-size: 1.2rem;">$800/week</div>
+            <div style="color: var(--text-secondary); font-size: 0.9rem;">income generated</div>
+          </div>
+        </div>
+
+        <!-- Success Story 3 -->
+        <div class="success-card" style="background: white; border-radius: 16px; padding: 2rem; box-shadow: 0 8px 32px rgba(0,0,0,0.08); border: 1px solid var(--border); position: relative; overflow: hidden;">
+          <div style="position: absolute; top: 0; right: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.5rem 1rem; border-radius: 0 16px 0 16px; font-size: 0.8rem; font-weight: 600;">
+            SUCCESS STORY
+          </div>
+          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; font-weight: 600;">
+              TC
+            </div>
+            <div>
+              <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0;">Content Creator</h4>
+              <p style="color: var(--text-secondary); margin: 0.25rem 0 0 0; font-size: 0.9rem;">Built audience 5x faster with verified accounts</p>
+            </div>
+          </div>
+          <blockquote style="color: var(--text-secondary); font-style: italic; line-height: 1.6; margin-bottom: 1.5rem; position: relative;">
+            "As a content creator, growing my audience was taking forever. With verified Instagram and YouTube accounts from Hsello, I grew my following 5x faster!"
+          </blockquote>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <div style="color: #667eea; font-weight: 700; font-size: 1.2rem;">5x faster</div>
+            <div style="color: var(--text-secondary); font-size: 0.9rem;">audience growth</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Transactions Feed -->
+      <div class="recent-transactions" style="margin-top: 4rem;">
+        <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); text-align: center; margin-bottom: 2rem;">Recent Transactions</h3>
+        <div class="transactions-list" style="max-width: 600px; margin: 0 auto;">
+          <div class="transaction-item" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: white; border-radius: 12px; margin-bottom: 0.75rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--border);">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #10b981 0%, #059669 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 0.9rem;">
+                <i class="fab fa-instagram"></i>
+              </div>
+              <div>
+                <div style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;">Instagram Business Account</div>
+                <div style="color: var(--text-secondary); font-size: 0.8rem;">2 minutes ago</div>
+              </div>
+            </div>
+            <div style="font-weight: 700; color: #10b981;">$34.99</div>
+          </div>
+
+          <div class="transaction-item" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: white; border-radius: 12px; margin-bottom: 0.75rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--border);">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 0.9rem;">
+                <i class="fas fa-envelope"></i>
+              </div>
+              <div>
+                <div style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;">Premium Gmail Account</div>
+                <div style="color: var(--text-secondary); font-size: 0.8rem;">5 minutes ago</div>
+              </div>
+            </div>
+            <div style="font-weight: 700; color: #10b981;">$8.99</div>
+          </div>
+
+          <div class="transaction-item" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: white; border-radius: 12px; margin-bottom: 0.75rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--border);">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 0.9rem;">
+                <i class="fas fa-gamepad"></i>
+              </div>
+              <div>
+                <div style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;">Steam Gaming Account</div>
+                <div style="color: var(--text-secondary); font-size: 0.8rem;">8 minutes ago</div>
+              </div>
+            </div>
+            <div style="font-weight: 700; color: #10b981;">$49.99</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MONEY-BACK GUARANTEE BANNER ================== -->
+  <section class="guarantee-banner" style="padding: 40px 0; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-top: 3px solid #f59e0b; border-bottom: 3px solid #f59e0b;">
+    <div class="container">
+      <div class="guarantee-content" style="text-align: center; max-width: 800px; margin: 0 auto;">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 1rem;">
+          <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);">
+            <i class="fas fa-shield-alt"></i>
+          </div>
+          <div style="text-align: left;">
+            <h3 style="font-size: 1.8rem; font-weight: 800; color: #92400e; margin: 0; line-height: 1.2;">30-Day Money-Back Guarantee</h3>
+            <p style="color: #78350f; margin: 0.25rem 0 0 0; font-weight: 600;">100% Risk-Free Purchase</p>
+          </div>
+        </div>
+        <p style="font-size: 1.1rem; color: #92400e; line-height: 1.6; margin-bottom: 1.5rem; font-weight: 500;">
+          Not satisfied with your purchase? Get a full refund within 30 days, no questions asked.
+          We stand behind every product on our platform.
+        </p>
+        <div style="display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; font-size: 0.9rem; color: #92400e;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fas fa-check-circle" style="color: #10b981;"></i>
+            <span>Instant Refunds</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fas fa-check-circle" style="color: #10b981;"></i>
+            <span>No Hidden Fees</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fas fa-check-circle" style="color: #10b981;"></i>
+            <span>24/7 Support</span>
+          </div>
         </div>
       </div>
     </div>
@@ -1828,17 +2439,20 @@
   <!-- ================= CTA SECTION ================== -->
   <section class="cta-section">
     <div class="cta-content">
-      <h2 class="cta-title">Ready to Get Started?</h2>
-      <p class="cta-subtitle">Join thousands of users who trust Hsello for their digital needs</p>
+      <h2 class="cta-title">Start Saving Money Today</h2>
+      <p class="cta-subtitle">Join 25,000+ satisfied customers who save up to 70% on premium digital products</p>
       <div class="hero-cta">
         <a href="/signup" class="btn btn-primary">
-          <i class="fas fa-user-plus"></i>
-          Join Now - Free
+          <i class="fas fa-rocket"></i>
+          Get Started Free
         </a>
         <a href="/products" class="btn btn-secondary">
-          <i class="fas fa-search"></i>
-          Explore Products
+          <i class="fas fa-tags"></i>
+          View All Deals
         </a>
+      </div>
+      <div style="margin-top: 2rem; font-size: 0.9rem; color: rgba(255,255,255,0.8);">
+        <i class="fas fa-shield-alt"></i> 30-day money-back guarantee • Instant delivery • 24/7 support
       </div>
     </div>
   </section>
@@ -1992,5 +2606,194 @@
   </div>
 
   <script src="/js/script.js"></script>
+
+  <!-- Top Selling Products Search and Filter Script -->
+  <script>
+    let currentCategoryFilter = 'all';
+    let currentSortOption = 'sales';
+
+    function filterProducts() {
+      const searchTerm = document.getElementById('productSearch').value.toLowerCase();
+      const sortOption = document.getElementById('sortSelect').value;
+      const priceFilter = document.getElementById('priceFilter').value;
+
+      const productCards = document.querySelectorAll('.top-selling-product-card');
+      let visibleCount = 0;
+
+      // Convert NodeList to Array for sorting
+      const productsArray = Array.from(productCards);
+
+      // Filter products
+      productsArray.forEach(card => {
+        const productName = card.dataset.name || '';
+        const storeName = card.dataset.store || '';
+        const tags = card.dataset.tags || '';
+        const category = card.dataset.category || '';
+        const price = parseFloat(card.dataset.price || 0);
+        const sales = parseInt(card.dataset.sales || 0);
+
+        // Category filter
+        const categoryMatch = currentCategoryFilter === 'all' || category === currentCategoryFilter;
+
+        // Search filter
+        const searchMatch = !searchTerm ||
+          productName.includes(searchTerm) ||
+          storeName.includes(searchTerm) ||
+          tags.includes(searchTerm);
+
+        // Price filter
+        let priceMatch = true;
+        if (priceFilter !== 'all') {
+          const [min, max] = priceFilter.split('-').map(p => p === '+' ? Infinity : parseFloat(p));
+          priceMatch = price >= min && (max === Infinity ? true : price <= max);
+        }
+
+        // Show/hide based on filters
+        if (categoryMatch && searchMatch && priceMatch) {
+          card.style.display = 'block';
+          visibleCount++;
+        } else {
+          card.style.display = 'none';
+        }
+      });
+
+      // Sort visible products
+      const visibleProducts = productsArray.filter(card => card.style.display !== 'none');
+
+      // Sort based on selected option
+      visibleProducts.sort((a, b) => {
+        const aPrice = parseFloat(a.dataset.price || 0);
+        const bPrice = parseFloat(b.dataset.price || 0);
+        const aSales = parseInt(a.dataset.sales || 0);
+        const bSales = parseInt(b.dataset.sales || 0);
+
+        switch(sortOption) {
+          case 'price-low':
+            return aPrice - bPrice;
+          case 'price-high':
+            return bPrice - aPrice;
+          case 'sales':
+            return bSales - aSales;
+          case 'popularity':
+            return bSales - aSales; // Using sales as popularity proxy
+          case 'newest':
+            // For demo, we'll keep current order as newest
+            return 0;
+          default:
+            return bSales - aSales;
+        }
+      });
+
+      // Reorder DOM elements
+      const container = document.getElementById('topSellingProductsGrid');
+      visibleProducts.forEach(card => {
+        container.appendChild(card);
+      });
+
+      // Update filter tags visual state
+      updateFilterTags();
+    }
+
+    function setCategoryFilter(category) {
+      currentCategoryFilter = category;
+
+      // Update active filter tag
+      document.querySelectorAll('.filter-tag').forEach(tag => {
+        if (tag.dataset.filter === category) {
+          tag.classList.add('active');
+          tag.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+          tag.style.color = 'white';
+          tag.style.borderColor = 'transparent';
+        } else {
+          tag.classList.remove('active');
+          tag.style.background = 'white';
+          tag.style.color = '#64748b';
+          tag.style.borderColor = '#e2e8f0';
+        }
+      });
+
+      filterProducts();
+    }
+
+    function updateFilterTags() {
+      // Update visual feedback for active filters
+      const searchInput = document.getElementById('productSearch');
+      const sortSelect = document.getElementById('sortSelect');
+      const priceFilter = document.getElementById('priceFilter');
+
+      // Add visual feedback for active filters
+      if (searchInput.value.trim()) {
+        searchInput.style.borderColor = '#667eea';
+        searchInput.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+      } else {
+        searchInput.style.borderColor = '#e2e8f0';
+        searchInput.style.boxShadow = 'none';
+      }
+
+      if (priceFilter.value !== 'all') {
+        priceFilter.style.borderColor = '#667eea';
+        priceFilter.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+      } else {
+        priceFilter.style.borderColor = '#e2e8f0';
+        priceFilter.style.boxShadow = 'none';
+      }
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      // Set initial active filter
+      setCategoryFilter('all');
+
+      // Add input event listeners for real-time filtering
+      document.getElementById('productSearch').addEventListener('input', function() {
+        // Debounce search for better performance
+        clearTimeout(this.searchTimeout);
+        this.searchTimeout = setTimeout(filterProducts, 300);
+      });
+
+      // Add change listeners for select elements
+      document.getElementById('sortSelect').addEventListener('change', filterProducts);
+      document.getElementById('priceFilter').addEventListener('change', filterProducts);
+    });
+
+    // Add smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      });
+    });
+
+    // Handle store logo loading
+    document.addEventListener('DOMContentLoaded', function() {
+      const storeLogos = document.querySelectorAll('.store-logo[data-logo]');
+      storeLogos.forEach(logo => {
+        const logoPath = logo.getAttribute('data-logo');
+        if (logoPath && logoPath.trim() !== '') {
+          const img = new Image();
+          img.onload = function() {
+            logo.style.backgroundImage = `url('/uploads/${logoPath}')`;
+            logo.style.backgroundSize = 'cover';
+            logo.style.backgroundPosition = 'center';
+            logo.innerHTML = ''; // Remove text if image loads
+          };
+          img.onerror = function() {
+            // Keep the text if image fails to load
+            logo.innerHTML = logo.getAttribute('data-fallback') || logo.parentElement.querySelector('h4').textContent.charAt(0).toUpperCase();
+          };
+          img.src = `/uploads/${logoPath}`;
+        } else {
+          // No logo path, show text
+          logo.innerHTML = logo.parentElement.querySelector('h4').textContent.charAt(0).toUpperCase();
+        }
+      });
+    });
+  </script>
 </body>
 </html>

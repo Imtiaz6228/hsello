@@ -22,3 +22,6 @@ Crawl-delay: 1
 
 # Sitemap
 Sitemap: https://hsello.com/sitemap.xml
+Sitemap: https://hsello.com/sitemap-chatgpt.xml
+Sitemap: https://hsello.com/sitemap-grok.xml
+Sitemap: https://hsello.com/sitemap-llm.xml

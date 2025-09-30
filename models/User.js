@@ -40,6 +40,7 @@ const userSchema = new mongoose.Schema({
   // Store data (for approved sellers)
   store: {
     name: String,
+    slug: String, // SEO-friendly URL slug
     category: String,
     banner: String,
     logo: String,
@@ -51,6 +52,7 @@ const userSchema = new mongoose.Schema({
     items: [{
       id: { type: String, required: true },
       name: { type: String, required: true },
+      slug: String, // SEO-friendly URL slug
       seoTitle: String,
       metaDescription: String,
 

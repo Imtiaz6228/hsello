@@ -296,6 +296,7 @@ const SellerApplication = require('./models/SellerApplication');
 const WithdrawalRequest = require('./models/WithdrawalRequest');
 const Payment = require('./models/Payment');
 const AdminUser = require('./models/AdminUser');
+const Analytics = require('./models/Analytics');
 
 // Import Email Service
 const { sendEmailVerification } = require('./utils/emailService');
@@ -421,6 +422,92 @@ const nowPayments = {
     }
 };
 
+// Analytics tracking middleware
+app.use(async (req, res, next) => {
+    const startTime = Date.now();
+
+    // Skip analytics for static files, API calls, and admin routes
+    if (req.path.startsWith('/public/') ||
+        req.path.startsWith('/uploads/') ||
+        req.path.startsWith('/articles/') ||
+        req.path.startsWith('/api/') ||
+        req.path.startsWith('/webhooks/') ||
+        req.path.startsWith('/favicon.ico') ||
+        req.path.startsWith('/robots.txt') ||
+        req.path.startsWith('/sitemap.xml')) {
+        return next();
+    }
+
+    // Track the response
+    const originalSend = res.send;
+    res.send = function(data) {
+        const responseTime = Date.now() - startTime;
+
+        // Only track successful page loads (status 200)
+        if (res.statusCode === 200 && mongoose.connection.readyState === 1) {
+            try {
+                const Analytics = require('./models/Analytics');
+
+                // Detect bots
+                const userAgent = req.get('User-Agent') || '';
+                const isBot = /bot|crawl|spider|slurp|bing|googlebot|facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegram/i.test(userAgent);
+
+                // Get client IP
+                const ip = req.ip ||
+                          req.connection.remoteAddress ||
+                          req.socket.remoteAddress ||
+                          (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
+                          'unknown';
+
+                // Get session ID
+                const sessionId = req.sessionID || 'anonymous';
+
+                // Get referrer
+                const referrer = req.get('Referrer') || req.get('Referer') || '';
+
+                // Get date and hour
+                const now = new Date();
+                const date = now.toISOString().split('T')[0]; // YYYY-MM-DD
+                const hour = now.getHours();
+
+                // Check if user is logged in
+                const userId = req.session.user ? req.session.user.id : null;
+                const isLoggedIn = !!req.session.user;
+
+                // Create analytics record
+                const analyticsData = {
+                    page: req.path,
+                    ip: ip,
+                    userAgent: userAgent,
+                    sessionId: sessionId,
+                    method: req.method,
+                    statusCode: res.statusCode,
+                    responseTime: responseTime,
+                    referrer: referrer,
+                    date: date,
+                    hour: hour,
+                    isBot: isBot,
+                    userId: userId,
+                    isLoggedIn: isLoggedIn
+                };
+
+                // Save analytics data asynchronously (don't block response)
+                Analytics.create(analyticsData).catch(err => {
+                    console.warn('Analytics tracking error:', err.message);
+                });
+
+            } catch (error) {
+                console.warn('Analytics middleware error:', error.message);
+            }
+        }
+
+        // Call original send method
+        originalSend.call(this, data);
+    };
+
+    next();
+});
+
 // Global template variables
 app.use((req, res, next) => {
     res.locals.success_msg = req.flash('success_msg');
@@ -498,8 +585,8 @@ app.get('/', async (req, res) => {
                     store: {
                         name: 'Demo Seller 1',
                         description: 'Premium accounts & services',
-                        banner: '/css/style.css', // placeholder
-                        logo: '/css/style.css'
+                        banner: '',
+                        logo: ''
                     },
                     sellerName: 'John Smith',
                     totalSales: 150
@@ -509,8 +596,8 @@ app.get('/', async (req, res) => {
                     store: {
                         name: 'Demo Seller 2',
                         description: 'Digital marketplace expert',
-                        banner: '/css/style.css',
-                        logo: '/css/style.css'
+                        banner: '',
+                        logo: ''
                     },
                     sellerName: 'Sarah Johnson',
                     totalSales: 120
@@ -549,8 +636,8 @@ app.get('/', async (req, res) => {
                     name: 'Premium Digital Accounts',
                     category: 'Digital Marketing',
                     description: 'High-quality verified digital accounts and social media accounts',
-                    banner: '/uploads/demo-banner.jpg',
-                    logo: '/uploads/demo-logo.jpg',
+                    banner: '',
+                    logo: '',
                     contactEmail: 'demo@digitalmarket.com',
                     contactPhone: '+1 (555) 123-4567',
                     items: [
@@ -1704,7 +1791,7 @@ app.post('/admin/login', async (req, res) => {
             };
             console.log('✅ Admin login successful for:', adminUser.adminId);
             req.flash('success_msg', `Welcome, Admin ${adminUser.adminId}!`);
-            res.redirect('/admin/sellers');
+            res.redirect('/admin/dashboard');
         } else {
             console.log('❌ Admin login failed for:', adminId);
             req.flash('error_msg', 'Invalid admin ID or password');
@@ -5583,6 +5670,91 @@ app.get('/admin/moderation', isAdminLoggedIn, async (req, res) => {
         console.error('Admin moderation error:', error);
         req.flash('error_msg', 'An error occurred loading the moderation page');
         res.redirect('/admin/login');
+    }
+});
+
+// Admin Dashboard - Main Overview
+app.get('/admin/dashboard', isAdminLoggedIn, async (req, res) => {
+    try {
+        // Get overview statistics
+        const totalUsers = await User.countDocuments();
+        const totalSellers = await User.countDocuments({ isSeller: true });
+        const pendingApplications = await SellerApplication.countDocuments({ status: 'pending' });
+        const totalProducts = await User.aggregate([
+            { $match: { isSeller: true } },
+            { $unwind: '$store.items' },
+            { $count: 'total' }
+        ]);
+        const pendingWithdrawals = await WithdrawalRequest.countDocuments({ status: 'pending' });
+
+        // Get recent activity (last 7 days)
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        const recentOrders = await Order.countDocuments({
+            createdAt: { $gte: sevenDaysAgo }
+        });
+
+        const recentAnalytics = await Analytics.countDocuments({
+            timestamp: { $gte: sevenDaysAgo },
+            isBot: false
+        });
+
+        res.render('admin/dashboard', {
+            adminUser: req.session.adminUser,
+            stats: {
+                totalUsers: totalUsers || 0,
+                totalSellers: totalSellers || 0,
+                pendingApplications: pendingApplications || 0,
+                totalProducts: totalProducts[0]?.total || 0,
+                pendingWithdrawals: pendingWithdrawals || 0,
+                recentOrders: recentOrders || 0,
+                recentAnalytics: recentAnalytics || 0
+            }
+        });
+    } catch (error) {
+        console.error('Admin dashboard error:', error);
+        req.flash('error_msg', 'An error occurred loading the dashboard');
+        res.redirect('/admin/login');
+    }
+});
+
+// Admin Analytics Dashboard
+app.get('/admin/analytics', isAdminLoggedIn, async (req, res) => {
+    try {
+        console.log('🔍 Analytics route hit!');
+
+        // Check if MongoDB is connected
+        if (mongoose.connection.readyState !== 1) {
+            console.log('❌ MongoDB not connected');
+            req.flash('error_msg', 'Database connection unavailable. Analytics are temporarily offline.');
+            return res.redirect('/admin/sellers');
+        }
+
+        console.log('✅ MongoDB connected, proceeding with analytics...');
+
+        // For now, just render with dummy data to test if the view works
+        console.log('📊 Rendering analytics with dummy data');
+
+        res.render('admin/analytics', {
+            adminUser: req.session.adminUser,
+            analytics: {
+                totalVisits: 1234,
+                uniqueVisitors: 567,
+                uniquePages: 42,
+                dateRange: {
+                    start: '2025-09-01',
+                    end: '2025-09-30'
+                }
+            }
+        });
+
+        console.log('✅ Analytics page rendered successfully');
+    } catch (error) {
+        console.error('❌ Admin analytics error:', error);
+        console.error('Error stack:', error.stack);
+        req.flash('error_msg', 'An error occurred loading analytics');
+        res.redirect('/admin/sellers');
     }
 });
 

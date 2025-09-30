@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    .admin-panel {
+      min-height: calc(100vh - 72px);
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      padding: 40px 20px;
+      padding-top: 120px;
+    }
+    .admin-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .admin-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 15px;
+      text-align: center;
+      margin-bottom: 40px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    .admin-header h1 {
+      margin: 0;
+      font-size: 2.5em;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .admin-header h1::before {
+      content: '📊';
+      margin-right: 15px;
+    }
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 30px;
+      margin-bottom: 40px;
+    }
+    .dashboard-card {
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      overflow: hidden;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .dashboard-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+    }
+    .card-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    .card-header h3 {
+      margin: 0;
+      font-size: 1.2em;
+      font-weight: 600;
+    }
+    .card-header .card-icon {
+      font-size: 2em;
+      margin-bottom: 10px;
+    }
+    .card-content {
+      padding: 25px;
+    }
+    .stat-number {
+      font-size: 3em;
+      font-weight: 700;
+      color: #2c3e50;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    .stat-label {
+      color: #7f8c8d;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-align: center;
+      font-size: 0.9em;
+    }
+    .card-actions {
+      padding: 0 25px 25px 25px;
+      text-align: center;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-block;
+      transition: all 0.3s ease;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    .recent-activity {
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    .section-header {
+      background: #f8f9fa;
+      padding: 20px 30px;
+      border-bottom: 1px solid #ecf0f1;
+    }
+    .section-title {
+      margin: 0;
+      font-size: 1.5em;
+      color: #2c3e50;
+      font-weight: 700;
+    }
+    .activity-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .activity-item {
+      padding: 20px 30px;
+      border-bottom: 1px solid #ecf0f1;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    .activity-item:last-child {
+      border-bottom: none;
+    }
+    .activity-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2em;
+    }
+    .activity-icon.users { background: #3498db; color: white; }
+    .activity-icon.sellers { background: #e74c3c; color: white; }
+    .activity-icon.products { background: #27ae60; color: white; }
+    .activity-icon.withdrawals { background: #f39c12; color: white; }
+    .activity-content h4 {
+      margin: 0;
+      font-size: 1em;
+      color: #2c3e50;
+      font-weight: 600;
+    }
+    .activity-content p {
+      margin: 5px 0 0 0;
+      color: #7f8c8d;
+      font-size: 0.9em;
+    }
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+    .action-card {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+      transition: transform 0.3s ease;
+    }
+    .action-card:hover {
+      transform: translateY(-3px);
+    }
+    .action-icon {
+      font-size: 2.5em;
+      margin-bottom: 15px;
+    }
+    .action-title {
+      font-size: 1.2em;
+      font-weight: 600;
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+    .action-description {
+      color: #7f8c8d;
+      margin-bottom: 15px;
+      font-size: 0.9em;
+    }
+    @media (max-width: 768px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+      .quick-actions {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ================= NAVBAR ================ -->
+  <%- include('../partials/navbar') %>
+
+  <!-- ================= ADMIN DASHBOARD ================ -->
+  <div class="admin-panel">
+    <div class="admin-container">
+      <!-- Admin Header -->
+      <div class="admin-header">
+        <h1>Admin Dashboard</h1>
+        <p>Welcome back, Admin <%= adminUser.adminId %>! Here's your system overview.</p>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions">
+        <div class="action-card">
+          <div class="action-icon">👥</div>
+          <div class="action-title">Manage Sellers</div>
+          <div class="action-description">Review seller applications and manage existing sellers</div>
+          <a href="/admin/sellers" class="btn-primary">View Applications</a>
+        </div>
+        <div class="action-card">
+          <div class="action-icon">📦</div>
+          <div class="action-title">Product Moderation</div>
+          <div class="action-description">Approve or reject products submitted by sellers</div>
+          <a href="/admin/moderation" class="btn-primary">Moderate Products</a>
+        </div>
+        <div class="action-card">
+          <div class="action-icon">💰</div>
+          <div class="action-title">Withdrawals</div>
+          <div class="action-description">Process seller withdrawal requests</div>
+          <a href="/admin/withdrawals" class="btn-primary">Manage Withdrawals</a>
+        </div>
+        <div class="action-card">
+          <div class="action-icon">📊</div>
+          <div class="action-title">Analytics</div>
+          <div class="action-description">View detailed analytics and system statistics</div>
+          <a href="/admin/analytics" class="btn-primary">View Analytics</a>
+        </div>
+      </div>
+
+      <!-- Statistics Grid -->
+      <div class="dashboard-grid">
+        <div class="dashboard-card">
+          <div class="card-header">
+            <div class="card-icon">👤</div>
+            <h3>Total Users</h3>
+          </div>
+          <div class="card-content">
+            <div class="stat-number"><%= stats.totalUsers %></div>
+            <div class="stat-label">Registered Users</div>
+          </div>
+        </div>
+
+        <div class="dashboard-card">
+          <div class="card-header">
+            <div class="card-icon">🏪</div>
+            <h3>Active Sellers</h3>
+          </div>
+          <div class="card-content">
+            <div class="stat-number"><%= stats.totalSellers %></div>
+            <div class="stat-label">Approved Sellers</div>
+          </div>
+        </div>
+
+        <div class="dashboard-card">
+          <div class="card-header">
+            <div class="card-icon">📋</div>
+            <h3>Pending Applications</h3>
+          </div>
+          <div class="card-content">
+            <div class="stat-number"><%= stats.pendingApplications %></div>
+            <div class="stat-label">Awaiting Review</div>
+          </div>
+          <div class="card-actions">
+            <a href="/admin/sellers" class="btn-primary">Review Now</a>
+          </div>
+        </div>
+
+        <div class="dashboard-card">
+          <div class="card-header">
+            <div class="card-icon">🛍️</div>
+            <h3>Total Products</h3>
+          </div>
+          <div class="card-content">
+            <div class="stat-number"><%= stats.totalProducts %></div>
+            <div class="stat-label">Active Products</div>
+          </div>
+        </div>
+
+        <div class="dashboard-card">
+          <div class="card-header">
+            <div class="card-icon">💸</div>
+            <h3>Pending Withdrawals</h3>
+          </div>
+          <div class="card-content">
+            <div class="stat-number"><%= stats.pendingWithdrawals %></div>
+            <div class="stat-label">Awaiting Processing</div>
+          </div>
+          <div class="card-actions">
+            <a href="/admin/withdrawals" class="btn-primary">Process Now</a>
+          </div>
+        </div>
+
+        <div class="dashboard-card">
+          <div class="card-header">
+            <div class="card-icon">📈</div>
+            <h3>Recent Activity</h3>
+          </div>
+          <div class="card-content">
+            <div class="stat-number"><%= stats.recentOrders %></div>
+            <div class="stat-label">Orders (7 days)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="recent-activity">
+        <div class="section-header">
+          <h2 class="section-title">System Overview</h2>
+        </div>
+        <div class="activity-list">
+          <div class="activity-item">
+            <div class="activity-icon users">👤</div>
+            <div class="activity-content">
+              <h4>User Management</h4>
+              <p><%= stats.totalUsers %> total users registered in the system</p>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-icon sellers">🏪</div>
+            <div class="activity-content">
+              <h4>Seller Ecosystem</h4>
+              <p><%= stats.totalSellers %> approved sellers with <%= stats.totalProducts %> active products</p>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-icon products">📦</div>
+            <div class="activity-content">
+              <h4>Product Moderation</h4>
+              <p><%= stats.pendingApplications %> seller applications pending review</p>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-icon withdrawals">💰</div>
+            <div class="activity-content">
+              <h4>Financial Operations</h4>
+              <p><%= stats.pendingWithdrawals %> withdrawal requests awaiting processing</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= FOOTER ================ -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="#products">Products</a>
+        <a href="#games">Games</a>
+        <a href="#ai">AI</a>
+        <a href="#pricing">Pricing</a>
+        <a href="/login">Login</a>
+        <a href="/signup">Sign Up</a>
+      </div>
+      <p>&copy; 2025 DigitalMarket. All rights reserved.</p>
+    </div>
+  </footer>
+
+</body>
+</html>

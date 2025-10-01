@@ -95,8 +95,9 @@
                                     </div>
 
                                     <div class="mb-3">
-                                        <label for="price" class="form-label">Price ($) <span class="text-danger">*</span></label>
-                                        <input type="number" class="form-control" id="price" name="price" step="0.01" min="0" value="<%= product.price %>" required>
+                                        <label for="price" class="form-label">Price (RUB) <span class="text-danger">*</span></label>
+                                        <input type="number" class="form-control" id="price" name="price" step="0.01" min="0" value="<%= product.price %>" placeholder="Enter price in rubles" required>
+                                        <div class="form-text">Price must be in Russian Rubles (RUB)</div>
                                     </div>
 
                                     <div class="mb-3">

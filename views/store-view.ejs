@@ -344,7 +344,7 @@
                       <!-- Price and Actions -->
                       <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
-                          <span style="font-size: 1.3em; font-weight: bold; color: #27ae60;">₽ <%= product.price %></span>
+                          <span style="font-size: 1.3em; font-weight: bold; color: #27ae60;">₽<%= Math.round(product.price * 81) %></span>
                         </div>
                         <div style="display: flex; gap: 8px;">
                           <a href="/product/<%= storeId %>/<%= product.id %>" class="btn btn-sm btn-outline-primary">

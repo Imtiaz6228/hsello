@@ -135,7 +135,7 @@
                                 <h5 class="mb-1">Dispute #<%= dispute._id ? dispute._id.toString().substring(-8).toUpperCase() : 'N/A' %></h5>
                                 <small class="text-muted">
                                     <%= dispute.orderId && dispute.orderId.productName ? dispute.orderId.productName : 'Unknown Product' %>
-                                    • $<%= dispute.orderId && dispute.orderId.totalCost ? dispute.orderId.totalCost.toFixed(2) : '0.00' %>
+                                    • ₽<%= dispute.orderId && dispute.orderId.totalCost ? Math.round(dispute.orderId.totalCost * 81) : '0' %>
                                 </small>
                             </div>
                             <div class="col-md-6 text-end">
@@ -225,7 +225,7 @@
                                                 <strong>Resolution:</strong><br>
                                                 <% if (dispute.resolution) { %>
                                                     <% if (dispute.resolution.type === 'refund') { %>
-                                                        Refund of $<%= dispute.resolution.amount %> approved
+                                                        Refund of ₽<%= Math.round(dispute.resolution.amount * 81) %> approved
                                                     <% } else if (dispute.resolution.type === 'closed_by_buyer') { %>
                                                         Closed by buyer
                                                     <% } else { %>

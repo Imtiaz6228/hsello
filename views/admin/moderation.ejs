@@ -307,7 +307,7 @@
                     <h3><%= product.name %></h3>
                     <div class="product-meta">
                       <div class="meta-item first-meta">Category: <%= product.itemCategory %></div>
-                      <div class="meta-item">Price: $<%= product.price %></div>
+                      <div class="meta-item">Price: ₽<%= Math.round(product.price * 81) %></div>
                       <div class="meta-item">Digital: <%= product.isDigital ? 'Yes' : 'No' %></div>
                     </div>
                     <p><%= product.shortDescription || 'No description provided' %></p>

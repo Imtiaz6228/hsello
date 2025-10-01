@@ -29,6 +29,13 @@
 
     <!-- Right - User Actions & Search -->
     <div class="nav-right professional-right">
+      <!-- Language Switcher -->
+      <div class="language-switcher">
+        <a href="/lang/en" class="lang-link <%= currentLanguage === 'en' ? 'active' : '' %>" title="English">EN</a>
+        <span class="lang-separator">|</span>
+        <a href="/lang/ru" class="lang-link <%= currentLanguage === 'ru' ? 'active' : '' %>" title="Русский">RU</a>
+      </div>
+
       <!-- Search -->
       <div class="search-container professional-search">
         <input type="text" id="searchInput" placeholder="Search..." class="search-input">
@@ -320,6 +327,39 @@
 
 .signup-btn:hover {
   background: #e67e22;
+}
+
+/* Language Switcher */
+.language-switcher {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 15px;
+}
+
+.lang-link {
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.lang-link:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.lang-link.active {
+  color: #f39c12;
+  background: rgba(243, 156, 18, 0.1);
+}
+
+.lang-separator {
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 300;
 }
 
 /* User Section */

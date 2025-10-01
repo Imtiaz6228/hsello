@@ -1117,42 +1117,42 @@
 
     <div class="hero-content">
       <div class="hero-badge">
-        <span class="badge-text">✨ Trusted by 25,000+ Users</span>
+        <span class="badge-text">✨ <%= t('hero.badge') %></span>
       </div>
       <h1 class="hero-title">
-        <span class="hero-title-main">Elevate Your Digital Presence</span>
-        <span class="hero-title-sub">with Premium Accounts & Services</span>
+        <span class="hero-title-main"><%= t('hero.titleMain') %></span>
+        <span class="hero-title-sub"><%= t('hero.titleSub') %></span>
       </h1>
-      <p class="hero-subtitle">Join the most sophisticated digital marketplace where quality meets trust. Discover verified accounts, premium services, and cutting-edge digital solutions.</p>
+      <p class="hero-subtitle"><%= t('hero.subtitle') %></p>
 
       <div class="hero-stats">
-         <div class="hero-stat">
-           <span class="stat-number">50K+</span>
-           <span class="stat-label">Products Sold</span>
-         </div>
-         <div class="hero-stat">
-           <span class="stat-number">4.9★</span>
-           <span class="stat-label">Customer Rating</span>
-         </div>
-         <div class="hero-stat">
-           <span class="stat-number">2min</span>
-           <span class="stat-label">Average Response</span>
-         </div>
-       </div>
+          <div class="hero-stat">
+            <span class="stat-number">50K+</span>
+            <span class="stat-label"><%= t('hero.stats.products') %></span>
+          </div>
+          <div class="hero-stat">
+            <span class="stat-number">4.9★</span>
+            <span class="stat-label"><%= t('hero.stats.rating') %></span>
+          </div>
+          <div class="hero-stat">
+            <span class="stat-number">2min</span>
+            <span class="stat-label"><%= t('hero.stats.response') %></span>
+          </div>
+        </div>
 
        <div class="hero-cta">
          <a href="/products" class="btn btn-primary">
            <i class="fas fa-rocket"></i>
-           <span>Save 40% vs Competitors</span>
+           <span><%= t('hero.cta.primary') %></span>
          </a>
          <a href="/become-seller" class="btn btn-secondary">
            <i class="fas fa-dollar-sign"></i>
-           <span>Earn $500+/Month</span>
+           <span><%= t('hero.cta.secondary') %></span>
          </a>
        </div>
 
       <div class="hero-scroll-indicator">
-        <span>Scroll to discover more</span>
+        <span><%= t('hero.scroll') %></span>
         <i class="fas fa-chevron-down"></i>
       </div>
     </div>
@@ -1162,8 +1162,8 @@
   <section class="categories-section" style="padding: 80px 0; background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);">
     <div class="container">
       <div class="section-header">
-        <h2 class="section-title">Popular Categories</h2>
-        <p class="section-subtitle">Explore our most sought-after digital products</p>
+        <h2 class="section-title"><%= t('categories.title') %></h2>
+        <p class="section-subtitle"><%= t('categories.subtitle') %></p>
       </div>
 
       <div class="categories-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
@@ -1175,14 +1175,14 @@
               <i class="fab fa-instagram"></i>
             </div>
             <div>
-              <h3 style="font-size: 1.5rem; font-weight: 700; margin: 0;">Social Media</h3>
-              <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">Instagram, Facebook, Twitter & more</p>
+              <h3 style="font-size: 1.5rem; font-weight: 700; margin: 0;"><%= t('categories.social.title') %></h3>
+              <p style="margin: 0.5rem 0 0 0; opacity: 0.9;"><%= t('categories.social.desc') %></p>
             </div>
           </div>
           <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Verified Accounts</span>
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Business Pages</span>
-            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;">Influencer Accounts</span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;"><%= t('categories.social.tags[0]') %></span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;"><%= t('categories.social.tags[1]') %></span>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.8rem;"><%= t('categories.social.tags[2]') %></span>
           </div>
         </div>
 
@@ -1305,7 +1305,7 @@
               50+
             <% } %>
           </div>
-          <div class="stat-label">Premium Products</div>
+          <div class="stat-label"><%= t('stats.products') %></div>
         </div>
         <div class="stat-item">
           <div class="stat-number">
@@ -1315,15 +1315,15 @@
               25+
             <% } %>
           </div>
-          <div class="stat-label">Trusted Sellers</div>
+          <div class="stat-label"><%= t('stats.sellers') %></div>
         </div>
         <div class="stat-item">
           <div class="stat-number">4.8</div>
-          <div class="stat-label">Average Rating</div>
+          <div class="stat-label"><%= t('stats.rating') %></div>
         </div>
         <div class="stat-item">
           <div class="stat-number">24/7</div>
-          <div class="stat-label">Support Available</div>
+          <div class="stat-label"><%= t('stats.support') %></div>
         </div>
       </div>
     </div>
@@ -1333,8 +1333,8 @@
   <section class="top-stores-section" style="padding: 80px 0; background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);">
     <div class="container">
       <div class="section-header">
-        <h2 class="section-title">Top Selling Stores</h2>
-        <p class="section-subtitle">Discover the most successful digital stores on our platform</p>
+        <h2 class="section-title"><%= t('stores.title') %></h2>
+        <p class="section-subtitle"><%= t('stores.subtitle') %></p>
       </div>
 
       <div class="top-stores-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
@@ -1344,17 +1344,17 @@
               <% if (index === 0) { %>
                 <div class="store-rank-badge" style="position: absolute; top: 1.5rem; right: 1.5rem; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 0.75rem 1.25rem; border-radius: 25px; font-size: 0.85rem; font-weight: 700; z-index: 3; box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3); display: flex; align-items: center; gap: 0.5rem;">
                   <i class="fas fa-crown"></i>
-                  #1 Store
+                  <%= t('stores.rank1') %>
                 </div>
               <% } else if (index === 1) { %>
                 <div class="store-rank-badge" style="position: absolute; top: 1.5rem; right: 1.5rem; background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%); color: white; padding: 0.75rem 1.25rem; border-radius: 25px; font-size: 0.85rem; font-weight: 700; z-index: 3; box-shadow: 0 8px 25px rgba(107, 114, 128, 0.3); display: flex; align-items: center; gap: 0.5rem;">
                   <i class="fas fa-medal"></i>
-                  #2 Store
+                  <%= t('stores.rank2') %>
                 </div>
               <% } else if (index === 2) { %>
                 <div class="store-rank-badge" style="position: absolute; top: 1.5rem; right: 1.5rem; background: linear-gradient(135deg, #d97706 0%, #b45309 100%); color: white; padding: 0.75rem 1.25rem; border-radius: 25px; font-size: 0.85rem; font-weight: 700; z-index: 3; box-shadow: 0 8px 25px rgba(217, 119, 6, 0.3); display: flex; align-items: center; gap: 0.5rem;">
                   <i class="fas fa-award"></i>
-                  #3 Store
+                  <%= t('stores.rank3') %>
                 </div>
               <% } %>
 
@@ -1383,7 +1383,7 @@
                   <div class="store-verified-badge" style="width: 20px; height: 20px; border-radius: 50%; background: linear-gradient(135deg, #10b981 0%, #059669 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 0.7rem;">
                     <i class="fas fa-check"></i>
                   </div>
-                  <span style="font-size: 0.85rem; color: #10b981; font-weight: 600;">Verified Store</span>
+                  <span style="font-size: 0.85rem; color: #10b981; font-weight: 600;"><%= t('stores.verified') %></span>
                 </div>
 
                 <h4 style="font-size: 1.25rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem; line-height: 1.3;"><%= store.store.name %></h4>
@@ -1397,7 +1397,7 @@
                     </div>
                     <div>
                       <div style="font-size: 1rem; font-weight: 700; color: #1e293b;"><%= store.totalSales %></div>
-                      <div style="font-size: 0.75rem; color: #64748b;">Sales</div>
+                      <div style="font-size: 0.75rem; color: #64748b;"><%= t('stores.sales') %></div>
                     </div>
                   </div>
 
@@ -1407,7 +1407,7 @@
                     </div>
                     <div>
                       <div style="font-size: 1rem; font-weight: 700; color: #1e293b;">500+</div>
-                      <div style="font-size: 0.75rem; color: #64748b;">Customers</div>
+                      <div style="font-size: 0.75rem; color: #64748b;"><%= t('stores.customers') %></div>
                     </div>
                   </div>
                 </div>
@@ -1420,7 +1420,7 @@
                 <!-- CTA Button -->
                 <a href="/store/<%= store.sellerId %>" class="store-cta-btn" style="display: inline-flex; align-items: center; gap: 0.75rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.875rem 2rem; border-radius: 25px; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: all 0.3s ease; width: 100%; justify-content: center; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">
                   <i class="fas fa-store"></i>
-                  <span>Visit Store</span>
+                  <span><%= t('stores.visit') %></span>
                   <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>
                 </a>
               </div>
@@ -1598,7 +1598,7 @@
       <div style="text-align: center;">
         <a href="/stores" class="view-all-stores-btn" style="display: inline-flex; align-items: center; gap: 0.75rem; background: rgba(255,255,255,0.9); color: #667eea; padding: 1.25rem 2.5rem; border-radius: 25px; text-decoration: none; font-weight: 600; border: 2px solid #667eea; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);">
           <i class="fas fa-eye"></i>
-          <span>View All Stores</span>
+          <span><%= t('stores.viewAll') %></span>
           <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>
         </a>
       </div>
@@ -1610,8 +1610,8 @@
   <section class="top-selling-products-section" style="padding: 80px 0; background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);">
     <div class="container">
       <div class="section-header">
-        <h2 class="section-title">Top Selling Products</h2>
-        <p class="section-subtitle">Discover the most popular digital products with the highest sales</p>
+        <h2 class="section-title"><%= t('products.title') %></h2>
+        <p class="section-subtitle"><%= t('products.subtitle') %></p>
       </div>
 
       <!-- Search and Filters -->
@@ -1621,44 +1621,44 @@
           <div class="search-input-container" style="flex: 1; min-width: 300px;">
             <div style="position: relative;">
               <i class="fas fa-search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #64748b;"></i>
-              <input type="text" id="productSearch" placeholder="Search by product name, store name, or keywords..." style="width: 100%; padding: 1rem 1rem 1rem 3rem; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1rem; transition: all 0.3s ease;" onkeyup="filterProducts()">
+              <input type="text" id="productSearch" placeholder="<%= t('products.search') %>" style="width: 100%; padding: 1rem 1rem 1rem 3rem; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1rem; transition: all 0.3s ease;" onkeyup="filterProducts()">
             </div>
           </div>
 
           <!-- Sort Dropdown -->
           <div class="sort-container">
             <select id="sortSelect" onchange="filterProducts()" style="padding: 1rem 1.5rem; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1rem; background: white; cursor: pointer; min-width: 200px;">
-              <option value="sales">Highest Sales</option>
-              <option value="price-low">Price: Low to High</option>
-              <option value="price-high">Price: High to Low</option>
-              <option value="popularity">Most Popular</option>
-              <option value="newest">Newest First</option>
+              <option value="sales"><%= t('products.sort.sales') %></option>
+              <option value="price-low"><%= t('products.sort.priceLow') %></option>
+              <option value="price-high"><%= t('products.sort.priceHigh') %></option>
+              <option value="popularity"><%= t('products.sort.popularity') %></option>
+              <option value="newest"><%= t('products.sort.newest') %></option>
             </select>
           </div>
         </div>
 
         <!-- Filter Tags -->
         <div class="filter-tags" style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
-          <span style="font-weight: 600; color: #374151; margin-right: 0.5rem;">Filter by:</span>
+          <span style="font-weight: 600; color: #374151; margin-right: 0.5rem;"><%= t('products.filter') %></span>
 
           <!-- Category Filters -->
           <div class="filter-group">
-            <button class="filter-tag active" data-filter="all" onclick="setCategoryFilter('all')" style="padding: 0.5rem 1rem; border: 2px solid #e2e8f0; background: #667eea; color: white; border-radius: 25px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">All Categories</button>
-            <button class="filter-tag" data-filter="Instagram" onclick="setCategoryFilter('Instagram')" style="padding: 0.5rem 1rem; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 25px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">Instagram</button>
-            <button class="filter-tag" data-filter="GMail" onclick="setCategoryFilter('GMail')" style="padding: 0.5rem 1rem; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 25px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">Gmail</button>
-            <button class="filter-tag" data-filter="Facebook" onclick="setCategoryFilter('Facebook')" style="padding: 0.5rem 1rem; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 25px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">Facebook</button>
-            <button class="filter-tag" data-filter="YouTube" onclick="setCategoryFilter('YouTube')" style="padding: 0.5rem 1rem; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 25px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">YouTube</button>
+            <button class="filter-tag active" data-filter="all" onclick="setCategoryFilter('all')" style="padding: 0.5rem 1rem; border: 2px solid #e2e8f0; background: #667eea; color: white; border-radius: 25px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;"><%= t('products.categories.all') %></button>
+            <button class="filter-tag" data-filter="Instagram" onclick="setCategoryFilter('Instagram')" style="padding: 0.5rem 1rem; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 25px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;"><%= t('products.categories.instagram') %></button>
+            <button class="filter-tag" data-filter="GMail" onclick="setCategoryFilter('GMail')" style="padding: 0.5rem 1rem; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 25px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;"><%= t('products.categories.gmail') %></button>
+            <button class="filter-tag" data-filter="Facebook" onclick="setCategoryFilter('Facebook')" style="padding: 0.5rem 1rem; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 25px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;"><%= t('products.categories.facebook') %></button>
+            <button class="filter-tag" data-filter="YouTube" onclick="setCategoryFilter('YouTube')" style="padding: 0.5rem 1rem; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 25px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;"><%= t('products.categories.youtube') %></button>
           </div>
 
           <!-- Price Range Filter -->
           <div class="price-filter" style="margin-left: 1rem;">
             <select id="priceFilter" onchange="filterProducts()" style="padding: 0.5rem 1rem; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 0.9rem; background: white; cursor: pointer;">
-              <option value="all">All Prices</option>
-              <option value="0-10">$0 - $10</option>
-              <option value="10-25">$10 - $25</option>
-              <option value="25-50">$25 - $50</option>
-              <option value="50-100">$50 - $100</option>
-              <option value="100+">$100+</option>
+              <option value="all"><%= t('products.prices.all') %></option>
+              <option value="0-10"><%= t('products.prices.range1') %></option>
+              <option value="10-25"><%= t('products.prices.range2') %></option>
+              <option value="25-50"><%= t('products.prices.range3') %></option>
+              <option value="50-100"><%= t('products.prices.range4') %></option>
+              <option value="100+"><%= t('products.prices.range5') %></option>
             </select>
           </div>
         </div>
@@ -1749,7 +1749,7 @@
                   <div class="product-stats" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
                     <div class="sales-count" style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.85rem; color: #059669; font-weight: 600;">
                       <i class="fas fa-shopping-cart"></i>
-                      <%= product.soldCount || 0 %> sold
+                      <%= product.soldCount || 0 %> <%= t('products.sold') %>
                     </div>
                     <div class="product-rating" style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.85rem; color: #64748b;">
                       <i class="fas fa-star" style="color: #f59e0b;"></i>
@@ -1765,17 +1765,16 @@
                   <div class="product-footer">
                     <div class="product-price-rating">
                       <div class="price-display">
-                        <span class="price-usd">$<%= product.price %></span>
                         <span class="price-rub">₽<%= Math.round(product.price * 81) %></span>
                       </div>
                     </div>
 
                     <div class="product-actions">
-                      <a href="/store/<%= product.sellerId %>" class="visit-store-btn" title="Visit Store">
+                      <a href="/store/<%= product.sellerId %>" class="visit-store-btn" title="<%= t('products.visitStore') %>">
                         <i class="fas fa-store"></i>
                       </a>
                       <a href="/product/<%= product.sellerId %>/<%= product.id %>" class="view-product-btn">
-                        View Details
+                        <%= t('products.viewDetails') %>
                       </a>
                     </div>
                   </div>
@@ -1815,7 +1814,6 @@
                 <div class="product-footer">
                   <div class="product-price-rating">
                     <div class="price-display">
-                      <span class="price-usd">$19.99</span>
                       <span class="price-rub">₽1619</span>
                     </div>
                   </div>
@@ -1862,7 +1860,6 @@
                 <div class="product-footer">
                   <div class="product-price-rating">
                     <div class="price-display">
-                      <span class="price-usd">$8.99</span>
                       <span class="price-rub">₽728</span>
                     </div>
                   </div>
@@ -1909,7 +1906,6 @@
                 <div class="product-footer">
                   <div class="product-price-rating">
                     <div class="price-display">
-                      <span class="price-usd">$25.99</span>
                       <span class="price-rub">₽2100</span>
                     </div>
                   </div>
@@ -1953,7 +1949,6 @@
                 <div class="product-footer">
                   <div class="product-price-rating">
                     <div class="price-display">
-                      <span class="price-usd">$49.99</span>
                       <span class="price-rub">₽4049</span>
                     </div>
                   </div>
@@ -1997,7 +1992,6 @@
                 <div class="product-footer">
                   <div class="product-price-rating">
                     <div class="price-display">
-                      <span class="price-usd">$34.99</span>
                       <span class="price-rub">₽2834</span>
                     </div>
                   </div>
@@ -2020,7 +2014,7 @@
       <div style="text-align: center;">
         <a href="/products" class="btn btn-primary" style="padding: 1.25rem 3rem; font-size: 1.1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 25px; color: white; text-decoration: none; display: inline-flex; align-items: center; gap: 0.75rem; box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3); transition: all 0.3s ease;">
           <i class="fas fa-eye"></i>
-          <span>See All Products</span>
+          <span><%= t('products.seeAll') %></span>
         </a>
       </div>
     </div>
@@ -2030,8 +2024,8 @@
   <section class="features-section">
     <div class="container">
       <div class="section-header">
-        <h2 class="section-title">Why Choose Hsello?</h2>
-        <p class="section-subtitle">We provide the best digital marketplace experience</p>
+        <h2 class="section-title"><%= t('features.title') %></h2>
+        <p class="section-subtitle"><%= t('features.subtitle') %></p>
       </div>
 
       <div class="features-grid">
@@ -2039,32 +2033,32 @@
           <div class="feature-icon">
             <i class="fas fa-shield-alt"></i>
           </div>
-          <h3 class="feature-title">Secure & Safe</h3>
-          <p class="feature-description">Advanced encryption, escrow protection, and verified sellers ensure your transactions are completely secure.</p>
+          <h3 class="feature-title"><%= t('features.secure.title') %></h3>
+          <p class="feature-description"><%= t('features.secure.desc') %></p>
         </div>
 
         <div class="feature-card">
           <div class="feature-icon">
             <i class="fas fa-rocket"></i>
           </div>
-          <h3 class="feature-title">Instant Delivery</h3>
-          <p class="feature-description">Get immediate access to your digital products after payment. No waiting, no delays, instant gratification.</p>
+          <h3 class="feature-title"><%= t('features.instant.title') %></h3>
+          <p class="feature-description"><%= t('features.instant.desc') %></p>
         </div>
 
         <div class="feature-card">
           <div class="feature-icon">
             <i class="fas fa-award"></i>
           </div>
-          <h3 class="feature-title">Quality Guarantee</h3>
-          <p class="feature-description">100% satisfaction guarantee. If you're not happy with your purchase, get your money back.</p>
+          <h3 class="feature-title"><%= t('features.quality.title') %></h3>
+          <p class="feature-description"><%= t('features.quality.desc') %></p>
         </div>
 
         <div class="feature-card">
           <div class="feature-icon">
             <i class="fas fa-headset"></i>
           </div>
-          <h3 class="feature-title">24/7 Support</h3>
-          <p class="feature-description">Round-the-clock customer support via live chat, email, and multiple communication channels.</p>
+          <h3 class="feature-title"><%= t('features.support.title') %></h3>
+          <p class="feature-description"><%= t('features.support.desc') %></p>
         </div>
       </div>
     </div>
@@ -2079,28 +2073,28 @@
         <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 2rem; max-width: 800px; margin: 0 auto;">
           <div class="live-stat-item" style="background: white; padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid var(--border);">
             <div class="stat-number" style="font-size: 2rem; font-weight: 800; color: var(--primary); margin-bottom: 0.5rem;">1,247</div>
-            <div class="stat-label" style="color: var(--text-secondary); font-weight: 600; font-size: 0.9rem;">Users Online</div>
+            <div class="stat-label" style="color: var(--text-secondary); font-weight: 600; font-size: 0.9rem;"><%= t('trust.stats.online') %></div>
             <div style="width: 100%; height: 4px; background: #e2e8f0; border-radius: 2px; margin-top: 0.5rem; overflow: hidden;">
               <div style="width: 70%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 2px; animation: pulse 2s infinite;"></div>
             </div>
           </div>
           <div class="live-stat-item" style="background: white; padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid var(--border);">
             <div class="stat-number" style="font-size: 2rem; font-weight: 800; color: var(--success); margin-bottom: 0.5rem;">47</div>
-            <div class="stat-label" style="color: var(--text-secondary); font-weight: 600; font-size: 0.9rem;">Sales Today</div>
+            <div class="stat-label" style="color: var(--text-secondary); font-weight: 600; font-size: 0.9rem;"><%= t('trust.stats.sales') %></div>
             <div style="width: 100%; height: 4px; background: #e2e8f0; border-radius: 2px; margin-top: 0.5rem; overflow: hidden;">
               <div style="width: 85%; height: 100%; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 2px; animation: pulse 2s infinite 0.5s;"></div>
             </div>
           </div>
           <div class="live-stat-item" style="background: white; padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid var(--border);">
             <div class="stat-number" style="font-size: 2rem; font-weight: 800; color: var(--warning); margin-bottom: 0.5rem;">12</div>
-            <div class="stat-label" style="color: var(--text-secondary); font-weight: 600; font-size: 0.9rem;">New Sellers</div>
+            <div class="stat-label" style="color: var(--text-secondary); font-weight: 600; font-size: 0.9rem;"><%= t('trust.stats.sellers') %></div>
             <div style="width: 100%; height: 4px; background: #e2e8f0; border-radius: 2px; margin-top: 0.5rem; overflow: hidden;">
               <div style="width: 60%; height: 100%; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 2px; animation: pulse 2s infinite 1s;"></div>
             </div>
           </div>
           <div class="live-stat-item" style="background: white; padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid var(--border);">
             <div class="stat-number" style="font-size: 2rem; font-weight: 800; color: var(--accent); margin-bottom: 0.5rem;">2min</div>
-            <div class="stat-label" style="color: var(--text-secondary); font-weight: 600; font-size: 0.9rem;">Avg Response</div>
+            <div class="stat-label" style="color: var(--text-secondary); font-weight: 600; font-size: 0.9rem;"><%= t('trust.stats.response') %></div>
             <div style="width: 100%; height: 4px; background: #e2e8f0; border-radius: 2px; margin-top: 0.5rem; overflow: hidden;">
               <div style="width: 95%; height: 100%; background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); border-radius: 2px; animation: pulse 2s infinite 1.5s;"></div>
             </div>
@@ -2110,49 +2104,49 @@
 
       <!-- Security Badges & Trust Signals -->
       <div class="trust-badges" style="text-align: center; margin-bottom: 4rem;">
-        <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 2rem;">Trusted & Secure</h3>
+        <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 2rem;"><%= t('trust.badges.title') %></h3>
         <div class="badges-grid" style="display: flex; justify-content: center; align-items: center; gap: 3rem; flex-wrap: wrap;">
           <div class="badge-item" style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
             <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);">
               <i class="fas fa-lock"></i>
             </div>
-            <span style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;">SSL Encrypted</span>
+            <span style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;"><%= t('trust.badges.ssl') %></span>
           </div>
           <div class="badge-item" style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
             <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);">
               <i class="fas fa-shield-alt"></i>
             </div>
-            <span style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;">Escrow Protection</span>
+            <span style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;"><%= t('trust.badges.escrow') %></span>
           </div>
           <div class="badge-item" style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
             <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);">
               <i class="fas fa-check-circle"></i>
             </div>
-            <span style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;">Verified Sellers</span>
+            <span style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;"><%= t('trust.badges.verified') %></span>
           </div>
           <div class="badge-item" style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
             <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);">
               <i class="fas fa-clock"></i>
             </div>
-            <span style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;">24/7 Support</span>
+            <span style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;"><%= t('trust.badges.support') %></span>
           </div>
         </div>
       </div>
 
       <!-- Customer Testimonials -->
       <div class="testimonials-section">
-        <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); text-align: center; margin-bottom: 2rem;">What Our Customers Say</h3>
+        <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); text-align: center; margin-bottom: 2rem;"><%= t('trust.testimonials.title') %></h3>
         <div class="testimonials-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
           <div class="testimonial-card" style="background: white; padding: 2rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid var(--border); position: relative;">
             <div style="position: absolute; top: 1rem; right: 1rem; color: #f59e0b; font-size: 1.2rem;">
               <i class="fas fa-quote-right"></i>
             </div>
-            <p style="color: var(--text-secondary); font-style: italic; line-height: 1.6; margin-bottom: 1.5rem;">"Amazing platform! Got my Instagram account instantly after payment. The quality is exactly as described. Highly recommend!"</p>
+            <p style="color: var(--text-secondary); font-style: italic; line-height: 1.6; margin-bottom: 1.5rem;"><%= t('trust.testimonials.testimonial1') %></p>
             <div style="display: flex; align-items: center; gap: 1rem;">
               <div style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">SM</div>
               <div>
                 <div style="font-weight: 600; color: var(--text-primary);">Sarah Mitchell</div>
-                <div style="color: var(--text-muted); font-size: 0.9rem;">Verified Buyer</div>
+                <div style="color: var(--text-muted); font-size: 0.9rem;"><%= t('trust.testimonials.buyer') %></div>
               </div>
             </div>
           </div>
@@ -2161,12 +2155,12 @@
             <div style="position: absolute; top: 1rem; right: 1rem; color: #f59e0b; font-size: 1.2rem;">
               <i class="fas fa-quote-right"></i>
             </div>
-            <p style="color: var(--text-secondary); font-style: italic; line-height: 1.6; margin-bottom: 1.5rem;">"Been selling on Hsello for 6 months now. The platform is secure, payments are fast, and customer support is excellent."</p>
+            <p style="color: var(--text-secondary); font-style: italic; line-height: 1.6; margin-bottom: 1.5rem;"><%= t('trust.testimonials.testimonial2') %></p>
             <div style="display: flex; align-items: center; gap: 1rem;">
               <div style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #10b981 0%, #059669 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">JD</div>
               <div>
                 <div style="font-weight: 600; color: var(--text-primary);">John Davis</div>
-                <div style="color: var(--text-muted); font-size: 0.9rem;">Verified Seller</div>
+                <div style="color: var(--text-muted); font-size: 0.9rem;"><%= t('trust.testimonials.seller') %></div>
               </div>
             </div>
           </div>
@@ -2175,12 +2169,12 @@
             <div style="position: absolute; top: 1rem; right: 1rem; color: #f59e0b; font-size: 1.2rem;">
               <i class="fas fa-quote-right"></i>
             </div>
-            <p style="color: var(--text-secondary); font-style: italic; line-height: 1.6; margin-bottom: 1.5rem;">"Purchased multiple Gmail accounts for my business. All working perfectly and support was very helpful when I had questions."</p>
+            <p style="color: var(--text-secondary); font-style: italic; line-height: 1.6; margin-bottom: 1.5rem;"><%= t('trust.testimonials.testimonial3') %></p>
             <div style="display: flex; align-items: center; gap: 1rem;">
               <div style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">LC</div>
               <div>
                 <div style="font-weight: 600; color: var(--text-primary);">Lisa Chen</div>
-                <div style="color: var(--text-muted); font-size: 0.9rem;">Business Owner</div>
+                <div style="color: var(--text-muted); font-size: 0.9rem;"><%= t('trust.testimonials.owner') %></div>
               </div>
             </div>
           </div>
@@ -2193,8 +2187,8 @@
   <section class="how-it-works-section" style="padding: 80px 0; background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);">
     <div class="container">
       <div class="section-header">
-        <h2 class="section-title">How It Works</h2>
-        <p class="section-subtitle">Get premium digital products in 3 simple steps</p>
+        <h2 class="section-title"><%= t('howItWorks.title') %></h2>
+        <p class="section-subtitle"><%= t('howItWorks.subtitle') %></p>
       </div>
 
       <div class="how-it-works-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 3rem; margin-top: 4rem;">
@@ -2203,8 +2197,8 @@
           <div class="step-number" style="width: 80px; height: 80px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem; font-weight: 700; margin: 0 auto 2rem; box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);">
             1
           </div>
-          <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1rem;">Browse & Select</h3>
-          <p style="color: var(--text-secondary); line-height: 1.6; font-size: 1rem;">Explore thousands of verified digital products from trusted sellers. Use our advanced filters to find exactly what you need.</p>
+          <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1rem;"><%= t('howItWorks.step1.title') %></h3>
+          <p style="color: var(--text-secondary); line-height: 1.6; font-size: 1rem;"><%= t('howItWorks.step1.desc') %></p>
           <div style="position: absolute; top: 40px; right: -20px; color: #e2e8f0; font-size: 2rem;">→</div>
         </div>
 
@@ -2213,8 +2207,8 @@
           <div class="step-number" style="width: 80px; height: 80px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem; font-weight: 700; margin: 0 auto 2rem; box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);">
             2
           </div>
-          <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1rem;">Secure Payment</h3>
-          <p style="color: var(--text-secondary); line-height: 1.6; font-size: 1rem;">Pay safely with cryptocurrency or other secure methods. Your payment is held in escrow until you confirm delivery.</p>
+          <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1rem;"><%= t('howItWorks.step2.title') %></h3>
+          <p style="color: var(--text-secondary); line-height: 1.6; font-size: 1rem;"><%= t('howItWorks.step2.desc') %></p>
           <div style="position: absolute; top: 40px; right: -20px; color: #e2e8f0; font-size: 2rem;">→</div>
         </div>
 
@@ -2223,8 +2217,8 @@
           <div class="step-number" style="width: 80px; height: 80px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem; font-weight: 700; margin: 0 auto 2rem; box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);">
             3
           </div>
-          <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1rem;">Instant Delivery</h3>
-          <p style="color: var(--text-secondary); line-height: 1.6; font-size: 1rem;">Receive your digital product instantly after payment confirmation. Access your files immediately and start using them right away.</p>
+          <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1rem;"><%= t('howItWorks.step3.title') %></h3>
+          <p style="color: var(--text-secondary); line-height: 1.6; font-size: 1rem;"><%= t('howItWorks.step3.desc') %></p>
         </div>
       </div>
 
@@ -2236,8 +2230,8 @@
               <i class="fas fa-shield-alt"></i>
             </div>
             <div style="text-align: left;">
-              <div style="font-weight: 700; color: var(--text-primary);">100% Secure</div>
-              <div style="font-size: 0.9rem; color: var(--text-secondary);">Escrow Protection</div>
+              <div style="font-weight: 700; color: var(--text-primary);"><%= t('howItWorks.benefits.secure') %></div>
+              <div style="font-size: 0.9rem; color: var(--text-secondary);"><%= t('howItWorks.benefits.escrow') %></div>
             </div>
           </div>
 
@@ -2246,8 +2240,8 @@
               <i class="fas fa-rocket"></i>
             </div>
             <div style="text-align: left;">
-              <div style="font-weight: 700; color: var(--text-primary);">Instant Access</div>
-              <div style="font-size: 0.9rem; color: var(--text-secondary);">Immediate Delivery</div>
+              <div style="font-weight: 700; color: var(--text-primary);"><%= t('howItWorks.benefits.instant') %></div>
+              <div style="font-size: 0.9rem; color: var(--text-secondary);"><%= t('howItWorks.benefits.immediate') %></div>
             </div>
           </div>
 
@@ -2256,8 +2250,8 @@
               <i class="fas fa-undo-alt"></i>
             </div>
             <div style="text-align: left;">
-              <div style="font-weight: 700; color: var(--text-primary);">Money Back</div>
-              <div style="font-size: 0.9rem; color: var(--text-secondary);">30-Day Guarantee</div>
+              <div style="font-weight: 700; color: var(--text-primary);"><%= t('howItWorks.benefits.moneyBack') %></div>
+              <div style="font-size: 0.9rem; color: var(--text-secondary);"><%= t('howItWorks.benefits.guarantee') %></div>
             </div>
           </div>
 
@@ -2266,8 +2260,8 @@
               <i class="fas fa-headset"></i>
             </div>
             <div style="text-align: left;">
-              <div style="font-weight: 700; color: var(--text-primary);">24/7 Support</div>
-              <div style="font-size: 0.9rem; color: var(--text-secondary);">Always Available</div>
+              <div style="font-weight: 700; color: var(--text-primary);"><%= t('howItWorks.benefits.support') %></div>
+              <div style="font-size: 0.9rem; color: var(--text-secondary);"><%= t('howItWorks.benefits.available') %></div>
             </div>
           </div>
         </div>
@@ -2279,8 +2273,8 @@
   <section class="success-stories-section" style="padding: 80px 0; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);">
     <div class="container">
       <div class="section-header">
-        <h2 class="section-title">Success Stories</h2>
-        <p class="section-subtitle">Real customers achieving real results</p>
+        <h2 class="section-title"><%= t('success.title') %></h2>
+        <p class="section-subtitle"><%= t('success.subtitle') %></p>
       </div>
 
       <div class="success-stories-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem; margin-top: 4rem;">
@@ -2294,8 +2288,8 @@
               MJ
             </div>
             <div>
-              <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0;">Marketing Agency</h4>
-              <p style="color: var(--text-secondary); margin: 0.25rem 0 0 0; font-size: 0.9rem;">Saved $2,400/month on social media accounts</p>
+              <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0;"><%= t('success.story1.title') %></h4>
+              <p style="color: var(--text-secondary); margin: 0.25rem 0 0 0; font-size: 0.9rem;"><%= t('success.story1.desc') %></p>
             </div>
           </div>
           <blockquote style="color: var(--text-secondary); font-style: italic; line-height: 1.6; margin-bottom: 1.5rem; position: relative;">
@@ -2303,7 +2297,7 @@
           </blockquote>
           <div style="display: flex; align-items: center; gap: 0.5rem;">
             <div style="color: #10b981; font-weight: 700; font-size: 1.2rem;">$2,400</div>
-            <div style="color: var(--text-secondary); font-size: 0.9rem;">monthly savings</div>
+            <div style="color: var(--text-secondary); font-size: 0.9rem;"><%= t('success.story1.savings') %></div>
           </div>
         </div>
 
@@ -2317,8 +2311,8 @@
               GS
             </div>
             <div>
-              <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0;">Gaming Store Owner</h4>
-              <p style="color: var(--text-secondary); margin: 0.25rem 0 0 0; font-size: 0.9rem;">Started making $800/week selling gaming accounts</p>
+              <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0;"><%= t('success.story2.title') %></h4>
+              <p style="color: var(--text-secondary); margin: 0.25rem 0 0 0; font-size: 0.9rem;"><%= t('success.story2.desc') %></p>
             </div>
           </div>
           <blockquote style="color: var(--text-secondary); font-style: italic; line-height: 1.6; margin-bottom: 1.5rem; position: relative;">
@@ -2326,7 +2320,7 @@
           </blockquote>
           <div style="display: flex; align-items: center; gap: 0.5rem;">
             <div style="color: #f59e0b; font-weight: 700; font-size: 1.2rem;">$800/week</div>
-            <div style="color: var(--text-secondary); font-size: 0.9rem;">income generated</div>
+            <div style="color: var(--text-secondary); font-size: 0.9rem;"><%= t('success.story2.income') %></div>
           </div>
         </div>
 
@@ -2340,8 +2334,8 @@
               TC
             </div>
             <div>
-              <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0;">Content Creator</h4>
-              <p style="color: var(--text-secondary); margin: 0.25rem 0 0 0; font-size: 0.9rem;">Built audience 5x faster with verified accounts</p>
+              <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0;"><%= t('success.story3.title') %></h4>
+              <p style="color: var(--text-secondary); margin: 0.25rem 0 0 0; font-size: 0.9rem;"><%= t('success.story3.desc') %></p>
             </div>
           </div>
           <blockquote style="color: var(--text-secondary); font-style: italic; line-height: 1.6; margin-bottom: 1.5rem; position: relative;">
@@ -2349,14 +2343,14 @@
           </blockquote>
           <div style="display: flex; align-items: center; gap: 0.5rem;">
             <div style="color: #667eea; font-weight: 700; font-size: 1.2rem;">5x faster</div>
-            <div style="color: var(--text-secondary); font-size: 0.9rem;">audience growth</div>
+            <div style="color: var(--text-secondary); font-size: 0.9rem;"><%= t('success.story3.growth') %></div>
           </div>
         </div>
       </div>
 
       <!-- Recent Transactions Feed -->
       <div class="recent-transactions" style="margin-top: 4rem;">
-        <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); text-align: center; margin-bottom: 2rem;">Recent Transactions</h3>
+        <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); text-align: center; margin-bottom: 2rem;"><%= t('trust.transactions') %></h3>
         <div class="transactions-list" style="max-width: 600px; margin: 0 auto;">
           <div class="transaction-item" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: white; border-radius: 12px; margin-bottom: 0.75rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--border);">
             <div style="display: flex; align-items: center; gap: 1rem;">
@@ -2368,7 +2362,7 @@
                 <div style="color: var(--text-secondary); font-size: 0.8rem;">2 minutes ago</div>
               </div>
             </div>
-            <div style="font-weight: 700; color: #10b981;">$34.99</div>
+            <div style="font-weight: 700; color: #10b981;">₽2834</div>
           </div>
 
           <div class="transaction-item" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: white; border-radius: 12px; margin-bottom: 0.75rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--border);">
@@ -2381,7 +2375,7 @@
                 <div style="color: var(--text-secondary); font-size: 0.8rem;">5 minutes ago</div>
               </div>
             </div>
-            <div style="font-weight: 700; color: #10b981;">$8.99</div>
+            <div style="font-weight: 700; color: #10b981;">₽728</div>
           </div>
 
           <div class="transaction-item" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: white; border-radius: 12px; margin-bottom: 0.75rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--border);">
@@ -2394,7 +2388,7 @@
                 <div style="color: var(--text-secondary); font-size: 0.8rem;">8 minutes ago</div>
               </div>
             </div>
-            <div style="font-weight: 700; color: #10b981;">$49.99</div>
+            <div style="font-weight: 700; color: #10b981;">₽4049</div>
           </div>
         </div>
       </div>
@@ -2410,26 +2404,25 @@
             <i class="fas fa-shield-alt"></i>
           </div>
           <div style="text-align: left;">
-            <h3 style="font-size: 1.8rem; font-weight: 800; color: #92400e; margin: 0; line-height: 1.2;">30-Day Money-Back Guarantee</h3>
-            <p style="color: #78350f; margin: 0.25rem 0 0 0; font-weight: 600;">100% Risk-Free Purchase</p>
+            <h3 style="font-size: 1.8rem; font-weight: 800; color: #92400e; margin: 0; line-height: 1.2;"><%= t('guarantee.title') %></h3>
+            <p style="color: #78350f; margin: 0.25rem 0 0 0; font-weight: 600;"><%= t('guarantee.subtitle') %></p>
           </div>
         </div>
         <p style="font-size: 1.1rem; color: #92400e; line-height: 1.6; margin-bottom: 1.5rem; font-weight: 500;">
-          Not satisfied with your purchase? Get a full refund within 30 days, no questions asked.
-          We stand behind every product on our platform.
+          <%= t('guarantee.desc') %>
         </p>
         <div style="display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; font-size: 0.9rem; color: #92400e;">
           <div style="display: flex; align-items: center; gap: 0.5rem;">
             <i class="fas fa-check-circle" style="color: #10b981;"></i>
-            <span>Instant Refunds</span>
+            <span><%= t('guarantee.features[0]') %></span>
           </div>
           <div style="display: flex; align-items: center; gap: 0.5rem;">
             <i class="fas fa-check-circle" style="color: #10b981;"></i>
-            <span>No Hidden Fees</span>
+            <span><%= t('guarantee.features[1]') %></span>
           </div>
           <div style="display: flex; align-items: center; gap: 0.5rem;">
             <i class="fas fa-check-circle" style="color: #10b981;"></i>
-            <span>24/7 Support</span>
+            <span><%= t('guarantee.features[2]') %></span>
           </div>
         </div>
       </div>
@@ -2439,20 +2432,20 @@
   <!-- ================= CTA SECTION ================== -->
   <section class="cta-section">
     <div class="cta-content">
-      <h2 class="cta-title">Start Saving Money Today</h2>
-      <p class="cta-subtitle">Join 25,000+ satisfied customers who save up to 70% on premium digital products</p>
+      <h2 class="cta-title"><%= t('cta.title') %></h2>
+      <p class="cta-subtitle"><%= t('cta.subtitle') %></p>
       <div class="hero-cta">
         <a href="/signup" class="btn btn-primary">
           <i class="fas fa-rocket"></i>
-          Get Started Free
+          <%= t('cta.primary') %>
         </a>
         <a href="/products" class="btn btn-secondary">
           <i class="fas fa-tags"></i>
-          View All Deals
+          <%= t('cta.secondary') %>
         </a>
       </div>
       <div style="margin-top: 2rem; font-size: 0.9rem; color: rgba(255,255,255,0.8);">
-        <i class="fas fa-shield-alt"></i> 30-day money-back guarantee • Instant delivery • 24/7 support
+        <i class="fas fa-shield-alt"></i> <%= t('cta.footer') %>
       </div>
     </div>
   </section>
@@ -2461,19 +2454,19 @@
   <footer class="footer">
     <div class="footer-content">
       <div class="footer-links">
-        <a href="#home">Home</a>
-        <a href="#products">Products</a>
-        <a href="#top-stores">Top Stores</a>
-        <a href="#games">Games</a>
-        <a href="#ai">AI</a>
-        <a href="/login">Login</a>
-        <a href="/signup">Sign Up</a>
+        <a href="#home"><%= t('nav.home') %></a>
+        <a href="#products"><%= t('nav.products') %></a>
+        <a href="#top-stores"><%= t('nav.topStores') %></a>
+        <a href="#games"><%= t('nav.games') %></a>
+        <a href="#ai"><%= t('nav.ai') %></a>
+        <a href="/login"><%= t('nav.login') %></a>
+        <a href="/signup"><%= t('nav.signup') %></a>
       </div>
       <div class="footer-bottom">
-        <p>&copy; 2025 Hsello. All rights reserved. | <a href="/admin/login" style="color: #667eea; text-decoration: none;">Admin Access</a></p>
+        <p><%= t('footer.copyright') %> | <a href="/admin/login" style="color: #667eea; text-decoration: none;"><%= t('footer.admin') %></a></p>
         <a href="#" class="support-link" onclick="toggleSupportWidget(); return false;">
           <i class="fas fa-headset"></i>
-          Support
+          <%= t('footer.support') %>
         </a>
       </div>
     </div>
@@ -2486,8 +2479,8 @@
         <i class="fas fa-headset"></i>
       </div>
       <div class="support-info">
-        <h3>Need Help?</h3>
-        <p>We're here to assist you</p>
+        <h3><%= t('support.title') %></h3>
+        <p><%= t('support.subtitle') %></p>
       </div>
       <button class="support-close" onclick="toggleSupportWidget()">
         <i class="fas fa-times"></i>
@@ -2502,8 +2495,8 @@
             <i class="fas fa-comments"></i>
           </div>
           <div class="option-text">
-            <h4>Live Chat</h4>
-            <p>Chat with our team now</p>
+            <h4><%= t('support.liveChat') %></h4>
+            <p><%= t('support.liveChatDesc') %></p>
           </div>
           <i class="fas fa-chevron-right option-arrow"></i>
         </div>
@@ -2513,8 +2506,8 @@
             <i class="fab fa-whatsapp"></i>
           </div>
           <div class="option-text">
-            <h4>WhatsApp</h4>
-            <p>Chat with us instantly</p>
+            <h4><%= t('support.whatsapp') %></h4>
+            <p><%= t('support.whatsappDesc') %></p>
           </div>
           <i class="fas fa-chevron-right option-arrow"></i>
         </div>
@@ -2524,8 +2517,8 @@
             <i class="fab fa-telegram-plane"></i>
           </div>
           <div class="option-text">
-            <h4>Telegram</h4>
-            <p>Message us on Telegram</p>
+            <h4><%= t('support.telegram') %></h4>
+            <p><%= t('support.telegramDesc') %></p>
           </div>
           <i class="fas fa-chevron-right option-arrow"></i>
         </div>
@@ -2535,8 +2528,8 @@
             <i class="fas fa-envelope"></i>
           </div>
           <div class="option-text">
-            <h4>Email Support</h4>
-            <p>Send us an email</p>
+            <h4><%= t('support.email') %></h4>
+            <p><%= t('support.emailDesc') %></p>
           </div>
           <i class="fas fa-chevron-right option-arrow"></i>
         </div>
@@ -2566,7 +2559,7 @@
           <div class="welcome-message">
             <div class="message bot-message">
               <div class="message-content">
-                <p>👋 Hello! Welcome to Hsello Support. How can I help you today?</p>
+                <p><%= t('support.welcome') %></p>
                 <div class="message-time">Just now</div>
               </div>
             </div>
@@ -2580,13 +2573,13 @@
             <span></span>
             <span></span>
           </div>
-          <span class="typing-text">Support is typing...</span>
+          <span class="typing-text"><%= t('support.typing') %></span>
         </div>
 
         <!-- Chat Input -->
         <div class="chat-input-container">
           <div class="chat-input-wrapper">
-            <input type="text" id="messageInput" placeholder="Type your message..." class="chat-input">
+            <input type="text" id="messageInput" placeholder="<%= t('support.placeholder') %>" class="chat-input">
             <button class="send-button" onclick="sendMessage()" id="sendButton">
               <i class="fas fa-paper-plane"></i>
             </button>
@@ -2595,7 +2588,7 @@
       </div>
 
       <div class="support-footer">
-        <p>Response time: Usually within 24 hours</p>
+        <p><%= t('support.responseTime') %></p>
       </div>
     </div>
   </div>

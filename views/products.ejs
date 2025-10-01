@@ -640,7 +640,7 @@
                     <% } %>
                   </p>
                   <div class="product-meta">
-                    <span class="product-price">$<%= product.price %></span>
+                    <span class="product-price">₽<%= Math.round(product.price * 81) %></span>
                     <span class="product-rating">
                       ⭐
                       <% if (product.reviews && product.reviews.length > 0) { %>

@@ -1,0 +1,237 @@
+{
+  "nav": {
+    "home": "Home",
+    "products": "Products",
+    "topStores": "Top Stores",
+    "games": "Games",
+    "ai": "AI",
+    "login": "Login",
+    "signup": "Sign Up",
+    "language": "Language"
+  },
+  "hero": {
+    "badge": "✨ Trusted by 25,000+ Users",
+    "titleMain": "Elevate Your Digital Presence",
+    "titleSub": "with Premium Accounts & Services",
+    "subtitle": "Join the most sophisticated digital marketplace where quality meets trust. Discover verified accounts, premium services, and cutting-edge digital solutions.",
+    "stats": {
+      "products": "Products Sold",
+      "rating": "Customer Rating",
+      "response": "Average Response"
+    },
+    "cta": {
+      "primary": "Save 40% vs Competitors",
+      "secondary": "Earn $500+/Month"
+    },
+    "scroll": "Scroll to discover more"
+  },
+  "categories": {
+    "title": "Popular Categories",
+    "subtitle": "Explore our most sought-after digital products",
+    "social": {
+      "title": "Social Media",
+      "desc": "Instagram, Facebook, Twitter & more",
+      "tags": ["Verified Accounts", "Business Pages", "Influencer Accounts"]
+    },
+    "email": {
+      "title": "Email Accounts",
+      "desc": "Gmail, Outlook, Yahoo & more",
+      "tags": ["Business Email", "Recovery Email", "Phone Verified"]
+    },
+    "gaming": {
+      "title": "Gaming",
+      "desc": "Steam, Epic Games, Origin accounts",
+      "tags": ["Premium Games", "Level Boost", "DLC Content"]
+    },
+    "services": {
+      "title": "Services",
+      "desc": "SEO, Marketing, Development",
+      "tags": ["SEO Services", "Social Growth", "Content Creation"]
+    },
+    "ai": {
+      "title": "AI Tools",
+      "desc": "ChatGPT, Midjourney, Claude access",
+      "tags": ["Premium Access", "API Keys", "Unlimited Usage"]
+    },
+    "subscriptions": {
+      "title": "Subscriptions",
+      "desc": "Netflix, Spotify, Disney+",
+      "tags": ["Streaming Services", "Premium Accounts", "Family Plans"]
+    },
+    "viewAll": "Explore All Categories"
+  },
+  "stats": {
+    "products": "Premium Products",
+    "sellers": "Trusted Sellers",
+    "rating": "Average Rating",
+    "support": "Support Available"
+  },
+  "stores": {
+    "title": "Top Selling Stores",
+    "subtitle": "Discover the most successful digital stores on our platform",
+    "rank1": "#1 Store",
+    "rank2": "#2 Store",
+    "rank3": "#3 Store",
+    "verified": "Verified Store",
+    "sales": "Sales",
+    "customers": "Customers",
+    "visit": "Visit Store",
+    "viewAll": "View All Stores"
+  },
+  "products": {
+    "title": "Top Selling Products",
+    "subtitle": "Discover the most popular digital products with the highest sales",
+    "search": "Search by product name, store name, or keywords...",
+    "sort": {
+      "sales": "Highest Sales",
+      "priceLow": "Price: Low to High",
+      "priceHigh": "Price: High to Low",
+      "popularity": "Most Popular",
+      "newest": "Newest First"
+    },
+    "filter": "Filter by:",
+    "categories": {
+      "all": "All Categories",
+      "instagram": "Instagram",
+      "gmail": "Gmail",
+      "facebook": "Facebook",
+      "youtube": "YouTube"
+    },
+    "prices": {
+      "all": "All Prices",
+      "range1": "₽0 - ₽810",
+      "range2": "₽810 - ₽2025",
+      "range3": "₽2025 - ₽4050",
+      "range4": "₽4050 - ₽8100",
+      "range5": "₽8100+"
+    },
+    "sold": "sold",
+    "visitStore": "Visit Store",
+    "viewDetails": "View Details",
+    "seeAll": "See All Products"
+  },
+  "features": {
+    "title": "Why Choose Hsello?",
+    "subtitle": "We provide the best digital marketplace experience",
+    "secure": {
+      "title": "Secure & Safe",
+      "desc": "Advanced encryption, escrow protection, and verified sellers ensure your transactions are completely secure."
+    },
+    "instant": {
+      "title": "Instant Delivery",
+      "desc": "Get immediate access to your digital products after payment. No waiting, no delays, instant gratification."
+    },
+    "quality": {
+      "title": "Quality Guarantee",
+      "desc": "100% satisfaction guarantee. If you're not happy with your purchase, get your money back."
+    },
+    "support": {
+      "title": "24/7 Support",
+      "desc": "Round-the-clock customer support via live chat, email, and multiple communication channels."
+    }
+  },
+  "trust": {
+    "stats": {
+      "online": "Users Online",
+      "sales": "Sales Today",
+      "sellers": "New Sellers",
+      "response": "Avg Response"
+    },
+    "badges": {
+      "title": "Trusted & Secure",
+      "ssl": "SSL Encrypted",
+      "escrow": "Escrow Protection",
+      "verified": "Verified Sellers",
+      "support": "24/7 Support"
+    },
+    "testimonials": {
+      "title": "What Our Customers Say",
+      "testimonial1": "Amazing platform! Got my Instagram account instantly after payment. The quality is exactly as described. Highly recommend!",
+      "testimonial2": "Been selling on Hsello for 6 months now. The platform is secure, payments are fast, and customer support is excellent.",
+      "testimonial3": "Purchased multiple Gmail accounts for my business. All working perfectly and support was very helpful when I had questions.",
+      "buyer": "Verified Buyer",
+      "seller": "Verified Seller",
+      "owner": "Business Owner"
+    },
+    "transactions": "Recent Transactions"
+  },
+  "howItWorks": {
+    "title": "How It Works",
+    "subtitle": "Get premium digital products in 3 simple steps",
+    "step1": {
+      "title": "Browse & Select",
+      "desc": "Explore thousands of verified digital products from trusted sellers. Use our advanced filters to find exactly what you need."
+    },
+    "step2": {
+      "title": "Secure Payment",
+      "desc": "Pay safely with cryptocurrency or other secure methods. Your payment is held in escrow until you confirm delivery."
+    },
+    "step3": {
+      "title": "Instant Delivery",
+      "desc": "Receive your digital product instantly after payment confirmation. Access your files immediately and start using them right away."
+    },
+    "benefits": {
+      "secure": "100% Secure",
+      "escrow": "Escrow Protection",
+      "instant": "Instant Access",
+      "immediate": "Immediate Delivery",
+      "moneyBack": "Money Back",
+      "guarantee": "30-Day Guarantee",
+      "support": "24/7 Support",
+      "available": "Always Available"
+    }
+  },
+  "success": {
+    "title": "Success Stories",
+    "subtitle": "Real customers achieving real results",
+    "story1": {
+      "title": "Marketing Agency",
+      "desc": "Saved $2,400/month on social media accounts",
+      "savings": "$2,400 monthly savings"
+    },
+    "story2": {
+      "title": "Gaming Store Owner",
+      "desc": "Started making $800/week selling gaming accounts",
+      "income": "$800/week income generated"
+    },
+    "story3": {
+      "title": "Content Creator",
+      "desc": "Built audience 5x faster with verified accounts",
+      "growth": "5x faster audience growth"
+    }
+  },
+  "guarantee": {
+    "title": "30-Day Money-Back Guarantee",
+    "subtitle": "100% Risk-Free Purchase",
+    "desc": "Not satisfied with your purchase? Get a full refund within 30 days, no questions asked. We stand behind every product on our platform.",
+    "features": ["Instant Refunds", "No Hidden Fees", "24/7 Support"]
+  },
+  "cta": {
+    "title": "Start Saving Money Today",
+    "subtitle": "Join 25,000+ satisfied customers who save up to 70% on premium digital products",
+    "primary": "Get Started Free",
+    "secondary": "View All Deals",
+    "footer": "30-day money-back guarantee • Instant delivery • 24/7 support"
+  },
+  "footer": {
+    "copyright": "© 2025 Hsello. All rights reserved.",
+    "admin": "Admin Access",
+    "support": "Support"
+  },
+  "support": {
+    "title": "Need Help?",
+    "subtitle": "We're here to assist you",
+    "liveChat": "Live Chat",
+    "liveChatDesc": "Chat with our team now",
+    "whatsapp": "WhatsApp",
+    "whatsappDesc": "Chat with us instantly",
+    "telegram": "Telegram",
+    "telegramDesc": "Message us on Telegram",
+    "email": "Email Support",
+    "emailDesc": "Send us an email",
+    "responseTime": "Response time: Usually within 24 hours",
+    "welcome": "👋 Hello! Welcome to Hsello Support. How can I help you today?",
+    "typing": "Support is typing...",
+    "placeholder": "Type your message..."
+  }
+}

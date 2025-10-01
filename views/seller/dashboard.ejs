@@ -440,7 +440,7 @@
                 <div class="stat-label">Sales</div>
               </div>
               <div class="stat-item">
-                <div class="stat-number">$<%= Number(user.balance || 0).toFixed(2) %></div>
+                <div class="stat-number">₽<%= Math.round(Number(user.balance || 0) * 81) %></div>
                 <div class="stat-label">Balance</div>
               </div>
             </div>
@@ -490,7 +490,7 @@
                       <p><strong>Category:</strong> <%= product.itemCategory %></p>
                     </div>
                     <div>
-                      <div class="product-price">$<%= product.price %></div>
+                      <div class="product-price">₽<%= Math.round(product.price * 81) %></div>
                       <div style="color: #7f8c8d; font-size: 0.9em;">
                         <%= product.status === 'active' ? 'âœ… Active' : 'â¸ï¸ Inactive' %>
                       </div>
@@ -627,7 +627,7 @@
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                   <div>
                     <div style="font-size: 2.5em; font-weight: 700; color: #27ae60; margin-bottom: 5px;">
-                      $<%= Number(user.balance || 0).toFixed(2) %>
+                      ₽<%= Math.round(Number(user.balance || 0) * 81) %>
                     </div>
                     <div style="color: #7f8c8d; font-size: 0.9em;">Available for withdrawal</div>
                   </div>

@@ -10,6 +10,10 @@ const fs = require('fs');
 
 const mongoose = require('mongoose');
 
+// Import i18n configuration
+const i18next = require('./config/i18n');
+const i18nextMiddleware = require('i18next-http-middleware');
+
 // ============ FILE VALIDATION UTILITY FUNCTIONS ============
 
 // Function to validate and count entries in uploaded files
@@ -390,6 +394,10 @@ app.use('/articles', express.static(path.join(__dirname, 'articles')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(methodOverride('_method'));
+
+// i18n middleware
+app.use(i18nextMiddleware.handle(i18next));
+
 app.use(session({
     secret: SECRET,
     resave: false,
@@ -522,7 +530,28 @@ app.use((req, res, next) => {
         res.locals.user.isAdmin = true;
     }
 
+    // Add i18n helper functions to locals
+    res.locals.t = req.t;
+    res.locals.i18n = i18next;
+    res.locals.currentLanguage = req.language || 'en';
+
     next();
+});
+
+// Language switching route
+app.get('/lang/:lang', (req, res) => {
+    const lang = req.params.lang;
+    const supportedLanguages = ['en', 'ru'];
+
+    if (supportedLanguages.includes(lang)) {
+        // Set language in session/cookie
+        req.i18n.changeLanguage(lang);
+        // Redirect back to the previous page or home
+        const referer = req.get('Referer') || '/';
+        res.redirect(referer);
+    } else {
+        res.redirect('/');
+    }
 });
 
 // Product file uploads for digital products

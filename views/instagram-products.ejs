@@ -634,7 +634,7 @@
                 </div>
 
                 <div class="account-price-section">
-                  <div class="account-price">$<%= product.price %></div>
+                  <div class="account-price">₽<%= Math.round(product.price * 81) %></div>
                   <div class="account-rating">
                     <i class="fas fa-star" style="color: #f59e0b;"></i>
                     <% if (product.reviews && product.reviews.length > 0) { %>

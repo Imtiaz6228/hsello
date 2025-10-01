@@ -363,12 +363,13 @@ console.log('🔧 Starting simplified DigitalMarket application...');
 console.log('Node version:', process.version);
 console.log('Working directory:', __dirname);
 
-// Connect to MongoDB
-connectDB();
+// Connect to MongoDB (await the connection)
+(async () => {
+  const dbConnected = await connectDB();
 
-const PORT = process.env.PORT || 3001;
-const SECRET = process.env.SESSION_SECRET || 'digitalmarket_secret_key_2025';
-console.log(' PORT:', PORT);
+  const PORT = process.env.PORT || 3001;
+  const SECRET = process.env.SESSION_SECRET || 'digitalmarket_secret_key_2025';
+  console.log(' PORT:', PORT);
 
 // Initialize database counters for legacy support
 let disputeIdCounter = 1;
@@ -5897,19 +5898,231 @@ app.get('/admin/analytics', isAdminLoggedIn, async (req, res) => {
 
         console.log('✅ MongoDB connected, proceeding with analytics...');
 
-        // For now, just render with dummy data to test if the view works
-        console.log('📊 Rendering analytics with dummy data');
+        // Get date range from query params or default to last 30 days
+        let startDate, endDate;
+
+        if (req.query.start && req.query.end) {
+            startDate = new Date(req.query.start);
+            endDate = new Date(req.query.end);
+            // Set end date to end of day
+            endDate.setHours(23, 59, 59, 999);
+        } else {
+            endDate = new Date();
+            startDate = new Date();
+            startDate.setDate(startDate.getDate() - 30);
+        }
+
+        // Validate date range (max 90 days)
+        const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+        if (daysDiff > 90) {
+            req.flash('error_msg', 'Date range cannot exceed 90 days. Please select a shorter period.');
+            return res.redirect('/admin/analytics');
+        }
+
+        const dateFilter = {
+            timestamp: {
+                $gte: startDate,
+                $lte: endDate
+            }
+        };
+
+        // Additional filters
+        let additionalFilters = {};
+
+        // Filter by page if specified
+        if (req.query.page && req.query.page !== 'all') {
+            additionalFilters.page = req.query.page;
+        }
+
+        // Filter by user type
+        if (req.query.userType && req.query.userType !== 'all') {
+            if (req.query.userType === 'logged-in') {
+                additionalFilters.isLoggedIn = true;
+            } else if (req.query.userType === 'anonymous') {
+                additionalFilters.isLoggedIn = false;
+            }
+        }
+
+        // Filter by device type
+        if (req.query.device && req.query.device !== 'all') {
+            if (req.query.device === 'mobile') {
+                additionalFilters.userAgent = { $regex: /mobile/i };
+            } else if (req.query.device === 'desktop') {
+                additionalFilters.userAgent = { $not: { $regex: /mobile|bot|crawl/i } };
+            } else if (req.query.device === 'bot') {
+                additionalFilters.userAgent = { $regex: /bot|crawl|spider/i };
+            }
+        }
+
+        // Combine filters
+        const filter = { ...dateFilter, ...additionalFilters };
+
+        // Get total visits (all page views)
+        const totalVisits = await Analytics.countDocuments(filter);
+
+        // Get unique visitors (unique IPs)
+        const uniqueVisitors = await Analytics.distinct('ip', filter);
+        const uniqueVisitorsCount = uniqueVisitors.length;
+
+        // Get unique pages visited
+        const uniquePages = await Analytics.distinct('page', filter);
+        const uniquePagesCount = uniquePages.length;
+
+        // Get page views by page
+        const pageViews = await Analytics.aggregate([
+            { $match: filter },
+            {
+                $group: {
+                    _id: '$page',
+                    count: { $sum: 1 },
+                    avgResponseTime: { $avg: '$responseTime' }
+                }
+            },
+            { $sort: { count: -1 } },
+            { $limit: 10 }
+        ]);
+
+        // Get daily visits for the selected period
+        const dailyVisits = await Analytics.aggregate([
+            { $match: filter },
+            {
+                $group: {
+                    _id: '$date',
+                    visits: { $sum: 1 },
+                    uniqueVisitors: { $addToSet: '$ip' }
+                }
+            },
+            {
+                $project: {
+                    date: '$_id',
+                    visits: 1,
+                    uniqueVisitors: { $size: '$uniqueVisitors' },
+                    _id: 0
+                }
+            },
+            { $sort: { date: 1 } }
+        ]);
+
+        // Get hourly distribution
+        const hourlyStats = await Analytics.aggregate([
+            { $match: filter },
+            {
+                $group: {
+                    _id: '$hour',
+                    visits: { $sum: 1 }
+                }
+            },
+            {
+                $project: {
+                    hour: '$_id',
+                    visits: 1,
+                    _id: 0
+                }
+            },
+            { $sort: { hour: 1 } }
+        ]);
+
+        // Get top referrers
+        const topReferrers = await Analytics.aggregate([
+            { $match: { ...filter, referrer: { $ne: '', $exists: true } } },
+            {
+                $group: {
+                    _id: '$referrer',
+                    count: { $sum: 1 }
+                }
+            },
+            { $sort: { count: -1 } },
+            { $limit: 10 }
+        ]);
+
+        // Get user agent stats (browser/device detection)
+        const userAgentStats = await Analytics.aggregate([
+            { $match: filter },
+            {
+                $group: {
+                    _id: {
+                        $cond: {
+                            if: { $regexMatch: { input: '$userAgent', regex: /mobile/i } },
+                            then: 'Mobile',
+                            else: {
+                                $cond: {
+                                    if: { $regexMatch: { input: '$userAgent', regex: /bot|crawl|spider/i } },
+                                    then: 'Bot',
+                                    else: 'Desktop'
+                                }
+                            }
+                        }
+                    },
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+        // Get logged in vs anonymous users
+        const userTypeStats = await Analytics.aggregate([
+            { $match: filter },
+            {
+                $group: {
+                    _id: '$isLoggedIn',
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+        // Calculate average response time
+        const avgResponseTime = await Analytics.aggregate([
+            { $match: { ...filter, responseTime: { $exists: true } } },
+            {
+                $group: {
+                    _id: null,
+                    avgTime: { $avg: '$responseTime' }
+                }
+            }
+        ]);
+
+        // Get status code distribution
+        const statusCodes = await Analytics.aggregate([
+            { $match: filter },
+            {
+                $group: {
+                    _id: '$statusCode',
+                    count: { $sum: 1 }
+                }
+            },
+            { $sort: { count: -1 } }
+        ]);
+
+        // Get available pages for filter dropdown
+        const availablePages = await Analytics.distinct('page', dateFilter); // Use dateFilter for page list
+
+        console.log('📊 Analytics data calculated successfully');
 
         res.render('admin/analytics', {
             adminUser: req.session.adminUser,
             analytics: {
-                totalVisits: 1234,
-                uniqueVisitors: 567,
-                uniquePages: 42,
+                totalVisits,
+                uniqueVisitors: uniqueVisitorsCount,
+                uniquePages: uniquePagesCount,
+                pageViews,
+                dailyVisits,
+                hourlyStats,
+                topReferrers,
+                userAgentStats,
+                userTypeStats,
+                avgResponseTime: avgResponseTime[0]?.avgTime || 0,
+                statusCodes,
                 dateRange: {
-                    start: '2025-09-01',
-                    end: '2025-09-30'
-                }
+                    start: startDate.toISOString().split('T')[0],
+                    end: endDate.toISOString().split('T')[0]
+                },
+                filters: {
+                    start: req.query.start || '',
+                    end: req.query.end || '',
+                    page: req.query.page || 'all',
+                    userType: req.query.userType || 'all',
+                    device: req.query.device || 'all'
+                },
+                availablePages
             }
         });
 
@@ -5919,6 +6132,78 @@ app.get('/admin/analytics', isAdminLoggedIn, async (req, res) => {
         console.error('Error stack:', error.stack);
         req.flash('error_msg', 'An error occurred loading analytics');
         res.redirect('/admin/sellers');
+    }
+});
+
+// Export Analytics Data
+app.get('/admin/analytics/export', isAdminLoggedIn, async (req, res) => {
+    try {
+        console.log('📊 Analytics export requested');
+
+        // Check if MongoDB is connected
+        if (mongoose.connection.readyState !== 1) {
+            req.flash('error_msg', 'Database connection unavailable.');
+            return res.redirect('/admin/analytics');
+        }
+
+        // Get date range from query params or default to last 30 days
+        let startDate, endDate;
+
+        if (req.query.start && req.query.end) {
+            startDate = new Date(req.query.start);
+            endDate = new Date(req.query.end);
+            endDate.setHours(23, 59, 59, 999);
+        } else {
+            endDate = new Date();
+            startDate = new Date();
+            startDate.setDate(startDate.getDate() - 30);
+        }
+
+        const filter = {
+            timestamp: {
+                $gte: startDate,
+                $lte: endDate
+            }
+        };
+
+        // Get analytics data for export
+        const analyticsData = await Analytics.find(filter)
+            .sort({ timestamp: -1 })
+            .limit(10000) // Limit to prevent memory issues
+            .select('page ip userAgent sessionId method statusCode responseTime referrer timestamp date hour isBot userId isLoggedIn');
+
+        // Convert to CSV format
+        let csvContent = 'Date,Time,Page,IP Address,User Agent,Method,Status Code,Response Time (ms),Referrer,Is Bot,Is Logged In,User ID\n';
+
+        analyticsData.forEach(record => {
+            const date = new Date(record.timestamp).toISOString().split('T')[0];
+            const time = new Date(record.timestamp).toISOString().split('T')[1].split('.')[0];
+            const page = record.page || '';
+            const ip = record.ip || '';
+            const userAgent = (record.userAgent || '').replace(/"/g, '""'); // Escape quotes
+            const method = record.method || '';
+            const statusCode = record.statusCode || '';
+            const responseTime = record.responseTime || '';
+            const referrer = (record.referrer || '').replace(/"/g, '""');
+            const isBot = record.isBot || false;
+            const isLoggedIn = record.isLoggedIn || false;
+            const userId = record.userId || '';
+
+            csvContent += `"${date}","${time}","${page}","${ip}","${userAgent}","${method}","${statusCode}","${responseTime}","${referrer}","${isBot}","${isLoggedIn}","${userId}"\n`;
+        });
+
+        // Set headers for CSV download
+        const fileName = `analytics_export_${startDate.toISOString().split('T')[0]}_to_${endDate.toISOString().split('T')[0]}.csv`;
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+        res.send(csvContent);
+
+        console.log(`✅ Analytics data exported: ${analyticsData.length} records`);
+    } catch (error) {
+        console.error('❌ Analytics export error:', error);
+        req.flash('error_msg', 'An error occurred exporting analytics data');
+        res.redirect('/admin/analytics');
     }
 });
 
@@ -6297,5 +6582,7 @@ server.listen(PORT, () => {
     console.log(`🚀 Server running at http://localhost:${PORT}`);
     console.log(`💬 Chat functionality enabled`);
 });
+
+})(); // Close the async IIFE
 
 module.exports = app;

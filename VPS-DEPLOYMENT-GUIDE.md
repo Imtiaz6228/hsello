@@ -72,7 +72,19 @@ sudo systemctl enable mongod
 2. Generate app password: [Google App Passwords](https://myaccount.google.com/apppasswords)
 3. Use app password in `EMAIL_PASS`
 
-### 5. Start Application
+### 5. Ensure Localization Files are Deployed
+
+**Important**: Make sure the `locales/` directory is included in your deployment. This directory contains translation files for multiple languages.
+
+```bash
+# Check if locales directory exists
+ls -la locales/
+
+# If missing, copy from your local development
+# scp -r ./locales user@vps:/var/www/hsello/
+```
+
+### 6. Start Application
 
 ```bash
 # Development
@@ -150,6 +162,32 @@ npm install
 # Check logs
 npm start 2>&1 | tee app.log
 ```
+
+### Issue 5: Multiple languages not working
+
+**Cause**: Translation files not deployed or inaccessible
+
+**Solutions**:
+```bash
+# Check if locales directory exists
+ls -la locales/
+
+# Check file permissions
+ls -la locales/*/
+
+# Check if translation files are valid JSON
+node -e "JSON.parse(require('fs').readFileSync('locales/en/translation.json'))"
+node -e "JSON.parse(require('fs').readFileSync('locales/ru/translation.json'))"
+
+# Test language switching
+curl http://localhost:3001/lang/ru
+```
+
+**Common causes**:
+- `locales/` directory not uploaded to VPS
+- File permissions don't allow reading
+- Translation files corrupted during upload
+- Case sensitivity issues (Linux is case-sensitive)
 
 ## 🌐 VPS-Specific Configuration
 
@@ -253,12 +291,14 @@ mongoose.connect(process.env.MONGODB_URI).then(async () => {
 - [ ] `.env` file configured with correct values
 - [ ] Email service configured (or disabled)
 - [ ] Dependencies installed (`npm install`)
+- [ ] `locales/` directory deployed with translation files
 - [ ] Firewall configured
 - [ ] Application starts without errors
 - [ ] Can access application in browser
 - [ ] Signup works (creates user)
 - [ ] Login works (authenticates user)
 - [ ] Email verification works (if enabled)
+- [ ] Multiple languages work (`/lang/ru` should switch to Russian)
 
 ## 🆘 Emergency Fixes
 

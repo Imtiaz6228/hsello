@@ -57,6 +57,7 @@ sudo chown -R $USER:$USER /var/www/hsello
 # Copy application files (assuming they're already uploaded)
 print_status "Application files should be uploaded to /var/www/hsello"
 print_warning "Please upload your hsello application files to /var/www/hsello before continuing"
+print_warning "IMPORTANT: Make sure to include the 'locales/' directory for multi-language support"
 
 # Install dependencies
 print_status "Installing application dependencies..."

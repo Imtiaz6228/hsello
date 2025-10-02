@@ -747,6 +747,7 @@
     .top-product-card:hover {
       transform: translateY(-4px);
       box-shadow: var(--shadow-lg);
+      border-color: #667eea;
     }
 
     .product-image-container {
@@ -1621,45 +1622,69 @@
           <div class="search-input-container" style="flex: 1; min-width: 300px;">
             <div style="position: relative;">
               <i class="fas fa-search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #64748b;"></i>
-              <input type="text" id="productSearch" placeholder="<%= t('products.search') %>" style="width: 100%; padding: 1rem 1rem 1rem 3rem; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1rem; transition: all 0.3s ease;" onkeyup="filterProducts()">
+              <input type="text" id="productSearch" placeholder="<%= t('products.search') %>" style="width: 100%; padding: 1rem 4rem 1rem 3rem; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1rem; transition: all 0.3s ease;" onkeyup="handleSearchKeyUp(event)">
+              <button onclick="filterProducts()" class="search-btn" style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: all 0.3s ease;">
+                <i class="fas fa-search"></i> Search
+              </button>
             </div>
           </div>
 
           <!-- Sort Dropdown -->
           <div class="sort-container">
             <select id="sortSelect" onchange="filterProducts()" style="padding: 1rem 1.5rem; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1rem; background: white; cursor: pointer; min-width: 200px;">
-              <option value="sales"><%= t('products.sort.sales') %></option>
-              <option value="price-low"><%= t('products.sort.priceLow') %></option>
-              <option value="price-high"><%= t('products.sort.priceHigh') %></option>
-              <option value="popularity"><%= t('products.sort.popularity') %></option>
-              <option value="newest"><%= t('products.sort.newest') %></option>
+              <option value="sales">🏆 Sort by Sales</option>
+              <option value="price-low">💰 Price: Low to High</option>
+              <option value="price-high">💎 Price: High to Low</option>
+              <option value="popularity">⭐ Most Popular</option>
+              <option value="newest">🆕 Newest First</option>
             </select>
           </div>
         </div>
 
-        <!-- Filter Tags -->
-        <div class="filter-tags" style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
-          <span style="font-weight: 600; color: #374151; margin-right: 0.5rem;"><%= t('products.filter') %></span>
-
-          <!-- Category Filters -->
-          <div class="filter-group">
-            <button class="filter-tag active" data-filter="all" onclick="setCategoryFilter('all')" style="padding: 0.5rem 1rem; border: 2px solid #e2e8f0; background: #667eea; color: white; border-radius: 25px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;"><%= t('products.categories.all') %></button>
-            <button class="filter-tag" data-filter="Instagram" onclick="setCategoryFilter('Instagram')" style="padding: 0.5rem 1rem; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 25px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;"><%= t('products.categories.instagram') %></button>
-            <button class="filter-tag" data-filter="GMail" onclick="setCategoryFilter('GMail')" style="padding: 0.5rem 1rem; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 25px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;"><%= t('products.categories.gmail') %></button>
-            <button class="filter-tag" data-filter="Facebook" onclick="setCategoryFilter('Facebook')" style="padding: 0.5rem 1rem; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 25px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;"><%= t('products.categories.facebook') %></button>
-            <button class="filter-tag" data-filter="YouTube" onclick="setCategoryFilter('YouTube')" style="padding: 0.5rem 1rem; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 25px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;"><%= t('products.categories.youtube') %></button>
+        <!-- Advanced Filter Tags -->
+        <div class="advanced-filters" style="border-top: 1px solid #e2e8f0; padding-top: 1.5rem;">
+          <div class="filter-section" style="margin-bottom: 1rem;">
+            <h4 style="font-size: 0.9rem; font-weight: 700; color: #374151; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="fas fa-filter"></i>
+              Filter by Category
+            </h4>
+            <div class="category-filters" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button class="filter-tag active" data-filter="all" onclick="setCategoryFilter('all')" style="padding: 0.6rem 1.2rem; border: 2px solid #667eea; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 25px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);">
+                <i class="fas fa-th-large" style="margin-right: 0.25rem;"></i>All Categories
+              </button>
+              <button class="filter-tag" data-filter="Instagram" onclick="setCategoryFilter('Instagram')" style="padding: 0.6rem 1.2rem; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 25px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                <i class="fab fa-instagram" style="margin-right: 0.25rem; color: #E4405F;"></i>Instagram
+              </button>
+              <button class="filter-tag" data-filter="GMail" onclick="setCategoryFilter('GMail')" style="padding: 0.6rem 1.2rem; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 25px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                <i class="fas fa-envelope" style="margin-right: 0.25rem; color: #EA4335;"></i>Gmail
+              </button>
+              <button class="filter-tag" data-filter="Facebook" onclick="setCategoryFilter('Facebook')" style="padding: 0.6rem 1.2rem; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 25px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                <i class="fab fa-facebook" style="margin-right: 0.25rem; color: #1877F2;"></i>Facebook
+              </button>
+              <button class="filter-tag" data-filter="YouTube" onclick="setCategoryFilter('YouTube')" style="padding: 0.6rem 1.2rem; border: 2px solid #e2e8f0; background: white; color: #64748b; border-radius: 25px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                <i class="fab fa-youtube" style="margin-right: 0.25rem; color: #FF0000;"></i>YouTube
+              </button>
+            </div>
           </div>
 
-          <!-- Price Range Filter -->
-          <div class="price-filter" style="margin-left: 1rem;">
-            <select id="priceFilter" onchange="filterProducts()" style="padding: 0.5rem 1rem; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 0.9rem; background: white; cursor: pointer;">
-              <option value="all"><%= t('products.prices.all') %></option>
-              <option value="0-10"><%= t('products.prices.range1') %></option>
-              <option value="10-25"><%= t('products.prices.range2') %></option>
-              <option value="25-50"><%= t('products.prices.range3') %></option>
-              <option value="50-100"><%= t('products.prices.range4') %></option>
-              <option value="100+"><%= t('products.prices.range5') %></option>
-            </select>
+          <div class="filter-section">
+            <h4 style="font-size: 0.9rem; font-weight: 700; color: #374151; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="fas fa-dollar-sign"></i>
+              Filter by Price Range
+            </h4>
+            <div class="price-filters" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+              <select id="priceFilter" onchange="filterProducts()" style="padding: 0.6rem 1rem; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 0.9rem; background: white; cursor: pointer; min-width: 150px;">
+                <option value="all">💰 All Prices</option>
+                <option value="0-10">₽0 - ₽810</option>
+                <option value="10-25">₽810 - ₽2025</option>
+                <option value="25-50">₽2025 - ₽4050</option>
+                <option value="50-100">₽4050 - ₽8100</option>
+                <option value="100+">₽8100+</option>
+              </select>
+              <button onclick="clearAllFilters()" class="clear-filters-btn" style="padding: 0.6rem 1rem; border: 2px solid #ef4444; background: white; color: #ef4444; border-radius: 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                <i class="fas fa-times" style="margin-right: 0.25rem;"></i>Clear Filters
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -2010,11 +2035,15 @@
         <% } %>
       </div>
 
-      <!-- See All Products Button -->
-      <div style="text-align: center;">
-        <a href="/products" class="btn btn-primary" style="padding: 1.25rem 3rem; font-size: 1.1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 25px; color: white; text-decoration: none; display: inline-flex; align-items: center; gap: 0.75rem; box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3); transition: all 0.3s ease;">
-          <i class="fas fa-eye"></i>
-          <span><%= t('products.seeAll') %></span>
+      <!-- Load More / See All Products -->
+      <div class="load-more-section" style="text-align: center; margin-top: 2rem;">
+        <button id="loadMoreBtn" onclick="loadMoreProducts()" class="btn btn-primary" style="padding: 1.25rem 3rem; font-size: 1.1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 25px; color: white; cursor: pointer; display: inline-flex; align-items: center; gap: 0.75rem; box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3); transition: all 0.3s ease; margin-right: 1rem;">
+          <i class="fas fa-plus"></i>
+          <span>Load More Products</span>
+        </button>
+        <a href="/products" class="btn btn-secondary" style="padding: 1.25rem 2rem; font-size: 1rem; background: rgba(255,255,255,0.9); border: 2px solid #667eea; border-radius: 25px; color: #667eea; text-decoration: none; display: inline-flex; align-items: center; gap: 0.75rem; transition: all 0.3s ease;">
+          <i class="fas fa-th-large"></i>
+          <span>View All Products</span>
         </a>
       </div>
     </div>
@@ -2605,7 +2634,20 @@
     let currentCategoryFilter = 'all';
     let currentSortOption = 'sales';
 
+    function handleSearchKeyUp(event) {
+      if (event.key === 'Enter') {
+        filterProducts();
+      }
+    }
+
     function filterProducts() {
+      // Show loading state
+      const searchBtn = document.querySelector('.search-btn');
+      if (searchBtn) {
+        searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
+        searchBtn.disabled = true;
+      }
+
       const searchTerm = document.getElementById('productSearch').value.toLowerCase();
       const sortOption = document.getElementById('sortSelect').value;
       const priceFilter = document.getElementById('priceFilter').value;
@@ -2628,11 +2670,12 @@
         // Category filter
         const categoryMatch = currentCategoryFilter === 'all' || category === currentCategoryFilter;
 
-        // Search filter
+        // Enhanced search filter
         const searchMatch = !searchTerm ||
           productName.includes(searchTerm) ||
           storeName.includes(searchTerm) ||
-          tags.includes(searchTerm);
+          tags.includes(searchTerm) ||
+          category.toLowerCase().includes(searchTerm);
 
         // Price filter
         let priceMatch = true;
@@ -2685,6 +2728,39 @@
 
       // Update filter tags visual state
       updateFilterTags();
+
+      // Update results count
+      updateResultsCount(Math.min(visibleCount, currentDisplayCount));
+
+      // Show/hide load more button based on available products
+      const loadMoreBtn = document.getElementById('loadMoreBtn');
+      if (loadMoreBtn) {
+        loadMoreBtn.style.display = visibleCount > currentDisplayCount ? 'inline-flex' : 'none';
+      }
+
+      // Reset loading state
+      setTimeout(() => {
+        if (searchBtn) {
+          searchBtn.innerHTML = '<i class="fas fa-search"></i> Search';
+          searchBtn.disabled = false;
+        }
+      }, 300);
+    }
+
+    function updateResultsCount(count) {
+      let resultsDiv = document.getElementById('resultsCount');
+      if (!resultsDiv) {
+        const container = document.querySelector('.top-selling-products-grid');
+        if (container) {
+          resultsDiv = document.createElement('div');
+          resultsDiv.id = 'resultsCount';
+          resultsDiv.style.cssText = 'text-align: center; margin-bottom: 1rem; color: #64748b; font-weight: 600;';
+          container.parentNode.insertBefore(resultsDiv, container);
+        }
+      }
+      if (resultsDiv) {
+        resultsDiv.textContent = `Showing ${count} product${count !== 1 ? 's' : ''}`;
+      }
     }
 
     function setCategoryFilter(category) {
@@ -2697,14 +2773,33 @@
           tag.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
           tag.style.color = 'white';
           tag.style.borderColor = 'transparent';
+          tag.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.3)';
         } else {
           tag.classList.remove('active');
           tag.style.background = 'white';
           tag.style.color = '#64748b';
           tag.style.borderColor = '#e2e8f0';
+          tag.style.boxShadow = 'none';
         }
       });
 
+      filterProducts();
+    }
+
+    function clearAllFilters() {
+      // Reset search
+      document.getElementById('productSearch').value = '';
+
+      // Reset category filter
+      setCategoryFilter('all');
+
+      // Reset sort
+      document.getElementById('sortSelect').value = 'sales';
+
+      // Reset price filter
+      document.getElementById('priceFilter').value = 'all';
+
+      // Apply filters
       filterProducts();
     }
 
@@ -2732,8 +2827,113 @@
       }
     }
 
+    let allProductsData = [];
+    let currentDisplayCount = 5;
+    const productsPerLoad = 5;
+
+    // Store all products data for load more functionality
+    function storeAllProductsData() {
+      const productCards = document.querySelectorAll('.top-selling-product-card');
+      allProductsData = Array.from(productCards).map(card => ({
+        element: card,
+        category: card.dataset.category || '',
+        price: parseFloat(card.dataset.price || 0),
+        sales: parseInt(card.dataset.sales || 0),
+        name: (card.dataset.name || '').toLowerCase(),
+        store: (card.dataset.store || '').toLowerCase(),
+        tags: (card.dataset.tags || '').toLowerCase()
+      }));
+    }
+
+    function loadMoreProducts() {
+      const loadMoreBtn = document.getElementById('loadMoreBtn');
+      loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+      loadMoreBtn.disabled = true;
+
+      // Simulate loading delay for better UX
+      setTimeout(() => {
+        const container = document.getElementById('topSellingProductsGrid');
+        const searchTerm = document.getElementById('productSearch').value.toLowerCase();
+        const sortOption = document.getElementById('sortSelect').value;
+        const priceFilter = document.getElementById('priceFilter').value;
+
+        // Filter products based on current filters
+        let filteredProducts = allProductsData.filter(product => {
+          const categoryMatch = currentCategoryFilter === 'all' || product.category === currentCategoryFilter;
+          const searchMatch = !searchTerm ||
+            product.name.includes(searchTerm) ||
+            product.store.includes(searchTerm) ||
+            product.tags.includes(searchTerm) ||
+            product.category.toLowerCase().includes(searchTerm);
+
+          let priceMatch = true;
+          if (priceFilter !== 'all') {
+            const [min, max] = priceFilter.split('-').map(p => p === '+' ? Infinity : parseFloat(p));
+            priceMatch = product.price >= min && (max === Infinity ? true : product.price <= max);
+          }
+
+          return categoryMatch && searchMatch && priceMatch;
+        });
+
+        // Sort filtered products
+        filteredProducts.sort((a, b) => {
+          switch(sortOption) {
+            case 'price-low':
+              return a.price - b.price;
+            case 'price-high':
+              return b.price - a.price;
+            case 'sales':
+              return b.sales - a.sales;
+            case 'popularity':
+              return b.sales - a.sales;
+            case 'newest':
+              return 0;
+            default:
+              return b.sales - a.sales;
+          }
+        });
+
+        // Show next batch of products
+        const startIndex = currentDisplayCount;
+        const endIndex = Math.min(startIndex + productsPerLoad, filteredProducts.length);
+
+        for (let i = startIndex; i < endIndex; i++) {
+          const product = filteredProducts[i];
+          if (product && product.element) {
+            product.element.style.display = 'block';
+            container.appendChild(product.element);
+          }
+        }
+
+        currentDisplayCount = endIndex;
+
+        // Update results count
+        updateResultsCount(currentDisplayCount);
+
+        // Hide load more button if no more products
+        if (currentDisplayCount >= filteredProducts.length) {
+          loadMoreBtn.style.display = 'none';
+        }
+
+        // Reset button
+        loadMoreBtn.innerHTML = '<i class="fas fa-plus"></i> Load More Products';
+        loadMoreBtn.disabled = false;
+      }, 800);
+    }
+
     // Initialize on page load
     document.addEventListener('DOMContentLoaded', function() {
+      // Store all products data
+      storeAllProductsData();
+
+      // Initially hide products beyond the first 5
+      const productCards = document.querySelectorAll('.top-selling-product-card');
+      productCards.forEach((card, index) => {
+        if (index >= 5) {
+          card.style.display = 'none';
+        }
+      });
+
       // Set initial active filter
       setCategoryFilter('all');
 
@@ -2741,12 +2941,21 @@
       document.getElementById('productSearch').addEventListener('input', function() {
         // Debounce search for better performance
         clearTimeout(this.searchTimeout);
-        this.searchTimeout = setTimeout(filterProducts, 300);
+        this.searchTimeout = setTimeout(() => {
+          currentDisplayCount = 5; // Reset display count on filter change
+          filterProducts();
+        }, 300);
       });
 
       // Add change listeners for select elements
-      document.getElementById('sortSelect').addEventListener('change', filterProducts);
-      document.getElementById('priceFilter').addEventListener('change', filterProducts);
+      document.getElementById('sortSelect').addEventListener('change', function() {
+        currentDisplayCount = 5; // Reset display count on sort change
+        filterProducts();
+      });
+      document.getElementById('priceFilter').addEventListener('change', function() {
+        currentDisplayCount = 5; // Reset display count on filter change
+        filterProducts();
+      });
     });
 
     // Add smooth scroll for anchor links

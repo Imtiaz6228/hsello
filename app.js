@@ -10,6 +10,17 @@ const fs = require('fs');
 
 const mongoose = require('mongoose');
 
+const connectDB = async () => {
+  try {
+    if (mongoose.connection.readyState === 0) {
+      await mongoose.connect(process.env.MONGODB_URI);
+      console.log("✅ MongoDB connected successfully");
+    }
+  } catch (err) {
+    console.error("❌ MongoDB connection error:", err.message);
+  }
+};
+
 // Import i18n configuration
 const i18next = require('./config/i18n');
 const i18nextMiddleware = require('i18next-http-middleware');
@@ -290,7 +301,6 @@ function writeSplitDataToFile(data, originalFilePath, originalFileName, newFileN
 
 // Database connection
 // Connect to MongoDB
-const connectDB = require('./db');
 
 // Import Models
 const User = require('./models/User');
@@ -552,6 +562,11 @@ app.get('/lang/:lang', (req, res) => {
     } else {
         res.redirect('/');
     }
+});
+
+// Example route showing how to send a translated string in an Express route
+app.get('/welcome', (req, res) => {
+  res.send(req.t('welcome')); // 'welcome' key from translation.json
 });
 
 // Product file uploads for digital products
@@ -6607,9 +6622,44 @@ app.get('/article/:slug', (req, res) => {
 });
 
 // Start server
-server.listen(PORT, () => {
-    console.log(`🚀 Server running at http://localhost:${PORT}`);
-    console.log(`💬 Chat functionality enabled`);
+if (global.server) {
+    console.log('🔄 Closing existing server...');
+    global.server.close(() => {
+        console.log('✅ Existing server closed');
+        startServer();
+    });
+} else {
+    startServer();
+}
+
+function startServer() {
+    global.server = server.listen(PORT, () => {
+        console.log(`🚀 Server running at http://localhost:${PORT}`);
+        console.log(`💬 Chat functionality enabled`);
+    });
+}
+
+// Graceful shutdown handlers
+process.on('uncaughtException', (err) => {
+    console.error('UNCAUGHT_EXCEPTION:', err);
+    if (global.server) {
+        global.server.close(() => {
+            process.exit(1);
+        });
+    } else {
+        process.exit(1);
+    }
+});
+
+process.on('unhandledRejection', (err) => {
+    console.error('UNHANDLED_REJECTION:', err);
+    if (global.server) {
+        global.server.close(() => {
+            process.exit(1);
+        });
+    } else {
+        process.exit(1);
+    }
 });
 
 })(); // Close the async IIFE

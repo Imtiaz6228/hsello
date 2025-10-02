@@ -233,5 +233,6 @@
     "welcome": "👋 Hello! Welcome to Hsello Support. How can I help you today?",
     "typing": "Support is typing...",
     "placeholder": "Type your message..."
-  }
+  },
+  "welcome": "Welcome to Hsello!"
 }

@@ -3,6 +3,12 @@ require('dotenv').config();
 
 const connectDB = async () => {
   try {
+    // Check if already connected
+    if (mongoose.connection.readyState === 1) {
+      console.log('✅ MongoDB already connected');
+      return true;
+    }
+
     // Check if we're in development without MongoDB
     if (!process.env.MONGODB_URI) {
       console.log('⚠️  No MONGODB_URI provided. Please set up MongoDB connection.');

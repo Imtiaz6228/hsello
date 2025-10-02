@@ -1,3 +1,5 @@
+require('dotenv').config();  // <-- load .env
+
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
@@ -11,14 +13,14 @@ const fs = require('fs');
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
-  try {
-    if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(process.env.MONGODB_URI);
-      console.log("✅ MongoDB connected successfully");
-    }
-  } catch (err) {
-    console.error("❌ MongoDB connection error:", err.message);
-  }
+  const mongoUri = process.env.MONGODB_URI;
+
+  mongoose.connect(mongoUri, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+  })
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error('MongoDB connection error:', err));
 };
 
 // Import i18n configuration

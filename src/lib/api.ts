@@ -3,10 +3,11 @@
  * Communicates with the Express.js backend for all authentication and data operations.
  */
 
-// API base: always use relative /api.
-// In dev, Vite proxy forwards /api to http://localhost:3000.
-// In production, the Express backend is served from the same domain.
-const API_BASE = '/api';
+// API base: uses VITE_API_URL env var if set (e.g. on Vercel pointing to Railway),
+// otherwise falls back to relative /api (dev with Vite proxy or same-domain backend).
+const API_BASE = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_URL)
+  ? (import.meta as any).env.VITE_API_URL
+  : '/api';
 
 interface ApiResponse<T = any> {
   data?: T;

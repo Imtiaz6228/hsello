@@ -35,9 +35,23 @@ app.use(helmet({
   contentSecurityPolicy: false,
 }));
 
-// CORS
+// CORS — allow Vercel frontend and local dev
+const ALLOWED_ORIGINS = [
+  CLIENT_URL,
+  'http://localhost:5173',
+  'http://localhost:3000',
+].filter(Boolean);
+
 app.use(cors({
-  origin: CLIENT_URL,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (curl, mobile, Postman)
+    if (!origin) return callback(null, true);
+    if (ALLOWED_ORIGINS.includes(origin) || origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    console.warn(`[CORS] Blocked origin: ${origin}`);
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -127,7 +141,11 @@ app.get('/api/products/:id', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// Health check
+// Health check (required by Railway/Render for deploy success)
+app.get('/', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });

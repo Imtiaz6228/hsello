@@ -77,11 +77,14 @@ export function extractToken(req) {
  */
 export function setAuthCookies(res, { accessToken, refreshToken }) {
   const isProduction = process.env.NODE_ENV === 'production';
+  // In production, use 'none' for cross-origin support (Vercel ↔ Railway),
+  // 'lax' for same-origin dev (localhost:5173 → localhost:3000 via proxy).
+  const sameSite = isProduction ? 'none' : 'lax';
 
   res.cookie('accessToken', accessToken, {
     httpOnly: true,
     secure: isProduction,
-    sameSite: isProduction ? 'strict' : 'lax',
+    sameSite,
     maxAge: 15 * 60 * 1000, // 15 minutes
     path: '/',
   });
@@ -89,7 +92,7 @@ export function setAuthCookies(res, { accessToken, refreshToken }) {
   res.cookie('refreshToken', refreshToken, {
     httpOnly: true,
     secure: isProduction,
-    sameSite: isProduction ? 'strict' : 'lax',
+    sameSite,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     path: '/api/auth',
   });

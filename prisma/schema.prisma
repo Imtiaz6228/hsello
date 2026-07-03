@@ -7,6 +7,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── Users & Auth ────────────────────────────────────────
+
 model User {
   id                String    @id @default(cuid())
   email             String    @unique
@@ -23,6 +25,8 @@ model User {
   termsAcceptedAt   DateTime  @default(now())
   privacyAcceptedAt DateTime  @default(now())
   isBanned          Boolean   @default(false)
+  isSuspended       Boolean   @default(false)
+  suspensionReason  String?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
@@ -30,9 +34,16 @@ model User {
   emailVerificationTokens EmailVerificationToken[]
   passwordResetTokens     PasswordResetToken[]
   sellerApplication       SellerApplication?
+  store                   Store?
+  orders                  Order[]
+  reviews                 Review[]
+  notifications           Notification[]
   auditLogs               AuditLog[]
+  supportTickets          SupportTicket[]       @relation("TicketUser")
+  assignedTickets         SupportTicket[]       @relation("TicketAssignee")
 
   @@index([role])
+  @@index([isBanned])
   @@map("users")
 }
 
@@ -84,6 +95,8 @@ model PasswordResetToken {
   @@map("password_reset_tokens")
 }
 
+// ─── Seller / Store ──────────────────────────────────────
+
 model SellerApplication {
   id                String   @id @default(cuid())
   userId            String   @unique
@@ -99,6 +112,9 @@ model SellerApplication {
   postalCode        String
   storeDescription  String
   productCategories String   @default("[]")
+  businessDocument  String?
+  identityDocument  String?
+  taxInfo           String?
   termsAcceptedAt   DateTime @default(now())
   status            String   @default("PENDING")
   reviewedAt        DateTime?
@@ -114,20 +130,279 @@ model SellerApplication {
   @@map("seller_applications")
 }
 
-model AdminNotification {
-  id                  String    @id @default(cuid())
-  type                String
-  title               String
-  message             String
-  metadata            String?
-  sellerApplicationId String?
-  readAt              DateTime?
-  createdAt           DateTime  @default(now())
+model Store {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  storeName       String
+  slug            String    @unique
+  description     String?
+  logoUrl         String?
+  bannerUrl       String?
+  status          String    @default("PENDING")
+  totalRevenue    Float     @default(0)
+  totalOrders     Int       @default(0)
+  rating          Float     @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  @@index([readAt])
-  @@index([sellerApplicationId])
-  @@map("admin_notifications")
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@index([status])
+  @@index([slug])
+  @@map("stores")
 }
+
+// ─── Categories ──────────────────────────────────────────
+
+model Category {
+  id          String  @id @default(cuid())
+  name        String
+  nameRu      String  @default("")
+  nameZh      String  @default("")
+  slug        String  @unique
+  icon        String  @default("FolderTree")
+  imageUrl    String?
+  description String  @default("")
+  descriptionRu String @default("")
+  descriptionZh String @default("")
+  isActive    Boolean @default(true)
+  sortOrder   Int     @default(0)
+  parentId    String?
+
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children Category[] @relation("CategoryTree")
+  products Product[]
+
+  @@index([isActive])
+  @@index([parentId])
+  @@map("categories")
+}
+
+// ─── Products ────────────────────────────────────────────
+
+model Product {
+  id              String    @id @default(cuid())
+  storeId         String
+  categoryId      String
+  title           String
+  titleRu         String    @default("")
+  titleZh         String    @default("")
+  description     String    @default("")
+  descriptionRu   String    @default("")
+  descriptionZh   String    @default("")
+  imageUrl        String?
+  price           Float     @default(0)
+  salePrice       Float?
+  status          String    @default("PENDING")
+  isActive        Boolean   @default(false)
+  isFeatured      Boolean   @default(false)
+  tags            String    @default("[]")
+  warrantyDays    Int       @default(0)
+  stockQuantity   Int       @default(0)
+  soldCount       Int       @default(0)
+  moderatedAt     DateTime?
+  moderatedById   String?
+  moderationNote  String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  store        Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  category     Category      @relation(fields: [categoryId], references: [id])
+  orderItems   OrderItem[]
+  reviews      Review[]
+  cartItems    CartItem[]
+
+  @@index([status])
+  @@index([storeId])
+  @@index([categoryId])
+  @@index([isFeatured])
+  @@map("products")
+}
+
+// ─── Orders ──────────────────────────────────────────────
+
+model Order {
+  id              String    @id @default(cuid())
+  userId          String
+  totalAmount     Float     @default(0)
+  platformFee     Float     @default(0)
+  status          String    @default("PENDING")
+  paymentMethod   String    @default("BALANCE")
+  paymentStatus   String    @default("PENDING")
+  paymentTxId     String?
+  shippingAddress String?
+  trackingNumber  String?
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id])
+  items      OrderItem[]
+  invoice    Invoice?
+
+  @@index([userId])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int     @default(1)
+  price     Float   @default(0)
+  subtotal  Float   @default(0)
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+model Invoice {
+  id           String   @id @default(cuid())
+  orderId      String   @unique
+  invoiceNumber String  @unique
+  pdfUrl       String?
+  createdAt    DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("invoices")
+}
+
+// ─── Cart ────────────────────────────────────────────────
+
+model CartItem {
+  id        String   @id @default(cuid())
+  userId    String?
+  sessionId String?
+  productId String
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([userId])
+  @@index([sessionId])
+  @@map("cart_items")
+}
+
+// ─── Reviews ─────────────────────────────────────────────
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  orderId   String?
+  rating    Int      @default(5)
+  comment   String?
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([productId])
+  @@index([userId])
+  @@map("reviews")
+}
+
+// ─── Coupons ─────────────────────────────────────────────
+
+model Coupon {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  description String?
+  discountPercent Float  @default(0)
+  discountFixed   Float  @default(0)
+  minOrderAmount  Float  @default(0)
+  maxUses         Int    @default(0)
+  usedCount       Int    @default(0)
+  isActive        Boolean @default(true)
+  expiresAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([code])
+  @@index([isActive])
+  @@map("coupons")
+}
+
+// ─── Notifications ───────────────────────────────────────
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String?
+  type      String
+  title     String
+  message   String
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([readAt])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// ─── Support Tickets ─────────────────────────────────────
+
+model SupportTicket {
+  id          String    @id @default(cuid())
+  userId      String?
+  subject     String
+  description String
+  status      String    @default("OPEN")
+  priority    String    @default("MEDIUM")
+  assignedTo  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user     User?             @relation("TicketUser", fields: [userId], references: [id], onDelete: SetNull)
+  assignee User?             @relation("TicketAssignee", fields: [assignedTo], references: [id], onDelete: SetNull)
+  messages TicketMessage[]
+
+  @@index([status])
+  @@index([userId])
+  @@map("support_tickets")
+}
+
+model TicketMessage {
+  id        String   @id @default(cuid())
+  ticketId  String
+  senderId  String?
+  message   String
+  createdAt DateTime @default(now())
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@map("ticket_messages")
+}
+
+// ─── Settings ────────────────────────────────────────────
+
+model Setting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
+
+// ─── Audit Logs ──────────────────────────────────────────
 
 model AuditLog {
   id         String   @id @default(cuid())
@@ -137,6 +412,8 @@ model AuditLog {
   action     String
   entityType String
   entityId   String?
+  oldValue   String?
+  newValue   String?
   metadata   String?
   ipAddress  String?
   userAgent  String?
@@ -146,6 +423,24 @@ model AuditLog {
 
   @@index([userId])
   @@index([action])
+  @@index([entityType])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// ─── Withdrawals ─────────────────────────────────────────
+
+model Withdrawal {
+  id        String    @id @default(cuid())
+  userId    String
+  amount    Float     @default(0)
+  method    String    @default("BANK_TRANSFER")
+  status    String    @default("PENDING")
+  details   String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@map("withdrawals")
 }

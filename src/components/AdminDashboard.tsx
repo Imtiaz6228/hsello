@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { useAppStore } from '@/store/appStore';
-import { db } from '@/store/database';
+import { useEffect, useState, useCallback } from 'react';
+import { useAuthStore } from '@/store/authStore';
+import { adminApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,986 +8,1162 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-// Switch not used
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { formatPriceRub, formatDate } from '@/lib/i18n';
-import { 
-  LayoutDashboard, 
-  Users, 
-  Package,
-  FolderTree, 
-  MessageSquare, 
-  Settings,
-  ArrowLeft, 
-  DollarSign,
-  ShoppingBag,
-  Ban,
-  CheckCircle,
-  XCircle,
-  Wallet,
-  BarChart3,
-  Search,
-  Shield,
-  TrendingDown
+import {
+  LayoutDashboard, Users, ShoppingBag, Package, FolderTree,
+  Tag, Star, MessageSquare, Settings, Shield, FileText,
+  ArrowLeft, DollarSign, TrendingUp, TrendingDown, Search,
+  Ban, CheckCircle, XCircle, Eye, Edit, Trash2, AlertTriangle,
+  Bell, Clock, CreditCard, BarChart3, Activity, LogOut, Store,
+  ArrowUpRight, ArrowDownRight, UserCheck, UserX, X, RefreshCw, 
+  TicketIcon, FileSpreadsheet, Download, Plus,
 } from 'lucide-react';
-import type { User, Category, Ticket, Product, ProductModerationStatus } from '@/types';
+import {
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip as ReTooltip, ResponsiveContainer, PieChart, Pie, Cell,
+} from 'recharts';
+
+const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+
+type AdminTab = 'dashboard' | 'users' | 'seller-applications' | 'stores' | 'products' | 'orders' | 'categories' | 'coupons' | 'reviews' | 'tickets' | 'withdrawals' | 'settings' | 'audit-logs';
+
+interface DashboardData {
+  stats: any;
+  recentOrders: any[];
+  recentUsers: any[];
+  ordersByStatus: any[];
+  monthlyRevenueData: any[];
+}
+
+const roleColors: Record<string, string> = {
+  SUPER_ADMIN: 'bg-red-500/10 text-red-600 border-red-500/30',
+  ADMIN: 'bg-purple-500/10 text-purple-600 border-purple-500/30',
+  MODERATOR: 'bg-blue-500/10 text-blue-600 border-blue-500/30',
+  SELLER: 'bg-green-500/10 text-green-600 border-green-500/30',
+  CUSTOMER: 'bg-gray-500/10 text-gray-600 border-gray-500/30',
+};
+
+const statusColors: Record<string, string> = {
+  PENDING: 'bg-yellow-500/10 text-yellow-600',
+  APPROVED: 'bg-green-500/10 text-green-600',
+  REJECTED: 'bg-red-500/10 text-red-600',
+  ACTIVE: 'bg-green-500/10 text-green-600',
+  INACTIVE: 'bg-gray-500/10 text-gray-600',
+  COMPLETED: 'bg-green-500/10 text-green-600',
+  CANCELLED: 'bg-red-500/10 text-red-600',
+  REFUNDED: 'bg-orange-500/10 text-orange-600',
+  PROCESSING: 'bg-blue-500/10 text-blue-600',
+  SHIPPED: 'bg-purple-500/10 text-purple-600',
+  DELIVERED: 'bg-emerald-500/10 text-emerald-600',
+  OPEN: 'bg-yellow-500/10 text-yellow-600',
+  CLOSED: 'bg-gray-500/10 text-gray-600',
+  RESOLVED: 'bg-green-500/10 text-green-600',
+  FEATURED: 'bg-purple-500/10 text-purple-600',
+  HIDDEN: 'bg-gray-500/10 text-gray-600',
+};
 
 export function AdminDashboard() {
-  const { 
-    currentUser, 
-    language, 
-    setCurrentView,
-    orders,
-    refreshOrders,
+  const { user, isAuthenticated, logout } = useAuthStore();
+  const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
 
-    getAdminBalance,
-    withdrawAdminBalance
-  } = useAppStore();
+  // Lists
+  const [users, setUsers] = useState<any[]>([]);
+  const [usersTotal, setUsersTotal] = useState(0);
+  const [sellerApps, setSellerApps] = useState<any[]>([]);
+  const [stores, setStores] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [coupons, setCoupons] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [withdrawals, setWithdrawals] = useState<any[]>([]);
+  const [settings, setSettings] = useState<Record<string, string>>({});
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  const [activeTab, setActiveTab] = useState('overview');
-  const [users, setUsers] = useState<User[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [announcement, setAnnouncement] = useState('');
-  const [announcementRu, setAnnouncementRu] = useState('');
-  const [announcementZh, setAnnouncementZh] = useState('');
-  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  // Filters
+  const [userSearch, setUserSearch] = useState('');
+  const [userRoleFilter, setUserRoleFilter] = useState('all');
+  const [sellerAppFilter, setSellerAppFilter] = useState('all');
+  const [productSearch, setProductSearch] = useState('');
+  const [productFilter, setProductFilter] = useState('all');
+  const [orderFilter, setOrderFilter] = useState('all');
+
+  // Dialogs
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [showUserDialog, setShowUserDialog] = useState(false);
+  const [showBanDialog, setShowBanDialog] = useState(false);
+  const [banUserId, setBanUserId] = useState<string | null>(null);
+  const [banAction, setBanAction] = useState(true);
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [resetUserId, setResetUserId] = useState<string | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [reviewNote, setReviewNote] = useState('');
+  const [showReviewDialog, setShowReviewDialog] = useState(false);
+  const [reviewAppId, setReviewAppId] = useState<string | null>(null);
+  const [reviewAction, setReviewAction] = useState<'APPROVED' | 'REJECTED'>('APPROVED');
+  const [showCatDialog, setShowCatDialog] = useState(false);
+  const [editingCat, setEditingCat] = useState<any>(null);
+  const [showCouponDialog, setShowCouponDialog] = useState(false);
+  const [editingCoupon, setEditingCoupon] = useState<any>(null);
   const [showTicketDialog, setShowTicketDialog] = useState(false);
-  const [adminReply, setAdminReply] = useState('');
-  const [adminReplyAttachments, setAdminReplyAttachments] = useState<string[]>([]);
-  const [adminWithdrawAmountRub, setAdminWithdrawAmountRub] = useState('1000');
-  const [categoryImageUploadingId, setCategoryImageUploadingId] = useState<string | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<any>(null);
+  const [ticketReply, setTicketReply] = useState('');
+
+  const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN' || user?.role === 'MODERATOR';
+  const canManageSecurity = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
+  const canModerate = isAdmin;
+
+  const loadDashboard = useCallback(async () => {
+    const { data } = await adminApi.getDashboard();
+    if (data) setDashboardData(data);
+  }, []);
+
+  const loadUsers = useCallback(async () => {
+    const { data } = await adminApi.getUsers({
+      search: userSearch || undefined,
+      role: userRoleFilter !== 'all' ? userRoleFilter : undefined,
+    });
+    if (data) { setUsers(data.users); setUsersTotal(data.total); }
+  }, [userSearch, userRoleFilter]);
+
+  const loadSellerApps = useCallback(async () => {
+    const { data } = await adminApi.getSellerApplications({
+      status: sellerAppFilter !== 'all' ? sellerAppFilter : undefined,
+    });
+    if (data) setSellerApps(data.applications);
+  }, [sellerAppFilter]);
+
+  const loadStores = useCallback(async () => {
+    const { data } = await adminApi.getStores();
+    if (data) setStores(data.stores);
+  }, []);
+
+  const loadProducts = useCallback(async () => {
+    const { data } = await adminApi.getProducts({
+      status: productFilter !== 'all' ? productFilter : undefined,
+      search: productSearch || undefined,
+    });
+    if (data) setProducts(data.products);
+  }, [productFilter, productSearch]);
+
+  const loadOrders = useCallback(async () => {
+    const { data } = await adminApi.getOrders({
+      status: orderFilter !== 'all' ? orderFilter : undefined,
+    });
+    if (data) setOrders(data.orders);
+  }, [orderFilter]);
+
+  const loadCategories = useCallback(async () => {
+    const { data } = await adminApi.getCategories();
+    if (data) setCategories(data.categories);
+  }, []);
+
+  const loadCoupons = useCallback(async () => {
+    const { data } = await adminApi.getCoupons();
+    if (data) setCoupons(data.coupons);
+  }, []);
+
+  const loadReviews = useCallback(async () => {
+    const { data } = await adminApi.getReviews();
+    if (data) setReviews(data.reviews);
+  }, []);
+
+  const loadTickets = useCallback(async () => {
+    const { data } = await adminApi.getTickets();
+    if (data) setTickets(data.tickets);
+  }, []);
+
+  const loadWithdrawals = useCallback(async () => {
+    const { data } = await adminApi.getWithdrawals();
+    if (data) setWithdrawals(data.withdrawals);
+  }, []);
+
+  const loadSettings = useCallback(async () => {
+    const { data } = await adminApi.getSettings();
+    if (data) setSettings(data.settings);
+  }, []);
+
+  const loadAuditLogs = useCallback(async () => {
+    const { data } = await adminApi.getAuditLogs();
+    if (data) setAuditLogs(data.logs);
+  }, []);
+
+  const loadNotifications = useCallback(async () => {
+    const { data } = await adminApi.getNotifications();
+    if (data) { setNotifications(data.notifications); setUnreadCount(data.unreadCount); }
+  }, []);
 
   useEffect(() => {
-    if (currentUser?.role === 'ADMIN') {
-      loadData();
-      const config = db.getSiteConfig();
-      setAnnouncement(config.announcement || '');
-      setAnnouncementRu(config.announcementRu || '');
-      setAnnouncementZh(config.announcementZh || '');
+    if (!isAdmin) return;
+    setLoading(true);
+    Promise.all([
+      loadDashboard(), loadUsers(), loadSellerApps(), loadStores(),
+      loadProducts(), loadOrders(), loadCategories(), loadCoupons(),
+      loadReviews(), loadTickets(), loadWithdrawals(), loadSettings(),
+      loadAuditLogs(), loadNotifications(),
+    ]).finally(() => setLoading(false));
+  }, [isAdmin]);
+
+  // Refresh on tab change
+  useEffect(() => {
+    if (!isAdmin) return;
+    switch (activeTab) {
+      case 'dashboard': loadDashboard(); break;
+      case 'users': loadUsers(); break;
+      case 'seller-applications': loadSellerApps(); break;
+      case 'stores': loadStores(); break;
+      case 'products': loadProducts(); break;
+      case 'orders': loadOrders(); break;
+      case 'categories': loadCategories(); break;
+      case 'coupons': loadCoupons(); break;
+      case 'reviews': loadReviews(); break;
+      case 'tickets': loadTickets(); break;
+      case 'withdrawals': loadWithdrawals(); break;
+      case 'settings': loadSettings(); break;
+      case 'audit-logs': loadAuditLogs(); break;
     }
-  }, [currentUser]);
+    loadNotifications();
+  }, [activeTab]);
 
-  const loadData = () => {
-    setUsers(Array.from(db.users.values()));
-    setCategories(db.getAllCategories());
-    setProducts(db.getAllProductsForAdmin());
-    setTickets(db.getAllTickets());
-    refreshOrders();
+  const handleBanUser = async () => {
+    if (!banUserId) return;
+    const { data, error } = await adminApi.updateUser(banUserId, { isBanned: banAction });
+    if (error) { toast.error(error); return; }
+    toast.success(banAction ? 'User banned successfully' : 'User unbanned successfully');
+    setShowBanDialog(false);
+    loadUsers();
   };
 
-  const adminBalance = getAdminBalance();
-  const totalUsers = users.length;
-  const totalSellers = users.filter(u => u.role === 'SELLER').length;
-  const totalBuyers = users.filter(u => u.role === 'BUYER').length;
-  const bannedUsers = users.filter(u => u.isBanned).length;
-  const totalOrders = orders.length;
-  const totalRevenue = orders
-    .filter(o => o.paymentStatus === 'CONFIRMED')
-    .reduce((sum, o) => sum + o.platformFeeRub, 0);
-  const pendingTickets = tickets.filter(t => t.status === 'OPEN').length;
-  const appealsCount = tickets.filter(t => t.type === 'DISPUTE').length;
-  const pendingSellerModeration = users.filter(
-    u => u.role === 'SELLER' && u.sellerModerationStatus === 'PENDING'
-  ).length;
-  const pendingProductModeration = products.filter((p) => p.moderationStatus === 'PENDING').length;
-  const totalInsuranceRub = users
-    .filter((u) => u.role === 'SELLER')
-    .reduce((sum, u) => sum + (u.insuranceBalanceRub ?? 0), 0);
+  const handleResetPassword = async () => {
+    if (!resetUserId || !newPassword) return;
+    const { error } = await adminApi.resetUserPassword(resetUserId, newPassword);
+    if (error) { toast.error(error); return; }
+    toast.success('Password reset successfully');
+    setShowResetDialog(false);
+    setNewPassword('');
+  };
 
-  const insuranceByLevel = users
-    .filter((u) => u.role === 'SELLER')
-    .reduce(
-      (acc, u) => {
-        const level = u.insuranceLevel || 'NONE';
-        acc[level] += 1;
-        return acc;
-      },
-      { NONE: 0, LEVEL_3: 0, LEVEL_2: 0, LEVEL_1: 0 } as Record<'NONE' | 'LEVEL_3' | 'LEVEL_2' | 'LEVEL_1', number>
-    );
+  const handleReviewApp = async () => {
+    if (!reviewAppId) return;
+    const { error } = await adminApi.reviewSellerApplication(reviewAppId, reviewAction, reviewNote);
+    if (error) { toast.error(error); return; }
+    toast.success(`Application ${reviewAction.toLowerCase()}`);
+    setShowReviewDialog(false);
+    setReviewNote('');
+    loadSellerApps();
+    loadDashboard();
+  };
 
-  const handleAdminWithdrawBalance = () => {
-    const amount = parseInt(adminWithdrawAmountRub, 10);
-    if (Number.isNaN(amount) || amount <= 0) {
-      toast.error(language === 'ru' ? 'Введите корректную сумму' : language === 'zh' ? '请输入有效金额' : 'Enter valid amount');
-      return;
+  const handleUpdateProduct = async (id: string, updates: any) => {
+    const { error } = await adminApi.updateProduct(id, updates);
+    if (error) { toast.error(error); return; }
+    toast.success('Product updated');
+    loadProducts();
+  };
+
+  const handleDeleteProduct = async (id: string) => {
+    const { error } = await adminApi.deleteProduct(id);
+    if (error) { toast.error(error); return; }
+    toast.success('Product deleted');
+    loadProducts();
+  };
+
+  const handleUpdateOrder = async (id: string, status: string) => {
+    const { error } = await adminApi.updateOrder(id, { status });
+    if (error) { toast.error(error); return; }
+    toast.success('Order updated');
+    loadOrders();
+    loadDashboard();
+  };
+
+  const handleReviewAction = async (id: string, status: string) => {
+    const { error } = await adminApi.updateReview(id, status);
+    if (error) { toast.error(error); return; }
+    toast.success('Review updated');
+    loadReviews();
+  };
+
+  const handleUpdateTicket = async (id: string, status: string) => {
+    const { error } = await adminApi.updateTicket(id, { status });
+    if (error) { toast.error(error); return; }
+    toast.success('Ticket updated');
+    loadTickets();
+  };
+
+  const handleReplyTicket = async () => {
+    if (!selectedTicket || !ticketReply.trim()) return;
+    const { error } = await adminApi.replyTicket(selectedTicket.id, ticketReply);
+    if (error) { toast.error(error); return; }
+    toast.success('Reply sent');
+    setTicketReply('');
+    loadTickets();
+  };
+
+  const handleSaveCategory = async () => {
+    if (!editingCat) return;
+    const { name, slug } = editingCat;
+    if (!name || !slug) { toast.error('Name and slug are required'); return; }
+    if (editingCat.id) {
+      await adminApi.updateCategory(editingCat.id, editingCat);
+    } else {
+      await adminApi.createCategory(editingCat);
     }
+    toast.success(editingCat.id ? 'Category updated' : 'Category created');
+    setShowCatDialog(false);
+    setEditingCat(null);
+    loadCategories();
+  };
 
-    const result = withdrawAdminBalance(amount);
-    if (!result.success) {
-      toast.error(result.error || (language === 'ru' ? 'Не удалось вывести баланс платформы' : language === 'zh' ? '平台余额提现失败' : 'Failed to withdraw platform balance'));
-      return;
+  const handleDeleteCategory = async (id: string) => {
+    const { error } = await adminApi.deleteCategory(id);
+    if (error) { toast.error(error); return; }
+    toast.success('Category deleted');
+    loadCategories();
+  };
+
+  const handleSaveCoupon = async () => {
+    if (!editingCoupon?.code) { toast.error('Code is required'); return; }
+    if (editingCoupon.id) {
+      await adminApi.updateCoupon(editingCoupon.id, editingCoupon);
+    } else {
+      await adminApi.createCoupon(editingCoupon);
     }
-
-    toast.success(
-      language === 'ru'
-        ? 'Вывод баланса платформы выполнен'
-        : language === 'zh'
-          ? '平台余额提现成功'
-          : 'Platform balance withdrawn'
-    );
-    loadData();
+    toast.success(editingCoupon.id ? 'Coupon updated' : 'Coupon created');
+    setShowCouponDialog(false);
+    setEditingCoupon(null);
+    loadCoupons();
   };
 
-  const getProductModerationBadgeClass = (status?: ProductModerationStatus) => {
-    if (status === 'APPROVED') return 'bg-green-500/10 text-green-600';
-    if (status === 'REJECTED') return 'bg-red-500/10 text-red-600';
-    if (status === 'HOLD') return 'bg-yellow-500/10 text-yellow-600';
-    if (status === 'DISCONTINUED') return 'bg-gray-500/10 text-gray-600';
-    return 'bg-amber-500/10 text-amber-600';
+  const handleDeleteCoupon = async (id: string) => {
+    await adminApi.deleteCoupon(id);
+    toast.success('Coupon deleted');
+    loadCoupons();
   };
 
-  const handleBanUser = (userId: string, ban: boolean) => {
-    db.updateUser(userId, { isBanned: ban });
-    loadData();
-    toast.success(ban 
-      ? (language === 'ru' ? 'Пользователь заблокирован' : language === 'zh' ? '用户已封禁' : 'User banned')
-      : (language === 'ru' ? 'Пользователь разблокирован' : language === 'zh' ? '用户已解封' : 'User unbanned')
-    );
+  const handleSaveSettings = async () => {
+    const { error } = await adminApi.updateSettings(settings);
+    if (error) { toast.error(error); return; }
+    toast.success('Settings saved');
   };
 
-  const handleSaveAnnouncement = () => {
-    db.updateSiteConfig({
-      announcement,
-      announcementRu,
-      announcementZh,
-    });
-    toast.success(language === 'ru' ? 'Сохранено!' : language === 'zh' ? '已保存!' : 'Saved!');
+  const handleLogout = async () => {
+    await logout();
   };
 
-  const handleModerateSeller = (sellerId: string, status: 'PENDING' | 'APPROVED' | 'REJECTED') => {
-    if (!currentUser) return;
-
-    const reason =
-      status !== 'APPROVED'
-        ? window.prompt(
-            status === 'REJECTED'
-              ? (language === 'ru'
-                  ? 'Укажите причину отклонения (необязательно)'
-                  : language === 'zh'
-                    ? '填写拒绝原因（可选）'
-                    : 'Enter rejection reason (optional)')
-              : (language === 'ru'
-                  ? 'Укажите комментарий для возврата на модерацию (необязательно)'
-                  : language === 'zh'
-                    ? '填写退回待审核备注（可选）'
-                    : 'Enter note for moving back to pending (optional)')
-          ) || undefined
-        : undefined;
-
-    const updated = db.moderateSellerAccount(sellerId, currentUser.id, status, reason);
-    if (!updated) {
-      toast.error(language === 'ru' ? 'Не удалось промодерировать продавца' : language === 'zh' ? '卖家审核失败' : 'Failed to moderate seller');
-      return;
-    }
-
-    loadData();
-    toast.success(status === 'APPROVED'
-      ? (language === 'ru' ? 'Продавец одобрен, email отправлен' : language === 'zh' ? '卖家已通过，邮件已发送' : 'Seller approved, email sent')
-      : status === 'REJECTED'
-        ? (language === 'ru' ? 'Продавец отклонен, email отправлен' : language === 'zh' ? '卖家已拒绝，邮件已发送' : 'Seller rejected, email sent')
-        : (language === 'ru' ? 'Продавец возвращен на модерацию, email отправлен' : language === 'zh' ? '卖家已退回待审核，邮件已发送' : 'Seller moved back to pending, email sent')
-    );
-  };
-
-  const handleModerateProduct = (
-    productId: string,
-    status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'HOLD' | 'DISCONTINUED'
-  ) => {
-    if (!currentUser) return;
-
-    const reason =
-      status !== 'APPROVED'
-        ? window.prompt(
-            language === 'ru'
-              ? 'Укажите причину/комментарий (необязательно)'
-              : language === 'zh'
-                ? '请输入原因/备注（可选）'
-                : 'Enter reason/note (optional)'
-          ) || undefined
-        : undefined;
-
-    const updated =
-      status === 'DISCONTINUED'
-        ? db.discontinueProduct(productId, currentUser.id, reason)
-        : db.moderateProduct(productId, currentUser.id, status, reason);
-
-    if (!updated) {
-      toast.error(
-        language === 'ru'
-          ? 'Не удалось обновить статус товара'
-          : language === 'zh'
-            ? '更新商品状态失败'
-            : 'Failed to update product status'
-      );
-      return;
-    }
-
-    loadData();
-    toast.success(
-      language === 'ru'
-        ? `Статус товара обновлен: ${status}`
-        : language === 'zh'
-          ? `商品状态已更新：${status}`
-          : `Product status updated: ${status}`
-    );
-  };
-
-  const openTicketChat = (ticket: Ticket) => {
-    setSelectedTicket(ticket);
-    setAdminReply('');
-    setAdminReplyAttachments([]);
-    setShowTicketDialog(true);
-  };
-
-  const fileToDataUrl = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  };
-
-  const handleCategoryImageSelect = async (categoryId: string, file: File | null) => {
-    if (!file) return;
-
-    setCategoryImageUploadingId(categoryId);
-    try {
-      const dataUrl = await fileToDataUrl(file);
-      db.updateCategory(categoryId, { imageUrl: dataUrl });
-      loadData();
-      toast.success(
-        language === 'ru'
-          ? 'Изображение категории обновлено'
-          : language === 'zh'
-            ? '分类图片已更新'
-            : 'Category image updated'
-      );
-    } catch {
-      toast.error(
-        language === 'ru'
-          ? 'Не удалось загрузить изображение категории'
-          : language === 'zh'
-            ? '分类图片上传失败'
-            : 'Failed to upload category image'
-      );
-    } finally {
-      setCategoryImageUploadingId(null);
-    }
-  };
-
-  const encodeAttachment = async (file: File): Promise<string> => {
-    const dataUrl = await fileToDataUrl(file);
-    return `${file.name}||${dataUrl}`;
-  };
-
-  const parseAttachment = (raw: string): { name: string; url: string } => {
-    const sep = raw.indexOf('||');
-    if (sep === -1) return { name: 'file', url: raw };
-    return {
-      name: raw.slice(0, sep) || 'file',
-      url: raw.slice(sep + 2),
-    };
-  };
-
-  const handleAdminReplyFileSelect = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    const encoded = await Promise.all(Array.from(files).map(encodeAttachment));
-    setAdminReplyAttachments((prev) => [...prev, ...encoded]);
-  };
-
-  const sendAdminReply = () => {
-    if (!currentUser || !selectedTicket || !adminReply.trim()) return;
-    db.createTicketMessage({
-      ticketId: selectedTicket.id,
-      senderId: currentUser.id,
-      senderType: 'ADMIN',
-      message: adminReply.trim(),
-      attachments: adminReplyAttachments,
-    });
-    const updated = db.getTicketById(selectedTicket.id) || selectedTicket;
-    setSelectedTicket(updated);
-    setAdminReply('');
-    setAdminReplyAttachments([]);
-    loadData();
-  };
-
-  const filteredUsers = users.filter(u => 
-    u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.supplierId?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  if (!currentUser || currentUser.role !== 'ADMIN') {
+  if (!isAuthenticated || !isAdmin) {
     return (
       <div className="container py-8 max-w-2xl mx-auto">
         <Card className="text-center">
           <CardHeader>
-            <CardTitle>{language === 'ru' ? 'Доступ запрещен' : language === 'zh' ? '访问被拒绝' : 'Access Denied'}</CardTitle>
-            <CardDescription>{language === 'ru' ? 'Только для администраторов' : language === 'zh' ? '仅限管理员' : 'Admin only'}</CardDescription>
+            <CardTitle>Access Denied</CardTitle>
+            <CardDescription>You need admin privileges to access this area.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button onClick={() => setCurrentView('MARKETPLACE')}>
-              {language === 'ru' ? 'На маркетплейс' : language === 'zh' ? '去市场' : 'To Marketplace'}
-            </Button>
-          </CardContent>
         </Card>
       </div>
     );
   }
 
+  const d = dashboardData?.stats;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <RefreshCw className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
-    <div className="container py-4 md:py-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="icon" onClick={() => setCurrentView('MARKETPLACE')}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">
-              {language === 'ru' ? 'Панель администратора' : language === 'zh' ? '管理员面板' : 'Admin Dashboard'}
-            </h1>
-            <p className="text-sm text-muted-foreground">{currentUser.email}</p>
+    <div className="min-h-screen bg-muted/30">
+      {/* Header */}
+      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
+        <div className="flex h-16 items-center justify-between px-4 md:px-6">
+          <div className="flex items-center gap-4">
+            <Shield className="w-6 h-6 text-primary" />
+            <div>
+              <h1 className="text-lg font-bold">Admin Panel</h1>
+              <p className="text-xs text-muted-foreground">{user?.role} — {user?.email}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="relative" onClick={() => {}}>
+              <Bell className="w-5 h-5" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center">
+                  {unreadCount}
+                </span>
+              )}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <div className="flex">
+        {/* Sidebar */}
+        <aside className="hidden md:flex flex-col w-64 min-h-[calc(100vh-4rem)] border-r bg-background p-4 gap-1">
+          {[
+            { id: 'dashboard' as AdminTab, label: 'Dashboard', icon: LayoutDashboard },
+            { id: 'users' as AdminTab, label: 'Users', icon: Users, badge: d?.totalUsers },
+            { id: 'seller-applications' as AdminTab, label: 'Sellers', icon: Store, badge: d?.pendingSellerApplications },
+            { id: 'products' as AdminTab, label: 'Products', icon: Package, badge: d?.pendingProducts },
+            { id: 'orders' as AdminTab, label: 'Orders', icon: ShoppingBag, badge: d?.pendingOrders },
+            { id: 'categories' as AdminTab, label: 'Categories', icon: FolderTree },
+            { id: 'coupons' as AdminTab, label: 'Coupons', icon: Tag },
+            { id: 'reviews' as AdminTab, label: 'Reviews', icon: Star },
+            { id: 'tickets' as AdminTab, label: 'Tickets', icon: MessageSquare },
+            { id: 'withdrawals' as AdminTab, label: 'Withdrawals', icon: CreditCard },
+            { id: 'settings' as AdminTab, label: 'Settings', icon: Settings },
+            { id: 'audit-logs' as AdminTab, label: 'Audit Logs', icon: FileText },
+          ].map((item) => (
+            <Button
+              key={item.id}
+              variant={activeTab === item.id ? 'secondary' : 'ghost'}
+              className="justify-start gap-3"
+              onClick={() => setActiveTab(item.id)}
+            >
+              <item.icon className="w-4 h-4" />
+              <span className="flex-1 text-left">{item.label}</span>
+              {item.badge && item.badge > 0 && (
+                <Badge variant="destructive" className="text-[10px] px-1.5 py-0">{item.badge}</Badge>
+              )}
+            </Button>
+          ))}
+        </aside>
+
+        {/* Mobile nav */}
+        <div className="md:hidden w-full border-b bg-background overflow-x-auto">
+          <div className="flex gap-1 p-2">
+            {['dashboard', 'users', 'sellers', 'products', 'orders', 'more'].map((k) => (
+              <Button
+                key={k}
+                variant={activeTab === k ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setActiveTab(k === 'sellers' ? 'seller-applications' : k as AdminTab)}
+              >
+                {k}
+              </Button>
+            ))}
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-500/10 rounded-lg">
-                  <Wallet className="w-5 h-5 text-green-500" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">{language === 'ru' ? 'Баланс' : language === 'zh' ? '余额' : 'Balance'}</p>
-                  <p className="font-bold">{formatPriceRub(adminBalance.rub, language)}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-cyan-500/10 rounded-lg">
-                  <Shield className="w-5 h-5 text-cyan-500" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">{language === 'ru' ? 'Страховой пул' : language === 'zh' ? '保险池' : 'Insurance Pool'}</p>
-                  <p className="font-bold">{formatPriceRub(totalInsuranceRub, language)}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-500/10 rounded-lg">
-                  <Users className="w-5 h-5 text-blue-500" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">{language === 'ru' ? 'Пользователи' : language === 'zh' ? '用户' : 'Users'}</p>
-                  <p className="font-bold">{totalUsers}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-500/10 rounded-lg">
-                  <ShoppingBag className="w-5 h-5 text-purple-500" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">{language === 'ru' ? 'Заказы' : language === 'zh' ? '订单' : 'Orders'}</p>
-                  <p className="font-bold">{totalOrders}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-orange-500/10 rounded-lg">
-                  <DollarSign className="w-5 h-5 text-orange-500" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">{language === 'ru' ? 'Доход' : language === 'zh' ? '收入' : 'Revenue'}</p>
-                  <p className="font-bold">{formatPriceRub(totalRevenue, language)}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="overview">
-              <LayoutDashboard className="w-4 h-4 mr-2" />
-              {language === 'ru' ? 'Обзор' : language === 'zh' ? '概览' : 'Overview'}
-            </TabsTrigger>
-            <TabsTrigger value="users">
-              <Users className="w-4 h-4 mr-2" />
-              {language === 'ru' ? 'Пользователи' : language === 'zh' ? '用户' : 'Users'}
-            </TabsTrigger>
-            <TabsTrigger value="categories">
-              <FolderTree className="w-4 h-4 mr-2" />
-              {language === 'ru' ? 'Категории' : language === 'zh' ? '类别' : 'Categories'}
-            </TabsTrigger>
-            <TabsTrigger value="products">
-              <Package className="w-4 h-4 mr-2" />
-              {language === 'ru' ? 'Товары' : language === 'zh' ? '商品' : 'Products'}
-            </TabsTrigger>
-            <TabsTrigger value="disputes">
-              <MessageSquare className="w-4 h-4 mr-2" />
-              {language === 'ru' ? 'Тикеты' : language === 'zh' ? '工单' : 'Tickets'}
-            </TabsTrigger>
-            <TabsTrigger value="config">
-              <Settings className="w-4 h-4 mr-2" />
-              {language === 'ru' ? 'Настройки' : language === 'zh' ? '设置' : 'Settings'}
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Overview Tab */}
-          <TabsContent value="overview">
-            <div className="grid md:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>{language === 'ru' ? 'Статистика пользователей' : language === 'zh' ? '用户统计' : 'User Statistics'}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{language === 'ru' ? 'Всего пользователей' : language === 'zh' ? '总用户' : 'Total Users'}</span>
-                    <span className="font-medium">{totalUsers}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{language === 'ru' ? 'Продавцы' : language === 'zh' ? '卖家' : 'Sellers'}</span>
-                    <span className="font-medium">{totalSellers}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{language === 'ru' ? 'На модерации' : language === 'zh' ? '审核中' : 'In moderation'}</span>
-                    <span className="font-medium text-yellow-600">{pendingSellerModeration}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{language === 'ru' ? 'Товары на модерации' : language === 'zh' ? '待审核商品' : 'Products in moderation'}</span>
-                    <span className="font-medium text-amber-600">{pendingProductModeration}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{language === 'ru' ? 'Покупатели' : language === 'zh' ? '买家' : 'Buyers'}</span>
-                    <span className="font-medium">{totalBuyers}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{language === 'ru' ? 'Заблокированы' : language === 'zh' ? '已封禁' : 'Banned'}</span>
-                    <span className="font-medium text-red-500">{bannedUsers}</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>{language === 'ru' ? 'Статистика заказов' : language === 'zh' ? '订单统计' : 'Order Statistics'}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{language === 'ru' ? 'Всего заказов' : language === 'zh' ? '总订单' : 'Total Orders'}</span>
-                    <span className="font-medium">{totalOrders}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{language === 'ru' ? 'Выполнено' : language === 'zh' ? '已完成' : 'Completed'}</span>
-                    <span className="font-medium text-green-500">{orders.filter(o => o.paymentStatus === 'CONFIRMED').length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{language === 'ru' ? 'В ожидании' : language === 'zh' ? '待处理' : 'Pending'}</span>
-                    <span className="font-medium text-yellow-500">{orders.filter(o => o.paymentStatus === 'PENDING').length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{language === 'ru' ? 'Открытые тикеты' : language === 'zh' ? '开放工单' : 'Open Tickets'}</span>
-                    <span className="font-medium text-orange-500">{pendingTickets}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{language === 'ru' ? 'Апелляции' : language === 'zh' ? '申诉' : 'Appeals'}</span>
-                    <span className="font-medium text-red-500">{appealsCount}</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>{language === 'ru' ? 'Финансы' : language === 'zh' ? '财务' : 'Finance'}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{language === 'ru' ? 'Общий доход' : language === 'zh' ? '总收入' : 'Total Revenue'}</span>
-                    <span className="font-medium">{formatPriceRub(totalRevenue, language)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{language === 'ru' ? 'Баланс платформы' : language === 'zh' ? '平台余额' : 'Platform Balance'}</span>
-                    <span className="font-medium">{formatPriceRub(adminBalance.rub, language)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{language === 'ru' ? 'Страховой пул' : language === 'zh' ? '保险池' : 'Insurance Pool'}</span>
-                    <span className="font-medium">{formatPriceRub(totalInsuranceRub, language)}</span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <Badge variant="outline" className="justify-center bg-emerald-500/10 text-emerald-600 border-emerald-500/30">L1: {insuranceByLevel.LEVEL_1}</Badge>
-                    <Badge variant="outline" className="justify-center bg-blue-500/10 text-blue-600 border-blue-500/30">L2: {insuranceByLevel.LEVEL_2}</Badge>
-                    <Badge variant="outline" className="justify-center bg-amber-500/10 text-amber-600 border-amber-500/30">L3: {insuranceByLevel.LEVEL_3}</Badge>
-                    <Badge variant="outline" className="justify-center bg-muted text-muted-foreground border-border">NONE: {insuranceByLevel.NONE}</Badge>
-                  </div>
-
-                  <div className="space-y-2 rounded-lg border border-border/60 bg-background/60 p-3">
-                    <p className="text-xs text-muted-foreground">
-                      {language === 'ru' ? 'Вывод средств платформы' : language === 'zh' ? '平台余额提现' : 'Platform Balance Withdraw'}
-                    </p>
-                    <div className="flex gap-2">
-                      <Input
-                        type="number"
-                        min={1}
-                        value={adminWithdrawAmountRub}
-                        onChange={(e) => setAdminWithdrawAmountRub(e.target.value)}
-                        placeholder="1000"
-                      />
-                      <Button variant="outline" onClick={handleAdminWithdrawBalance}>
-                        <TrendingDown className="w-4 h-4 mr-1" />
-                        {language === 'ru' ? 'Вывести' : language === 'zh' ? '提现' : 'Withdraw'}
-                      </Button>
+        {/* Main Content */}
+        <main className="flex-1 p-4 md:p-6 overflow-auto">
+          {/* ═══ DASHBOARD ═══ */}
+          {activeTab === 'dashboard' && d && (
+            <div className="space-y-6">
+              {/* Stats Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-green-500/10 rounded-lg"><DollarSign className="w-5 h-5 text-green-500" /></div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Total Revenue</p>
+                        <p className="font-bold text-sm">${d.totalRevenue.toFixed(2)}</p>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-500/10 rounded-lg"><TrendingUp className="w-5 h-5 text-blue-500" /></div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Today</p>
+                        <p className="font-bold text-sm">${d.todayRevenue.toFixed(2)}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-purple-500/10 rounded-lg"><ShoppingBag className="w-5 h-5 text-purple-500" /></div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Orders</p>
+                        <p className="font-bold text-sm">{d.totalOrders}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-orange-500/10 rounded-lg"><Users className="w-5 h-5 text-orange-500" /></div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Customers</p>
+                        <p className="font-bold text-sm">{d.totalCustomers}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-emerald-500/10 rounded-lg"><Store className="w-5 h-5 text-emerald-500" /></div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Vendors</p>
+                        <p className="font-bold text-sm">{d.totalVendors}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-red-500/10 rounded-lg"><AlertTriangle className="w-5 h-5 text-red-500" /></div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Pending</p>
+                        <p className="font-bold text-sm">{d.pendingOrders}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
 
+              {/* Charts */}
+              <div className="grid md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader><CardTitle>Revenue (12 Months)</CardTitle></CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={250}>
+                      <BarChart data={dashboardData?.monthlyRevenueData || []}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" fontSize={12} />
+                        <YAxis fontSize={12} />
+                        <ReTooltip />
+                        <Bar dataKey="revenue" fill="#4f46e5" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader><CardTitle>Orders by Status</CardTitle></CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={250}>
+                      <PieChart>
+                        <Pie data={dashboardData?.ordersByStatus || []} dataKey="count" nameKey="status" cx="50%" cy="50%" outerRadius={80} label>
+                          {(dashboardData?.ordersByStatus || []).map((_: any, i: number) => (
+                            <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <ReTooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Recent orders */}
               <Card>
-                <CardHeader>
-                  <CardTitle>{language === 'ru' ? 'Категории' : language === 'zh' ? '类别' : 'Categories'}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{language === 'ru' ? 'Всего категорий' : language === 'zh' ? '总类别' : 'Total Categories'}</span>
-                    <span className="font-medium">{categories.length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{language === 'ru' ? 'Активные' : language === 'zh' ? '活跃' : 'Active'}</span>
-                    <span className="font-medium text-green-500">{categories.filter(c => c.isActive).length}</span>
+                <CardHeader><CardTitle>Recent Orders</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead><tr className="border-b text-left"><th className="p-2">ID</th><th className="p-2">Customer</th><th className="p-2">Amount</th><th className="p-2">Status</th><th className="p-2">Date</th></tr></thead>
+                      <tbody>
+                        {(dashboardData?.recentOrders || []).map((o: any) => (
+                          <tr key={o.id} className="border-b hover:bg-muted/50">
+                            <td className="p-2 font-mono text-xs">{o.id.slice(0, 8)}</td>
+                            <td className="p-2">{o.user?.email}</td>
+                            <td className="p-2">${o.totalAmount?.toFixed(2)}</td>
+                            <td className="p-2"><Badge variant="outline" className={statusColors[o.status] || ''}>{o.status}</Badge></td>
+                            <td className="p-2 text-muted-foreground">{new Date(o.createdAt).toLocaleDateString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
+          )}
 
-          {/* Users Tab */}
-          <TabsContent value="users">
-            <Card>
-              <CardHeader>
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div>
-                    <CardTitle>{language === 'ru' ? 'Управление пользователями' : language === 'zh' ? '用户管理' : 'User Management'}</CardTitle>
-                    <CardDescription>{totalUsers} {language === 'ru' ? 'пользователей' : language === 'zh' ? '用户' : 'users'}</CardDescription>
-                  </div>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input 
-                      placeholder={language === 'ru' ? 'Поиск...' : language === 'zh' ? '搜索...' : 'Search...'}
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 w-full md:w-64"
-                    />
-                  </div>
+          {/* ═══ USERS ═══ */}
+          {activeTab === 'users' && (
+            <div className="space-y-4">
+              <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+                <h2 className="text-xl font-bold">Users ({usersTotal})</h2>
+                <div className="flex gap-2">
+                  <Input placeholder="Search users..." value={userSearch} onChange={(e) => setUserSearch(e.target.value)} className="w-48" />
+                  <Select value={userRoleFilter} onValueChange={setUserRoleFilter}>
+                    <SelectTrigger className="w-36"><SelectValue placeholder="All Roles" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Roles</SelectItem>
+                      <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
+                      <SelectItem value="ADMIN">Admin</SelectItem>
+                      <SelectItem value="MODERATOR">Moderator</SelectItem>
+                      <SelectItem value="SELLER">Seller</SelectItem>
+                      <SelectItem value="CUSTOMER">Customer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button variant="outline" size="icon" onClick={loadUsers}><RefreshCw className="w-4 h-4" /></Button>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {filteredUsers.map((user) => (
-                    <div key={user.id} className="border rounded-lg p-4">
+              </div>
+              <Card>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead><tr className="border-b text-left bg-muted/50"><th className="p-3">User</th><th className="p-3">Role</th><th className="p-3">Status</th><th className="p-3">Email Verified</th><th className="p-3">Joined</th><th className="p-3">Actions</th></tr></thead>
+                      <tbody>
+                        {users.map((u: any) => (
+                          <tr key={u.id} className="border-b hover:bg-muted/30">
+                            <td className="p-3">
+                              <div className="font-medium">{u.firstName} {u.lastName}</div>
+                              <div className="text-xs text-muted-foreground">{u.email}</div>
+                            </td>
+                            <td className="p-3"><Badge variant="outline" className={roleColors[u.role] || ''}>{u.role}</Badge></td>
+                            <td className="p-3">{u.isBanned ? <Badge variant="destructive">Banned</Badge> : <Badge variant="outline" className="bg-green-500/10 text-green-600">Active</Badge>}</td>
+                            <td className="p-3">{u.emailVerifiedAt ? <CheckCircle className="w-4 h-4 text-green-500" /> : <XCircle className="w-4 h-4 text-yellow-500" />}</td>
+                            <td className="p-3 text-muted-foreground">{new Date(u.createdAt).toLocaleDateString()}</td>
+                            <td className="p-3">
+                              <div className="flex gap-1">
+                                <Button variant="ghost" size="icon" title="View" onClick={() => { setSelectedUser(u); setShowUserDialog(true); }}><Eye className="w-4 h-4" /></Button>
+                                {canManageSecurity && (
+                                  <>
+                                    <Button variant="ghost" size="icon" title={u.isBanned ? 'Unban' : 'Ban'} onClick={() => { setBanUserId(u.id); setBanAction(!u.isBanned); setShowBanDialog(true); }}>
+                                      {u.isBanned ? <UserCheck className="w-4 h-4 text-green-500" /> : <Ban className="w-4 h-4 text-red-500" />}
+                                    </Button>
+                                    <Button variant="ghost" size="icon" title="Reset Password" onClick={() => { setResetUserId(u.id); setShowResetDialog(true); }}>
+                                      <RefreshCw className="w-4 h-4" />
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* ═══ SELLER APPLICATIONS ═══ */}
+          {activeTab === 'seller-applications' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold">Seller Applications</h2>
+                <div className="flex gap-2">
+                  <Select value={sellerAppFilter} onValueChange={setSellerAppFilter}>
+                    <SelectTrigger className="w-36"><SelectValue placeholder="All" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="PENDING">Pending</SelectItem>
+                      <SelectItem value="APPROVED">Approved</SelectItem>
+                      <SelectItem value="REJECTED">Rejected</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid gap-4">
+                {sellerApps.map((app: any) => (
+                  <Card key={app.id}>
+                    <CardContent className="p-4">
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium">{user.email}</span>
-                            <Badge variant={user.role === 'ADMIN' ? 'destructive' : user.role === 'SELLER' ? 'default' : 'secondary'}>
-                              {user.role}
-                            </Badge>
-                            {user.role === 'SELLER' && (
-                              <Badge
-                                variant="outline"
-                                className={
-                                  user.sellerModerationStatus === 'APPROVED'
-                                    ? 'bg-green-500/10 text-green-600'
-                                    : user.sellerModerationStatus === 'REJECTED'
-                                      ? 'bg-red-500/10 text-red-600'
-                                      : 'bg-yellow-500/10 text-yellow-600'
-                                }
-                              >
-                                {user.sellerModerationStatus || 'PENDING'}
-                              </Badge>
-                            )}
-                            {user.isBanned && <Badge variant="outline" className="bg-red-500/10 text-red-500">BANNED</Badge>}
-                          </div>
-                          {user.supplierId && (
-                            <p className="text-sm text-muted-foreground">{language === 'ru' ? 'ID' : language === 'zh' ? 'ID' : 'ID'}: {user.supplierId}</p>
-                          )}
-                          {user.role === 'SELLER' && user.storeName && (
-                            <p className="text-sm text-muted-foreground">{language === 'ru' ? 'Магазин' : language === 'zh' ? '店铺' : 'Store'}: {user.storeName}</p>
-                          )}
-                          {user.role === 'SELLER' && user.storeDescription && (
-                            <p className="text-sm text-muted-foreground">{language === 'ru' ? 'Описание' : language === 'zh' ? '描述' : 'Description'}: {user.storeDescription}</p>
-                          )}
-                          <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                            <span>{formatPriceRub(user.balanceRub, language)}</span>
-                            {user.role === 'SELLER' && (
-                              <span className="flex items-center gap-1">
-                                <BarChart3 className="w-3 h-3" />
-                                {user.reputation.toFixed(1)}%
-                              </span>
-                            )}
-                          </div>
+                          <h3 className="font-bold">{app.storeName}</h3>
+                          <p className="text-sm text-muted-foreground">{app.fullLegalName} — {app.email}</p>
+                          <p className="text-xs text-muted-foreground">{app.city}, {app.stateProvince}, {app.country}</p>
+                          <Badge variant="outline" className={`mt-1 ${statusColors[app.status] || ''}`}>{app.status}</Badge>
                         </div>
-                        {user.role !== 'ADMIN' && (
-                          <div className="flex gap-2">
-                            {user.role === 'SELLER' && (
-                              <>
-                                {user.sellerModerationStatus !== 'APPROVED' && (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleModerateSeller(user.id, 'APPROVED')}
-                                  >
-                                    <CheckCircle className="w-4 h-4 mr-1" />
-                                    {language === 'ru' ? 'Одобрить' : language === 'zh' ? '通过' : 'Approve'}
+                        <div className="flex gap-2">
+                          {app.status === 'PENDING' && canModerate && (
+                            <>
+                              <Button size="sm" onClick={() => { setReviewAppId(app.id); setReviewAction('APPROVED'); setShowReviewDialog(true); }}>
+                                <CheckCircle className="w-4 h-4 mr-1" /> Approve
+                              </Button>
+                              <Button size="sm" variant="destructive" onClick={() => { setReviewAppId(app.id); setReviewAction('REJECTED'); setShowReviewDialog(true); }}>
+                                <XCircle className="w-4 h-4 mr-1" /> Reject
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ═══ PRODUCTS ═══ */}
+          {activeTab === 'products' && (
+            <div className="space-y-4">
+              <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+                <h2 className="text-xl font-bold">Products</h2>
+                <div className="flex gap-2">
+                  <Input placeholder="Search..." value={productSearch} onChange={(e) => setProductSearch(e.target.value)} className="w-48" />
+                  <Select value={productFilter} onValueChange={setProductFilter}>
+                    <SelectTrigger className="w-36"><SelectValue placeholder="All Status" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="PENDING">Pending</SelectItem>
+                      <SelectItem value="APPROVED">Approved</SelectItem>
+                      <SelectItem value="REJECTED">Rejected</SelectItem>
+                      <SelectItem value="HIDDEN">Hidden</SelectItem>
+                      <SelectItem value="FEATURED">Featured</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <Card>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead><tr className="border-b text-left bg-muted/50"><th className="p-3">Product</th><th className="p-3">Store</th><th className="p-3">Price</th><th className="p-3">Status</th><th className="p-3">Featured</th><th className="p-3">Actions</th></tr></thead>
+                      <tbody>
+                        {products.map((p: any) => (
+                          <tr key={p.id} className="border-b hover:bg-muted/30">
+                            <td className="p-3">
+                              <div className="font-medium">{p.title}</div>
+                              <div className="text-xs text-muted-foreground">{p.category?.name}</div>
+                            </td>
+                            <td className="p-3 text-muted-foreground">{p.store?.storeName}</td>
+                            <td className="p-3">${p.price?.toFixed(2)}</td>
+                            <td className="p-3"><Badge variant="outline" className={statusColors[p.status] || ''}>{p.status}</Badge></td>
+                            <td className="p-3">{p.isFeatured ? <CheckCircle className="w-4 h-4 text-purple-500" /> : <XCircle className="w-4 h-4 text-gray-400" />}</td>
+                            <td className="p-3">
+                              <div className="flex gap-1">
+                                {p.status === 'PENDING' && canModerate && (
+                                  <Button size="sm" variant="ghost" onClick={() => handleUpdateProduct(p.id, { status: 'APPROVED' })}>
+                                    <CheckCircle className="w-4 h-4 text-green-500" />
                                   </Button>
                                 )}
-                                {user.sellerModerationStatus !== 'REJECTED' && (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleModerateSeller(user.id, 'REJECTED')}
-                                  >
-                                    <XCircle className="w-4 h-4 mr-1" />
-                                    {language === 'ru' ? 'Отклонить' : language === 'zh' ? '拒绝' : 'Reject'}
+                                {p.status !== 'FEATURED' && canModerate && (
+                                  <Button size="sm" variant="ghost" onClick={() => handleUpdateProduct(p.id, { status: 'FEATURED', isFeatured: true })}>
+                                    <Star className="w-4 h-4 text-purple-500" />
                                   </Button>
                                 )}
-                                {user.sellerModerationStatus !== 'PENDING' && (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleModerateSeller(user.id, 'PENDING')}
-                                  >
-                                    {language === 'ru' ? 'Вернуть на модерацию' : language === 'zh' ? '退回待审核' : 'Move to Pending'}
+                                {canManageSecurity && (
+                                  <Button size="sm" variant="ghost" onClick={() => handleDeleteProduct(p.id)}>
+                                    <Trash2 className="w-4 h-4 text-red-500" />
                                   </Button>
                                 )}
-                              </>
-                            )}
-                            <Button 
-                              variant={user.isBanned ? 'outline' : 'destructive'}
-                              size="sm"
-                              onClick={() => handleBanUser(user.id, !user.isBanned)}
-                            >
-                              {user.isBanned ? (
-                                <><CheckCircle className="w-4 h-4 mr-1" /> {language === 'ru' ? 'Разблокировать' : language === 'zh' ? '解封' : 'Unban'}</>
-                              ) : (
-                                <><Ban className="w-4 h-4 mr-1" /> {language === 'ru' ? 'Заблокировать' : language === 'zh' ? '封禁' : 'Ban'}</>
-                              )}
-                            </Button>
-                          </div>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* ═══ ORDERS ═══ */}
+          {activeTab === 'orders' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold">Orders</h2>
+                <Select value={orderFilter} onValueChange={setOrderFilter}>
+                  <SelectTrigger className="w-40"><SelectValue placeholder="All Status" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="PENDING">Pending</SelectItem>
+                    <SelectItem value="PROCESSING">Processing</SelectItem>
+                    <SelectItem value="PACKED">Packed</SelectItem>
+                    <SelectItem value="SHIPPED">Shipped</SelectItem>
+                    <SelectItem value="DELIVERED">Delivered</SelectItem>
+                    <SelectItem value="COMPLETED">Completed</SelectItem>
+                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                    <SelectItem value="REFUNDED">Refunded</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Card>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead><tr className="border-b text-left bg-muted/50"><th className="p-3">Order ID</th><th className="p-3">Customer</th><th className="p-3">Amount</th><th className="p-3">Status</th><th className="p-3">Date</th><th className="p-3">Actions</th></tr></thead>
+                      <tbody>
+                        {orders.map((o: any) => (
+                          <tr key={o.id} className="border-b hover:bg-muted/30">
+                            <td className="p-3 font-mono text-xs">{o.id.slice(0, 8)}</td>
+                            <td className="p-3">{o.user?.email}</td>
+                            <td className="p-3">${o.totalAmount?.toFixed(2)}</td>
+                            <td className="p-3"><Badge variant="outline" className={statusColors[o.status] || ''}>{o.status}</Badge></td>
+                            <td className="p-3 text-muted-foreground">{new Date(o.createdAt).toLocaleDateString()}</td>
+                            <td className="p-3">
+                              <Select value={o.status} onValueChange={(v) => handleUpdateOrder(o.id, v)}>
+                                <SelectTrigger className="w-32 h-8 text-xs"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="PENDING">Pending</SelectItem>
+                                  <SelectItem value="PROCESSING">Processing</SelectItem>
+                                  <SelectItem value="PACKED">Packed</SelectItem>
+                                  <SelectItem value="SHIPPED">Shipped</SelectItem>
+                                  <SelectItem value="DELIVERED">Delivered</SelectItem>
+                                  <SelectItem value="COMPLETED">Completed</SelectItem>
+                                  <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                                  <SelectItem value="REFUNDED">Refunded</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* ═══ CATEGORIES ═══ */}
+          {activeTab === 'categories' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold">Categories</h2>
+                <Button size="sm" onClick={() => { setEditingCat({ name: '', nameRu: '', nameZh: '', slug: '', icon: 'FolderTree', description: '', sortOrder: 0 }); setShowCatDialog(true); }}>
+                  <Plus className="w-4 h-4 mr-1" /> Add Category
+                </Button>
+              </div>
+              <div className="grid gap-3">
+                {categories.map((c: any) => (
+                  <Card key={c.id}>
+                    <CardContent className="p-4 flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{c.name}</span>
+                          <Badge variant="outline">{c.isActive ? 'Active' : 'Inactive'}</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Slug: {c.slug} | Products: {c._count?.products || 0} | Children: {c._count?.children || 0}</p>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => { setEditingCat(c); setShowCatDialog(true); }}><Edit className="w-4 h-4" /></Button>
+                        {canManageSecurity && (
+                          <Button variant="ghost" size="sm" onClick={() => handleDeleteCategory(c.id)}><Trash2 className="w-4 h-4 text-red-500" /></Button>
                         )}
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
 
-          {/* Categories Tab */}
-          <TabsContent value="categories">
-            <Card>
-              <CardHeader>
-                <CardTitle>{language === 'ru' ? 'Категории' : language === 'zh' ? '类别' : 'Categories'}</CardTitle>
-                <CardDescription>{categories.length} {language === 'ru' ? 'категорий' : language === 'zh' ? '类别' : 'categories'}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {categories.map((category) => (
-                    <div key={category.id} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="h-10 w-10 rounded-md border border-border/60 overflow-hidden bg-muted/40 flex items-center justify-center shrink-0">
-                            {category.imageUrl ? (
-                              <img src={category.imageUrl} alt={category.name} className="h-full w-full object-cover" />
-                            ) : (
-                              <FolderTree className="w-4 h-4 text-muted-foreground" />
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-medium">{language === 'ru' ? category.nameRu : category.name}</span>
-                              <Badge variant={category.isActive ? 'default' : 'secondary'}>
-                                {category.isActive ? 'Active' : 'Inactive'}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground">{category.slug}</p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <Label className="text-xs text-muted-foreground cursor-pointer underline underline-offset-2">
-                            {categoryImageUploadingId === category.id
-                              ? (language === 'ru' ? 'Загрузка...' : language === 'zh' ? '上传中...' : 'Uploading...')
-                              : (language === 'ru' ? 'Загрузить изображение' : language === 'zh' ? '上传图片' : 'Upload image')}
-                            <Input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              disabled={categoryImageUploadingId === category.id}
-                              onChange={(e) => {
-                                const file = e.target.files?.[0] || null;
-                                void handleCategoryImageSelect(category.id, file);
-                                e.currentTarget.value = '';
-                              }}
-                            />
-                          </Label>
-
-                          <div className="text-right">
-                            <p className="text-sm text-muted-foreground">{language === 'ru' ? 'В наличии' : language === 'zh' ? '库存' : 'Stock'}: {db.getCategoryStockCount(category.id)}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Products Tab */}
-          <TabsContent value="products">
-            <Card>
-              <CardHeader>
-                <CardTitle>{language === 'ru' ? 'Модерация товаров' : language === 'zh' ? '商品审核' : 'Product Moderation'}</CardTitle>
-                <CardDescription>
-                  {products.length} {language === 'ru' ? 'товаров всего' : language === 'zh' ? '个商品' : 'products total'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {products.map((product) => (
-                    <div key={product.id} className="border rounded-lg p-4">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium">{language === 'ru' ? product.titleRu : product.title}</span>
-                            <Badge variant="outline" className={getProductModerationBadgeClass(product.moderationStatus)}>
-                              {product.moderationStatus || 'PENDING'}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {language === 'ru' ? 'Продавец' : language === 'zh' ? '卖家' : 'Seller'}: {product.seller?.storeName || product.seller?.supplierId || product.seller?.email}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {language === 'ru' ? 'Категория' : language === 'zh' ? '类别' : 'Category'}: {language === 'ru' ? product.category?.nameRu : product.category?.name}
-                          </p>
-                          {product.moderationReason && (
-                            <p className="text-xs text-muted-foreground mt-1">{product.moderationReason}</p>
-                          )}
-                        </div>
-
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleModerateProduct(product.id, 'APPROVED')}
-                            disabled={product.moderationStatus === 'APPROVED'}
-                          >
-                            {language === 'ru' ? 'Approve' : language === 'zh' ? '通过' : 'Approve'}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleModerateProduct(product.id, 'REJECTED')}
-                            disabled={product.moderationStatus === 'REJECTED'}
-                          >
-                            {language === 'ru' ? 'Reject' : language === 'zh' ? '拒绝' : 'Reject'}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleModerateProduct(product.id, 'HOLD')}
-                            disabled={product.moderationStatus === 'HOLD'}
-                          >
-                            {language === 'ru' ? 'On Hold' : language === 'zh' ? '搁置' : 'On Hold'}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleModerateProduct(product.id, 'PENDING')}
-                            disabled={product.moderationStatus === 'PENDING'}
-                          >
-                            {language === 'ru' ? 'Pending' : language === 'zh' ? '待审核' : 'Pending'}
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleModerateProduct(product.id, 'DISCONTINUED')}
-                            disabled={product.moderationStatus === 'DISCONTINUED'}
-                          >
-                            {language === 'ru' ? 'Discontinue' : language === 'zh' ? '下架' : 'Discontinue'}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Tickets Tab */}
-          <TabsContent value="disputes">
-            <Card>
-              <CardHeader>
-                <CardTitle>{language === 'ru' ? 'Тикеты поддержки' : language === 'zh' ? '支持工单' : 'Support Tickets'}</CardTitle>
-                <CardDescription>{tickets.length} {language === 'ru' ? 'тикетов' : language === 'zh' ? '工单' : 'tickets'}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {tickets.length === 0 ? (
-                  <div className="text-center py-8">
-                    <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">{language === 'ru' ? 'Нет тикетов' : language === 'zh' ? '没有工单' : 'No tickets'}</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {tickets.map((ticket) => (
-                      <div key={ticket.id} className="border rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium">#{ticket.id.slice(0, 8)}</span>
-                          <div className="flex items-center gap-2">
-                            <Badge variant={ticket.type === 'DISPUTE' ? 'destructive' : 'outline'}>
-                              {ticket.type}
-                            </Badge>
-                            <Badge variant={ticket.status === 'OPEN' ? 'default' : ticket.status === 'RESOLVED' ? 'secondary' : 'outline'}>
-                              {ticket.status}
-                            </Badge>
-                          </div>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{ticket.subject}</p>
-                        <p className="text-xs text-muted-foreground mt-1">{formatDate(ticket.createdAt, language)}</p>
-                        <div className="mt-3">
-                          <Button size="sm" variant="outline" onClick={() => openTicketChat(ticket)}>
-                            {language === 'ru' ? 'Открыть чат' : language === 'zh' ? '打开聊天' : 'Open Chat'}
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Config Tab */}
-          <TabsContent value="config">
-            <Card>
-              <CardHeader>
-                <CardTitle>{language === 'ru' ? 'Настройки сайта' : language === 'zh' ? '网站设置' : 'Site Settings'}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <Label className="mb-2 block">{language === 'ru' ? 'Объявление (EN)' : language === 'zh' ? '公告 (EN)' : 'Announcement (EN)'}</Label>
-                  <Input 
-                    value={announcement} 
-                    onChange={(e) => setAnnouncement(e.target.value)}
-                    placeholder={language === 'ru' ? 'Текст объявления...' : language === 'zh' ? '公告内容...' : 'Announcement text...'}
-                  />
-                </div>
-                <div>
-                  <Label className="mb-2 block">{language === 'ru' ? 'Объявление (RU)' : language === 'zh' ? '公告 (RU)' : 'Announcement (RU)'}</Label>
-                  <Input 
-                    value={announcementRu} 
-                    onChange={(e) => setAnnouncementRu(e.target.value)}
-                    placeholder={language === 'ru' ? 'Текст объявления...' : language === 'zh' ? '公告内容...' : 'Announcement text...'}
-                  />
-                </div>
-                <div>
-                  <Label className="mb-2 block">{language === 'ru' ? 'Объявление (ZH)' : language === 'zh' ? '公告 (ZH)' : 'Announcement (ZH)'}</Label>
-                  <Input 
-                    value={announcementZh} 
-                    onChange={(e) => setAnnouncementZh(e.target.value)}
-                    placeholder={language === 'ru' ? 'Текст объявления...' : language === 'zh' ? '公告内容...' : 'Announcement text...'}
-                  />
-                </div>
-                <Button onClick={handleSaveAnnouncement}>
-                  {language === 'ru' ? 'Сохранить' : language === 'zh' ? '保存' : 'Save'}
+          {/* ═══ COUPONS ═══ */}
+          {activeTab === 'coupons' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold">Coupons</h2>
+                <Button size="sm" onClick={() => { setEditingCoupon({ code: '', discountPercent: 0, discountFixed: 0, isActive: true }); setShowCouponDialog(true); }}>
+                  <Plus className="w-4 h-4 mr-1" /> Add Coupon
                 </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+              </div>
+              <Card>
+                <CardContent className="p-0">
+                  <table className="w-full text-sm">
+                    <thead><tr className="border-b text-left bg-muted/50"><th className="p-3">Code</th><th className="p-3">Discount</th><th className="p-3">Used</th><th className="p-3">Active</th><th className="p-3">Actions</th></tr></thead>
+                    <tbody>
+                      {coupons.map((c: any) => (
+                        <tr key={c.id} className="border-b">
+                          <td className="p-3 font-mono font-bold">{c.code}</td>
+                          <td className="p-3">{c.discountPercent > 0 ? `${c.discountPercent}%` : `$${c.discountFixed}`}</td>
+                          <td className="p-3">{c.usedCount}/{c.maxUses || '∞'}</td>
+                          <td className="p-3">{c.isActive ? <CheckCircle className="w-4 h-4 text-green-500" /> : <XCircle className="w-4 h-4 text-gray-400" />}</td>
+                          <td className="p-3">
+                            <div className="flex gap-1">
+                              <Button variant="ghost" size="sm" onClick={() => { setEditingCoupon(c); setShowCouponDialog(true); }}><Edit className="w-4 h-4" /></Button>
+                              {canManageSecurity && (
+                                <Button variant="ghost" size="sm" onClick={() => handleDeleteCoupon(c.id)}><Trash2 className="w-4 h-4 text-red-500" /></Button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
-        <Dialog open={showTicketDialog} onOpenChange={setShowTicketDialog}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{language === 'ru' ? 'Чат тикета' : language === 'zh' ? '工单聊天' : 'Ticket Chat'}</DialogTitle>
-              <DialogDescription>#{selectedTicket?.id.slice(0, 8)}</DialogDescription>
-            </DialogHeader>
+          {/* ═══ REVIEWS ═══ */}
+          {activeTab === 'reviews' && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold">Reviews</h2>
+              <Card>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead><tr className="border-b text-left bg-muted/50"><th className="p-3">User</th><th className="p-3">Product</th><th className="p-3">Rating</th><th className="p-3">Status</th><th className="p-3">Actions</th></tr></thead>
+                      <tbody>
+                        {reviews.map((r: any) => (
+                          <tr key={r.id} className="border-b">
+                            <td className="p-3">{r.user?.email}</td>
+                            <td className="p-3">{r.product?.title}</td>
+                            <td className="p-3">{'⭐'.repeat(r.rating)}</td>
+                            <td className="p-3"><Badge variant="outline" className={statusColors[r.status] || ''}>{r.status}</Badge></td>
+                            <td className="p-3">
+                              <div className="flex gap-1">
+                                {r.status !== 'APPROVED' && <Button size="sm" variant="ghost" onClick={() => handleReviewAction(r.id, 'APPROVED')}><CheckCircle className="w-4 h-4 text-green-500" /></Button>}
+                                {r.status !== 'REJECTED' && <Button size="sm" variant="ghost" onClick={() => handleReviewAction(r.id, 'REJECTED')}><XCircle className="w-4 h-4 text-red-500" /></Button>}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
-            <div className="space-y-3">
-              {(selectedTicket?.messages || []).map((m) => (
-                <div key={m.id} className="border rounded p-3">
-                  <div className="text-xs text-muted-foreground mb-1">{m.senderType} • {formatDate(m.createdAt, language)}</div>
-                  <div className="text-sm whitespace-pre-wrap">{m.message}</div>
-                  {!!m.attachments?.length && (
-                    <div className="mt-2 space-y-2">
-                      {m.attachments.map((raw, idx) => {
-                        const { name, url } = parseAttachment(raw);
-                        const isImage = url.startsWith('data:image/');
-                        return (
-                          <div key={`${m.id}-${idx}`} className="text-xs">
-                            {isImage ? (
-                              <img src={url} alt={name} className="max-h-48 rounded border mb-1" />
-                            ) : null}
-                            <a href={url} download={name} className="underline text-blue-600">
-                              {name}
-                            </a>
+          {/* ═══ TICKETS ═══ */}
+          {activeTab === 'tickets' && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold">Support Tickets</h2>
+              <div className="grid gap-4">
+                {tickets.map((t: any) => (
+                  <Card key={t.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold">{t.subject}</span>
+                            <Badge variant="outline" className={statusColors[t.status] || ''}>{t.status}</Badge>
+                            <Badge variant="outline">{t.priority}</Badge>
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              ))}
+                          <p className="text-sm text-muted-foreground">{t.user?.email} — {new Date(t.createdAt).toLocaleDateString()}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => { setSelectedTicket(t); setShowTicketDialog(true); loadTickets(); }}>
+                            <MessageSquare className="w-4 h-4 mr-1" /> View
+                          </Button>
+                          <Select value={t.status} onValueChange={(v) => handleUpdateTicket(t.id, v)}>
+                            <SelectTrigger className="w-32 h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="OPEN">Open</SelectItem>
+                              <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                              <SelectItem value="RESOLVED">Resolved</SelectItem>
+                              <SelectItem value="CLOSED">Closed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
+          )}
 
-            <div className="space-y-3">
-              <Input
-                type="file"
-                multiple
-                onChange={(e) => void handleAdminReplyFileSelect(e.target.files)}
-              />
-              {adminReplyAttachments.length > 0 && (
-                <div className="text-xs text-muted-foreground">
-                  {adminReplyAttachments.length} {language === 'ru' ? 'файл(ов) прикреплено' : language === 'zh' ? '已附加文件' : 'file(s) attached'}
-                </div>
-              )}
-              <Textarea
-                value={adminReply}
-                onChange={(e) => setAdminReply(e.target.value)}
-                placeholder={language === 'ru' ? 'Ответить покупателю...' : language === 'zh' ? '回复买家...' : 'Reply to buyer...'}
-              />
-              <Button onClick={sendAdminReply} className="w-full">
-                {language === 'ru' ? 'Отправить ответ' : language === 'zh' ? '发送回复' : 'Send Reply'}
-              </Button>
+          {/* ═══ WITHDRAWALS ═══ */}
+          {activeTab === 'withdrawals' && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold">Withdrawals</h2>
+              <Card>
+                <CardContent className="p-0">
+                  <table className="w-full text-sm">
+                    <thead><tr className="border-b text-left bg-muted/50"><th className="p-3">ID</th><th className="p-3">User</th><th className="p-3">Amount</th><th className="p-3">Method</th><th className="p-3">Status</th><th className="p-3">Date</th></tr></thead>
+                    <tbody>
+                      {withdrawals.map((w: any) => (
+                        <tr key={w.id} className="border-b">
+                          <td className="p-3 font-mono text-xs">{w.id.slice(0, 8)}</td>
+                          <td className="p-3">{w.userId}</td>
+                          <td className="p-3">${w.amount?.toFixed(2)}</td>
+                          <td className="p-3">{w.method}</td>
+                          <td className="p-3"><Badge variant="outline" className={statusColors[w.status] || ''}>{w.status}</Badge></td>
+                          <td className="p-3 text-muted-foreground">{new Date(w.createdAt).toLocaleDateString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </CardContent>
+              </Card>
             </div>
-          </DialogContent>
-        </Dialog>
+          )}
+
+          {/* ═══ SETTINGS ═══ */}
+          {activeTab === 'settings' && (
+            <div className="space-y-4 max-w-2xl">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold">Settings</h2>
+                <Button onClick={handleSaveSettings}>Save Settings</Button>
+              </div>
+              <Card>
+                <CardContent className="p-6 space-y-4">
+                  {Object.entries(settings).map(([key, value]) => (
+                    <div key={key}>
+                      <Label className="capitalize">{key.replace(/_/g, ' ')}</Label>
+                      <Input
+                        value={value}
+                        onChange={(e) => setSettings({ ...settings, [key]: e.target.value })}
+                        className="mt-1"
+                      />
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* ═══ AUDIT LOGS ═══ */}
+          {activeTab === 'audit-logs' && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold">Audit Logs</h2>
+              <Card>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead><tr className="border-b text-left bg-muted/50"><th className="p-3">Action</th><th className="p-3">Actor</th><th className="p-3">Entity</th><th className="p-3">IP</th><th className="p-3">Date</th></tr></thead>
+                      <tbody>
+                        {auditLogs.map((log: any) => (
+                          <tr key={log.id} className="border-b">
+                            <td className="p-3"><Badge variant="outline">{log.action}</Badge></td>
+                            <td className="p-3">
+                              <div className="text-xs">{log.actorEmail}</div>
+                              <div className="text-xs text-muted-foreground">{log.actorRole}</div>
+                            </td>
+                            <td className="p-3 text-xs">{log.entityType} {log.entityId?.slice(0, 8)}</td>
+                            <td className="p-3 text-xs text-muted-foreground">{log.ipAddress}</td>
+                            <td className="p-3 text-xs text-muted-foreground">{new Date(log.createdAt).toLocaleString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </main>
       </div>
+
+      {/* ═══ DIALOGS ═══ */}
+
+      {/* Ban/Unban User */}
+      <AlertDialog open={showBanDialog} onOpenChange={setShowBanDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{banAction ? 'Ban User' : 'Unban User'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to {banAction ? 'ban' : 'unban'} this user?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBanUser}>Confirm</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reset Password */}
+      <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Reset Password</DialogTitle></DialogHeader>
+          <div className="space-y-2">
+            <Label>New Password (min 8 chars)</Label>
+            <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Enter new password" />
+          </div>
+          <DialogFooter>
+            <Button onClick={handleResetPassword}>Reset</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Review Application */}
+      <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{reviewAction === 'APPROVED' ? 'Approve' : 'Reject'} Application</DialogTitle></DialogHeader>
+          <div className="space-y-2">
+            <Label>Note (optional)</Label>
+            <Textarea value={reviewNote} onChange={(e) => setReviewNote(e.target.value)} placeholder="Add a review note..." />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowReviewDialog(false)}>Cancel</Button>
+            <Button onClick={handleReviewApp} variant={reviewAction === 'APPROVED' ? 'default' : 'destructive'}>
+              {reviewAction === 'APPROVED' ? 'Approve' : 'Reject'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Category Dialog */}
+      <Dialog open={showCatDialog} onOpenChange={setShowCatDialog}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{editingCat?.id ? 'Edit' : 'Add'} Category</DialogTitle></DialogHeader>
+          <div className="space-y-2">
+            <Label>Name *</Label>
+            <Input value={editingCat?.name || ''} onChange={(e) => setEditingCat({ ...editingCat, name: e.target.value })} />
+            <Label>Slug *</Label>
+            <Input value={editingCat?.slug || ''} onChange={(e) => setEditingCat({ ...editingCat, slug: e.target.value })} />
+            <Label>Icon</Label>
+            <Input value={editingCat?.icon || ''} onChange={(e) => setEditingCat({ ...editingCat, icon: e.target.value })} />
+            <Label>Sort Order</Label>
+            <Input type="number" value={editingCat?.sortOrder || 0} onChange={(e) => setEditingCat({ ...editingCat, sortOrder: parseInt(e.target.value) })} />
+          </div>
+          <DialogFooter>
+            <Button onClick={handleSaveCategory}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Coupon Dialog */}
+      <Dialog open={showCouponDialog} onOpenChange={setShowCouponDialog}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{editingCoupon?.id ? 'Edit' : 'Add'} Coupon</DialogTitle></DialogHeader>
+          <div className="space-y-2">
+            <Label>Code *</Label>
+            <Input value={editingCoupon?.code || ''} onChange={(e) => setEditingCoupon({ ...editingCoupon, code: e.target.value.toUpperCase() })} />
+            <Label>Discount %</Label>
+            <Input type="number" value={editingCoupon?.discountPercent || 0} onChange={(e) => setEditingCoupon({ ...editingCoupon, discountPercent: parseFloat(e.target.value) })} />
+            <Label>Fixed Discount $</Label>
+            <Input type="number" value={editingCoupon?.discountFixed || 0} onChange={(e) => setEditingCoupon({ ...editingCoupon, discountFixed: parseFloat(e.target.value) })} />
+            <Label>Max Uses</Label>
+            <Input type="number" value={editingCoupon?.maxUses || 0} onChange={(e) => setEditingCoupon({ ...editingCoupon, maxUses: parseInt(e.target.value) })} />
+          </div>
+          <DialogFooter>
+            <Button onClick={handleSaveCoupon}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Ticket View Dialog */}
+      <Dialog open={showTicketDialog} onOpenChange={setShowTicketDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{selectedTicket?.subject}</DialogTitle>
+            <DialogDescription>{selectedTicket?.user?.email} — {selectedTicket?.status}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {(selectedTicket?.messages || []).map((m: any) => (
+              <div key={m.id} className="border rounded-lg p-3">
+                <p className="text-xs text-muted-foreground">{m.senderId || 'System'} — {new Date(m.createdAt).toLocaleString()}</p>
+                <p className="text-sm mt-1">{m.message}</p>
+              </div>
+            ))}
+            <div className="flex gap-2">
+              <Input value={ticketReply} onChange={(e) => setTicketReply(e.target.value)} placeholder="Type a reply..." />
+              <Button onClick={handleReplyTicket}>Send</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

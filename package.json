@@ -13,7 +13,9 @@
     "start": "node server/index.mjs",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
-    "prisma:dev": "prisma migrate dev"
+    "prisma:dev": "prisma migrate dev",
+    "db:seed": "node server/seed.mjs",
+    "setup": "prisma migrate deploy && node server/seed.mjs"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.60.0",

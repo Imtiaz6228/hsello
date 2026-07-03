@@ -12,7 +12,7 @@ export interface AuthUser {
   country: string;
   city: string | null;
   profileImageUrl: string | null;
-  role: 'CUSTOMER' | 'SELLER' | 'ADMIN';
+  role: 'CUSTOMER' | 'SELLER' | 'ADMIN' | 'SUPER_ADMIN' | 'MODERATOR';
   emailVerifiedAt: string | null;
   createdAt: string;
 }

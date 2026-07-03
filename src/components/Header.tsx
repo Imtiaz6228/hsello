@@ -1,4 +1,5 @@
 import { useAppStore } from '@/store/appStore';
+import { useAuthStore } from '@/store/authStore';
 import { Icons } from './Icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,18 +16,30 @@ import { cn } from '@/lib/utils';
 import { t, formatPriceRub, formatPriceUsd } from '@/lib/i18n';
 import type { Category, UserRole, ViewType } from '@/types';
 
-export function Header() {
+interface HeaderProps {
+  onNavigate?: (view: string) => void;
+  currentView?: string;
+}
+
+// Simple user type for display
+interface DisplayUser {
+  id: string;
+  email: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  balanceRub?: number;
+  balanceUsd?: number;
+  reputation?: number;
+}
+
+export function Header({ onNavigate, currentView: externalView }: HeaderProps = {}) {
   const { 
-    currentUser, 
-    isAuthenticated, 
-    logout,
-    setCurrentView,
-    setAuthPreferredRole,
     setIsCartOpen,
     getCartItemCount,
     searchQuery,
     setSearchQuery,
-    currentView,
     categories,
     selectedCategory,
     setSelectedCategory,
@@ -35,6 +48,34 @@ export function Header() {
     isMobileMenuOpen,
     setIsMobileMenuOpen,
   } = useAppStore();
+
+  const { user, isAuthenticated, logout } = useAuthStore();
+
+  // Use the auth store user, with fallback to appStore user for legacy fields
+  const appUser = useAppStore.getState().currentUser;
+  const displayUser: DisplayUser | null = user || (appUser as unknown as DisplayUser | null);
+
+  const setCurrentView = (view: string) => {
+    if (onNavigate) {
+      const map: Record<string, string> = {
+        'MARKETPLACE': 'marketplace',
+        'LOGIN': 'login',
+        'REGISTER': 'register',
+        'ORDERS': 'orders',
+        'SELLER_DASHBOARD': 'seller-dashboard',
+        'ADMIN_DASHBOARD': 'admin-dashboard',
+        'DEPOSIT': 'deposit',
+        'PROFILE': 'dashboard',
+        'SELLER_PRODUCTS': 'seller-products',
+        'SELLER_UPLOAD': 'seller-upload',
+        'SELLER_ORDERS': 'seller-orders',
+        'SELLER_API': 'seller-api',
+        'SELLER_WITHDRAW': 'seller-withdraw',
+        'ADMIN_FINANCE': 'admin-finance',
+      };
+      onNavigate(map[view] || 'marketplace');
+    }
+  };
 
   const cartItemCount = getCartItemCount();
 
@@ -89,6 +130,10 @@ export function Header() {
     }
   };
 
+  const userRole = displayUser?.role || 'CUSTOMER';
+  const isUserSeller = userRole === 'SELLER';
+  const isUserAdmin = userRole === 'ADMIN';
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/90 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/75">
       <div className="hidden md:block border-b border-border/50 bg-secondary/30">
@@ -129,13 +174,13 @@ export function Header() {
             </SheetHeader>
             <div className="py-4">
               {navItems
-                .filter(item => !item.roles || (currentUser && item.roles.includes(currentUser.role)))
+                .filter(item => !item.roles || (displayUser && item.roles.includes(userRole as UserRole)))
                 .map(item => (
                   <button
                     key={item.view}
                     className={cn(
                       "w-full px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-secondary",
-                      currentView === item.view && "bg-primary/10 text-primary"
+                      externalView === item.view && "bg-primary/10 text-primary"
                     )}
                     onClick={() => {
                       if (item.view === 'MARKETPLACE') {
@@ -153,55 +198,13 @@ export function Header() {
               {!isAuthenticated && (
                 <>
                   <div className="my-2 border-t" />
-                  <button
-                    className="w-full px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-secondary"
-                    onClick={() => {
-                      setAuthPreferredRole('BUYER');
-                      setCurrentView('LOGIN');
-                      setIsMobileMenuOpen(false);
-                    }}
-                  >
-                    {t('loginAsBuyer', language)}
+                  <button className="w-full px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-secondary"
+                    onClick={() => { setCurrentView('LOGIN'); setIsMobileMenuOpen(false); }}>
+                    Sign In
                   </button>
-                  <button
-                    className="w-full px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-secondary"
-                    onClick={() => {
-                      setAuthPreferredRole('BUYER');
-                      setCurrentView('REGISTER');
-                      setIsMobileMenuOpen(false);
-                    }}
-                  >
-                    {language === 'ru' ? 'Регистрация покупателя' : language === 'zh' ? '买家注册' : 'Buyer Register'}
-                  </button>
-                  <button
-                    className="w-full px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-secondary"
-                    onClick={() => {
-                      setAuthPreferredRole('SELLER');
-                      setCurrentView('LOGIN');
-                      setIsMobileMenuOpen(false);
-                    }}
-                  >
-                    {t('loginAsSeller', language)}
-                  </button>
-                  <button
-                    className="w-full px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-secondary"
-                    onClick={() => {
-                      setAuthPreferredRole('SELLER');
-                      setCurrentView('REGISTER');
-                      setIsMobileMenuOpen(false);
-                    }}
-                  >
-                    {language === 'ru' ? 'Регистрация продавца' : language === 'zh' ? '卖家注册' : 'Seller Register'}
-                  </button>
-                  <button
-                    className="w-full px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-secondary"
-                    onClick={() => {
-                      setAuthPreferredRole('ADMIN');
-                      setCurrentView('LOGIN');
-                      setIsMobileMenuOpen(false);
-                    }}
-                  >
-                    {t('loginAsAdmin', language)}
+                  <button className="w-full px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-secondary"
+                    onClick={() => { setCurrentView('REGISTER'); setIsMobileMenuOpen(false); }}>
+                    Register
                   </button>
                 </>
               )}
@@ -238,12 +241,7 @@ export function Header() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-64 max-h-80 overflow-y-auto">
-                <DropdownMenuItem
-                  onClick={() => {
-                    setSelectedCategory(null);
-                    setCurrentView('MARKETPLACE');
-                  }}
-                >
+                <DropdownMenuItem onClick={() => { setSelectedCategory(null); setCurrentView('MARKETPLACE'); }}>
                   <Icons.List className="mr-2 h-4 w-4" />
                   {t('allCategories', language)}
                 </DropdownMenuItem>
@@ -251,10 +249,7 @@ export function Header() {
                 {categoryOptions.map(({ category, level }) => (
                   <DropdownMenuItem
                     key={category.id}
-                    onClick={() => {
-                      setSelectedCategory(category.id);
-                      setCurrentView('MARKETPLACE');
-                    }}
+                    onClick={() => { setSelectedCategory(category.id); setCurrentView('MARKETPLACE'); }}
                     className="pr-2"
                     style={{ paddingLeft: `${8 + level * 12}px` }}
                   >
@@ -273,7 +268,7 @@ export function Header() {
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
-                  if (currentView !== 'MARKETPLACE') {
+                  if (externalView !== 'MARKETPLACE') {
                     setCurrentView('MARKETPLACE');
                   }
                 }}
@@ -285,15 +280,15 @@ export function Header() {
         {/* Desktop Navigation */}
         <nav className="hidden lg:flex items-center space-x-1 mr-3">
           {navItems
-            .filter(item => !item.roles || (currentUser && item.roles.includes(currentUser.role)))
+            .filter(item => !item.roles || (displayUser && item.roles.includes(userRole as UserRole)))
             .map(item => (
               <Button
                 key={item.view}
-                variant={currentView === item.view ? 'secondary' : 'ghost'}
+                variant={externalView === item.view ? 'secondary' : 'ghost'}
                 size="sm"
                 className={cn(
                   'rounded-lg px-3',
-                  currentView === item.view && 'bg-primary/15 text-primary hover:bg-primary/20'
+                  externalView === item.view && 'bg-primary/15 text-primary hover:bg-primary/20'
                 )}
                 onClick={() => {
                   if (item.view === 'MARKETPLACE') {
@@ -349,7 +344,7 @@ export function Header() {
           </Button>
 
           {/* User Menu */}
-          {isAuthenticated && currentUser ? (
+          {isAuthenticated && displayUser ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-1 rounded-lg border border-transparent md:gap-2 hover:border-border/70 hover:bg-secondary/70">
@@ -357,123 +352,64 @@ export function Header() {
                     <Icons.User className="h-3 w-3 text-primary-foreground" />
                   </div>
                   <span className="hidden sm:inline text-xs md:text-sm">
-                    {currentUser.role === 'SELLER' ? currentUser.supplierId : currentUser.email.split('@')[0]}
+                    {displayUser.firstName || displayUser.username || displayUser.email.split('@')[0]}
                   </span>
-                  {currentUser.role === 'SELLER' && (
-                    <Badge variant="outline" className="text-[10px] md:text-xs hidden md:inline">
-                      {currentUser.reputation.toFixed(1)}%
-                    </Badge>
+                  {isUserSeller && (
+                    <Badge variant="outline" className="text-[10px] md:text-xs hidden md:inline">Seller</Badge>
                   )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <div className="px-2 py-1.5">
-                  <p className="text-sm font-medium">{currentUser.email}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatPriceRub(currentUser.balanceRub)} / {formatPriceUsd(currentUser.balanceUsd)}
-                  </p>
+                  <p className="text-sm font-medium">{displayUser.email}</p>
+                  <p className="text-xs text-muted-foreground">{userRole}</p>
                 </div>
                 <DropdownMenuSeparator />
-                {currentUser.role === 'SELLER' && (
+                <DropdownMenuItem onClick={() => { setCurrentView('PROFILE'); }}>
+                  <Icons.User className="mr-2 h-4 w-4" />
+                  Dashboard
+                </DropdownMenuItem>
+                {isUserSeller && (
                   <>
                     <DropdownMenuItem onClick={() => setCurrentView('SELLER_DASHBOARD')}>
-                      <Icons.LayoutDashboard className="mr-2 h-4 w-4" />
-                      {t('dashboard', language)}
+                      <Icons.Package className="mr-2 h-4 w-4" />
+                      Seller Dashboard
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setCurrentView('SELLER_PRODUCTS')}>
                       <Icons.Package className="mr-2 h-4 w-4" />
-                      {t('myProducts', language)}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setCurrentView('SELLER_UPLOAD')}>
-                      <Icons.Upload className="mr-2 h-4 w-4" />
-                      {t('bulkUpload', language)}
+                      My Products
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setCurrentView('SELLER_WITHDRAW')}>
                       <Icons.Wallet className="mr-2 h-4 w-4" />
-                      {t('withdraw', language)}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setCurrentView('SELLER_API')}>
-                      <Icons.Key className="mr-2 h-4 w-4" />
-                      {t('apiKeys', language)}
+                      Withdraw
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                   </>
                 )}
-                {currentUser.role === 'ADMIN' && (
+                {isUserAdmin && (
                   <>
                     <DropdownMenuItem onClick={() => setCurrentView('ADMIN_DASHBOARD')}>
-                      <Icons.LayoutDashboard className="mr-2 h-4 w-4" />
-                      {t('adminPanel', language)}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setCurrentView('ADMIN_FINANCE')}>
-                      <Icons.Wallet className="mr-2 h-4 w-4" />
-                      Finance
+                      <Icons.Shield className="mr-2 h-4 w-4" />
+                      Admin Panel
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                   </>
                 )}
                 <DropdownMenuItem onClick={logout}>
                   <Icons.LogOut className="mr-2 h-4 w-4" />
-                  {t('logout', language)}
+                  Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
             <div className="hidden xl:flex items-center gap-1.5">
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-lg"
-                onClick={() => {
-                  setAuthPreferredRole('BUYER');
-                  setCurrentView('LOGIN');
-                }}
-              >
-                {t('loginAsBuyer', language)}
+              <Button variant="outline" size="sm" className="rounded-lg"
+                onClick={() => setCurrentView('LOGIN')}>
+                Sign In
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-lg"
-                onClick={() => {
-                  setAuthPreferredRole('BUYER');
-                  setCurrentView('REGISTER');
-                }}
-              >
-                {language === 'ru' ? 'Регистрация покупателя' : language === 'zh' ? '买家注册' : 'Buyer Register'}
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                className="rounded-lg bg-primary/95"
-                onClick={() => {
-                  setAuthPreferredRole('SELLER');
-                  setCurrentView('LOGIN');
-                }}
-              >
-                {t('loginAsSeller', language)}
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                className="rounded-lg bg-primary/95"
-                onClick={() => {
-                  setAuthPreferredRole('SELLER');
-                  setCurrentView('REGISTER');
-                }}
-              >
-                {language === 'ru' ? 'Регистрация продавца' : language === 'zh' ? '卖家注册' : 'Seller Register'}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="rounded-lg"
-                onClick={() => {
-                  setAuthPreferredRole('ADMIN');
-                  setCurrentView('LOGIN');
-                }}
-              >
-                {t('loginAsAdmin', language)}
+              <Button variant="default" size="sm" className="rounded-lg bg-primary/95"
+                onClick={() => setCurrentView('REGISTER')}>
+                Register
               </Button>
             </div>
           )}

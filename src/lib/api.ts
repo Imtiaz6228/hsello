@@ -3,11 +3,14 @@
  * Communicates with the Express.js backend for all authentication and data operations.
  */
 
-// API base: uses VITE_API_URL env var if set (e.g. on Vercel pointing to Railway),
-// otherwise falls back to relative /api (dev with Vite proxy or same-domain backend).
-const API_BASE = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_URL)
-  ? (import.meta as any).env.VITE_API_URL
-  : '/api';
+// API base: uses VITE_API_URL env var if set (e.g. on Vercel pointing to Railway).
+// In dev, leave unset — Vite proxy forwards /api to http://localhost:3000.
+// In production (Vercel), set VITE_API_URL to your Railway backend URL, e.g.:
+//   VITE_API_URL=https://your-app.railway.app/api
+const API_BASE: string =
+  (typeof window !== 'undefined' && window.location.hostname === 'localhost')
+    ? '/api'
+    : (import.meta.env.VITE_API_URL as string | undefined) || '/api';
 
 interface ApiResponse<T = any> {
   data?: T;
@@ -295,6 +298,14 @@ async function request<T>(
 
   try {
     const response = await fetch(url, config);
+
+    // If the response is HTML instead of JSON, we hit the wrong endpoint
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      console.error('[API] Non-JSON response from:', url, 'Status:', response.status, 'Content-Type:', contentType);
+      return { error: 'Network error. Please check your connection and try again.', code: 'NETWORK_ERROR' };
+    }
+
     const data = await response.json();
 
     if (!response.ok) {

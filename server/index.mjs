@@ -141,14 +141,22 @@ app.get('/api/products/:id', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// Health check (required by Railway/Render for deploy success)
-app.get('/', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// ─── Serve frontend static files in production ────────────
+// In production (Railway), serve the Vite build output.
+// API routes are defined above, so any non-/api request serves the SPA.
+const distPath = path.join(__dirname, '..', 'dist');
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+  // SPA fallback — serve index.html for any non-API route
+  app.get(/^\/(?!api\/|uploads\/).*/, (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+  console.log('📦 Serving frontend from dist/');
+}
 
 // Error handler
 app.use(errorHandler);

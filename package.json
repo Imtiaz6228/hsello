@@ -15,7 +15,9 @@
     "prisma:migrate": "prisma migrate deploy",
     "prisma:dev": "prisma migrate dev",
     "db:seed": "node server/seed.mjs",
-    "setup": "prisma migrate deploy && node server/seed.mjs"
+    "setup": "prisma migrate deploy && node server/seed.mjs",
+    "railway:build": "npm install && npx prisma generate && npm run build",
+    "railway:start": "npm run setup && node server/index.mjs"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.60.0",

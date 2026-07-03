@@ -747,3 +747,42 @@ export const adminApi = {
     return request<{ logs: AuditLog[]; total: number; page: number; totalPages: number }>(`/admin/audit-logs?page=${page}&limit=${limit}`);
   },
 };
+
+// ─── Order API (public) ───────────────────────────────────
+
+export const orderApi = {
+  createOrder(data: { items: Array<{ productId: string; quantity: number }>; paymentMethod?: string }) {
+    return request<{ message: string; order: Order }>('/orders', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  getOrders() {
+    return request<{ orders: Order[] }>('/orders');
+  },
+
+  getOrder(id: string) {
+    return request<{ order: Order }>(`/orders/${id}`);
+  },
+};
+
+// ─── Public API (no auth required) ───────────────────────
+
+export const publicApi = {
+  getCategories() {
+    return request<{ categories: Category[] }>('/categories');
+  },
+
+  getProducts(params?: { categoryId?: string; search?: string }) {
+    const query = new URLSearchParams();
+    if (params?.categoryId) query.set('categoryId', params.categoryId);
+    if (params?.search) query.set('search', params.search);
+    const qs = query.toString();
+    return request<{ products: Product[] }>(`/products${qs ? '?' + qs : ''}`);
+  },
+
+  getProduct(id: string) {
+    return request<{ product: Product }>(`/products/${id}`);
+  },
+};

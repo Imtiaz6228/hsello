@@ -8,10 +8,12 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
 
+import { prisma } from './lib/prisma.mjs';
 import { authRouter } from './routes/auth.mjs';
 import { userRouter } from './routes/user.mjs';
 import { sellerRouter } from './routes/seller.mjs';
 import { adminRouter } from './routes/admin.mjs';
+import { orderRouter } from './routes/order.mjs';
 import { errorHandler } from './middleware/errorHandler.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -73,6 +75,57 @@ app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/seller', sellerRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/orders', orderRouter);
+
+// Public shop routes (categories, products - no auth needed)
+app.get('/api/categories', async (req, res, next) => {
+  try {
+    const categories = await prisma.category.findMany({
+      where: { isActive: true },
+      include: { _count: { select: { products: true } } },
+      orderBy: { sortOrder: 'asc' },
+    });
+    res.json({ categories });
+  } catch (e) { next(e); }
+});
+
+app.get('/api/products', async (req, res, next) => {
+  try {
+    const { categoryId, search } = req.query;
+    const where = { isActive: true, status: 'APPROVED' };
+    if (categoryId) where.categoryId = categoryId;
+    if (search) {
+      where.OR = [
+        { title: { contains: search } },
+        { description: { contains: search } },
+      ];
+    }
+    const products = await prisma.product.findMany({
+      where,
+      include: {
+        category: { select: { id: true, name: true } },
+        store: { select: { id: true, storeName: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+    res.json({ products });
+  } catch (e) { next(e); }
+});
+
+app.get('/api/products/:id', async (req, res, next) => {
+  try {
+    const product = await prisma.product.findFirst({
+      where: { id: req.params.id, isActive: true },
+      include: {
+        category: { select: { id: true, name: true } },
+        store: { select: { id: true, storeName: true } },
+      },
+    });
+    if (!product) return res.status(404).json({ error: 'Product not found.' });
+    res.json({ product });
+  } catch (e) { next(e); }
+});
 
 // Health check
 app.get('/api/health', (req, res) => {

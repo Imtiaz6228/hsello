@@ -80,6 +80,21 @@ async function request(url: string, init: RequestInit) {
   }
 }
 
+async function readJson(response: Response) {
+  const text = await response.text();
+  if (!text) return undefined;
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new ApiError(
+      "The authentication API is not configured for this deployment. Set VITE_API_BASE_URL on Vercel to the Railway public URL and redeploy.",
+      response.status,
+      "API_MISCONFIGURED"
+    );
+  }
+}
+
 export async function getCsrfToken() {
   if (csrfToken) {
     return csrfToken;
@@ -89,11 +104,15 @@ export async function getCsrfToken() {
     credentials: "include"
   });
 
-  if (!response.ok) {
-    throw new ApiError("Could not initialize secure request token.", response.status);
+  const data = await readJson(response) as { csrfToken?: string } | undefined;
+  if (!response.ok || !data?.csrfToken) {
+    throw new ApiError(
+      "Could not initialize secure request token.",
+      response.status,
+      "CSRF_INITIALIZATION_FAILED"
+    );
   }
 
-  const data = await response.json() as { csrfToken: string };
   csrfToken = data.csrfToken;
 
   return csrfToken;
@@ -149,13 +168,7 @@ export async function apiRequest<T>(
     return apiRequest<T>(path, options, false);
   }
 
-  const text = await response.text();
-  let data: any;
-  try {
-    data = text ? JSON.parse(text) : undefined;
-  } catch {
-    data = undefined;
-  }
+  const data = await readJson(response);
 
   if (!response.ok) {
     throw new ApiError(

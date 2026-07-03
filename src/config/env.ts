@@ -18,7 +18,7 @@ const envSchema = z.object({
   DATABASE_URL: z.string().url(),
   APP_URL: z.string().url(),
   API_URL: z.string().url(),
-  CORS_ORIGIN: z.string().min(1),
+  CORS_ORIGIN: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   COOKIE_DOMAIN: z.preprocess(emptyToUndefined, z.string().optional()),
   JWT_SECRET: z.string().min(32),
   CSRF_SECRET: z.string().min(32),

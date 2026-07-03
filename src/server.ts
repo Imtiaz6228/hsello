@@ -1,4 +1,4 @@
-import { app } from "./app.js";
+import { app } from "./api-app.js";
 import { env } from "./config/env.js";
 import { prisma } from "./lib/prisma.js";
 

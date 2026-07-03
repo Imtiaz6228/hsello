@@ -3,14 +3,10 @@
  * Communicates with the Express.js backend for all authentication and data operations.
  */
 
-// Auto-detect API base: uses same origin in production, localhost:3000 in dev
-const API_BASE = (() => {
-  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
-    // In production, use same origin (assumes API is served from same domain or proxied)
-    return '/api';
-  }
-  return 'http://localhost:3000/api';
-})();
+// API base: always use relative /api.
+// In dev, Vite proxy forwards /api to http://localhost:3000.
+// In production, the Express backend is served from the same domain.
+const API_BASE = '/api';
 
 interface ApiResponse<T = any> {
   data?: T;

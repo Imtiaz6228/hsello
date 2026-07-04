@@ -1,23 +1,30 @@
 import { FormEvent, useMemo, useState } from "react";
 import {
   ArrowRight,
+  AtSign,
   BadgeCheck,
+  Bot,
   CheckCircle2,
+  Clapperboard,
   Clock3,
   Gamepad2,
   Gift,
   Globe2,
   Headphones,
   KeyRound,
+  Mail,
+  MessageCircle,
   PackageCheck,
   Search,
   ShieldCheck,
+  Smartphone,
   Sparkles,
   Star,
   Store,
   TrendingUp,
   Users,
   WalletCards,
+  Wifi,
   Zap,
   type LucideIcon
 } from "lucide-react";
@@ -28,34 +35,53 @@ import { useAuth } from "../auth/AuthContext";
 type Category = {
   name: string;
   description: string;
-  offers: string;
+  subcategories: string[];
   icon: LucideIcon;
   tone: string;
 };
 
 const categories: Category[] = [
-  { name: "Game currency", description: "Coins, gold and credits", offers: "12.4k offers", icon: WalletCards, tone: "violet" },
-  { name: "Gift cards", description: "Global and regional cards", offers: "8.1k offers", icon: Gift, tone: "coral" },
-  { name: "Game accounts", description: "Ready-to-play profiles", offers: "6.8k offers", icon: Gamepad2, tone: "blue" },
-  { name: "Items & skins", description: "Rare drops and cosmetics", offers: "18.2k offers", icon: Sparkles, tone: "lime" },
-  { name: "Boosting", description: "Ranks, raids and coaching", offers: "4.7k offers", icon: TrendingUp, tone: "amber" },
-  { name: "Software", description: "Licenses and productivity", offers: "3.9k offers", icon: KeyRound, tone: "cyan" }
+  { name: "Social media accounts", description: "Profiles for creators, communities and brands", subcategories: ["Instagram", "TikTok", "Facebook", "X / Twitter", "LinkedIn", "Snapchat"], icon: AtSign, tone: "violet" },
+  { name: "Email accounts", description: "Personal, aged and workspace-ready mail", subcategories: ["Gmail", "Outlook", "Yahoo Mail", "Proton Mail", "iCloud Mail", "Business email"], icon: Mail, tone: "coral" },
+  { name: "AI tools & access", description: "Premium AI assistants and creative tools", subcategories: ["ChatGPT", "Claude", "Midjourney", "Gemini", "Perplexity", "Copilot"], icon: Bot, tone: "blue" },
+  { name: "Streaming subscriptions", description: "Video, music and premium entertainment", subcategories: ["Netflix", "Spotify", "Disney+", "YouTube Premium", "Prime Video", "Hulu"], icon: Clapperboard, tone: "lime" },
+  { name: "Messaging accounts", description: "Established accounts across major networks", subcategories: ["Telegram", "Discord", "WhatsApp", "Signal", "Viber", "LINE"], icon: MessageCircle, tone: "amber" },
+  { name: "Gaming accounts", description: "Full-access profiles for leading platforms", subcategories: ["Steam", "PlayStation", "Xbox", "Epic Games", "Riot / Valorant", "Roblox"], icon: Gamepad2, tone: "cyan" },
+  { name: "Game currency & items", description: "Coins, gold, skins, items and collectibles", subcategories: ["EA FC Coins", "WoW Gold", "Robux", "Fortnite Items", "Diablo Gold", "CS2 Skins"], icon: WalletCards, tone: "violet" },
+  { name: "Gift cards & top-ups", description: "Regional codes, wallet credit and direct top-up", subcategories: ["Steam", "PlayStation", "Xbox", "Apple", "Google Play", "Nintendo"], icon: Gift, tone: "coral" },
+  { name: "Software & licenses", description: "Operating systems, creative and security tools", subcategories: ["Windows", "Microsoft 365", "Adobe", "Canva", "Antivirus", "Developer tools"], icon: KeyRound, tone: "blue" },
+  { name: "Boosting & coaching", description: "Rank, raid, quest and coaching services", subcategories: ["Valorant", "League of Legends", "Fortnite", "WoW", "EA FC", "Call of Duty"], icon: TrendingUp, tone: "lime" },
+  { name: "VPN & proxies", description: "Privacy plans and regional connectivity", subcategories: ["Residential proxy", "Mobile proxy", "Datacenter proxy", "VPN access", "Static ISP", "Rotating IP"], icon: Wifi, tone: "amber" },
+  { name: "Mobile recharge", description: "Instant prepaid airtime and data bundles", subcategories: ["United States", "United Kingdom", "Europe", "Middle East", "Asia", "Global eSIM"], icon: Smartphone, tone: "cyan" }
 ];
 
 const products = [
-  { category: "Game currency", title: "Aether Gold — EU & US delivery", seller: "Northstar Vault", price: "$12.40", rating: "4.98", orders: "2.4k", delivery: "5–15 min", badge: "Hot" },
-  { category: "Gift cards", title: "Global gaming wallet — instant code", seller: "Pixel Supply", price: "$24.80", rating: "4.96", orders: "8.1k", delivery: "Instant", badge: "Bestseller" },
-  { category: "Items & skins", title: "Crimson collection — rare skin pack", seller: "Orbit Market", price: "$18.20", rating: "4.93", orders: "940", delivery: "10 min", badge: "Limited" },
-  { category: "Boosting", title: "Rank climb with live progress tracking", seller: "Level Labs", price: "$29.00", rating: "4.99", orders: "1.7k", delivery: "1–2 days", badge: "Top rated" },
-  { category: "Software", title: "Creative suite — 12 month license", seller: "Cloud Keys", price: "$39.50", rating: "4.91", orders: "3.3k", delivery: "Instant", badge: "Verified" },
-  { category: "Game accounts", title: "Competitive starter profile + extras", seller: "Nova Profiles", price: "$16.90", rating: "4.95", orders: "760", delivery: "Manual 1h", badge: "New" }
+  { category: "Social media accounts", title: "Instagram creator profile — established account", seller: "Creator District", price: "$18.00", rating: "4.98", orders: "2.4k", delivery: "10–30 min", badge: "Popular", tags: ["Instagram", "social media", "creator"] },
+  { category: "Email accounts", title: "Gmail account — recovery details included", seller: "Inbox Market", price: "$4.80", rating: "4.96", orders: "8.1k", delivery: "Instant", badge: "Bestseller", tags: ["Gmail", "email", "Google"] },
+  { category: "AI tools & access", title: "ChatGPT Plus — one month premium access", seller: "Neural Desk", price: "$14.90", rating: "4.97", orders: "3.8k", delivery: "Instant", badge: "Trending", tags: ["ChatGPT", "OpenAI", "AI", "Claude", "Midjourney"] },
+  { category: "Streaming subscriptions", title: "Netflix Premium — private profile access", seller: "Stream Stack", price: "$7.50", rating: "4.95", orders: "6.7k", delivery: "5–15 min", badge: "Hot", tags: ["Netflix", "streaming", "Spotify", "Disney Plus"] },
+  { category: "Messaging accounts", title: "Telegram account — selectable region", seller: "Connect Hub", price: "$6.20", rating: "4.94", orders: "1.9k", delivery: "10 min", badge: "Verified", tags: ["Telegram", "Discord", "WhatsApp", "messenger"] },
+  { category: "Gaming accounts", title: "Steam account — full-access starter library", seller: "Nova Profiles", price: "$16.90", rating: "4.95", orders: "760", delivery: "Manual 1h", badge: "New", tags: ["Steam", "PlayStation", "Xbox", "Epic Games"] },
+  { category: "Game currency & items", title: "EA FC coins — fast player-auction delivery", seller: "Northstar Vault", price: "$12.40", rating: "4.98", orders: "2.4k", delivery: "5–15 min", badge: "Fast", tags: ["EA FC", "FIFA", "coins", "items", "skins"] },
+  { category: "Gift cards & top-ups", title: "PlayStation Store gift card — instant code", seller: "Pixel Supply", price: "$24.80", rating: "4.96", orders: "8.1k", delivery: "Instant", badge: "Bestseller", tags: ["PSN", "PlayStation", "gift card", "top up"] },
+  { category: "Software & licenses", title: "Microsoft 365 — 12 month activation", seller: "Cloud Keys", price: "$39.50", rating: "4.91", orders: "3.3k", delivery: "Instant", badge: "Verified", tags: ["Microsoft", "Office", "Windows", "software"] },
+  { category: "Boosting & coaching", title: "Valorant rank boost — live progress tracking", seller: "Level Labs", price: "$29.00", rating: "4.99", orders: "1.7k", delivery: "1–2 days", badge: "Top rated", tags: ["Valorant", "rank", "boosting", "coaching"] },
+  { category: "VPN & proxies", title: "Residential proxy plan — 10 GB traffic", seller: "Route Works", price: "$21.00", rating: "4.92", orders: "1.1k", delivery: "Instant", badge: "Flexible", tags: ["proxy", "VPN", "residential", "mobile proxy"] },
+  { category: "Mobile recharge", title: "Global mobile airtime — instant recharge", seller: "TopUp Relay", price: "$10.00", rating: "4.93", orders: "4.6k", delivery: "Instant", badge: "Global", tags: ["mobile", "recharge", "airtime", "eSIM"] }
 ];
 
 const stores = [
-  { name: "Pixel Supply", specialty: "Gift cards & top-ups", rating: "4.99", sales: "18.4k", mark: "PS", tone: "coral" },
-  { name: "Northstar Vault", specialty: "Game currency", rating: "4.98", sales: "12.1k", mark: "NV", tone: "violet" },
-  { name: "Cloud Keys", specialty: "Software licenses", rating: "4.96", sales: "9.7k", mark: "CK", tone: "cyan" },
-  { name: "Level Labs", specialty: "Boosting & coaching", rating: "4.99", sales: "7.2k", mark: "LL", tone: "lime" }
+  { name: "Creator District", specialty: "Social, email & messaging accounts", rating: "4.99", sales: "18.4k", mark: "CD", tone: "coral" },
+  { name: "Neural Desk", specialty: "AI tools & premium productivity", rating: "4.98", sales: "12.1k", mark: "ND", tone: "violet" },
+  { name: "Stream Stack", specialty: "Streaming & entertainment access", rating: "4.96", sales: "9.7k", mark: "SS", tone: "cyan" },
+  { name: "Pixel Supply", specialty: "Games, gift cards & top-ups", rating: "4.99", sales: "7.2k", mark: "PS", tone: "lime" }
+];
+
+const catalogGroups = [
+  { label: "Accounts", items: ["Social media", "Email", "Messaging", "Gaming accounts"] },
+  { label: "Entertainment", items: ["Streaming", "Game currency", "Items & skins", "Gift cards"] },
+  { label: "Productivity", items: ["AI tools", "Software", "VPN & proxies", "Business tools"] },
+  { label: "Services", items: ["Boosting", "Coaching", "Top-ups", "Mobile recharge"] }
 ];
 
 export function MarketplaceHomePage() {
@@ -67,7 +93,7 @@ export function MarketplaceHomePage() {
     const normalizedQuery = query.trim().toLowerCase();
     return products.filter((product) => {
       const matchesCategory = category === "All" || product.category === category;
-      const matchesQuery = !normalizedQuery || [product.title, product.seller, product.category]
+      const matchesQuery = !normalizedQuery || [product.title, product.seller, product.category, ...product.tags]
         .some((value) => value.toLowerCase().includes(normalizedQuery));
       return matchesCategory && matchesQuery;
     });
@@ -117,15 +143,15 @@ export function MarketplaceHomePage() {
 
       <section className="market-hero">
         <div className="hero-copy-block">
-          <div className="hero-kicker"><span className="live-dot" /> 42,810 offers live now</div>
+          <div className="hero-kicker"><span className="live-dot" /> 12 categories · 72 specialist markets</div>
           <h1>THE DIGITAL<br /><em>MARKET,</em> REWIRED.</h1>
-          <p>Game credits, gift cards, software and expert services from vetted sellers—with escrow protection built into every order.</p>
+          <p>Social and email accounts, AI tools, streaming access, gaming goods, software and specialist services—organized into one protected exchange.</p>
 
           <form className="hero-search" onSubmit={submitSearch}>
             <Search size={22} aria-hidden="true" />
             <input
               aria-label="Search the marketplace"
-              placeholder="Search products, games or stores"
+              placeholder="Search Instagram, Gmail, ChatGPT, Netflix..."
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
@@ -134,7 +160,7 @@ export function MarketplaceHomePage() {
 
           <div className="popular-searches">
             <span>Popular:</span>
-            {["Gift cards", "Game currency", "Software", "Boosting"].map((item) => (
+            {["Social media accounts", "Email accounts", "AI tools & access", "Streaming subscriptions"].map((item) => (
               <button type="button" key={item} onClick={() => { setCategory(item); document.querySelector("#offers")?.scrollIntoView({ behavior: "smooth" }); }}>{item}</button>
             ))}
           </div>
@@ -142,27 +168,27 @@ export function MarketplaceHomePage() {
 
         <div className="hero-market-card">
           <div className="pulse-heading">
-            <span>MARKET PULSE</span>
-            <span className="pulse-live"><i /> LIVE</span>
+            <span>CATALOG PULSE</span>
+            <span className="pulse-live"><i /> EXPANDED</span>
           </div>
           <div className="featured-drop">
             <span className="drop-number">01</span>
-            <div className="drop-art" aria-hidden="true"><Gamepad2 size={58} /></div>
+            <div className="drop-art" aria-hidden="true"><Bot size={58} /></div>
             <div>
-              <span className="mini-label">FEATURED DROP</span>
-              <h2>Global game wallet</h2>
-              <p>Instant code · 4.9 seller rating</p>
+              <span className="mini-label">FASTEST-GROWING</span>
+              <h2>AI & subscriptions</h2>
+              <p>ChatGPT · Claude · Midjourney</p>
             </div>
-            <strong>$24.80</strong>
+            <strong>06</strong>
           </div>
           <div className="market-ticker">
-            <div><span>ORDERS / 24H</span><strong>8,429</strong><small>+12.4%</small></div>
-            <div><span>ACTIVE SELLERS</span><strong>1,284</strong><small>verified</small></div>
+            <div><span>MAIN CATEGORIES</span><strong>12</strong><small>complete catalog</small></div>
+            <div><span>SUBCATEGORIES</span><strong>72</strong><small>specialist markets</small></div>
           </div>
           <div className="recent-trades">
-            <span>Recent protected trades</span>
-            {["Game credits", "Rare item pack", "Software key"].map((trade, index) => (
-              <div key={trade}><i className={`trade-icon trade-${index}`} /><span>{trade}</span><small>{index + 1}m ago</small><CheckCircle2 size={15} /></div>
+            <span>New catalog routes</span>
+            {["Social & email accounts", "AI & streaming access", "VPN & mobile recharge"].map((trade, index) => (
+              <div key={trade}><i className={`trade-icon trade-${index}`} /><span>{trade}</span><small>ready</small><CheckCircle2 size={15} /></div>
             ))}
           </div>
         </div>
@@ -177,11 +203,11 @@ export function MarketplaceHomePage() {
 
       <section className="market-section categories-section" id="categories">
         <div className="market-section-heading">
-          <div><span className="section-index">01 / DISCOVER</span><h2>Start with a category</h2></div>
-          <p>A focused catalog that still gives power buyers the depth they expect.</p>
+          <div><span className="section-index">01 / COMPLETE DIRECTORY</span><h2>Every digital market</h2></div>
+          <p>Twelve real marketplace categories with the submarkets buyers actually search for.</p>
         </div>
         <div className="category-grid">
-          {categories.map(({ name, description, offers, icon: Icon, tone }) => (
+          {categories.map(({ name, description, subcategories, icon: Icon, tone }) => (
             <button
               className={`category-tile tone-${tone} ${category === name ? "selected" : ""}`}
               type="button"
@@ -190,16 +216,31 @@ export function MarketplaceHomePage() {
             >
               <span className="category-icon"><Icon size={25} /></span>
               <span className="category-copy"><strong>{name}</strong><small>{description}</small></span>
-              <span className="category-count">{offers}</span>
+              <span className="category-subcategories">
+                {subcategories.slice(0, 4).map((item) => <i key={item}>{item}</i>)}
+              </span>
+              <span className="category-count">{subcategories.length} subcategories</span>
               <ArrowRight className="category-arrow" size={18} />
             </button>
+          ))}
+        </div>
+        <div className="catalog-directory" aria-label="Catalog groups">
+          <div className="directory-intro">
+            <Sparkles size={23} />
+            <span><strong>72 specialist markets</strong><small>From Instagram and Gmail to ChatGPT, Netflix, Steam, software, proxies and top-ups.</small></span>
+          </div>
+          {catalogGroups.map((group) => (
+            <div className="directory-group" key={group.label}>
+              <strong>{group.label}</strong>
+              {group.items.map((item) => <span key={item}>{item}</span>)}
+            </div>
           ))}
         </div>
       </section>
 
       <section className="market-section offers-section" id="offers">
         <div className="market-section-heading offers-heading">
-          <div><span className="section-index">02 / LIVE OFFERS</span><h2>Trending right now</h2></div>
+          <div><span className="section-index">02 / MARKETPLACE OFFERS</span><h2>Across the full catalog</h2></div>
           <button className="view-all-button" type="button" onClick={() => setCategory("All")}>View all <ArrowRight size={16} /></button>
         </div>
         <div className="filter-row">

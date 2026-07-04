@@ -48,9 +48,9 @@ export function SignInPage() {
 
   return (
     <AuthShell
-      eyebrow="Secure access"
-      title="Sign in to your account"
-      subtitle="Use your verified account credentials to continue to your dashboard."
+      eyebrow="Protected marketplace access"
+      title="Welcome back to the exchange."
+      subtitle="Sign in to manage orders, inventory and protected transactions from one secure workspace."
     >
       <form className="auth-form" onSubmit={handleSubmit}>
         <div className="form-heading">

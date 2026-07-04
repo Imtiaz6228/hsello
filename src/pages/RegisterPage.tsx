@@ -109,9 +109,9 @@ export function RegisterPage() {
 
   return (
     <AuthShell
-      eyebrow="Account setup"
-      title="Create a secure account"
-      subtitle="Your account starts with verification, protected sessions, and role-ready profile details."
+      eyebrow="Join the marketplace"
+      title="Your next trade starts here."
+      subtitle="Create one verified account for buying, selling and building your reputation across the exchange."
     >
       <form className="auth-form wide" onSubmit={handleSubmit}>
         <div className="form-heading">

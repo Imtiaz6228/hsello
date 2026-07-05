@@ -87,6 +87,30 @@ export async function reviewSellerApplication(
         where: { id: application.userId },
         data: { role: "SELLER" }
       });
+
+      const baseSlug = application.storeName
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "") || "store";
+
+      await tx.sellerProfile.upsert({
+        where: { userId: application.userId },
+        create: {
+          userId: application.userId,
+          storeName: application.storeName,
+          slug: `${baseSlug}-${application.userId.slice(0, 8)}`,
+          about: application.storeDescription,
+          isVerified: true
+        },
+        update: {
+          storeName: application.storeName,
+          about: application.storeDescription,
+          isVerified: true,
+          isSuspended: false,
+          suspensionReason: null
+        }
+      });
     }
 
     if (status === SellerApplicationStatus.REJECTED) {
@@ -96,6 +120,11 @@ export async function reviewSellerApplication(
           role: "SELLER"
         },
         data: { role: "CUSTOMER" }
+      });
+
+      await tx.sellerProfile.updateMany({
+        where: { userId: application.userId },
+        data: { isVerified: false }
       });
     }
 

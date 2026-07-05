@@ -52,12 +52,17 @@ export const requireAuth: RequestHandler = async (
         email: true,
         username: true,
         role: true,
+        isSuspended: true,
         emailVerifiedAt: true
       }
     });
 
     if (!user) {
       throw new ApiError(401, "Invalid session.", "SESSION_INVALID");
+    }
+
+    if (user.isSuspended) {
+      throw new ApiError(403, "This account is suspended. Contact support if you believe this is a mistake.", "ACCOUNT_SUSPENDED");
     }
 
     req.auth = {

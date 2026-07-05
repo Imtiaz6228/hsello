@@ -58,7 +58,7 @@ export function errorHandler(
     return;
   }
 
-  if (error instanceof Error && error.message.includes("Only JPEG")) {
+  if (error instanceof Error && (error.message.includes("Only JPEG") || error.message.includes("product file type"))) {
     res.status(400).json({
       message: error.message,
       code: "UPLOAD_INVALID"

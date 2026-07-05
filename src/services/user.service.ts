@@ -100,6 +100,8 @@ export function listUsersForAdministration() {
       username: true,
       email: true,
       role: true,
+      isSuspended: true,
+      suspensionReason: true,
       emailVerifiedAt: true,
       createdAt: true
     }

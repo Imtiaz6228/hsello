@@ -25,6 +25,7 @@ export function publicUser(user: User) {
     city: user.city,
     profileImageUrl: user.profileImageUrl,
     role: user.role,
+    isSuspended: user.isSuspended,
     emailVerified: Boolean(user.emailVerifiedAt),
     createdAt: user.createdAt
   };
@@ -170,6 +171,10 @@ export async function loginUser(input: LoginInput, req: Request) {
     throw invalidError;
   }
 
+  if (user.isSuspended) {
+    throw new ApiError(403, "This account is suspended. Contact support for help.", "ACCOUNT_SUSPENDED");
+  }
+
   const session = await createSession(user, req, input.rememberMe);
 
   return {
@@ -190,6 +195,10 @@ export async function refreshUserSession(refreshToken: string | undefined, req: 
 
   if (!session || session.revokedAt || session.expiresAt <= new Date()) {
     throw new ApiError(401, "Refresh session is invalid or expired.", "REFRESH_INVALID");
+  }
+
+  if (session.user.isSuspended) {
+    throw new ApiError(403, "This account is suspended. Contact support for help.", "ACCOUNT_SUSPENDED");
   }
 
   await prisma.refreshSession.update({

@@ -1,6 +1,6 @@
 import { FormEvent, useCallback, useState } from "react";
 import { Camera, Github, Mail, UserPlus } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ApiError, apiRequest } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { Alert } from "../components/Alert";
@@ -40,6 +40,7 @@ const initialForm: RegisterForm = {
 export function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [form, setForm] = useState(initialForm);
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
   const [captchaToken, setCaptchaToken] = useState("");
@@ -96,7 +97,7 @@ export function RegisterPage() {
     setLoading(true);
     try {
       await register(payload);
-      navigate("/verify-required", { replace: true, state: { email: form.email } });
+      navigate("/verify-required", { replace: true, state: { email: form.email, ...(location.state as object | null) } });
     } catch (error) {
       setStatus({
         type: "error",
@@ -224,7 +225,7 @@ export function RegisterPage() {
         </div>
 
         <p className="switch-auth">
-          Already have an account? <Link to="/sign-in">Sign in</Link>
+          Already have an account? <Link to="/sign-in" state={location.state}>Sign in</Link>
         </p>
       </form>
     </AuthShell>

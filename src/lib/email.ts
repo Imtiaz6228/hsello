@@ -72,3 +72,45 @@ export function sendSellerApplicationNotification(storeName: string, applicantEm
     `
   );
 }
+
+export function sendOrderConfirmation(
+  to: string,
+  buyerName: string,
+  orderNumber: string,
+  invoiceNumber: string,
+  totalLabel: string,
+  downloadLinks: Array<{ name: string; url: string }>
+) {
+  const downloads = downloadLinks.length
+    ? `<p><strong>Your downloads</strong></p><ul>${downloadLinks.map((download) => (
+        `<li><a href="${download.url}">${escapeHtml(download.name)}</a> (secure, time-limited link)</li>`
+      )).join("")}</ul>`
+    : `<p>This order contains a service. Use the order delivery chat in your dashboard to coordinate with the seller.</p>`;
+
+  return sendMail(
+    to,
+    `Order ${orderNumber} confirmed`,
+    `<p>Hello ${escapeHtml(buyerName)},</p>
+     <p>Your payment was confirmed and your order is ready.</p>
+     <p><strong>Order:</strong> ${escapeHtml(orderNumber)}<br />
+     <strong>Invoice:</strong> ${escapeHtml(invoiceNumber)}<br />
+     <strong>Total:</strong> ${escapeHtml(totalLabel)}</p>
+     ${downloads}
+     <p>You can also access purchases, invoices, refund requests, and support from <a href="${env.APP_URL}/dashboard">your dashboard</a>.</p>`
+  );
+}
+
+export function sendTicketUpdateEmail(
+  to: string,
+  ticketNumber: string,
+  subject: string,
+  status: string
+) {
+  return sendMail(
+    to,
+    `Ticket ${ticketNumber} updated`,
+    `<p>Your support ticket <strong>${escapeHtml(ticketNumber)}</strong> has an update.</p>
+     <p><strong>${escapeHtml(subject)}</strong><br />Status: ${escapeHtml(status)}</p>
+     <p><a href="${env.APP_URL}/support">Open support center</a></p>`
+  );
+}

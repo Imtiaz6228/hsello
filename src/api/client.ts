@@ -17,6 +17,7 @@ export type User = {
   city?: string | null;
   profileImageUrl?: string | null;
   role: Role;
+  isSuspended: boolean;
   emailVerified: boolean;
   createdAt: string;
 };

@@ -8,12 +8,15 @@ import { env, isProduction } from "./config/env.js";
 import { issueCsrfToken } from "./lib/cookies.js";
 import { uploadRoot } from "./middleware/upload.js";
 import { csrfProtection } from "./middleware/csrf.js";
-import { errorHandler, notFound } from "./middleware/error-handler.js";
+import { asyncHandler, errorHandler, notFound } from "./middleware/error-handler.js";
 import { generalLimiter } from "./middleware/rate-limit.js";
 import { authRouter } from "./routes/auth.routes.js";
 import { profileRouter } from "./routes/profile.routes.js";
 import { sellerRouter } from "./routes/seller.routes.js";
 import { adminRouter } from "./routes/admin.routes.js";
+import { marketplaceRouter } from "./routes/marketplace.routes.js";
+import { commerceRouter } from "./routes/commerce.routes.js";
+import { prisma } from "./lib/prisma.js";
 
 function normalizeOrigin(value: string) {
   try {
@@ -91,9 +94,31 @@ app.get("/api/csrf", (_req, res) => {
   });
 });
 
+app.get("/robots.txt", (_req, res) => {
+  res.type("text/plain").send(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /dashboard\nDisallow: /checkout\nSitemap: ${env.APP_URL}/sitemap.xml\n`);
+});
+
+app.get("/sitemap.xml", asyncHandler(async (_req, res) => {
+  const [products, categories, stores] = await Promise.all([
+    prisma.product.findMany({ where: { status: "APPROVED" }, select: { slug: true, updatedAt: true } }),
+    prisma.category.findMany({ where: { isActive: true }, select: { slug: true, updatedAt: true } }),
+    prisma.sellerProfile.findMany({ where: { isVerified: true, isSuspended: false }, select: { slug: true, updatedAt: true } })
+  ]);
+  const urls = [
+    { path: "/", updatedAt: new Date() }, { path: "/catalog", updatedAt: new Date() },
+    { path: "/blog", updatedAt: new Date() },
+    ...products.map((item) => ({ path: `/products/${item.slug}`, updatedAt: item.updatedAt })),
+    ...categories.map((item) => ({ path: `/categories/${item.slug}`, updatedAt: item.updatedAt })),
+    ...stores.map((item) => ({ path: `/stores/${item.slug}`, updatedAt: item.updatedAt }))
+  ];
+  res.type("application/xml").send(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map((item) => `<url><loc>${env.APP_URL}${item.path}</loc><lastmod>${item.updatedAt.toISOString()}</lastmod></url>`).join("")}</urlset>`);
+}));
+
 app.use("/api", csrfProtection);
 app.use("/api/auth", authRouter);
 app.use("/api/profile", profileRouter);
+app.use("/api/marketplace", marketplaceRouter);
+app.use("/api/commerce", commerceRouter);
 app.use("/api/seller", sellerRouter);
 app.use("/api/admin", adminRouter);
 

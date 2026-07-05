@@ -33,9 +33,17 @@ const envSchema = z.object({
   EMAIL_FROM: z.string().min(3),
   ADMIN_NOTIFICATION_EMAIL: z.string().email(),
   UPLOAD_DIR: z.string().min(1).default("uploads"),
+  PRIVATE_UPLOAD_DIR: z.string().min(1).default("private-uploads"),
   MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(2_097_152),
+  MAX_PRODUCT_FILE_BYTES: z.coerce.number().int().positive().default(104_857_600),
   TURNSTILE_REQUIRED: booleanFromEnv.default(false),
-  TURNSTILE_SECRET_KEY: z.preprocess(emptyToUndefined, z.string().optional())
+  TURNSTILE_SECRET_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
+  STRIPE_SECRET_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
+  PAYPAL_CLIENT_ID: z.preprocess(emptyToUndefined, z.string().optional()),
+  PAYPAL_CLIENT_SECRET: z.preprocess(emptyToUndefined, z.string().optional()),
+  PAYPAL_ENVIRONMENT: z.enum(["sandbox", "live"]).default("sandbox"),
+  BANK_TRANSFER_INSTRUCTIONS: z.preprocess(emptyToUndefined, z.string().optional()),
+  CRYPTO_PAYMENT_INSTRUCTIONS: z.preprocess(emptyToUndefined, z.string().optional())
 });
 
 const parsed = envSchema.safeParse(process.env);

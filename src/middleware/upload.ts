@@ -9,6 +9,12 @@ export const uploadRoot = path.isAbsolute(env.UPLOAD_DIR)
 
 fs.mkdirSync(uploadRoot, { recursive: true });
 
+export const privateUploadRoot = path.isAbsolute(env.PRIVATE_UPLOAD_DIR)
+  ? env.PRIVATE_UPLOAD_DIR
+  : path.resolve(process.cwd(), env.PRIVATE_UPLOAD_DIR);
+
+fs.mkdirSync(privateUploadRoot, { recursive: true });
+
 const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 const storage = multer.diskStorage({
@@ -38,3 +44,29 @@ export const imageUpload = multer({
 export function publicUploadUrl(fileName: string) {
   return `${env.API_URL}/uploads/${encodeURIComponent(fileName)}`;
 }
+
+const allowedProductTypes = new Set([
+  "application/zip", "application/x-zip-compressed", "application/pdf",
+  "application/octet-stream", "text/plain", "audio/mpeg", "video/mp4",
+  "image/jpeg", "image/png", "image/webp"
+]);
+
+const productStorage = multer.diskStorage({
+  destination: (_req, _file, callback) => callback(null, privateUploadRoot),
+  filename: (_req, file, callback) => {
+    const extension = path.extname(file.originalname).toLowerCase();
+    callback(null, `${Date.now()}-${crypto.randomUUID()}${extension}`);
+  }
+});
+
+export const productFileUpload = multer({
+  storage: productStorage,
+  limits: { fileSize: env.MAX_PRODUCT_FILE_BYTES, files: 1 },
+  fileFilter: (_req, file, callback) => {
+    if (!allowedProductTypes.has(file.mimetype)) {
+      callback(new Error("This product file type is not allowed."));
+      return;
+    }
+    callback(null, true);
+  }
+});

@@ -1,4 +1,8 @@
-# Hsello authentication app
+# HSello digital marketplace
+
+HSello is a full-stack marketplace for reviewed digital downloads and service-based products. It includes secure authentication, seller approval, product moderation, cart and checkout, Stripe and PayPal hosted payment flows, manual payment approval, expiring downloads, invoices, support tickets, reviews, disputes, refunds, seller storefronts, legal pages, SEO metadata, sitemaps, reports, and an operations console.
+
+The trust policy is enforced throughout the product: account and credential trading, hacking tools, stolen files, fake reviews, spam, and bot services are prohibited.
 
 One repository root, two deployment targets:
 
@@ -40,6 +44,15 @@ UPLOAD_DIR=/app/uploads
 MAX_UPLOAD_BYTES=2097152
 TURNSTILE_REQUIRED=false
 TURNSTILE_SECRET_KEY=
+
+STRIPE_SECRET_KEY=
+PAYPAL_CLIENT_ID=
+PAYPAL_CLIENT_SECRET=
+PAYPAL_ENVIRONMENT=sandbox
+BANK_TRANSFER_INSTRUCTIONS="Bank and account details shown after order creation"
+CRYPTO_PAYMENT_INSTRUCTIONS="Supported asset, network, and receiving address"
+PRIVATE_UPLOAD_DIR=/app/private-uploads
+MAX_PRODUCT_FILE_BYTES=104857600
 ```
 
 `COOKIE_DOMAIN` must remain blank. `APP_URL`, `API_URL`, and each comma-separated `CORS_ORIGIN` entry must be a complete HTTPS origin without a path. Prefer exact preview URLs over broad wildcards.
@@ -47,6 +60,10 @@ TURNSTILE_SECRET_KEY=
 Railway injects its own `PORT`; you do not need to create that variable. Before every release, `prisma migrate deploy` applies committed migrations to PostgreSQL. A failed migration stops the release before the new API starts.
 
 For persistent profile images, attach a Railway volume to the app service at `/app/uploads`. Without a volume, uploads are erased by a future deployment. PostgreSQL data is stored separately by the PostgreSQL service.
+
+Mount a second private volume at `/app/private-uploads` for seller delivery files. That directory is never exposed as static content; files are released only through validated download grants.
+
+Stripe and PayPal are hidden by the API until their credentials are configured. Bank transfer and crypto are also hidden until instructions are configured. Manual approval remains available for staff-reviewed payments. Hosted provider returns are verified server-side before delivery, and provider refunds are issued through the matching API.
 
 Railway can also host the complete app at its public URL. To start with that same-origin version, set `APP_URL`, `API_URL`, and `CORS_ORIGIN` to the Railway public origin. This is the simplest way to confirm registration and login before configuring Vercel.
 

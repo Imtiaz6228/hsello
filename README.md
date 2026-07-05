@@ -4,15 +4,18 @@ One repository root, two deployment targets:
 
 - **Railway** builds the React app and Express API, runs migrations, and serves everything from one origin.
 - **Vercel** builds the React app. It calls the Railway API using `VITE_API_BASE_URL`.
+- **GitHub Actions** checks every pull request and `main` push against PostgreSQL before either platform deploys it.
 
 There are no `frontend` or `backend` root folders and neither platform needs a Root Directory override.
 
 ## Railway
 
-1. Connect this repository and add a PostgreSQL service.
-2. Leave **Root Directory** blank.
-3. Railway reads `railway.json`; do not override its build/start commands.
-4. Add the variables below and redeploy.
+1. Create a Railway project from this GitHub repository and select the `main` branch.
+2. Add a PostgreSQL service to the same Railway project.
+3. On the app service, generate a public domain under **Settings → Networking**.
+4. Leave **Root Directory** blank.
+5. Railway reads `railway.json`; do not override its build, pre-deploy, start, or health-check commands.
+6. Add the variables below and redeploy.
 
 ```env
 NODE_ENV=production
@@ -33,21 +36,26 @@ SMTP_USER=YOUR_SMTP_USER
 SMTP_PASS=YOUR_SMTP_PASSWORD
 EMAIL_FROM=Hsello <no-reply@your-domain.com>
 ADMIN_NOTIFICATION_EMAIL=admin@your-domain.com
-UPLOAD_DIR=uploads
+UPLOAD_DIR=/app/uploads
 MAX_UPLOAD_BYTES=2097152
 TURNSTILE_REQUIRED=false
 TURNSTILE_SECRET_KEY=
 ```
 
-`COOKIE_DOMAIN` must remain blank. `APP_URL`, `API_URL`, and `CORS_ORIGIN` must be complete HTTPS origins without paths.
+`COOKIE_DOMAIN` must remain blank. `APP_URL`, `API_URL`, and each comma-separated `CORS_ORIGIN` entry must be a complete HTTPS origin without a path. Prefer exact preview URLs over broad wildcards.
 
-Railway can also host the complete app at its public URL. This same-origin version is the simplest way to confirm registration and login before configuring Vercel.
+Railway injects its own `PORT`; you do not need to create that variable. Before every release, `prisma migrate deploy` applies committed migrations to PostgreSQL. A failed migration stops the release before the new API starts.
+
+For persistent profile images, attach a Railway volume to the app service at `/app/uploads`. Without a volume, uploads are erased by a future deployment. PostgreSQL data is stored separately by the PostgreSQL service.
+
+Railway can also host the complete app at its public URL. To start with that same-origin version, set `APP_URL`, `API_URL`, and `CORS_ORIGIN` to the Railway public origin. This is the simplest way to confirm registration and login before configuring Vercel.
 
 ## Vercel
 
 1. Import the same repository and leave **Root Directory** blank.
-2. Vercel reads `vercel.json` and runs `npm run build:web`.
-3. Add this variable to Production and Preview, then redeploy:
+2. Select `main` as the Production Branch.
+3. Vercel reads `vercel.json` and runs `npm run build:web`.
+4. Add this variable to Production, then redeploy:
 
 ```env
 VITE_API_BASE_URL=https://YOUR-RAILWAY-SERVICE.up.railway.app
@@ -55,7 +63,15 @@ VITE_API_BASE_URL=https://YOUR-RAILWAY-SERVICE.up.railway.app
 
 Do not append `/api`. Vite embeds this value during the build, so changing it always requires a redeploy.
 
-If Turnstile is enabled, also set `VITE_TURNSTILE_SITE_KEY` on Vercel and the matching `TURNSTILE_SECRET_KEY` on Railway.
+If Turnstile is enabled, also set `VITE_TURNSTILE_SITE_KEY` on Vercel and the matching `TURNSTILE_SECRET_KEY` on Railway. Add a Vercel preview URL to Railway's `CORS_ORIGIN` only when you intend to test that preview.
+
+After Vercel has its final URL, confirm that Railway's `APP_URL` and `CORS_ORIGIN` use that URL and redeploy Railway once.
+
+## GitHub autodeploy safety
+
+Vercel and Railway automatically deploy new commits after their GitHub integrations are connected. In Railway's service settings, enable **Wait for CI** so releases start only after the included GitHub Actions workflow passes.
+
+The workflow installs the locked dependencies, validates the Prisma schema, applies every migration to PostgreSQL 16, and builds the frontend and API. It does not need production secrets.
 
 ## Staff accounts
 
@@ -71,10 +87,12 @@ Moderators and admins can review seller applications. Super admins can also mana
 
 ## Local verification
 
+Copy `.env.example` to `.env`, replace its placeholders with local values, and use a local PostgreSQL URL.
+
 ```sh
 npm ci
-npm run prisma:generate
-npm run build
+npm run prisma:migrate
+npm run build:railway
 ```
 
 Use `npm run dev:api` for the API and `npm run dev:web` for Vite. The Vite development server proxies `/api` and `/uploads` to port 4000.

@@ -3,16 +3,21 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "vite",
     "dev:web": "vite",
     "dev:api": "tsx watch src/server.ts",
     "build": "npm run build:web && npm run build:api",
+    "build:railway": "npm run prisma:generate && npm run build",
     "build:web": "tsc -p tsconfig.web.json && vite build",
     "build:api": "tsc -p tsconfig.api.json",
     "preview": "vite preview",
     "start": "node dist-api/server.js",
     "prisma:generate": "prisma generate",
+    "prisma:validate": "prisma validate",
     "prisma:migrate": "prisma migrate deploy",
     "prisma:migrate:dev": "prisma migrate dev",
     "set-role": "node dist-api/scripts/promote-admin.js",

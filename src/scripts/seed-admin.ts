@@ -24,7 +24,7 @@ async function seed() {
         lastName: "User",
         username: "admin",
         email,
-        phone: "+1234567890",
+        phone: "+9234567890",
         country: "US",
         city: "NY",
         role: "SUPER_ADMIN",

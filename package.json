@@ -22,7 +22,8 @@
     "prisma:migrate:dev": "prisma migrate dev",
     "set-role": "node dist-api/scripts/promote-admin.js",
     "promote-admin": "node dist-api/scripts/promote-admin.js",
-    "seed-admin": "node dist-api/scripts/seed-admin.js"
+    "seed-admin": "node dist-api/scripts/seed-admin.js",
+    "test-smtp": "node dist-api/scripts/test-smtp.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

@@ -51,7 +51,7 @@ type ApiOptions = Omit<RequestInit, "body"> & {
 };
 
 const configuredApiUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim();
-const API_BASE_URL = (configuredApiUrl || (import.meta.env.DEV ? "http://localhost:4000" : ""))
+const API_BASE_URL = (configuredApiUrl || (import.meta.env.DEV ? "http://localhost:4000" : "https://hsello-production.up.railway.app"))
   .replace(/\/+$/, "");
 
 let csrfToken: string | null = null;

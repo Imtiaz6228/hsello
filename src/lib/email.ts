@@ -22,12 +22,19 @@ function escapeHtml(value: string) {
 }
 
 async function sendMail(to: string, subject: string, html: string) {
-  await transport.sendMail({
-    from: env.EMAIL_FROM,
-    to,
-    subject,
-    html
-  });
+  try {
+    const info = await transport.sendMail({
+      from: env.EMAIL_FROM,
+      to,
+      subject,
+      html
+    });
+    console.log(`Email sent: ${info.messageId} to ${to}`);
+    return info;
+  } catch (err) {
+    console.error(`SMTP error sending to ${to}:`, err instanceof Error ? err.message : err);
+    throw err;
+  }
 }
 
 export function sendVerificationEmail(to: string, firstName: string, token: string) {

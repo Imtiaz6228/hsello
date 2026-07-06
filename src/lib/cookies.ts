@@ -47,30 +47,40 @@ export function clearAuthCookies(res: Response) {
 export function issueCsrfToken(res: Response) {
   const token = randomToken(32);
   const signature = hmacSha256(token, env.CSRF_SECRET);
+  const signed = `${token}.${signature}`;
 
-  res.cookie(CSRF_COOKIE, `${token}.${signature}`, {
+  // Set cookie for same-origin fallback, but the signed token is self-validating
+  // so cross-site (Vercel → Railway) still works without the cookie.
+  res.cookie(CSRF_COOKIE, signed, {
     ...baseCookieOptions(),
     httpOnly: false,
     maxAge: 2 * 60 * 60 * 1000
   });
 
-  return token;
+  // Return the self-validating signed token so the client can send it
+  // as x-csrf-token without needing the cookie for verification.
+  return signed;
 }
 
 export function verifyCsrfToken(req: Request) {
-  const headerToken = req.get("x-csrf-token");
+  const headerValue = req.get("x-csrf-token");
+  if (!headerValue) return false;
+
+  // Self-validating token (works cross-site without cookie)
+  const [token, signature] = headerValue.split(".");
+  if (token && signature) {
+    const expectedSignature = hmacSha256(token, env.CSRF_SECRET);
+    if (safeEqual(signature, expectedSignature)) return true;
+  }
+
+  // Fallback: cookie-based double-submit (same-origin only)
   const cookieValue = req.cookies?.[CSRF_COOKIE] as string | undefined;
+  if (!cookieValue) return false;
 
-  if (!headerToken || !cookieValue) {
-    return false;
-  }
+  const [cookieToken, cookieSignature] = cookieValue.split(".");
+  if (!cookieToken || !cookieSignature) return false;
 
-  const [cookieToken, signature] = cookieValue.split(".");
-  if (!cookieToken || !signature) {
-    return false;
-  }
+  const expectedCookieSignature = hmacSha256(cookieToken, env.CSRF_SECRET);
 
-  const expectedSignature = hmacSha256(cookieToken, env.CSRF_SECRET);
-
-  return safeEqual(signature, expectedSignature) && safeEqual(headerToken, cookieToken);
+  return safeEqual(cookieSignature, expectedCookieSignature) && safeEqual(headerValue, cookieToken);
 }

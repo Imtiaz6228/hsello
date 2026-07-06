@@ -2,7 +2,7 @@ import { prisma } from "../lib/prisma.js";
 import { hashPassword } from "../lib/password.js";
 
 async function seed() {
-  const email = "imtiaz6868@gmail.com";
+  const email = "imtiazbashir6868@gmail.com";
   const password = "Admin@123456";
 
   const existing = await prisma.user.findUnique({ where: { email } });

@@ -60,7 +60,8 @@ export function sendPasswordResetEmail(to: string, firstName: string, token: str
   );
 }
 
-export function sendSellerApplicationNotification(storeName: string, applicantEmail: string) {
+export async function sendSellerApplicationNotification(storeName: string, applicantEmail: string) {
+  if (!env.ADMIN_NOTIFICATION_EMAIL) return;
   return sendMail(
     env.ADMIN_NOTIFICATION_EMAIL,
     "New seller application",

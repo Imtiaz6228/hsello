@@ -31,7 +31,7 @@ const envSchema = z.object({
   SMTP_USER: z.preprocess(emptyToUndefined, z.string().optional()),
   SMTP_PASS: z.preprocess(emptyToUndefined, z.string().optional()),
   EMAIL_FROM: z.string().min(3),
-  ADMIN_NOTIFICATION_EMAIL: z.string().email(),
+  ADMIN_NOTIFICATION_EMAIL: z.preprocess(emptyToUndefined, z.string().email().optional()),
   UPLOAD_DIR: z.string().min(1).default("uploads"),
   PRIVATE_UPLOAD_DIR: z.string().min(1).default("private-uploads"),
   MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(2_097_152),

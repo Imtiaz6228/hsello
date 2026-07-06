@@ -153,7 +153,10 @@ export async function registerUser(input: RegisterInput, file?: Express.Multer.F
   });
 
   const verificationToken = await createEmailVerificationToken(user.id);
-  await sendVerificationEmail(user.email, user.firstName, verificationToken);
+  // Fire-and-forget: don't let email delivery failure block account creation
+  sendVerificationEmail(user.email, user.firstName, verificationToken).catch((err) =>
+    console.error("Failed to send verification email:", err instanceof Error ? err.message : err)
+  );
 
   return publicUser(user);
 }
@@ -262,7 +265,10 @@ export async function resendVerification(email: string) {
   }
 
   const token = await createEmailVerificationToken(user.id);
-  await sendVerificationEmail(user.email, user.firstName, token);
+  // Fire-and-forget: don't let email delivery failure block resend
+  sendVerificationEmail(user.email, user.firstName, token).catch((err) =>
+    console.error("Failed to resend verification email:", err instanceof Error ? err.message : err)
+  );
 }
 
 export async function requestPasswordReset(email: string) {
@@ -273,7 +279,10 @@ export async function requestPasswordReset(email: string) {
   }
 
   const token = await createPasswordResetToken(user.id);
-  await sendPasswordResetEmail(user.email, user.firstName, token);
+  // Fire-and-forget: don't let email delivery failure block password reset request
+  sendPasswordResetEmail(user.email, user.firstName, token).catch((err) =>
+    console.error("Failed to send password reset email:", err instanceof Error ? err.message : err)
+  );
 }
 
 export async function resetPassword(token: string, password: string) {

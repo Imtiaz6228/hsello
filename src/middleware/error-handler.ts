@@ -1,6 +1,7 @@
 import type { NextFunction, Request, RequestHandler, Response } from "express";
 import multer from "multer";
 import { Prisma } from "@prisma/client";
+import { ZodError } from "zod";
 
 export class ApiError extends Error {
   constructor(
@@ -42,6 +43,19 @@ export function errorHandler(
     return;
   }
 
+  if (error instanceof ZodError) {
+    const fieldErrors = error.issues.map((issue) => ({
+      path: issue.path.join("."),
+      message: issue.message
+    }));
+    res.status(400).json({
+      message: "Please fix the highlighted fields.",
+      code: "VALIDATION_ERROR",
+      details: fieldErrors
+    });
+    return;
+  }
+
   if (error instanceof multer.MulterError) {
     res.status(400).json({
       message: error.message,
@@ -66,7 +80,7 @@ export function errorHandler(
     return;
   }
 
-  console.error(error);
+  console.error("Unhandled error:", error instanceof Error ? error.message : error, error instanceof Error ? error.stack : "");
   res.status(500).json({
     message: "Something went wrong. Please try again.",
     code: "INTERNAL_ERROR"

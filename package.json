@@ -21,7 +21,8 @@
     "prisma:migrate": "prisma migrate deploy",
     "prisma:migrate:dev": "prisma migrate dev",
     "set-role": "node dist-api/scripts/promote-admin.js",
-    "promote-admin": "node dist-api/scripts/promote-admin.js"
+    "promote-admin": "node dist-api/scripts/promote-admin.js",
+    "seed-admin": "node dist-api/scripts/seed-admin.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

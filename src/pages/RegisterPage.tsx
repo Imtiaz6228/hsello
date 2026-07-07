@@ -99,6 +99,14 @@ export function RegisterPage() {
       await register(payload);
       navigate("/verify-required", { replace: true, state: { email: form.email, ...(location.state as object | null) } });
     } catch (error) {
+      if (error instanceof ApiError && error.code === "EMAIL_DELIVERY_FAILED") {
+        navigate("/verify-required", {
+          replace: true,
+          state: { email: form.email, deliveryError: error.message, ...(location.state as object | null) }
+        });
+        return;
+      }
+
       setStatus({
         type: "error",
         message: error instanceof ApiError ? error.message : "Could not create account. Please try again."

@@ -35,7 +35,10 @@ export function SignInPage() {
         ? (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? homePathForRole(user.role)
         : "/verify-required";
 
-      navigate(destination, { replace: true });
+      navigate(destination, {
+        replace: true,
+        state: destination === "/verify-required" ? { email } : undefined
+      });
     } catch (error) {
       setStatus({
         type: "error",

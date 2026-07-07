@@ -20,7 +20,7 @@ export function ProtectedRoute({ requireVerified = true, roles }: ProtectedRoute
   }
 
   if (requireVerified && !user.emailVerified) {
-    return <Navigate to="/verify-required" replace />;
+    return <Navigate to="/verify-required" replace state={{ email: user.email }} />;
   }
 
   if (roles && !roles.includes(user.role)) {

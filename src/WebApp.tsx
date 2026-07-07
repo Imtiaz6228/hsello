@@ -3,7 +3,9 @@ import { ProtectedRoute } from "./auth/ProtectedRoute";
 import { OperationsAdminPage } from "./pages/OperationsAdminPage";
 import { AccountDashboardPage } from "./pages/AccountDashboardPage";
 import { MarketplaceLandingPage } from "./pages/MarketplaceLandingPage";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { RegisterPage } from "./pages/RegisterPage";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { SignInPage } from "./pages/SignInPage";
 import { VerifyEmailPage } from "./pages/VerifyEmailPage";
 import { VerifyRequiredPage } from "./pages/VerifyRequiredPage";
@@ -33,6 +35,8 @@ export function App() {
       <Route path="/blog" element={<BlogPage />} />
       {['/terms', '/privacy', '/refund-policy', '/seller-policy', '/buyer-protection', '/prohibited-products', '/copyright', '/contact', '/about'].map((path) => <Route path={path} element={<LegalPage />} key={path} />)}
       <Route path="/sign-in" element={<SignInPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
       <Route path="/verify-required" element={<VerifyRequiredPage />} />

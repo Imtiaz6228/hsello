@@ -50,7 +50,13 @@ type ApiOptions = Omit<RequestInit, "body"> & {
   body?: BodyInit | Record<string, unknown> | null;
 };
 
-const configuredApiUrl = ((import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim() || "").replace(/\/+$/, "");
+function normalizeApiBaseUrl(value: string | undefined) {
+  return (value?.trim() || "")
+    .replace(/\/+$/, "")
+    .replace(/(?:\/api)+$/i, "");
+}
+
+const configuredApiUrl = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL as string | undefined);
 const productionFallbackApiUrl = "https://hsello-production.up.railway.app";
 const remoteApiUrl = configuredApiUrl || (import.meta.env.DEV ? "" : productionFallbackApiUrl);
 const useRemoteApi = (import.meta.env.VITE_USE_REMOTE_API as string | undefined)?.trim() === "true";
@@ -197,7 +203,8 @@ async function refreshSession() {
 export async function apiRequest<T>(
   path: string,
   options: ApiOptions = {},
-  retryOnUnauthorized = true
+  retryOnUnauthorized = true,
+  retryOnCsrf = true
 ): Promise<T> {
   const method = options.method ?? "GET";
   const headers = new Headers(options.headers);
@@ -222,12 +229,29 @@ export async function apiRequest<T>(
 
   if (response.status === 401 && retryOnUnauthorized && path !== "/api/auth/refresh") {
     await refreshSession();
-    return apiRequest<T>(path, options, false);
+    return apiRequest<T>(path, options, false, retryOnCsrf);
   }
 
   const data = await readJson(response);
 
   if (!response.ok) {
+    if (response.status === 403 && data?.code === "CSRF_INVALID" && isUnsafeMethod(method) && retryOnCsrf) {
+      csrfToken = null;
+
+      return apiRequest<T>(
+        path,
+        {
+          ...options,
+          headers: {
+            ...Object.fromEntries(new Headers(options.headers).entries()),
+            "x-csrf-token": await getCsrfToken()
+          }
+        },
+        retryOnUnauthorized,
+        false
+      );
+    }
+
     throw new ApiError(
       data?.message ?? `Request failed (${response.status}).`,
       response.status,

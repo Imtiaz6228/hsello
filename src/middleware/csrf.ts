@@ -15,7 +15,13 @@ const publicAuthPaths = new Set([
 ]);
 
 function apiPath(reqPath: string) {
-  return reqPath.split("?")[0].replace(/^\/api/, "");
+  const path = reqPath.split("?")[0];
+
+  try {
+    return new URL(path).pathname.replace(/^(?:\/api)+/, "") || "/";
+  } catch {
+    return path.replace(/^(?:\/api)+/, "") || "/";
+  }
 }
 
 export const csrfProtection: RequestHandler = (req, _res, next) => {

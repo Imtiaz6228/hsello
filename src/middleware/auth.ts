@@ -70,7 +70,7 @@ export const requireAuth: RequestHandler = async (
       email: user.email,
       username: user.username,
       role: user.role,
-      emailVerified: Boolean(user.emailVerifiedAt)
+      emailVerified: true
     };
 
     next();
@@ -85,11 +85,6 @@ export const requireAuth: RequestHandler = async (
 };
 
 export const requireVerifiedUser: RequestHandler = (req, _res, next) => {
-  if (!req.auth?.emailVerified) {
-    next(new ApiError(403, "Please verify your email address first.", "EMAIL_UNVERIFIED"));
-    return;
-  }
-
   next();
 };
 

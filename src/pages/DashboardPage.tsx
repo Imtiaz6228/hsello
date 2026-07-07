@@ -53,7 +53,7 @@ export function DashboardPage() {
           <span className="section-index">QUICK START</span>
           <h2>Make your first move</h2>
           <Link to="/"><PackageCheck /> Browse live offers <ArrowRight /></Link>
-          <Link to="/register"><Store /> Become a seller <ArrowRight /></Link>
+          <Link to="/seller/apply"><Store /> Become a seller <ArrowRight /></Link>
           <button type="button"><UserRound /> Complete profile <ArrowRight /></button>
           {STAFF_ROLES.includes(user.role) ? <Link className="admin-shortcut" to="/admin"><ShieldCheck /> Open admin panel <ArrowRight /></Link> : null}
         </aside>

@@ -4,7 +4,7 @@ import { Prisma, type Role, type User } from "@prisma/client";
 import { env } from "../config/env.js";
 import { clearAuthCookies, REFRESH_TOKEN_COOKIE } from "../lib/cookies.js";
 import { randomToken, sha256 } from "../lib/crypto.js";
-import { sendPasswordResetEmail, sendVerificationEmail } from "../lib/email.js";
+import { sendPasswordResetEmail } from "../lib/email.js";
 import { hashPassword, verifyPassword } from "../lib/password.js";
 import { prisma } from "../lib/prisma.js";
 import { publicUploadUrl } from "../middleware/upload.js";
@@ -26,7 +26,7 @@ export function publicUser(user: User) {
     profileImageUrl: user.profileImageUrl,
     role: user.role,
     isSuspended: user.isSuspended,
-    emailVerified: Boolean(user.emailVerifiedAt),
+    emailVerified: true,
     createdAt: user.createdAt
   };
 }
@@ -43,7 +43,7 @@ function signAccessToken(user: SessionUser) {
   return jwt.sign(
     {
       role: user.role,
-      emailVerified: Boolean(user.emailVerifiedAt)
+      emailVerified: true
     },
     env.JWT_SECRET,
     {
@@ -98,13 +98,6 @@ function logEmailError(kind: string, to: string, error: unknown) {
     `${kind} email failed for ${to}:`,
     error instanceof Error ? error.message : error
   );
-}
-
-async function queueAccountVerification(user: Pick<User, "id" | "email" | "firstName">) {
-  const verificationToken = await createEmailVerificationToken(user.id);
-
-  void sendVerificationEmail(user.email, user.firstName, verificationToken)
-    .catch((error) => logEmailError("Verification", user.email, error));
 }
 
 async function queuePasswordReset(user: Pick<User, "id" | "email" | "firstName">) {
@@ -167,11 +160,10 @@ export async function registerUser(input: RegisterInput, file?: Express.Multer.F
         country: input.country,
         city: input.city,
         profileImageUrl: file ? publicUploadUrl(file.filename) : existingEmailUser.profileImageUrl,
-        passwordHash: await hashPassword(input.password)
+        passwordHash: await hashPassword(input.password),
+        emailVerifiedAt: existingEmailUser.emailVerifiedAt ?? new Date()
       }
     });
-
-    await queueAccountVerification(user);
 
     return publicUser(user);
   }
@@ -186,11 +178,10 @@ export async function registerUser(input: RegisterInput, file?: Express.Multer.F
       country: input.country,
       city: input.city,
       profileImageUrl: file ? publicUploadUrl(file.filename) : undefined,
-      passwordHash: await hashPassword(input.password)
+      passwordHash: await hashPassword(input.password),
+      emailVerifiedAt: new Date()
     }
   });
-
-  await queueAccountVerification(user);
 
   return publicUser(user);
 }
@@ -298,7 +289,10 @@ export async function resendVerification(email: string) {
     return;
   }
 
-  await queueAccountVerification(user);
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { emailVerifiedAt: new Date() }
+  });
 }
 
 export async function requestPasswordReset(email: string) {

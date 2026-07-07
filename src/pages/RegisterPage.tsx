@@ -1,7 +1,7 @@
 import { FormEvent, useCallback, useState } from "react";
 import { Camera, Github, Mail, UserPlus } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ApiError, apiRequest } from "../api/client";
+import { ApiError, apiRequest, homePathForRole } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { Alert } from "../components/Alert";
 import { AuthShell } from "../components/AuthShell";
@@ -96,17 +96,10 @@ export function RegisterPage() {
 
     setLoading(true);
     try {
-      await register(payload);
-      navigate("/verify-required", { replace: true, state: { email: form.email, ...(location.state as object | null) } });
+      const user = await register(payload);
+      const destination = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? homePathForRole(user.role);
+      navigate(destination, { replace: true });
     } catch (error) {
-      if (error instanceof ApiError && error.code === "EMAIL_DELIVERY_FAILED") {
-        navigate("/verify-required", {
-          replace: true,
-          state: { email: form.email, deliveryError: error.message, ...(location.state as object | null) }
-        });
-        return;
-      }
-
       setStatus({
         type: "error",
         message: error instanceof ApiError ? error.message : "Could not create account. Please try again."
@@ -120,7 +113,7 @@ export function RegisterPage() {
     <AuthShell
       eyebrow="Join the marketplace"
       title="Your next trade starts here."
-      subtitle="Create one verified account for buying, selling and building your reputation across the exchange."
+      subtitle="Create your buyer account now. Seller access is reviewed separately by marketplace staff."
     >
       <form className="auth-form wide" onSubmit={handleSubmit}>
         <div className="form-heading">

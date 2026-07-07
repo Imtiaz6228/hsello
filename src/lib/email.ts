@@ -1,20 +1,22 @@
 import nodemailer from "nodemailer";
 import { env } from "../config/env.js";
 
-const transport = nodemailer.createTransport({
-  host: env.SMTP_HOST,
-  port: env.SMTP_PORT,
-  secure: env.SMTP_SECURE,
-  connectionTimeout: env.SMTP_TIMEOUT_MS,
-  greetingTimeout: env.SMTP_TIMEOUT_MS,
-  socketTimeout: env.SMTP_TIMEOUT_MS,
-  auth: env.SMTP_USER && env.SMTP_PASS
-    ? {
-        user: env.SMTP_USER,
-        pass: env.SMTP_PASS
-      }
-    : undefined
-});
+const transport = env.SMTP_HOST && env.SMTP_PORT && env.EMAIL_FROM
+  ? nodemailer.createTransport({
+      host: env.SMTP_HOST,
+      port: env.SMTP_PORT,
+      secure: env.SMTP_SECURE,
+      connectionTimeout: env.SMTP_TIMEOUT_MS,
+      greetingTimeout: env.SMTP_TIMEOUT_MS,
+      socketTimeout: env.SMTP_TIMEOUT_MS,
+      auth: env.SMTP_USER && env.SMTP_PASS
+        ? {
+            user: env.SMTP_USER,
+            pass: env.SMTP_PASS
+          }
+        : undefined
+    })
+  : null;
 
 function escapeHtml(value: string) {
   return value
@@ -25,6 +27,11 @@ function escapeHtml(value: string) {
 }
 
 async function sendMail(to: string, subject: string, html: string) {
+  if (!transport || !env.EMAIL_FROM) {
+    console.warn(`Email skipped for ${to}: SMTP is not configured.`);
+    return;
+  }
+
   try {
     const info = await transport.sendMail({
       from: env.EMAIL_FROM,

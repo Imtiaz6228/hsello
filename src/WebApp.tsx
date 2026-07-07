@@ -21,6 +21,7 @@ import { StorePage } from "./pages/StorePage";
 import { SupportPage } from "./pages/SupportPage";
 import { OrderDeliveryPage } from "./pages/OrderDeliveryPage";
 import { SellerWorkspacePage } from "./pages/SellerWorkspacePage";
+import { SellerApplicationPage } from "./pages/SellerApplicationPage";
 import { HomepageContentBanner } from "./components/HomepageContentBanner";
 
 export function App() {
@@ -56,6 +57,10 @@ export function App() {
 
       <Route element={<ProtectedRoute roles={["SELLER", "ADMIN", "SUPER_ADMIN"]} />}>
         <Route path="/seller" element={<SellerWorkspacePage />} />
+      </Route>
+
+      <Route element={<ProtectedRoute />}>
+        <Route path="/seller/apply" element={<SellerApplicationPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

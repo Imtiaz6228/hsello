@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const register = useCallback(async (payload: FormData) => {
-    const data = await apiRequest<{ user: User; message: string }>(
+    const data = await apiRequest<{ user: User; message: string; csrfToken: string }>(
       "/api/auth/register",
       {
         method: "POST",
@@ -69,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       false
     );
+    setUser(data.user);
 
     return data.user;
   }, []);

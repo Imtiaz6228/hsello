@@ -21,9 +21,7 @@ profileRouter.patch("/", asyncHandler(async (req, res) => {
   const user = await updateProfile(req.auth!.id, input);
 
   res.json({
-    message: user.emailVerified
-      ? "Profile updated successfully."
-      : "Profile updated. Please verify your new email address.",
+    message: "Profile updated successfully.",
     user
   });
 }));

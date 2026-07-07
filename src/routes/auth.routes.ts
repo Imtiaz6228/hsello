@@ -16,6 +16,7 @@ import {
 } from "../schemas/auth.schemas.js";
 import {
   changePassword,
+  createSession,
   getAvailability,
   getCurrentUser,
   getRefreshTokenFromRequest,
@@ -49,10 +50,23 @@ authRouter.post(
     await verifyCaptcha(input.captchaToken, req.ip);
 
     const user = await registerUser(input, req.file);
+    const session = await createSession(
+      {
+        id: user.id,
+        role: user.role,
+        emailVerifiedAt: new Date()
+      },
+      req,
+      true
+    );
+
+    setAuthCookies(res, session.accessToken, session.refreshToken, session.rememberMe);
+    const csrfToken = issueCsrfToken(res);
 
     res.status(201).json({
-      message: "Account created. Check your email to verify your account.",
-      user
+      message: "Account created successfully.",
+      user,
+      csrfToken
     });
   })
 );
@@ -65,7 +79,7 @@ authRouter.post("/login", authLimiter, asyncHandler(async (req, res) => {
   const csrfToken = issueCsrfToken(res);
 
   res.json({
-    message: user.emailVerified ? "Signed in successfully." : "Please verify your email address.",
+    message: "Signed in successfully.",
     user,
     csrfToken
   });

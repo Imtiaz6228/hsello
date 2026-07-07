@@ -1,35 +1,9 @@
 import { Role, type User } from "@prisma/client";
-import { sendVerificationEmail } from "../lib/email.js";
-import { randomToken, sha256 } from "../lib/crypto.js";
 import { prisma } from "../lib/prisma.js";
 import { publicUploadUrl } from "../middleware/upload.js";
 import { ApiError } from "../middleware/error-handler.js";
 import type { UpdateProfileInput } from "../schemas/profile.schemas.js";
 import { publicUser } from "./auth.service.js";
-
-function addHours(hours: number) {
-  return new Date(Date.now() + hours * 60 * 60 * 1000);
-}
-
-async function createEmailVerificationToken(userId: string) {
-  await prisma.emailVerificationToken.deleteMany({
-    where: {
-      userId,
-      consumedAt: null
-    }
-  });
-
-  const token = randomToken(48);
-  await prisma.emailVerificationToken.create({
-    data: {
-      userId,
-      tokenHash: sha256(token),
-      expiresAt: addHours(24)
-    }
-  });
-
-  return token;
-}
 
 async function ensureUniqueForProfile(userId: string, input: UpdateProfileInput) {
   const conflicts: User[] = [];
@@ -56,21 +30,13 @@ async function ensureUniqueForProfile(userId: string, input: UpdateProfileInput)
 export async function updateProfile(userId: string, input: UpdateProfileInput) {
   await ensureUniqueForProfile(userId, input);
 
-  const currentUser = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
-  const emailChanged = Boolean(input.email && input.email !== currentUser.email);
-
   const updatedUser = await prisma.user.update({
     where: { id: userId },
     data: {
       ...input,
-      emailVerifiedAt: emailChanged ? null : undefined
+      emailVerifiedAt: input.email ? new Date() : undefined
     }
   });
-
-  if (emailChanged) {
-    const token = await createEmailVerificationToken(updatedUser.id);
-    await sendVerificationEmail(updatedUser.email, updatedUser.firstName, token);
-  }
 
   return publicUser(updatedUser);
 }

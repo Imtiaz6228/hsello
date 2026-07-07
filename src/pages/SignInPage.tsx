@@ -31,14 +31,9 @@ export function SignInPage() {
       const user = await signIn({ email, password, rememberMe });
       setStatus({ type: "success", message: "Signed in successfully." });
 
-      const destination = user.emailVerified
-        ? (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? homePathForRole(user.role)
-        : "/verify-required";
+      const destination = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? homePathForRole(user.role);
 
-      navigate(destination, {
-        replace: true,
-        state: destination === "/verify-required" ? { email } : undefined
-      });
+      navigate(destination, { replace: true });
     } catch (error) {
       setStatus({
         type: "error",

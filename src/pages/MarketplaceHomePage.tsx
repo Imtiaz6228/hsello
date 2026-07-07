@@ -268,7 +268,7 @@ export function MarketplaceHomePage() {
                   </div>
                   <div className="product-footer">
                     <span>From <strong>{product.price}</strong></span>
-                    <Link to="/register" aria-label={`View ${product.title}`}><ArrowRight size={18} /></Link>
+                    <Link to="/catalog" aria-label={`View ${product.title}`}><ArrowRight size={18} /></Link>
                   </div>
                 </div>
               </article>
@@ -291,7 +291,7 @@ export function MarketplaceHomePage() {
               <span className={`store-mark tone-${store.tone}`}>{store.mark}</span>
               <div><h3>{store.name} <BadgeCheck size={16} /></h3><p>{store.specialty}</p></div>
               <div className="store-stats"><span><Star size={14} fill="currentColor" /> {store.rating}</span><span>{store.sales} sales</span></div>
-              <Link to="/register">View store <ArrowRight size={15} /></Link>
+              <Link to="/catalog">View store <ArrowRight size={15} /></Link>
             </article>
           ))}
         </div>
@@ -309,7 +309,7 @@ export function MarketplaceHomePage() {
       <section className="seller-cta" id="sell">
         <div className="seller-orbit" aria-hidden="true"><Store size={68} /><span /><span /></div>
         <div><span className="section-index">FOR PROFESSIONAL SELLERS</span><h2>Turn inventory into a global storefront.</h2><p>Built-in analytics, protected payouts and a buyer base that is ready to transact.</p></div>
-        <div className="seller-cta-actions"><Link to="/register">Open your store <ArrowRight size={17} /></Link><span><Users size={17} /> 1,284 sellers active</span></div>
+        <div className="seller-cta-actions"><Link to="/seller/apply">Open your store <ArrowRight size={17} /></Link><span><Users size={17} /> 1,284 sellers active</span></div>
       </section>
 
       <footer className="market-footer">

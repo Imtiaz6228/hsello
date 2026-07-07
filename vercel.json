@@ -5,6 +5,8 @@
   "buildCommand": "npm run build:web",
   "outputDirectory": "dist",
   "rewrites": [
+    { "source": "/api/:path*", "destination": "https://hsello-production.up.railway.app/api/:path*" },
+    { "source": "/uploads/:path*", "destination": "https://hsello-production.up.railway.app/uploads/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

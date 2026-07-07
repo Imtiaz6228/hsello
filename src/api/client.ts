@@ -51,8 +51,8 @@ type ApiOptions = Omit<RequestInit, "body"> & {
 };
 
 const configuredApiUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim();
-const API_BASE_URL = (configuredApiUrl || (import.meta.env.DEV ? "http://localhost:4000" : "https://hsello-production.up.railway.app"))
-  .replace(/\/+$/, "");
+const useRemoteApi = (import.meta.env.VITE_USE_REMOTE_API as string | undefined)?.trim() === "true";
+const API_BASE_URL = (useRemoteApi ? configuredApiUrl || "" : "").replace(/\/+$/, "");
 
 let csrfToken: string | null = null;
 
@@ -73,7 +73,9 @@ async function request(url: string, init: RequestInit) {
     return await fetch(url, init);
   } catch (error) {
     throw new ApiError(
-      "Cannot reach the authentication service. Check VITE_API_BASE_URL and the Railway CORS_ORIGIN setting.",
+      import.meta.env.DEV
+        ? "Cannot reach the local authentication service. Start the API server with npm run dev:api and keep the Vite proxy on /api."
+        : "Cannot reach the authentication service. Check that the Vercel /api rewrite points to the Railway API, then redeploy both services.",
       0,
       "NETWORK_ERROR",
       error
@@ -89,7 +91,9 @@ async function readJson(response: Response) {
     return JSON.parse(text);
   } catch {
     throw new ApiError(
-      "The authentication API is not configured for this deployment. Set VITE_API_BASE_URL on Vercel to the Railway public URL and redeploy.",
+      import.meta.env.DEV
+        ? "The local authentication API is not responding with JSON. Make sure npm run dev:api is running on port 4000."
+        : "The authentication API is not configured for this deployment. Check the Vercel /api rewrite and Railway public URL, then redeploy.",
       response.status,
       "API_MISCONFIGURED"
     );

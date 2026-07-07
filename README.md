@@ -7,7 +7,7 @@ The trust policy is enforced throughout the product: account and credential trad
 One repository root, two deployment targets:
 
 - **Railway** builds the React app and Express API, runs migrations, and serves everything from one origin.
-- **Vercel** builds the React app. It calls the Railway API using `VITE_API_BASE_URL`.
+- **Vercel** builds the React app. Its `/api` and `/uploads` rewrites proxy to Railway, so browser requests stay same-origin.
 - **GitHub Actions** checks every pull request and `main` push against PostgreSQL before either platform deploys it.
 
 There are no `frontend` or `backend` root folders and neither platform needs a Root Directory override.
@@ -71,14 +71,10 @@ Railway can also host the complete app at its public URL. To start with that sam
 
 1. Import the same repository and leave **Root Directory** blank.
 2. Select `main` as the Production Branch.
-3. Vercel reads `vercel.json` and runs `npm run build:web`.
-4. Add this variable to Production, then redeploy:
+3. Vercel reads `vercel.json`, proxies `/api` and `/uploads` to Railway, and runs `npm run build:web`.
+4. Update the Railway URL inside `vercel.json` if your Railway service URL is different, then redeploy Vercel.
 
-```env
-VITE_API_BASE_URL=https://YOUR-RAILWAY-SERVICE.up.railway.app
-```
-
-Do not append `/api`. Vite embeds this value during the build, so changing it always requires a redeploy.
+Leave `VITE_API_BASE_URL` blank for the normal Vercel setup. If you intentionally want browser requests to call Railway directly, set `VITE_USE_REMOTE_API=true` and `VITE_API_BASE_URL=https://YOUR-RAILWAY-SERVICE.up.railway.app`, then redeploy. Do not append `/api`.
 
 If Turnstile is enabled, also set `VITE_TURNSTILE_SITE_KEY` on Vercel and the matching `TURNSTILE_SECRET_KEY` on Railway. Add a Vercel preview URL to Railway's `CORS_ORIGIN` only when you intend to test that preview.
 

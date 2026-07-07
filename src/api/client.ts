@@ -51,9 +51,21 @@ type ApiOptions = Omit<RequestInit, "body"> & {
 };
 
 const configuredApiUrl = ((import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim() || "").replace(/\/+$/, "");
+const productionFallbackApiUrl = "https://hsello-production.up.railway.app";
+const remoteApiUrl = configuredApiUrl || (import.meta.env.DEV ? "" : productionFallbackApiUrl);
 const useRemoteApi = (import.meta.env.VITE_USE_REMOTE_API as string | undefined)?.trim() === "true";
-const DEFAULT_API_BASE_URL = useRemoteApi ? configuredApiUrl : "";
+const DEFAULT_API_BASE_URL = useRemoteApi ? remoteApiUrl : "";
 let activeApiBaseUrl = DEFAULT_API_BASE_URL;
+const csrfExemptUnsafePaths = new Set([
+  "/api/auth/register",
+  "/api/auth/login",
+  "/api/auth/refresh",
+  "/api/auth/logout",
+  "/api/auth/verify-email",
+  "/api/auth/resend-verification",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password"
+]);
 
 let csrfToken: string | null = null;
 
@@ -70,7 +82,7 @@ export class ApiError extends Error {
 }
 
 function canRetryWithRemoteApi() {
-  return !useRemoteApi && Boolean(configuredApiUrl) && activeApiBaseUrl !== configuredApiUrl;
+  return !useRemoteApi && Boolean(remoteApiUrl) && activeApiBaseUrl !== remoteApiUrl;
 }
 
 function apiUrl(path: string) {
@@ -80,15 +92,24 @@ function apiUrl(path: string) {
 function networkErrorMessage() {
   return import.meta.env.DEV
     ? "Cannot reach the local authentication service. Start the API server with npm run dev:api and keep the Vite proxy on /api."
-    : "Cannot reach the authentication service. Check that the Vercel /api rewrite points to the Railway API, then redeploy both services.";
+    : "Cannot reach the authentication service. The app tried both the Vercel API proxy and the Railway API.";
 }
 
 async function request(path: string, init: RequestInit) {
   try {
-    return await fetch(apiUrl(path), init);
+    const response = await fetch(apiUrl(path), init);
+    if (
+      canRetryWithRemoteApi() &&
+      response.headers.get("content-type")?.includes("text/html")
+    ) {
+      activeApiBaseUrl = remoteApiUrl;
+      return await fetch(apiUrl(path), init);
+    }
+
+    return response;
   } catch (error) {
     if (canRetryWithRemoteApi()) {
-      activeApiBaseUrl = configuredApiUrl;
+      activeApiBaseUrl = remoteApiUrl;
       try {
         return await fetch(apiUrl(path), init);
       } catch (fallbackError) {
@@ -154,6 +175,10 @@ function isUnsafeMethod(method: string) {
   return !["GET", "HEAD", "OPTIONS"].includes(method.toUpperCase());
 }
 
+function pathWithoutQuery(path: string) {
+  return path.split("?")[0];
+}
+
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !(value instanceof FormData);
 }
@@ -178,7 +203,7 @@ export async function apiRequest<T>(
   const headers = new Headers(options.headers);
   let body = options.body ?? null;
 
-  if (isUnsafeMethod(method)) {
+  if (isUnsafeMethod(method) && !csrfExemptUnsafePaths.has(pathWithoutQuery(path))) {
     headers.set("x-csrf-token", await getCsrfToken());
   }
 

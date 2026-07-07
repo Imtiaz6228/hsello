@@ -93,6 +93,23 @@ async function createPasswordResetToken(userId: string) {
   return token;
 }
 
+async function sendAccountVerification(
+  user: Pick<User, "id" | "email" | "firstName">,
+  failureMessage = "We could not send a new verification email. Check SMTP settings and try again."
+) {
+  const verificationToken = await createEmailVerificationToken(user.id);
+
+  try {
+    await sendVerificationEmail(user.email, user.firstName, verificationToken);
+  } catch {
+    throw new ApiError(
+      502,
+      failureMessage,
+      "EMAIL_DELIVERY_FAILED"
+    );
+  }
+}
+
 export async function createSession(user: SessionUser, req: Request, rememberMe: boolean) {
   const refreshToken = randomToken(64);
   const expiresAt = rememberMe
@@ -118,24 +135,44 @@ export async function createSession(user: SessionUser, req: Request, rememberMe:
 }
 
 export async function registerUser(input: RegisterInput, file?: Express.Multer.File) {
-  const existing = await prisma.user.findFirst({
-    where: {
-      OR: [
-        { email: input.email },
-        { username: input.username }
-      ]
-    },
-    select: {
-      email: true,
-      username: true
-    }
-  });
+  const [existingEmailUser, existingUsernameUser] = await Promise.all([
+    prisma.user.findUnique({ where: { email: input.email } }),
+    prisma.user.findUnique({ where: { username: input.username } })
+  ]);
 
-  if (existing) {
-    throw new ApiError(409, "Email or username is already in use.", "ACCOUNT_EXISTS", {
-      email: existing.email === input.email,
-      username: existing.username === input.username
+  if (existingUsernameUser && existingUsernameUser.email !== input.email) {
+    throw new ApiError(409, "Username is already in use.", "USERNAME_EXISTS", {
+      username: true
     });
+  }
+
+  if (existingEmailUser) {
+    if (existingEmailUser.emailVerifiedAt) {
+      throw new ApiError(409, "Email is already registered. Sign in instead.", "EMAIL_EXISTS", {
+        email: true
+      });
+    }
+
+    const user = await prisma.user.update({
+      where: { id: existingEmailUser.id },
+      data: {
+        firstName: input.firstName,
+        lastName: input.lastName,
+        username: input.username,
+        phone: input.phone,
+        country: input.country,
+        city: input.city,
+        profileImageUrl: file ? publicUploadUrl(file.filename) : existingEmailUser.profileImageUrl,
+        passwordHash: await hashPassword(input.password)
+      }
+    });
+
+    await sendAccountVerification(
+      user,
+      "Account saved, but we could not send the verification email. Try resending the link in a moment."
+    );
+
+    return publicUser(user);
   }
 
   const user = await prisma.user.create({
@@ -152,16 +189,10 @@ export async function registerUser(input: RegisterInput, file?: Express.Multer.F
     }
   });
 
-  const verificationToken = await createEmailVerificationToken(user.id);
-  try {
-    await sendVerificationEmail(user.email, user.firstName, verificationToken);
-  } catch {
-    throw new ApiError(
-      502,
-      "Account created, but we could not send the verification email. Try resending the link in a moment.",
-      "EMAIL_DELIVERY_FAILED"
-    );
-  }
+  await sendAccountVerification(
+    user,
+    "Account created, but we could not send the verification email. Try resending the link in a moment."
+  );
 
   return publicUser(user);
 }
@@ -269,16 +300,7 @@ export async function resendVerification(email: string) {
     return;
   }
 
-  const token = await createEmailVerificationToken(user.id);
-  try {
-    await sendVerificationEmail(user.email, user.firstName, token);
-  } catch {
-    throw new ApiError(
-      502,
-      "We could not send a new verification email. Check SMTP settings and try again.",
-      "EMAIL_DELIVERY_FAILED"
-    );
-  }
+  await sendAccountVerification(user);
 }
 
 export async function requestPasswordReset(email: string) {

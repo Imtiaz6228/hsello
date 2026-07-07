@@ -20,7 +20,11 @@ export async function submitSellerApplication(userId: string, input: SellerAppli
     }
   });
 
-  await sendSellerApplicationNotification(application.storeName, application.email);
+  try {
+    await sendSellerApplicationNotification(application.storeName, application.email);
+  } catch {
+    // Email notification is best-effort; SMTP failures should not block the application.
+  }
 
   return application;
 }

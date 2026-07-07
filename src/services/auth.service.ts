@@ -93,21 +93,25 @@ async function createPasswordResetToken(userId: string) {
   return token;
 }
 
-async function sendAccountVerification(
-  user: Pick<User, "id" | "email" | "firstName">,
-  failureMessage = "We could not send a new verification email. Check SMTP settings and try again."
-) {
+function logEmailError(kind: string, to: string, error: unknown) {
+  console.error(
+    `${kind} email failed for ${to}:`,
+    error instanceof Error ? error.message : error
+  );
+}
+
+async function queueAccountVerification(user: Pick<User, "id" | "email" | "firstName">) {
   const verificationToken = await createEmailVerificationToken(user.id);
 
-  try {
-    await sendVerificationEmail(user.email, user.firstName, verificationToken);
-  } catch {
-    throw new ApiError(
-      502,
-      failureMessage,
-      "EMAIL_DELIVERY_FAILED"
-    );
-  }
+  void sendVerificationEmail(user.email, user.firstName, verificationToken)
+    .catch((error) => logEmailError("Verification", user.email, error));
+}
+
+async function queuePasswordReset(user: Pick<User, "id" | "email" | "firstName">) {
+  const token = await createPasswordResetToken(user.id);
+
+  void sendPasswordResetEmail(user.email, user.firstName, token)
+    .catch((error) => logEmailError("Password reset", user.email, error));
 }
 
 export async function createSession(user: SessionUser, req: Request, rememberMe: boolean) {
@@ -167,10 +171,7 @@ export async function registerUser(input: RegisterInput, file?: Express.Multer.F
       }
     });
 
-    await sendAccountVerification(
-      user,
-      "Account saved, but we could not send the verification email. Try resending the link in a moment."
-    );
+    await queueAccountVerification(user);
 
     return publicUser(user);
   }
@@ -189,10 +190,7 @@ export async function registerUser(input: RegisterInput, file?: Express.Multer.F
     }
   });
 
-  await sendAccountVerification(
-    user,
-    "Account created, but we could not send the verification email. Try resending the link in a moment."
-  );
+  await queueAccountVerification(user);
 
   return publicUser(user);
 }
@@ -300,7 +298,7 @@ export async function resendVerification(email: string) {
     return;
   }
 
-  await sendAccountVerification(user);
+  await queueAccountVerification(user);
 }
 
 export async function requestPasswordReset(email: string) {
@@ -310,16 +308,7 @@ export async function requestPasswordReset(email: string) {
     return;
   }
 
-  const token = await createPasswordResetToken(user.id);
-  try {
-    await sendPasswordResetEmail(user.email, user.firstName, token);
-  } catch {
-    throw new ApiError(
-      502,
-      "We could not send the password reset email. Check SMTP settings and try again.",
-      "EMAIL_DELIVERY_FAILED"
-    );
-  }
+  await queuePasswordReset(user);
 }
 
 export async function resetPassword(token: string, password: string) {

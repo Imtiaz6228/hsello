@@ -106,7 +106,7 @@ async function request(path: string, init: RequestInit) {
     const response = await fetch(apiUrl(path), init);
     if (
       canRetryWithRemoteApi() &&
-      response.headers.get("content-type")?.includes("text/html")
+      !response.headers.get("content-type")?.includes("application/json")
     ) {
       activeApiBaseUrl = remoteApiUrl;
       return await fetch(apiUrl(path), init);

@@ -28,6 +28,7 @@ const envSchema = z.object({
   SMTP_HOST: z.string().min(1),
   SMTP_PORT: z.coerce.number().int().positive(),
   SMTP_SECURE: booleanFromEnv.default(false),
+  SMTP_TIMEOUT_MS: z.coerce.number().int().positive().default(8_000),
   SMTP_USER: z.preprocess(emptyToUndefined, z.string().optional()),
   SMTP_PASS: z.preprocess(emptyToUndefined, z.string().optional()),
   EMAIL_FROM: z.string().min(3),

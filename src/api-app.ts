@@ -88,11 +88,14 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", environment: env.NODE_ENV });
 });
 
-app.get("/api/csrf", (_req, res) => {
+function sendRequestToken(_req: express.Request, res: express.Response) {
   res.json({
     csrfToken: issueCsrfToken(res)
   });
-});
+}
+
+app.get("/api/csrf", sendRequestToken);
+app.get("/api/session/bootstrap", sendRequestToken);
 
 app.get("/robots.txt", (_req, res) => {
   res.type("text/plain").send(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /dashboard\nDisallow: /checkout\nSitemap: ${env.APP_URL}/sitemap.xml\n`);

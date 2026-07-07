@@ -50,9 +50,10 @@ type ApiOptions = Omit<RequestInit, "body"> & {
   body?: BodyInit | Record<string, unknown> | null;
 };
 
-const configuredApiUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim();
+const configuredApiUrl = ((import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim() || "").replace(/\/+$/, "");
 const useRemoteApi = (import.meta.env.VITE_USE_REMOTE_API as string | undefined)?.trim() === "true";
-const API_BASE_URL = (useRemoteApi ? configuredApiUrl || "" : "").replace(/\/+$/, "");
+const DEFAULT_API_BASE_URL = useRemoteApi ? configuredApiUrl : "";
+let activeApiBaseUrl = DEFAULT_API_BASE_URL;
 
 let csrfToken: string | null = null;
 
@@ -68,14 +69,40 @@ export class ApiError extends Error {
   }
 }
 
-async function request(url: string, init: RequestInit) {
+function canRetryWithRemoteApi() {
+  return !useRemoteApi && Boolean(configuredApiUrl) && activeApiBaseUrl !== configuredApiUrl;
+}
+
+function apiUrl(path: string) {
+  return `${activeApiBaseUrl}${path}`;
+}
+
+function networkErrorMessage() {
+  return import.meta.env.DEV
+    ? "Cannot reach the local authentication service. Start the API server with npm run dev:api and keep the Vite proxy on /api."
+    : "Cannot reach the authentication service. Check that the Vercel /api rewrite points to the Railway API, then redeploy both services.";
+}
+
+async function request(path: string, init: RequestInit) {
   try {
-    return await fetch(url, init);
+    return await fetch(apiUrl(path), init);
   } catch (error) {
+    if (canRetryWithRemoteApi()) {
+      activeApiBaseUrl = configuredApiUrl;
+      try {
+        return await fetch(apiUrl(path), init);
+      } catch (fallbackError) {
+        throw new ApiError(
+          networkErrorMessage(),
+          0,
+          "NETWORK_ERROR",
+          fallbackError
+        );
+      }
+    }
+
     throw new ApiError(
-      import.meta.env.DEV
-        ? "Cannot reach the local authentication service. Start the API server with npm run dev:api and keep the Vite proxy on /api."
-        : "Cannot reach the authentication service. Check that the Vercel /api rewrite points to the Railway API, then redeploy both services.",
+      networkErrorMessage(),
       0,
       "NETWORK_ERROR",
       error
@@ -105,7 +132,7 @@ export async function getCsrfToken() {
     return csrfToken;
   }
 
-  const response = await request(`${API_BASE_URL}/api/csrf`, {
+  const response = await request("/api/session/bootstrap", {
     credentials: "include"
   });
 
@@ -160,7 +187,7 @@ export async function apiRequest<T>(
     body = JSON.stringify(body);
   }
 
-  const response = await request(`${API_BASE_URL}${path}`, {
+  const response = await request(path, {
     ...options,
     method,
     headers,

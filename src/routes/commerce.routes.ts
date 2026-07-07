@@ -150,6 +150,15 @@ commerceRouter.post("/tickets/:id/messages", asyncHandler(async (req, res) => {
   res.status(201).json({ message });
 }));
 
+commerceRouter.get("/reviews", asyncHandler(async (req, res) => {
+  const reviews = await prisma.review.findMany({
+    where: { buyerId: req.auth!.id },
+    orderBy: { createdAt: "desc" },
+    include: { product: { select: { name: true, slug: true } } }
+  });
+  res.json({ reviews });
+}));
+
 commerceRouter.post("/reviews", asyncHandler(async (req, res) => {
   const input = z.object({ orderItemId: z.string().uuid(), rating: z.number().int().min(1).max(5), body: z.string().trim().min(10).max(3000), mediaUrls: z.array(z.string().url()).max(4).default([]) }).parse(req.body);
   const item = await prisma.orderItem.findFirst({ where: { id: input.orderItemId, order: { buyerId: req.auth!.id, paidAt: { not: null } } } });

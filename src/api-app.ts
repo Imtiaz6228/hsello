@@ -16,6 +16,7 @@ import { sellerRouter } from "./routes/seller.routes.js";
 import { adminRouter } from "./routes/admin.routes.js";
 import { marketplaceRouter } from "./routes/marketplace.routes.js";
 import { commerceRouter } from "./routes/commerce.routes.js";
+import { walletRouter } from "./routes/wallet.routes.js";
 import { prisma } from "./lib/prisma.js";
 
 function normalizeOrigin(value: string) {
@@ -122,6 +123,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/marketplace", marketplaceRouter);
 app.use("/api/commerce", commerceRouter);
+app.use("/api/wallet", walletRouter);
 app.use("/api/seller", sellerRouter);
 app.use("/api/admin", adminRouter);
 

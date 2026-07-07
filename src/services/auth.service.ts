@@ -27,6 +27,7 @@ export function publicUser(user: User) {
     role: user.role,
     isSuspended: user.isSuspended,
     emailVerified: true,
+    balanceCents: user.balanceCents ?? 0,
     createdAt: user.createdAt
   };
 }

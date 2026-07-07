@@ -19,6 +19,7 @@ export type User = {
   role: Role;
   isSuspended: boolean;
   emailVerified: boolean;
+  balanceCents: number;
   createdAt: string;
 };
 

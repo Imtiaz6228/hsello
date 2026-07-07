@@ -16,6 +16,7 @@ export type CatalogProduct = {
   badge: string;
   type: "DOWNLOAD" | "SERVICE";
   icon: string;
+  imageUrl?: string | null;
 };
 
 export const catalogProducts: CatalogProduct[] = [

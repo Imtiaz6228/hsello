@@ -20,7 +20,7 @@ import { ProductPage } from "./pages/ProductPage";
 import { StorePage } from "./pages/StorePage";
 import { SupportPage } from "./pages/SupportPage";
 import { OrderDeliveryPage } from "./pages/OrderDeliveryPage";
-import { SellerWorkspacePage } from "./pages/SellerWorkspacePage";
+import { SellerStudioPage } from "./pages/SellerStudioPage";
 import { SellerApplicationPage } from "./pages/SellerApplicationPage";
 import { HomepageContentBanner } from "./components/HomepageContentBanner";
 
@@ -56,7 +56,7 @@ export function App() {
       </Route>
 
       <Route element={<ProtectedRoute roles={["SELLER", "ADMIN", "SUPER_ADMIN"]} />}>
-        <Route path="/seller" element={<SellerWorkspacePage />} />
+        <Route path="/seller" element={<SellerStudioPage />} />
       </Route>
 
       <Route element={<ProtectedRoute />}>

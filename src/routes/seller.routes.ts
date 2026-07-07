@@ -1,10 +1,11 @@
+import fs from "node:fs/promises";
 import { Router } from "express";
 import { ProductStatus, ProductType, Role } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth, requireVerifiedUser } from "../middleware/auth.js";
 import { ApiError, asyncHandler } from "../middleware/error-handler.js";
-import { productFileUpload } from "../middleware/upload.js";
+import { imageUpload, productFileUpload, publicUploadUrl } from "../middleware/upload.js";
 import { sendTicketUpdateEmail } from "../lib/email.js";
 import { randomToken, sha256 } from "../lib/crypto.js";
 import { sellerApplicationSchema } from "../schemas/seller.schemas.js";
@@ -42,15 +43,35 @@ const requireSeller = (req: Parameters<typeof requireVerifiedUser>[0], _res: Par
   next();
 };
 
+const emptyToNull = (value: unknown) => value === "" || value === "null" ? null : value;
+const emptyToUndefined = (value: unknown) => value === "" ? undefined : value;
+
 const productSchema = z.object({
-  categoryId: z.string().uuid(), name: z.string().trim().min(3).max(160),
-  shortDescription: z.string().trim().min(10).max(240), description: z.string().trim().min(30).max(20000),
-  type: z.nativeEnum(ProductType), priceCents: z.number().int().min(50).max(10_000_000),
-  compareAtPriceCents: z.number().int().positive().nullable().optional(), currency: z.string().length(3).default("USD"),
-  coverImageUrl: z.string().url().nullable().optional(), deliveryNote: z.string().trim().max(1000).nullable().optional(),
-  downloadLimit: z.number().int().min(1).max(100).default(5), downloadExpiryHours: z.number().int().min(1).max(8760).default(168),
-  buyersGetUpdates: z.boolean().default(true), seoTitle: z.string().trim().max(70).optional(), seoDescription: z.string().trim().max(170).optional()
+  categoryId: z.string().uuid(),
+  name: z.string().trim().min(3).max(160),
+  shortDescription: z.string().trim().min(10).max(240),
+  description: z.string().trim().min(30).max(20000),
+  type: z.nativeEnum(ProductType),
+  priceCents: z.coerce.number().int().min(50).max(10_000_000),
+  compareAtPriceCents: z.preprocess(emptyToNull, z.coerce.number().int().positive().nullable().optional()),
+  currency: z.string().length(3).default("USD"),
+  coverImageUrl: z.preprocess(emptyToNull, z.string().url().nullable().optional()),
+  deliveryNote: z.preprocess(emptyToNull, z.string().trim().max(1000).nullable().optional()),
+  downloadLimit: z.coerce.number().int().min(1).max(100).default(5),
+  downloadExpiryHours: z.coerce.number().int().min(1).max(8760).default(168),
+  buyersGetUpdates: z.preprocess((value) => {
+    if (value === "true" || value === "on") return true;
+    if (value === "false") return false;
+    return value;
+  }, z.boolean().default(true)),
+  seoTitle: z.preprocess(emptyToUndefined, z.string().trim().max(70).optional()),
+  seoDescription: z.preprocess(emptyToUndefined, z.string().trim().max(170).optional())
 });
+
+async function deleteUploadedFile(file?: Express.Multer.File) {
+  if (!file) return;
+  await fs.unlink(file.path).catch(() => undefined);
+}
 
 sellerRouter.get("/profile", requireSeller, asyncHandler(async (req, res) => {
   const profile = await prisma.sellerProfile.findUnique({ where: { userId: req.auth!.id } });
@@ -68,11 +89,17 @@ sellerRouter.get("/products", requireSeller, asyncHandler(async (req, res) => {
   res.json({ products });
 }));
 
-sellerRouter.post("/products", requireSeller, asyncHandler(async (req, res) => {
-  const input = productSchema.parse(req.body);
-  const base = input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "product";
-  const product = await prisma.product.create({ data: { ...input, slug: `${base}-${crypto.randomUUID().slice(0, 8)}`, sellerId: req.auth!.id, status: ProductStatus.DRAFT } });
-  res.status(201).json({ product });
+sellerRouter.post("/products", requireSeller, imageUpload.single("coverImage"), asyncHandler(async (req, res) => {
+  try {
+    const input = productSchema.parse(req.body);
+    const base = input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "product";
+    const coverImageUrl = req.file ? publicUploadUrl(req.file.filename) : input.coverImageUrl ?? null;
+    const product = await prisma.product.create({ data: { ...input, coverImageUrl, slug: `${base}-${crypto.randomUUID().slice(0, 8)}`, sellerId: req.auth!.id, status: ProductStatus.DRAFT } });
+    res.status(201).json({ product });
+  } catch (error) {
+    await deleteUploadedFile(req.file);
+    throw error;
+  }
 }));
 
 sellerRouter.patch("/products/:id", requireSeller, asyncHandler(async (req, res) => {
@@ -91,6 +118,26 @@ sellerRouter.post("/products/:id/submit", requireSeller, asyncHandler(async (req
   if (existing.type === ProductType.DOWNLOAD && existing.files.length === 0) throw new ApiError(400, "Upload at least one file before review.", "PRODUCT_FILE_REQUIRED");
   const product = await prisma.product.update({ where: { id }, data: { status: ProductStatus.PENDING, rejectionReason: null } });
   res.json({ product });
+}));
+
+sellerRouter.post("/products/:id/image", requireSeller, imageUpload.single("coverImage"), asyncHandler(async (req, res) => {
+  try {
+    const id = z.string().uuid().parse(req.params.id);
+    if (!req.file) throw new ApiError(400, "Choose a product image.", "PRODUCT_IMAGE_REQUIRED");
+    const existing = await prisma.product.findFirst({ where: { id, sellerId: req.auth!.id } });
+    if (!existing) throw new ApiError(404, "Product not found.", "PRODUCT_NOT_FOUND");
+    const product = await prisma.product.update({
+      where: { id },
+      data: {
+        coverImageUrl: publicUploadUrl(req.file.filename),
+        status: existing.status === ProductStatus.APPROVED ? ProductStatus.PENDING : existing.status
+      }
+    });
+    res.json({ product });
+  } catch (error) {
+    await deleteUploadedFile(req.file);
+    throw error;
+  }
 }));
 
 sellerRouter.post("/products/:id/files", requireSeller, productFileUpload.single("file"), asyncHandler(async (req, res) => {

@@ -5,7 +5,7 @@ import { catalogProducts, type CatalogProduct } from "../data/catalog";
 type ApiProduct = {
   id: string; slug: string; name: string; shortDescription: string; description: string;
   type: "DOWNLOAD" | "SERVICE"; priceCents: number; averageRating: number | string;
-  reviewCount: number; salesCount: number; deliveryNote?: string | null;
+  reviewCount: number; salesCount: number; deliveryNote?: string | null; coverImageUrl?: string | null;
   category: { name: string; slug: string };
   seller: { sellerProfile?: { storeName: string; slug: string } | null };
 };

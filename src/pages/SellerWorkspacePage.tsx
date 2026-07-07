@@ -1,21 +1,34 @@
 import { FormEvent, useEffect, useState } from "react";
-import { ArrowLeft, FileUp, LogOut, PackagePlus, Send, Store, Upload } from "lucide-react";
+import { ArrowLeft, FileUp, ImagePlus, LogOut, PackagePlus, Send, Store, Upload } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { ApiError, apiRequest } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { Seo } from "../components/Seo";
 
 type Category = { id: string; name: string };
-type Product = { id: string; name: string; status: string; type: string; priceCents: number; rejectionReason?: string; files: Array<{ id: string; displayName: string; version: number; sizeBytes: number }> };
+type Product = { id: string; name: string; status: string; type: string; priceCents: number; coverImageUrl?: string | null; rejectionReason?: string; files: Array<{ id: string; displayName: string; version: number; sizeBytes: number }> };
+
+const initialForm = { categoryId: "", name: "", shortDescription: "", description: "", type: "DOWNLOAD", price: "", deliveryNote: "", downloadLimit: 5, downloadExpiryHours: 168, buyersGetUpdates: true };
 
 export function SellerWorkspacePage() {
   const { logout } = useAuth(); const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]); const [categories, setCategories] = useState<Category[]>([]); const [open, setOpen] = useState(false); const [message, setMessage] = useState(""); const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({ categoryId: "", name: "", shortDescription: "", description: "", type: "DOWNLOAD", price: "", deliveryNote: "", downloadLimit: 5, downloadExpiryHours: 168, buyersGetUpdates: true });
+  const [coverImage, setCoverImage] = useState<File | null>(null);
+  const [form, setForm] = useState(initialForm);
   const load = () => Promise.all([apiRequest<{ products: Product[] }>("/api/seller/products"), apiRequest<{ categories: Category[] }>("/api/marketplace/categories")]).then(([a,b]) => { setProducts(a.products); setCategories(b.categories); if (!form.categoryId && b.categories[0]) setForm((current) => ({ ...current, categoryId: b.categories[0].id })); });
   useEffect(() => { void load().catch(() => undefined); }, []);
-  async function create(event: FormEvent) { event.preventDefault(); setBusy(true); setMessage(""); try { await apiRequest("/api/seller/products", { method: "POST", body: { ...form, priceCents: Math.round(Number(form.price)*100), currency: "USD", coverImageUrl: null, compareAtPriceCents: null, seoTitle: form.name, seoDescription: form.shortDescription } }); setOpen(false); setMessage("Draft created. Upload the delivery file, then submit it for review."); await load(); } catch (error) { setMessage(error instanceof ApiError ? error.message : "Product could not be created."); } finally { setBusy(false); } }
+  async function create(event: FormEvent) {
+    event.preventDefault(); setBusy(true); setMessage("");
+    const data = new FormData();
+    data.append("categoryId", form.categoryId); data.append("name", form.name); data.append("shortDescription", form.shortDescription); data.append("description", form.description);
+    data.append("type", form.type); data.append("priceCents", String(Math.round(Number(form.price) * 100))); data.append("currency", "USD");
+    data.append("deliveryNote", form.deliveryNote); data.append("downloadLimit", String(form.downloadLimit)); data.append("downloadExpiryHours", String(form.downloadExpiryHours));
+    data.append("buyersGetUpdates", String(form.buyersGetUpdates)); data.append("seoTitle", form.name); data.append("seoDescription", form.shortDescription);
+    if (coverImage) data.append("coverImage", coverImage);
+    try { await apiRequest("/api/seller/products", { method: "POST", body: data }); setOpen(false); setCoverImage(null); setForm((current) => ({ ...initialForm, categoryId: current.categoryId })); setMessage("Draft created. Add a delivery file if needed, then submit it for review."); await load(); } catch (error) { setMessage(error instanceof ApiError ? error.message : "Product could not be created."); } finally { setBusy(false); }
+  }
   async function upload(productId: string, file?: File) { if (!file) return; const data = new FormData(); data.append("file", file); setMessage("Uploading product file…"); try { await apiRequest(`/api/seller/products/${productId}/files`, { method: "POST", body: data }); setMessage("New file version uploaded."); await load(); } catch (error) { setMessage(error instanceof ApiError ? error.message : "File upload failed."); } }
+  async function uploadImage(productId: string, file?: File) { if (!file) return; const data = new FormData(); data.append("coverImage", file); setMessage("Uploading product image..."); try { await apiRequest(`/api/seller/products/${productId}/image`, { method: "POST", body: data }); setMessage("Product image updated."); await load(); } catch (error) { setMessage(error instanceof ApiError ? error.message : "Image upload failed."); } }
   async function submit(productId: string) { try { await apiRequest(`/api/seller/products/${productId}/submit`, { method: "POST" }); setMessage("Product submitted for staff review."); await load(); } catch (error) { setMessage(error instanceof ApiError ? error.message : "Product could not be submitted."); } }
   async function signOut() { await logout(); navigate("/"); }
   return <main className="seller-workspace"><Seo title="Seller studio" description="Manage HSello store products, files, review submissions, and digital delivery." /><nav><Link to="/dashboard"><ArrowLeft /> Account</Link><strong><Store /> Seller studio</strong><div className="seller-nav-actions"><button onClick={() => setOpen(true)}><PackagePlus /> New product</button><button className="secondary-button" onClick={() => void signOut()}><LogOut /> Sign out</button></div></nav><header><span className="section-index">VERIFIED SELLER WORKSPACE</span><h1>Ship good work.<br />Keep it current.</h1><p>Product changes return to review. New file versions remain available to eligible previous buyers.</p></header>{message ? <div className="dashboard-message">{message}</div> : null}<section className="seller-product-list"><div className="seller-list-heading"><span>Product</span><span>Status</span><span>Files</span><span>Actions</span></div>{products.length ? products.map((product) => <article key={product.id}><div><span className="seller-product-mark">{product.name[0]}</span><div><strong>{product.name}</strong><small>{product.type} · ${(product.priceCents/100).toFixed(2)}</small>{product.rejectionReason ? <p>{product.rejectionReason}</p> : null}</div></div><span className={`status-pill ${product.status.toLowerCase()}`}>{product.status}</span><div className="file-versions">{product.files.length ? product.files.map((file) => <span key={file.id}>{file.displayName} <small>v{file.version}</small></span>) : <small>No files</small>}</div><div><label className="upload-action"><Upload /> Upload update<input type="file" onChange={(event) => void upload(product.id, event.target.files?.[0])} /></label>{["DRAFT","REJECTED"].includes(product.status) ? <button onClick={() => void submit(product.id)}><Send /> Submit review</button> : null}</div></article>) : <div className="dashboard-empty"><FileUp /><h2>No products yet</h2><p>Create a draft, upload its delivery file, and submit it for review.</p></div>}</section>

@@ -52,7 +52,7 @@ const requireSeller = asyncHandler(async (req, _res, next) => {
     throw new ApiError(403, "Approved seller access is required.", "SELLER_REQUIRED");
   }
 
-  if ([Role.ADMIN, Role.SUPER_ADMIN].includes(req.auth.role)) {
+  if (req.auth.role === Role.ADMIN || req.auth.role === Role.SUPER_ADMIN) {
     next();
     return;
   }

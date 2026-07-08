@@ -5,17 +5,15 @@ import { prisma } from "../lib/prisma.js";
 import { requireAuth, requireRole, requireVerifiedUser } from "../middleware/auth.js";
 import { ApiError, asyncHandler } from "../middleware/error-handler.js";
 import { createWalletCheckout } from "../services/payment.service.js";
+import { createWithdrawalRequest, getWalletSummary, releaseAvailableSellerEarnings } from "../services/finance.service.js";
 
 export const walletRouter = Router();
 
 walletRouter.use(requireAuth, requireVerifiedUser);
 
 walletRouter.get("/balance", asyncHandler(async (req, res) => {
-  const user = await prisma.user.findUnique({
-    where: { id: req.auth!.id },
-    select: { balanceCents: true }
-  });
-  res.json({ balanceCents: user?.balanceCents ?? 0 });
+  const summary = await getWalletSummary(req.auth!.id);
+  res.json(summary);
 }));
 
 walletRouter.get("/deposits", asyncHandler(async (req, res) => {
@@ -24,6 +22,31 @@ walletRouter.get("/deposits", asyncHandler(async (req, res) => {
     orderBy: { createdAt: "desc" }
   });
   res.json({ deposits });
+}));
+
+
+walletRouter.get("/withdrawals", asyncHandler(async (req, res) => {
+  await releaseAvailableSellerEarnings(req.auth!.id);
+  const withdrawals = await (prisma as any).withdrawalRequest.findMany({
+    where: { userId: req.auth!.id },
+    orderBy: { createdAt: "desc" }
+  });
+  res.json({ withdrawals });
+}));
+
+walletRouter.post("/withdrawals", asyncHandler(async (req, res) => {
+  const input = z.object({
+    amountCents: z.number().int().min(500).max(100_000_000),
+    blockchain: z.string().trim().min(2).max(80),
+    walletAddress: z.string().trim().min(12).max(240)
+  }).parse(req.body);
+  const withdrawal = await createWithdrawalRequest(req.auth!.id, input);
+  const summary = await getWalletSummary(req.auth!.id);
+  res.status(201).json({
+    message: "Withdrawal request submitted. It will stay pending until admin approves and marks it successful.",
+    withdrawal,
+    ...summary
+  });
 }));
 
 const depositSchema = z.object({

@@ -42,3 +42,27 @@ The app does not include a full blockchain node/indexer. Detection becomes autom
 - Checkout now displays the current available wallet balance in the order summary.
 - Successful wallet checkout updates the authenticated user's in-app balance immediately.
 - Account dashboard overview now includes an "Available balance" metric, and the Wallet tab syncs the same latest balance from `/api/wallet/balance`.
+
+## Disputes, seller balance holds, and withdrawals
+
+- Buyers can now open disputes from paid orders, demand a refund, close a dispute, and see a dedicated Disputes menu in the account dashboard.
+- Buyer order chats now appear in a Chats dashboard menu after a conversation starts.
+- Buyer/seller order chat accepts image screenshots through multipart upload and shows attachments inline in the order workspace.
+- Disputes track the party expected to reply and auto-resolve against the party that fails to respond within 24 hours when dispute/order/admin pages are loaded.
+- Sellers now see a seller-center dashboard modeled after the supplied screenshots: available balance, frozen balance, product count, orders, sales, today income, and disputes.
+- Sellers can view order rows, open buyer chat, view dispute rows by product/order, and submit seller refund requests for admin review.
+- Admin can review disputes, message inside the dispute order chat, close disputes, or resolve in favor of buyer or seller.
+- Paid orders now create `SellerEarning` rows that remain `FROZEN` for three days; after release, the amount increments the seller's available wallet balance.
+- Buyers and sellers can request withdrawals from the Wallet tab by selecting blockchain/network, entering wallet address, and amount.
+- Admin has a Withdrawals workspace to approve paid withdrawals or reject them and return the balance.
+
+## New database migration
+
+Run the included migration before using the new dispute/withdrawal features:
+
+```bash
+npm run prisma:migrate
+npm run prisma:generate
+```
+
+The new migration adds dispute timers/party fields, message attachment metadata, seller earnings, and withdrawal requests.

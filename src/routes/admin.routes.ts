@@ -16,6 +16,8 @@ import {
 import { listUsersForAdministration, updateUserRole } from "../services/user.service.js";
 import { prisma } from "../lib/prisma.js";
 import { completePayment, issueRefund } from "../services/payment.service.js";
+import { releaseAvailableSellerEarnings, reviewWithdrawalRequest } from "../services/finance.service.js";
+import { autoResolveExpiredDisputes, markDisputeTurn } from "../services/dispute.service.js";
 import { ensureDefaultMarketplaceCategories } from "../services/category.service.js";
 import { sendTicketUpdateEmail } from "../lib/email.js";
 import { privateUploadRoot } from "../middleware/upload.js";
@@ -119,7 +121,7 @@ adminRouter.patch(
 );
 
 adminRouter.get("/overview", requireStaff, asyncHandler(async (_req, res) => {
-  const [pendingSellers, pendingProducts, openTickets, openDisputes, refundRequests, awaitingPayments, pendingDeposits, users, orders] = await Promise.all([
+  const [pendingSellers, pendingProducts, openTickets, openDisputes, refundRequests, awaitingPayments, pendingDeposits, pendingWithdrawals, users, orders] = await Promise.all([
     prisma.sellerApplication.count({ where: { status: SellerApplicationStatus.PENDING } }),
     prisma.product.count({ where: { status: ProductStatus.PENDING } }),
     prisma.ticket.count({ where: { status: { in: [TicketStatus.OPEN, TicketStatus.PENDING] } } }),
@@ -127,9 +129,10 @@ adminRouter.get("/overview", requireStaff, asyncHandler(async (_req, res) => {
     prisma.refund.count({ where: { status: RefundStatus.REQUESTED } }),
     prisma.payment.count({ where: { status: PaymentStatus.REQUIRES_ACTION } }),
     prisma.walletDeposit.count({ where: { status: "PENDING" } }),
+    (prisma as any).withdrawalRequest.count({ where: { status: "PENDING" } }),
     prisma.user.count(), prisma.order.count()
   ]);
-  res.json({ overview: { pendingSellers, pendingProducts, openTickets, openDisputes, refundRequests, awaitingPayments, pendingDeposits, users, orders } });
+  res.json({ overview: { pendingSellers, pendingProducts, openTickets, openDisputes, refundRequests, awaitingPayments, pendingDeposits, pendingWithdrawals, users, orders } });
 }));
 
 adminRouter.patch("/users/:id/suspension", requireAdmin, asyncHandler(async (req, res) => {
@@ -252,6 +255,23 @@ adminRouter.patch("/wallet-deposits/:id/reject", requireAdmin, asyncHandler(asyn
   res.json({ message: "Deposit rejected.", deposit: updated });
 }));
 
+adminRouter.get("/withdrawals", requireStaff, asyncHandler(async (_req, res) => {
+  await releaseAvailableSellerEarnings();
+  const withdrawals = await (prisma as any).withdrawalRequest.findMany({
+    orderBy: { createdAt: "desc" },
+    include: { user: { select: { id: true, firstName: true, lastName: true, email: true, username: true, balanceCents: true, role: true } } }
+  });
+  res.json({ withdrawals });
+}));
+
+adminRouter.patch("/withdrawals/:id/:action", requireAdmin, asyncHandler(async (req, res) => {
+  const id = z.string().uuid().parse(req.params.id);
+  const action = z.enum(["approve", "reject"]).parse(req.params.action);
+  const input = z.object({ adminNotes: z.string().trim().max(1000).optional() }).parse(req.body);
+  const withdrawal = await reviewWithdrawalRequest(id, action, input.adminNotes);
+  res.json({ message: action === "approve" ? "Withdrawal approved and marked successful." : "Withdrawal rejected and balance returned.", withdrawal });
+}));
+
 adminRouter.get("/refunds", requireStaff, asyncHandler(async (_req, res) => {
   const refunds = await prisma.refund.findMany({ orderBy: { createdAt: "desc" }, include: { order: { include: { payment: true } }, requestedBy: { select: { email: true, firstName: true, lastName: true } } } });
   res.json({ refunds });
@@ -271,7 +291,15 @@ adminRouter.patch("/refunds/:id", requireAdmin, asyncHandler(async (req, res) =>
 }));
 
 adminRouter.get("/disputes", requireStaff, asyncHandler(async (_req, res) => {
-  const disputes = await prisma.dispute.findMany({ orderBy: { updatedAt: "desc" }, include: { order: true, openedBy: { select: { email: true, firstName: true, lastName: true } } } });
+  await autoResolveExpiredDisputes();
+  const disputes = await prisma.dispute.findMany({
+    orderBy: { updatedAt: "desc" },
+    include: {
+      order: { include: { buyer: { select: { firstName: true, lastName: true, email: true } }, items: { include: { product: { select: { name: true, slug: true } }, seller: { select: { firstName: true, lastName: true, email: true } } } } } },
+      orderItem: { include: { product: { select: { name: true, slug: true } }, seller: { select: { firstName: true, lastName: true, email: true } } } },
+      openedBy: { select: { email: true, firstName: true, lastName: true } }
+    }
+  });
   res.json({ disputes });
 }));
 
@@ -279,8 +307,19 @@ adminRouter.patch("/disputes/:id", requireStaff, asyncHandler(async (req, res) =
   const id = z.string().uuid().parse(req.params.id);
   const input = z.object({ status: z.nativeEnum(DisputeStatus), resolution: z.string().trim().max(4000).optional() }).parse(req.body);
   const resolved = input.status === DisputeStatus.RESOLVED_BUYER || input.status === DisputeStatus.RESOLVED_SELLER || input.status === DisputeStatus.CLOSED;
-  const dispute = await prisma.dispute.update({ where: { id }, data: { ...input, resolvedAt: resolved ? new Date() : null } });
+  const closedInFavorOf = input.status === DisputeStatus.RESOLVED_BUYER ? "BUYER" : input.status === DisputeStatus.RESOLVED_SELLER ? "SELLER" : undefined;
+  const dispute = await prisma.dispute.update({ where: { id }, data: { ...input, closedInFavorOf, awaitingParty: resolved ? null : undefined, autoCloseAt: resolved ? null : undefined, resolvedAt: resolved ? new Date() : null } });
   res.json({ dispute });
+}));
+
+adminRouter.post("/disputes/:id/message", requireStaff, asyncHandler(async (req, res) => {
+  const id = z.string().uuid().parse(req.params.id);
+  const input = z.object({ body: z.string().trim().min(1).max(4000) }).parse(req.body);
+  const dispute = await prisma.dispute.findUnique({ where: { id }, include: { order: { include: { items: { select: { sellerId: true } } } } } });
+  if (!dispute) throw new ApiError(404, "Dispute not found.", "DISPUTE_NOT_FOUND");
+  const message = await prisma.orderMessage.create({ data: { orderId: dispute.orderId, authorId: req.auth!.id, body: input.body }, include: { author: { select: { firstName: true, role: true } } } });
+  await markDisputeTurn(dispute.orderId, { id: req.auth!.id, role: req.auth!.role as Role }, dispute.order.buyerId, [...new Set(dispute.order.items.map((item) => item.sellerId))]);
+  res.status(201).json({ message });
 }));
 
 adminRouter.get("/tickets", requireStaff, asyncHandler(async (_req, res) => {

@@ -3,7 +3,7 @@ import {
   ArrowRight, BadgeCheck, BarChart3, Download, FileText, Headphones, Home,
   LogOut, MessageCircle, PackageCheck, RefreshCw, Settings, ShieldCheck,
   ShoppingBag, Star, Store, TicketCheck, TrendingUp, UserRound, Activity,
-  Wallet, CreditCard, Bitcoin, DollarSign, PlusCircle
+  Wallet, CreditCard, Bitcoin, DollarSign, PlusCircle, Gavel, MessageSquare, LockKeyhole
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { ApiError, apiRequest, STAFF_ROLES } from "../api/client";
@@ -12,15 +12,21 @@ import { Seo } from "../components/Seo";
 
 type Grant = { id: string; downloadCount: number; maxDownloads: number; expiresAt: string; productFile: { displayName: string; version: number } };
 type InventoryItem = { id: string; content: string; source: string; deliveredAt?: string | null };
-type Order = { id: string; orderNumber: string; invoiceNumber: string; status: string; totalCents: number; currency: string; createdAt: string; canOpenDispute?: boolean; disputeDeadline?: string; disputeWindowHours?: number; payment?: { method: string; status: string }; items: Array<{ id: string; productName: string; product: { slug: string; type: string; coverImageUrl?: string; afterSalesServiceHours?: number }; downloadGrants: Grant[]; inventoryItems?: InventoryItem[] }>; refunds: Array<{ status: string }>; disputes: Array<{ status: string }> };
+type Order = { id: string; orderNumber: string; invoiceNumber: string; status: string; totalCents: number; currency: string; createdAt: string; canOpenDispute?: boolean; disputeDeadline?: string; disputeWindowHours?: number; payment?: { method: string; status: string }; items: Array<{ id: string; productName: string; product: { slug: string; type: string; coverImageUrl?: string; afterSalesServiceHours?: number }; downloadGrants: Grant[]; inventoryItems?: InventoryItem[] }>; refunds: Array<{ status: string }>; disputes: Array<{ id?: string; status: string; subject?: string; refundDemanded?: boolean }> };
+
+type Chat = { id: string; orderNumber: string; status: string; updatedAt: string; items: Array<{ productName: string; product?: { slug?: string; coverImageUrl?: string | null } }>; messages: Array<{ id: string; body: string; createdAt: string; author: { firstName: string; role: string } }>; disputes: Array<{ status: string }> };
+type Dispute = { id: string; status: string; subject: string; description: string; refundDemanded?: boolean; awaitingParty?: string | null; autoCloseAt?: string | null; closedInFavorOf?: string | null; resolution?: string | null; createdAt: string; order: { id: string; orderNumber: string; items: Array<{ productName: string; product?: { name?: string; slug?: string; coverImageUrl?: string | null } }> }; orderItem?: { product?: { name?: string; slug?: string; coverImageUrl?: string | null } } | null };
+type SellerFinance = { availableBalanceCents: number; frozenBalanceCents: number; totalSellerEarningsCents: number; withdrawnCents: number; todayIncomeCents: number; todayOrderCount: number };
 type Ticket = { id: string; ticketNumber: string; category: string; status: string; subject: string; updatedAt: string; messages: Array<{ id: string; body: string; author: { firstName: string; role: string } }> };
 type Review = { id: string; rating: number; body: string; createdAt: string; product: { name: string; slug: string }; sellerResponse?: string };
-type Tab = "overview" | "orders" | "downloads" | "tickets" | "reviews" | "seller" | "wallet" | "profile";
+type Tab = "overview" | "orders" | "downloads" | "chats" | "disputes" | "tickets" | "reviews" | "seller" | "wallet" | "profile";
 
 const tabs: Array<{ id: Tab; label: string; icon: typeof Home; roles?: string[] }> = [
   { id: "overview", label: "Overview", icon: Home },
   { id: "orders", label: "Orders", icon: ShoppingBag },
   { id: "downloads", label: "Downloads", icon: Download },
+  { id: "chats", label: "Chats", icon: MessageSquare },
+  { id: "disputes", label: "Disputes", icon: Gavel },
   { id: "tickets", label: "Support", icon: Headphones },
   { id: "reviews", label: "Reviews", icon: Star },
   { id: "seller", label: "Seller Hub", icon: Store, roles: ["SELLER"] },
@@ -33,12 +39,16 @@ export function AccountDashboardPage() {
   const [tab, setTab] = useState<Tab>("overview");
   const [orders, setOrders] = useState<Order[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [disputes, setDisputes] = useState<Dispute[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [sellerOrders, setSellerOrders] = useState<any[]>([]);
   const [sellerProducts, setSellerProducts] = useState<any[]>([]);
   const [sellerReviews, setSellerReviews] = useState<any[]>([]);
   const [sellerProfile, setSellerProfile] = useState<any>(null);
   const [sellerTickets, setSellerTickets] = useState<any[]>([]);
+  const [sellerDisputes, setSellerDisputes] = useState<any[]>([]);
+  const [sellerFinance, setSellerFinance] = useState<SellerFinance | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [walletBalance, setWalletBalance] = useState(user?.balanceCents ?? 0);
@@ -52,14 +62,16 @@ export function AccountDashboardPage() {
       apiRequest<{ orders: Order[] }>("/api/commerce/orders").then((d) => setOrders(d.orders)).catch(() => undefined),
       apiRequest<{ tickets: Ticket[] }>("/api/commerce/tickets").then((d) => setTickets(d.tickets)).catch(() => undefined),
       apiRequest<{ reviews: Review[] }>("/api/commerce/reviews").then((d) => setReviews(d.reviews)).catch(() => undefined),
+      apiRequest<{ chats: Chat[] }>("/api/commerce/chats").then((d) => setChats(d.chats)).catch(() => undefined),
+      apiRequest<{ disputes: Dispute[] }>("/api/commerce/disputes").then((d) => setDisputes(d.disputes)).catch(() => undefined),
     ]).finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
     if (!user) return;
     setWalletBalance(user.balanceCents ?? 0);
-    void apiRequest<{ balanceCents: number }>("/api/wallet/balance")
-      .then((data) => setWalletBalance(data.balanceCents))
+    void apiRequest<{ balanceCents: number; availableBalanceCents?: number }>("/api/wallet/balance")
+      .then((data) => setWalletBalance(data.availableBalanceCents ?? data.balanceCents))
       .catch(() => undefined);
   }, [user?.id, user?.balanceCents]);
 
@@ -72,6 +84,8 @@ export function AccountDashboardPage() {
         apiRequest<{ reviews: any[] }>("/api/seller/reviews").then((d) => setSellerReviews(d.reviews)).catch(() => undefined),
         apiRequest<{ tickets: any[] }>("/api/seller/tickets").then((d) => setSellerTickets(d.tickets)).catch(() => undefined),
         apiRequest<{ profile: any }>("/api/seller/profile").then((d) => setSellerProfile(d.profile)).catch(() => undefined),
+        apiRequest<{ disputes: any[] }>("/api/seller/disputes").then((d) => setSellerDisputes(d.disputes)).catch(() => undefined),
+        apiRequest<{ summary: SellerFinance }>("/api/seller/finance").then((d) => setSellerFinance(d.summary)).catch(() => undefined),
       ]).finally(() => setLoading(false));
     }
   }, [tab, user?.role]);
@@ -95,7 +109,8 @@ export function AccountDashboardPage() {
     const description = window.prompt("Describe the issue (20+ characters):");
     if (!description || description.trim().length < 20) return;
     try {
-      await apiRequest(`/api/commerce/orders/${order.id}/disputes`, { method: "POST", body: { subject, description } });
+      const demandRefund = window.confirm("Also demand a refund with this dispute?");
+      await apiRequest(`/api/commerce/orders/${order.id}/disputes`, { method: "POST", body: { subject, description, demandRefund } });
       setMessage("Dispute opened. Admin support can now review the order, chat, and delivery record.");
       const data = await apiRequest<{ orders: Order[] }>("/api/commerce/orders");
       setOrders(data.orders);
@@ -103,6 +118,42 @@ export function AccountDashboardPage() {
       setMessage(error instanceof ApiError ? error.message : "Could not open a dispute.");
     }
   }
+  async function closeDispute(disputeId: string) {
+    const resolution = window.prompt("Optional closing note:") ?? "Closed by buyer.";
+    try {
+      await apiRequest(`/api/commerce/disputes/${disputeId}/close`, { method: "POST", body: { resolution } });
+      setMessage("Dispute closed.");
+      const data = await apiRequest<{ disputes: Dispute[] }>("/api/commerce/disputes");
+      setDisputes(data.disputes);
+    } catch (error) {
+      setMessage(error instanceof ApiError ? error.message : "Could not close dispute.");
+    }
+  }
+
+  async function demandDisputeRefund(disputeId: string) {
+    const reason = window.prompt("Refund demand reason:") ?? "Refund demanded from dispute.";
+    if (reason.trim().length < 10) return;
+    try {
+      await apiRequest(`/api/commerce/disputes/${disputeId}/refund`, { method: "POST", body: { reason } });
+      setMessage("Refund demand sent to admin.");
+      const data = await apiRequest<{ disputes: Dispute[] }>("/api/commerce/disputes");
+      setDisputes(data.disputes);
+    } catch (error) {
+      setMessage(error instanceof ApiError ? error.message : "Could not demand refund.");
+    }
+  }
+
+  async function sellerRefund(orderId: string, amountCents: number) {
+    const reason = window.prompt("Refund reason to admin:") ?? "Seller requested refund.";
+    if (reason.trim().length < 10) return;
+    try {
+      await apiRequest(`/api/seller/orders/${orderId}/refund`, { method: "POST", body: { reason, amountCents } });
+      setMessage("Seller refund request sent to admin.");
+    } catch (error) {
+      setMessage(error instanceof ApiError ? error.message : "Could not request seller refund.");
+    }
+  }
+
   async function createTicket() {
     const subject = window.prompt("Subject (5+ characters):");
     if (!subject || subject.length < 5) return;
@@ -142,11 +193,11 @@ export function AccountDashboardPage() {
 
   if (!user) return null;
 
-  const sellerRevenue = sellerOrders?.reduce((sum: number, item: any) => {
+  const sellerRevenue = sellerFinance?.totalSellerEarningsCents ?? sellerOrders?.reduce((sum: number, item: any) => {
     if (item.order?.status && !["REFUNDED", "CANCELLED"].includes(item.order.status)) return sum + item.totalCents;
     return sum;
   }, 0) ?? 0;
-  const pendingSellerOrders = sellerOrders?.filter((item: any) => ["PROCESSING", "PAID"].includes(item.order?.status)).length ?? 0;
+  const pendingSellerOrders = sellerOrders?.filter((item: any) => ["PROCESSING", "PAID", "DISPUTED"].includes(item.order?.status)).length ?? 0;
 
   const visibleTabs = tabs.filter((t) => !t.roles || t.roles.includes(user.role));
 
@@ -172,6 +223,8 @@ export function AccountDashboardPage() {
             <button key={id} className={tab === id ? "active" : ""} onClick={() => setTab(id)}>
               <Icon size={18} /> {label}
               {id === "orders" && activeOrders > 0 ? <span className="sidebar-badge">{activeOrders}</span> : null}
+              {id === "disputes" && disputes.filter((d) => !["CLOSED", "RESOLVED_BUYER", "RESOLVED_SELLER"].includes(d.status)).length > 0 ? <span className="sidebar-badge">{disputes.filter((d) => !["CLOSED", "RESOLVED_BUYER", "RESOLVED_SELLER"].includes(d.status)).length}</span> : null}
+              {id === "chats" && chats.length > 0 ? <span className="sidebar-badge">{chats.length}</span> : null}
             </button>
           ))}
         </div>
@@ -237,6 +290,8 @@ export function AccountDashboardPage() {
               <Link to="/catalog" className="action-card"><PackageCheck size={20} /><span><strong>Browse marketplace</strong><small>Discover new products</small></span><ArrowRight size={16} /></Link>
               <Link to="/support" className="action-card"><Headphones size={20} /><span><strong>Get help</strong><small>Support center & tickets</small></span><ArrowRight size={16} /></Link>
               <Link to="#orders" onClick={() => setTab("orders")} className="action-card"><ShoppingBag size={20} /><span><strong>My orders</strong><small>{orders.length} orders</small></span><ArrowRight size={16} /></Link>
+              <Link to="#chats" onClick={() => setTab("chats")} className="action-card"><MessageSquare size={20} /><span><strong>Order chats</strong><small>{chats.length} conversations</small></span><ArrowRight size={16} /></Link>
+              <Link to="#disputes" onClick={() => setTab("disputes")} className="action-card"><Gavel size={20} /><span><strong>Disputes</strong><small>{disputes.length} cases</small></span><ArrowRight size={16} /></Link>
             </div>
           </div>
         )}
@@ -347,6 +402,70 @@ export function AccountDashboardPage() {
           </div>
         )}
 
+        {tab === "chats" && (
+          <div className="tab-content chats-tab">
+            <header className="tab-header">
+              <span className="section-index">ORDER CHATS</span>
+              <h1>Buyer / seller conversations</h1>
+              <p>Every post-order chat appears here. Open the workspace to send messages or screenshots.</p>
+            </header>
+            {chats.length ? (
+              <div className="compact-orders">
+                {chats.map((chat) => (
+                  <Link className="compact-order chat-list-item" to={`/orders/${chat.id}`} key={chat.id}>
+                    <div className="co-left">
+                      <MessageSquare size={16} />
+                      <div>
+                        <strong>{chat.orderNumber}</strong>
+                        <small>{chat.items.map((item) => item.productName).join(", ")}</small>
+                        {chat.messages[0] ? <small>{chat.messages[0].author.firstName}: {chat.messages[0].body.slice(0, 90)}{chat.messages[0].body.length > 90 ? "…" : ""}</small> : null}
+                      </div>
+                    </div>
+                    <div className="co-right"><span className={`status-pill ${chat.status.toLowerCase()}`}>{chat.status.replaceAll("_", " ")}</span><small>{new Date(chat.updatedAt).toLocaleDateString()}</small></div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state-large"><MessageSquare size={48} /><h2>No chats yet</h2><p>Open an order and message the seller to start a conversation.</p></div>
+            )}
+          </div>
+        )}
+
+        {tab === "disputes" && (
+          <div className="tab-content disputes-tab">
+            <header className="tab-header">
+              <span className="section-index">DISPUTES</span>
+              <h1>Open disputes and refund demands</h1>
+              <p>If one party does not reply within 24 hours, the dispute is automatically closed against that party.</p>
+            </header>
+            {disputes.length ? (
+              <div className="orders-list dispute-list">
+                {disputes.map((dispute) => (
+                  <article className="order-card-full dispute-card" key={dispute.id}>
+                    <header>
+                      <div>
+                        <span className={`status-pill ${dispute.status.toLowerCase()}`}>{dispute.status.replaceAll("_", " ")}</span>
+                        <strong>{dispute.subject}</strong>
+                        <small>Order {dispute.order.orderNumber} · {new Date(dispute.createdAt).toLocaleString()}</small>
+                      </div>
+                      {dispute.closedInFavorOf ? <b>Favored {dispute.closedInFavorOf.toLowerCase()}</b> : dispute.autoCloseAt ? <b>Due {new Date(dispute.autoCloseAt).toLocaleString()}</b> : null}
+                    </header>
+                    <p>{dispute.description}</p>
+                    {dispute.resolution ? <div className="notice success">{dispute.resolution}</div> : null}
+                    <footer>
+                      <Link to={`/orders/${dispute.order.id}`} className="action-link"><MessageCircle size={14} /> Open chat</Link>
+                      <button className="action-link" onClick={() => void closeDispute(dispute.id)}><ShieldCheck size={14} /> Close dispute</button>
+                      <button className="action-link" disabled={dispute.refundDemanded} onClick={() => void demandDisputeRefund(dispute.id)}><RefreshCw size={14} /> {dispute.refundDemanded ? "Refund demanded" : "Demand refund"}</button>
+                    </footer>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state-large"><Gavel size={48} /><h2>No disputes</h2><p>Open a dispute from any paid order during its after-sales window.</p></div>
+            )}
+          </div>
+        )}
+
         {tab === "tickets" && (
           <div className="tab-content tickets-tab">
             <header className="tab-header">
@@ -431,22 +550,74 @@ export function AccountDashboardPage() {
               <h1>{sellerProfile?.storeName ?? "Your store"}</h1>
               <p>{sellerProfile?.isVerified ? "Verified store · Active" : "Pending verification"}</p>
             </header>
-            <div className="seller-hub-metrics">
-              <div className="metric-card"><ShoppingBag size={22} /><span><strong>{sellerOrders?.length ?? 0}</strong><small>Orders received</small></span></div>
-              <div className="metric-card"><TrendingUp size={22} /><span><strong>${(sellerRevenue / 100).toFixed(2)}</strong><small>Total revenue</small></span></div>
-              <div className="metric-card"><PackageCheck size={22} /><span><strong>{sellerProducts?.length ?? 0}</strong><small>Products listed</small></span></div>
-              <div className="metric-card"><Activity size={22} /><span><strong>{pendingSellerOrders}</strong><small>Pending orders</small></span></div>
+            <div className="seller-center-hero">
+              <div>
+                <span className="section-index">REAL TIME DATA</span>
+                <h2>Seller Center</h2>
+                <p>Quickly view your balance, frozen revenue, products, disputes, orders, and sales.</p>
+              </div>
+              <button className="secondary-button" onClick={() => void Promise.all([apiRequest<{ items: any[] }>("/api/seller/orders").then((d) => setSellerOrders(d.items)), apiRequest<{ disputes: any[] }>("/api/seller/disputes").then((d) => setSellerDisputes(d.disputes)), apiRequest<{ summary: SellerFinance }>("/api/seller/finance").then((d) => setSellerFinance(d.summary))])}><RefreshCw size={16} /> Refresh</button>
+            </div>
+            <div className="seller-hub-metrics seller-center-grid">
+              <div className="metric-card"><Wallet size={22} /><span><small>Seller balance</small><strong>${((sellerFinance?.availableBalanceCents ?? walletBalance) / 100).toFixed(2)}</strong><small><LockKeyhole size={12} /> frozen: ${((sellerFinance?.frozenBalanceCents ?? 0) / 100).toFixed(2)}</small></span></div>
+              <div className="metric-card"><PackageCheck size={22} /><span><small>Product</small><strong>{sellerProducts?.length ?? 0}</strong><small>{sellerProducts.filter((p: any) => p.status === "APPROVED").length} approved · {sellerProducts.filter((p: any) => p.status === "PENDING").length} pending</small></span></div>
+              <div className="metric-card"><ShoppingBag size={22} /><span><small>Total order</small><strong>{sellerOrders?.length ?? 0}</strong><small>{sellerOrders.filter((item: any) => item.order?.payment?.status === "PAID").length} paid</small></span></div>
+              <div className="metric-card"><TrendingUp size={22} /><span><small>Total sales</small><strong>${(sellerRevenue / 100).toFixed(2)}</strong><small>Withdrawn: ${((sellerFinance?.withdrawnCents ?? 0) / 100).toFixed(2)}</small></span></div>
+              <div className="metric-card"><Activity size={22} /><span><small>Today</small><strong>{sellerFinance?.todayOrderCount ?? 0}</strong><small>orders</small></span></div>
+              <div className="metric-card"><DollarSign size={22} /><span><small>Income today</small><strong>${((sellerFinance?.todayIncomeCents ?? 0) / 100).toFixed(2)}</strong><small>3-day hold applies</small></span></div>
+              <div className="metric-card"><Gavel size={22} /><span><small>Disputes</small><strong>{sellerDisputes.filter((d: any) => !["CLOSED", "RESOLVED_BUYER", "RESOLVED_SELLER"].includes(d.status)).length}</strong><small>{sellerDisputes.length} total</small></span></div>
+              <div className="metric-card"><Activity size={22} /><span><small>Pending orders</small><strong>{pendingSellerOrders}</strong><small>processing/disputed</small></span></div>
             </div>
 
             {sellerOrders?.length > 0 && (
               <div className="section-block">
                 <h2>Recent orders <small>({sellerOrders.length} total)</small></h2>
                 <div className="compact-orders">
-                  {sellerOrders.slice(0, 5).map((item: any) => (
-                    <div className="compact-order" key={item.id}>
-                      <div className="co-left"><PackageCheck size={16} /><div><strong>{item.productName}</strong><small>Order {item.order?.orderNumber} · {item.order?.buyer?.firstName}</small></div></div>
-                      <div className="co-right"><span>${(item.totalCents / 100).toFixed(2)}</span><small className={`status-pill ${item.order?.status?.toLowerCase()}`}>{item.order?.status?.replaceAll("_", " ")}</small></div>
+                  {sellerOrders.slice(0, 6).map((item: any) => (
+                    <div className="compact-order seller-order-row" key={item.id}>
+                      <div className="co-left">
+                        <PackageCheck size={16} />
+                        <div>
+                          <strong>{item.productName}</strong>
+                          <small>Order {item.order?.orderNumber} · buyer {item.order?.buyer?.firstName ?? "customer"}</small>
+                          {item.order?.messages?.[0] ? <small>Last chat: {item.order.messages[0].body.slice(0, 80)}{item.order.messages[0].body.length > 80 ? "…" : ""}</small> : null}
+                          {item.sellerEarning ? <small>{item.sellerEarning.status} · releases {new Date(item.sellerEarning.availableAt).toLocaleDateString()}</small> : null}
+                        </div>
+                      </div>
+                      <div className="co-right">
+                        <span>${(item.totalCents / 100).toFixed(2)}</span>
+                        <small className={`status-pill ${item.order?.status?.toLowerCase()}`}>{item.order?.status?.replaceAll("_", " ")}</small>
+                        <div className="seller-row-actions">
+                          <Link to={`/orders/${item.order?.id}`} className="action-link"><MessageCircle size={14} /> Chat</Link>
+                          <button className="action-link" onClick={() => void sellerRefund(item.order?.id, item.totalCents)}><RefreshCw size={14} /> Refund</button>
+                        </div>
+                      </div>
                     </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {sellerDisputes?.length > 0 && (
+              <div className="section-block seller-dispute-section">
+                <h2>Disputes <small>({sellerDisputes.length} total)</small></h2>
+                <div className="orders-list dispute-list">
+                  {sellerDisputes.slice(0, 6).map((dispute: any) => (
+                    <article className="order-card-full dispute-card" key={dispute.id}>
+                      <header>
+                        <div>
+                          <span className={`status-pill ${dispute.status.toLowerCase()}`}>{dispute.status.replaceAll("_", " ")}</span>
+                          <strong>{dispute.subject}</strong>
+                          <small>Order {dispute.order?.orderNumber} · buyer {dispute.order?.buyer?.email}</small>
+                        </div>
+                        {dispute.autoCloseAt ? <b>Reply by {new Date(dispute.autoCloseAt).toLocaleString()}</b> : dispute.closedInFavorOf ? <b>Favored {dispute.closedInFavorOf.toLowerCase()}</b> : null}
+                      </header>
+                      <p>{dispute.description}</p>
+                      <footer>
+                        <Link to={`/orders/${dispute.order?.id}`} className="action-link"><MessageCircle size={14} /> Open chat</Link>
+                        <button className="action-link" onClick={() => void sellerRefund(dispute.order?.id, dispute.orderItem?.totalCents ?? dispute.order?.totalCents ?? 0)}><RefreshCw size={14} /> Offer refund</button>
+                      </footer>
+                    </article>
                   ))}
                 </div>
               </div>
@@ -546,6 +717,8 @@ export function AccountDashboardPage() {
 }
 
 type Deposit = { id: string; amountCents: number; method: string; status: string; providerReference?: string; createdAt: string };
+type Withdrawal = { id: string; amountCents: number; blockchain: string; walletAddress: string; status: string; providerReference?: string | null; adminNotes?: string | null; processedAt?: string | null; createdAt: string };
+type WalletSummary = { balanceCents: number; availableBalanceCents: number; frozenSellerBalanceCents: number; pendingWithdrawalCents: number; withdrawals: Withdrawal[] };
 
 function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }: {
   user: NonNullable<ReturnType<typeof useAuth>["user"]>;
@@ -554,25 +727,36 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }:
   onBalanceChange: (balanceCents: number) => void;
 }) {
   const [deposits, setDeposits] = useState<Deposit[]>([]);
+  const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [balance, setBalance] = useState(initialBalance ?? user.balanceCents ?? 0);
+  const [frozenBalance, setFrozenBalance] = useState(0);
+  const [pendingWithdrawalCents, setPendingWithdrawalCents] = useState(0);
   const [busy, setBusy] = useState(false);
   const [depositMethod, setDepositMethod] = useState("CARD");
   const [depositAmount, setDepositAmount] = useState("");
+  const [withdrawBlockchain, setWithdrawBlockchain] = useState("TRC20 USDT");
+  const [withdrawAddress, setWithdrawAddress] = useState("");
+  const [withdrawAmount, setWithdrawAmount] = useState("");
 
   useEffect(() => {
     setBalance(initialBalance ?? user.balanceCents ?? 0);
   }, [initialBalance, user.balanceCents]);
 
+  async function refreshWallet() {
+    const [summary, depositHistory] = await Promise.all([
+      apiRequest<WalletSummary>("/api/wallet/balance"),
+      apiRequest<{ deposits: Deposit[] }>("/api/wallet/deposits")
+    ]);
+    setBalance(summary.availableBalanceCents ?? summary.balanceCents);
+    setFrozenBalance(summary.frozenSellerBalanceCents ?? 0);
+    setPendingWithdrawalCents(summary.pendingWithdrawalCents ?? 0);
+    setWithdrawals(summary.withdrawals ?? []);
+    onBalanceChange(summary.availableBalanceCents ?? summary.balanceCents);
+    setDeposits(depositHistory.deposits);
+  }
+
   useEffect(() => {
-    void apiRequest<{ balanceCents: number }>("/api/wallet/balance")
-      .then((d) => {
-        setBalance(d.balanceCents);
-        onBalanceChange(d.balanceCents);
-      })
-      .catch(() => undefined);
-    void apiRequest<{ deposits: Deposit[] }>("/api/wallet/deposits")
-      .then((d) => setDeposits(d.deposits))
-      .catch(() => undefined);
+    void refreshWallet().catch(() => undefined);
   }, [onBalanceChange]);
 
   async function submitDeposit() {
@@ -589,15 +773,40 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }:
       });
       setMessage(data.message);
       setDepositAmount("");
-      const [b, d] = await Promise.all([
-        apiRequest<{ balanceCents: number }>("/api/wallet/balance"),
-        apiRequest<{ deposits: Deposit[] }>("/api/wallet/deposits")
-      ]);
-      setBalance(b.balanceCents);
-      onBalanceChange(b.balanceCents);
-      setDeposits(d.deposits);
+      await refreshWallet();
     } catch (error) {
       setMessage(error instanceof ApiError ? error.message : "Deposit failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitWithdrawal() {
+    const cents = Math.round(parseFloat(withdrawAmount) * 100);
+    if (!cents || cents < 500) {
+      setMessage("Minimum withdrawal is $5.00.");
+      return;
+    }
+    if (cents > balance) {
+      setMessage("Withdrawal amount is higher than your available balance.");
+      return;
+    }
+    if (withdrawAddress.trim().length < 12) {
+      setMessage("Enter a valid wallet address.");
+      return;
+    }
+    setBusy(true);
+    try {
+      await apiRequest("/api/wallet/withdrawals", {
+        method: "POST",
+        body: { amountCents: cents, blockchain: withdrawBlockchain, walletAddress: withdrawAddress.trim() }
+      });
+      setMessage("Withdrawal request submitted. It stays pending until admin approval.");
+      setWithdrawAmount("");
+      setWithdrawAddress("");
+      await refreshWallet();
+    } catch (error) {
+      setMessage(error instanceof ApiError ? error.message : "Withdrawal request failed.");
     } finally {
       setBusy(false);
     }
@@ -608,57 +817,124 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }:
     { value: "CRYPTO", label: "Cryptocurrency", icon: Bitcoin },
     { value: "PAYPAL", label: "PayPal", icon: DollarSign },
   ];
+  const chains = ["TRC20 USDT", "ERC20 USDT", "BEP20 USDT", "BTC", "ETH", "SOL", "TON", "Polygon USDT"];
 
   return (
     <div className="tab-content wallet-tab">
       <header className="tab-header">
         <span className="section-index">WALLET</span>
         <h1>Your balance</h1>
-        <p>Deposit with card, crypto, or PayPal. Admin reviews and approves deposits to your balance.</p>
+        <p>Deposit, spend from balance, and withdraw available funds after admin approval. Seller revenue stays frozen for three days before release.</p>
       </header>
 
-      <div className="wallet-balance-banner">
-        <Wallet size={32} />
-        <div>
-          <strong>${(balance / 100).toFixed(2)}</strong>
-          <small>Available balance</small>
+      <div className="wallet-summary-grid">
+        <div className="wallet-balance-banner">
+          <Wallet size={32} />
+          <div>
+            <strong>${(balance / 100).toFixed(2)}</strong>
+            <small>Available balance</small>
+          </div>
+        </div>
+        <div className="wallet-balance-banner muted">
+          <LockKeyhole size={28} />
+          <div>
+            <strong>${(frozenBalance / 100).toFixed(2)}</strong>
+            <small>Frozen seller earnings · releases after 3 days</small>
+          </div>
+        </div>
+        <div className="wallet-balance-banner muted">
+          <RefreshCw size={28} />
+          <div>
+            <strong>${(pendingWithdrawalCents / 100).toFixed(2)}</strong>
+            <small>Pending withdrawal review</small>
+          </div>
         </div>
       </div>
 
-      <div className="wallet-deposit-form">
-        <h2>Add funds</h2>
-        <div className="deposit-method-tabs">
-          {methods.map((m) => {
-            const Icon = m.icon;
-            return (
-              <button
-                key={m.value}
-                className={depositMethod === m.value ? "active" : ""}
-                onClick={() => setDepositMethod(m.value)}
-              >
-                <Icon size={16} /> {m.label}
-              </button>
-            );
-          })}
-        </div>
-        <div className="deposit-input-row">
-          <div className="field">
-            <span>Amount (USD)</span>
-            <input
-              type="number"
-              min="1"
-              max="5000"
-              step="0.01"
-              placeholder="50.00"
-              value={depositAmount}
-              onChange={(e) => setDepositAmount(e.target.value)}
-            />
+      <div className="wallet-action-grid">
+        <div className="wallet-deposit-form">
+          <h2>Add funds</h2>
+          <div className="deposit-method-tabs">
+            {methods.map((m) => {
+              const Icon = m.icon;
+              return (
+                <button
+                  key={m.value}
+                  className={depositMethod === m.value ? "active" : ""}
+                  onClick={() => setDepositMethod(m.value)}
+                >
+                  <Icon size={16} /> {m.label}
+                </button>
+              );
+            })}
           </div>
-          <button className="primary-button" disabled={busy} onClick={() => void submitDeposit()}>
-            <PlusCircle size={16} /> {busy ? "Submitting…" : "Deposit"}
+          <div className="deposit-input-row">
+            <div className="field">
+              <span>Amount (USD)</span>
+              <input
+                type="number"
+                min="1"
+                max="5000"
+                step="0.01"
+                placeholder="50.00"
+                value={depositAmount}
+                onChange={(e) => setDepositAmount(e.target.value)}
+              />
+            </div>
+            <button className="primary-button" disabled={busy} onClick={() => void submitDeposit()}>
+              <PlusCircle size={16} /> {busy ? "Submitting…" : "Deposit"}
+            </button>
+          </div>
+        </div>
+
+        <div className="wallet-deposit-form withdrawal-form">
+          <h2>Withdraw funds</h2>
+          <p>Select blockchain, enter your wallet address, and request withdrawal. Admin approval marks it successful.</p>
+          <div className="withdraw-grid">
+            <div className="field">
+              <span>Blockchain / Network</span>
+              <select value={withdrawBlockchain} onChange={(e) => setWithdrawBlockchain(e.target.value)}>
+                {chains.map((chain) => <option value={chain} key={chain}>{chain}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <span>Amount (USD)</span>
+              <input type="number" min="5" step="0.01" placeholder="25.00" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} />
+            </div>
+            <div className="field wide">
+              <span>Wallet address</span>
+              <input placeholder="Paste your wallet address" value={withdrawAddress} onChange={(e) => setWithdrawAddress(e.target.value)} />
+            </div>
+          </div>
+          <button className="primary-button" disabled={busy} onClick={() => void submitWithdrawal()}>
+            <Wallet size={16} /> {busy ? "Submitting…" : "Request withdrawal"}
           </button>
         </div>
       </div>
+
+      {withdrawals.length > 0 && (
+        <div className="section-block">
+          <h2>Withdrawal history <small>({withdrawals.length} total)</small></h2>
+          <div className="compact-orders">
+            {withdrawals.map((withdrawal) => (
+              <div className="compact-order" key={withdrawal.id}>
+                <div className="co-left">
+                  <Wallet size={16} />
+                  <div>
+                    <strong>${(withdrawal.amountCents / 100).toFixed(2)}</strong>
+                    <small>{withdrawal.blockchain} · {withdrawal.walletAddress}</small>
+                    {withdrawal.adminNotes ? <small>{withdrawal.adminNotes}</small> : null}
+                  </div>
+                </div>
+                <div className="co-right">
+                  <span className={`status-pill ${withdrawal.status.toLowerCase()}`}>{withdrawal.status}</span>
+                  <small>{new Date(withdrawal.createdAt).toLocaleDateString()}</small>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {deposits.length > 0 && (
         <div className="section-block">
@@ -683,11 +959,11 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }:
         </div>
       )}
 
-      {!deposits.length && (
+      {!deposits.length && !withdrawals.length && (
         <div className="empty-state-large">
           <Bitcoin size={48} />
-          <h2>No deposits yet</h2>
-          <p>Add funds with crypto, card, or PayPal. Deposits are reviewed by admin before being added to your balance.</p>
+          <h2>No wallet history yet</h2>
+          <p>Add funds, receive seller revenue, or request withdrawals. Transactions show here after submission.</p>
         </div>
       )}
     </div>

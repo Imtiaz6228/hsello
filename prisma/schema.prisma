@@ -135,6 +135,8 @@ model User {
   sellerApplication       SellerApplication?
   reviewedApplications    SellerApplication[] @relation("SellerApplicationReviewer")
   sellerProfile           SellerProfile?
+  sellerEarnings          SellerEarning[]
+  withdrawalRequests      WithdrawalRequest[]
   products                Product[]            @relation("ProductSeller")
   orders                  Order[]              @relation("BuyerOrders")
   orderItems              OrderItem[]          @relation("OrderItemSeller")
@@ -441,6 +443,8 @@ model OrderItem {
   seller         User            @relation("OrderItemSeller", fields: [sellerId], references: [id], onDelete: Restrict)
   downloadGrants DownloadGrant[]
   inventoryItems ProductInventoryItem[]
+  sellerEarning  SellerEarning?
+  disputes       Dispute[]
   review         Review?
 
   @@index([orderId])
@@ -522,20 +526,31 @@ model Refund {
 model Dispute {
   id          String        @id @default(uuid())
   orderId     String
+  orderItemId String?
   openedById  String
   subject     String
   description String
   status      DisputeStatus @default(OPEN)
   resolution  String?
+  refundDemanded Boolean    @default(false)
+  awaitingParty String?
+  autoCloseAt DateTime?
+  closedInFavorOf String?
+  lastBuyerMessageAt DateTime?
+  lastSellerMessageAt DateTime?
+  lastAdminMessageAt DateTime?
   resolvedAt  DateTime?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
   order    Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderItem OrderItem? @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
   openedBy User  @relation(fields: [openedById], references: [id], onDelete: Restrict)
 
   @@index([status, createdAt])
   @@index([orderId])
+  @@index([orderItemId])
+  @@index([autoCloseAt])
 }
 
 model OrderMessage {
@@ -544,6 +559,8 @@ model OrderMessage {
   authorId  String
   body      String
   attachmentUrl String?
+  attachmentName String?
+  attachmentMimeType String?
   createdAt DateTime @default(now())
 
   order  Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
@@ -627,6 +644,45 @@ model ProductReport {
 
   @@index([status, createdAt])
   @@index([productId])
+}
+
+model SellerEarning {
+  id             String   @id @default(uuid())
+  sellerId       String
+  orderItemId    String   @unique
+  grossCents     Int
+  platformFeeCents Int    @default(0)
+  netCents       Int
+  status         String   @default("FROZEN")
+  availableAt    DateTime
+  releasedAt     DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  seller    User      @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+
+  @@index([sellerId, status])
+  @@index([availableAt, status])
+}
+
+model WithdrawalRequest {
+  id             String   @id @default(uuid())
+  userId         String
+  amountCents    Int
+  blockchain     String
+  walletAddress  String
+  status         String   @default("PENDING")
+  providerReference String?
+  adminNotes     String?
+  processedAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
 }
 
 model HomepageSection {

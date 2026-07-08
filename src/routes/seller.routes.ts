@@ -1,12 +1,14 @@
 import fs from "node:fs/promises";
 import { Router, type Request } from "express";
-import { ProductStatus, ProductType, Role, SellerApplicationStatus } from "@prisma/client";
+import { DisputeStatus, ProductStatus, ProductType, Role, SellerApplicationStatus } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth, requireVerifiedUser } from "../middleware/auth.js";
 import { ApiError, asyncHandler } from "../middleware/error-handler.js";
 import { imageUpload, productFileUpload, publicUploadUrl, sellerDocumentUpload } from "../middleware/upload.js";
 import { sendTicketUpdateEmail } from "../lib/email.js";
+import { activeDisputeWhere, autoResolveExpiredDisputes } from "../services/dispute.service.js";
+import { getSellerFinanceSummary } from "../services/finance.service.js";
 import { ensureDefaultMarketplaceCategories } from "../services/category.service.js";
 import { randomToken, sha256 } from "../lib/crypto.js";
 import { sellerApplicationSchema } from "../schemas/seller.schemas.js";
@@ -236,6 +238,11 @@ sellerRouter.post("/categories", requireSeller, asyncHandler(async (req, res) =>
   res.status(201).json({ category, message: "Category added. You can select it when creating products." });
 }));
 
+sellerRouter.get("/finance", requireSeller, asyncHandler(async (req, res) => {
+  const summary = await getSellerFinanceSummary(req.auth!.id);
+  res.json({ summary });
+}));
+
 sellerRouter.get("/profile", requireSeller, asyncHandler(async (req, res) => {
   const profile = await prisma.sellerProfile.findUnique({ where: { userId: req.auth!.id } });
   res.json({ profile });
@@ -403,12 +410,37 @@ sellerRouter.get("/orders", requireSeller, asyncHandler(async (req, res) => {
     where: { sellerId: req.auth!.id },
     orderBy: { order: { createdAt: "desc" } },
     include: {
-      order: { include: { payment: true, buyer: { select: { firstName: true, lastName: true } }, disputes: { orderBy: { createdAt: "desc" }, take: 1 } } },
+      order: { include: { payment: true, buyer: { select: { firstName: true, lastName: true, email: true } }, messages: { orderBy: { createdAt: "desc" }, take: 1 }, disputes: { orderBy: { createdAt: "desc" }, take: 1 } } },
       product: true,
+      sellerEarning: true,
       inventoryItems: { select: { id: true, deliveredAt: true } }
     }
   });
   res.json({ items });
+}));
+
+sellerRouter.get("/disputes", requireSeller, asyncHandler(async (req, res) => {
+  await autoResolveExpiredDisputes({ order: { items: { some: { sellerId: req.auth!.id } } } });
+  const disputes = await prisma.dispute.findMany({
+    where: { order: { items: { some: { sellerId: req.auth!.id } } } },
+    orderBy: { updatedAt: "desc" },
+    include: {
+      order: { include: { buyer: { select: { firstName: true, lastName: true, email: true } }, items: { include: { product: { select: { name: true, slug: true, coverImageUrl: true } } } } } },
+      orderItem: { include: { product: { select: { name: true, slug: true, coverImageUrl: true } } } },
+      openedBy: { select: { firstName: true, lastName: true, email: true } }
+    }
+  });
+  res.json({ disputes });
+}));
+
+sellerRouter.post("/orders/:id/refund", requireSeller, asyncHandler(async (req, res) => {
+  const orderId = z.string().uuid().parse(req.params.id);
+  const input = z.object({ reason: z.string().trim().min(10).max(2000), amountCents: z.number().int().positive().optional() }).parse(req.body);
+  const order = await prisma.order.findFirst({ where: { id: orderId, items: { some: { sellerId: req.auth!.id } }, paidAt: { not: null } }, include: { items: { where: { sellerId: req.auth!.id } } } });
+  if (!order) throw new ApiError(404, "Paid seller order not found.", "ORDER_NOT_FOUND");
+  const sellerTotal = order.items.reduce((sum, item) => sum + item.totalCents, 0);
+  const refund = await prisma.refund.create({ data: { orderId, requestedById: req.auth!.id, amountCents: Math.min(input.amountCents ?? sellerTotal, sellerTotal), reason: `Seller refund request: ${input.reason}` } });
+  res.status(201).json({ refund, message: "Refund request sent to admin for approval." });
 }));
 
 sellerRouter.post("/reviews/:id/respond", requireSeller, asyncHandler(async (req, res) => {

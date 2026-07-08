@@ -4,6 +4,7 @@ import { randomToken, sha256 } from "../lib/crypto.js";
 import { sendOrderConfirmation } from "../lib/email.js";
 import { prisma } from "../lib/prisma.js";
 import { ApiError } from "../middleware/error-handler.js";
+import { createSellerEarningsForOrderItems, reverseSellerEarningsForOrder } from "./finance.service.js";
 
 export type CheckoutItemInput = { productId: string; quantity: number };
 
@@ -337,6 +338,7 @@ export async function completePayment(orderId: string, approvedById?: string) {
         completedAt: autoDeliver ? paidAt : undefined
       }
     });
+    await createSellerEarningsForOrderItems(tx, order.items.map((item) => ({ id: item.id, sellerId: item.sellerId, totalCents: item.totalCents })), paidAt);
     for (const item of order.items) {
       await tx.product.update({ where: { id: item.productId }, data: { salesCount: { increment: item.quantity } } });
       await tx.sellerProfile.updateMany({ where: { userId: item.sellerId }, data: { totalSales: { increment: item.quantity } } });
@@ -516,11 +518,14 @@ export async function issueRefund(refundId: string) {
   }
 
   const fullRefund = refund.amountCents >= refund.order.totalCents;
+  const isWalletPayment = payment.method === PaymentMethod.MANUAL && (payment.providerPayload as any)?.kind === "WALLET_BALANCE";
   await prisma.$transaction([
     prisma.refund.update({ where: { id: refund.id }, data: { status: "COMPLETED", providerReference: providerRefundId, resolvedAt: new Date() } }),
     prisma.order.update({ where: { id: refund.orderId }, data: { status: fullRefund ? "REFUNDED" : undefined } }),
     prisma.payment.update({ where: { orderId: refund.orderId }, data: { status: fullRefund ? "REFUNDED" : "PARTIALLY_REFUNDED" } }),
-    prisma.downloadGrant.updateMany({ where: { orderItem: { orderId: refund.orderId } }, data: { revokedAt: fullRefund ? new Date() : undefined } })
+    prisma.downloadGrant.updateMany({ where: { orderItem: { orderId: refund.orderId } }, data: { revokedAt: fullRefund ? new Date() : undefined } }),
+    ...(isWalletPayment ? [prisma.user.update({ where: { id: refund.order.buyerId }, data: { balanceCents: { increment: refund.amountCents } } })] : [])
   ]);
+  if (fullRefund) await reverseSellerEarningsForOrder(refund.orderId);
   return prisma.refund.findUnique({ where: { id: refund.id } });
 }

@@ -473,3 +473,84 @@ textarea,
   color: var(--text);
   background: transparent;
 }
+
+/* Disputes, seller center, chat attachments, and withdrawals */
+.seller-center-hero {
+  margin: 18px 0 20px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border-radius: 24px;
+  color: #fff;
+  background: linear-gradient(135deg, #0877ff, #0a5ef0 60%, #28a2ff);
+  box-shadow: 0 20px 45px rgba(8, 119, 255, .22);
+}
+.seller-center-hero h2 { margin: 4px 0; font-size: clamp(28px, 4vw, 44px); color: #fff; }
+.seller-center-hero p,
+.seller-center-hero .section-index { color: rgba(255,255,255,.86); }
+.seller-center-hero .secondary-button { color: #fff; border-color: rgba(255,255,255,.28); background: rgba(255,255,255,.16); }
+.seller-center-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.seller-center-grid .metric-card { min-height: 120px; align-items: center; }
+.seller-center-grid .metric-card small svg { vertical-align: -2px; }
+.seller-order-row { align-items: start; }
+.seller-row-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.seller-row-actions button { border: 0; background: transparent; }
+.seller-dispute-section .dispute-card { border-color: rgba(244, 63, 94, .18); }
+.dispute-list { gap: 14px; }
+.dispute-card p { color: var(--muted); }
+.dispute-alert-card {
+  margin: 14px 0;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(244, 63, 94, .18);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255,241,242,.95), rgba(255,255,255,.92));
+}
+.dispute-alert-card > div { display: grid; gap: 8px; }
+.quick-dispute-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.chat-list-item { text-decoration: none; color: inherit; }
+.chat-compose-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+.upload-action {
+  position: relative;
+  overflow: hidden;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+}
+.upload-action input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.chat-attachment { margin-top: 10px; display: inline-grid; gap: 6px; max-width: 280px; color: #155eef; text-decoration: none; }
+.chat-attachment img { max-width: 100%; border: 1px solid var(--line); border-radius: 14px; object-fit: cover; }
+.wallet-summary-grid { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+.wallet-summary-grid .wallet-balance-banner { margin: 0; }
+.wallet-balance-banner.muted { background: #f8fafc; color: var(--text); border: 1px solid var(--line); }
+.wallet-action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+.withdrawal-form p { color: var(--muted); font-size: 12px; }
+.withdraw-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.withdraw-grid .wide { grid-column: 1 / -1; }
+.withdraw-grid select,
+.withdraw-grid input { width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 12px; }
+.status-pill.awaiting_buyer,
+.status-pill.awaiting_seller,
+.status-pill.under_review { color: #92400e; background: #fffbeb; }
+.status-pill.resolved_buyer,
+.status-pill.resolved_seller { color: #027a48; background: #ecfdf3; }
+@media (max-width: 1050px) {
+  .seller-center-grid,
+  .wallet-summary-grid,
+  .wallet-action-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 700px) {
+  .seller-center-hero { align-items: flex-start; flex-direction: column; border-radius: 18px; }
+  .seller-center-grid,
+  .wallet-summary-grid,
+  .wallet-action-grid,
+  .withdraw-grid { grid-template-columns: 1fr; }
+  .withdraw-grid .wide { grid-column: auto; }
+  .seller-row-actions { justify-content: flex-start; }
+}

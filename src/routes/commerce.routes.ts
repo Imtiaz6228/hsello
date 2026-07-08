@@ -1,6 +1,6 @@
 import path from "node:path";
 import { Router } from "express";
-import { DisputeStatus, PaymentMethod, ProductType, TicketCategory } from "@prisma/client";
+import { DisputeStatus, PaymentMethod, ProductType, TicketCategory, Role } from "@prisma/client";
 import { z } from "zod";
 import { sha256 } from "../lib/crypto.js";
 import { env } from "../config/env.js";
@@ -9,6 +9,8 @@ import { sendTicketUpdateEmail } from "../lib/email.js";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth, requireVerifiedUser } from "../middleware/auth.js";
 import { ApiError, asyncHandler } from "../middleware/error-handler.js";
+import { imageUpload, publicUploadUrl } from "../middleware/upload.js";
+import { activeDisputeWhere, autoResolveExpiredDisputes, markDisputeTurn, responseDeadline } from "../services/dispute.service.js";
 import { availablePaymentMethods, checkCryptoPayment, confirmCryptoWebhook, confirmHostedPayment, createCheckout, getPaymentStatusForBuyer } from "../services/payment.service.js";
 
 export const commerceRouter = Router();
@@ -114,6 +116,33 @@ commerceRouter.post("/checkout/:orderId/check-crypto", asyncHandler(async (req, 
   res.json(status);
 }));
 
+commerceRouter.get("/disputes", asyncHandler(async (req, res) => {
+  await autoResolveExpiredDisputes({ OR: [{ openedById: req.auth!.id }, { order: { buyerId: req.auth!.id } }] });
+  const disputes = await prisma.dispute.findMany({
+    where: { OR: [{ openedById: req.auth!.id }, { order: { buyerId: req.auth!.id } }] },
+    orderBy: { updatedAt: "desc" },
+    include: {
+      order: { include: { items: { include: { product: { select: { name: true, slug: true, coverImageUrl: true } } } } } },
+      orderItem: { include: { product: { select: { name: true, slug: true, coverImageUrl: true } } } },
+      openedBy: { select: { firstName: true, lastName: true, email: true } }
+    }
+  });
+  res.json({ disputes });
+}));
+
+commerceRouter.get("/chats", asyncHandler(async (req, res) => {
+  const orders = await prisma.order.findMany({
+    where: { buyerId: req.auth!.id, messages: { some: {} } },
+    orderBy: { updatedAt: "desc" },
+    include: {
+      items: { take: 3, include: { product: { select: { slug: true, coverImageUrl: true } } } },
+      messages: { orderBy: { createdAt: "desc" }, take: 1, include: { author: { select: { firstName: true, role: true } } } },
+      disputes: { where: activeDisputeWhere(), take: 1 }
+    }
+  });
+  res.json({ chats: orders });
+}));
+
 commerceRouter.get("/orders", asyncHandler(async (req, res) => {
   const orders = await prisma.order.findMany({
     where: { buyerId: req.auth!.id }, orderBy: { createdAt: "desc" },
@@ -135,6 +164,7 @@ commerceRouter.get("/orders", asyncHandler(async (req, res) => {
 
 commerceRouter.get("/orders/:id", asyncHandler(async (req, res) => {
   const id = z.string().uuid().parse(req.params.id);
+  await autoResolveExpiredDisputes({ orderId: id });
   const order = await prisma.order.findFirst({
     where: { id, OR: [{ buyerId: req.auth!.id }, { items: { some: { sellerId: req.auth!.id } } }] },
     include: {
@@ -222,7 +252,7 @@ commerceRouter.post("/orders/:id/refunds", asyncHandler(async (req, res) => {
 
 commerceRouter.post("/orders/:id/disputes", asyncHandler(async (req, res) => {
   const orderId = z.string().uuid().parse(req.params.id);
-  const input = z.object({ subject: z.string().trim().min(5).max(140), description: z.string().trim().min(20).max(4000) }).parse(req.body);
+  const input = z.object({ subject: z.string().trim().min(5).max(140), description: z.string().trim().min(20).max(4000), orderItemId: z.string().uuid().optional(), demandRefund: z.boolean().default(false) }).parse(req.body);
   const order = await prisma.order.findFirst({
     where: { id: orderId, buyerId: req.auth!.id },
     include: {
@@ -239,25 +269,74 @@ commerceRouter.post("/orders/:id/disputes", asyncHandler(async (req, res) => {
   if (!window.canOpenDispute) {
     throw new ApiError(400, `The dispute window closed on ${new Date(window.disputeDeadline).toLocaleString()}.`, "DISPUTE_WINDOW_CLOSED");
   }
-  const dispute = await prisma.dispute.create({ data: { orderId, openedById: req.auth!.id, ...input } });
+  const orderItemId = input.orderItemId && order.items.some((item) => item.id === input.orderItemId) ? input.orderItemId : order.items[0]?.id;
+  const dispute = await prisma.dispute.create({
+    data: {
+      orderId,
+      orderItemId,
+      openedById: req.auth!.id,
+      subject: input.subject,
+      description: input.description,
+      refundDemanded: input.demandRefund,
+      awaitingParty: "SELLER",
+      autoCloseAt: responseDeadline(),
+      lastBuyerMessageAt: new Date()
+    }
+  });
   await prisma.order.update({ where: { id: orderId }, data: { status: "DISPUTED" } });
+  if (input.demandRefund) {
+    await prisma.refund.create({ data: { orderId, requestedById: req.auth!.id, reason: `Refund demanded through dispute: ${input.description}`, amountCents: order.totalCents } }).catch(() => undefined);
+  }
   res.status(201).json({ dispute });
+}));
+
+commerceRouter.post("/disputes/:id/close", asyncHandler(async (req, res) => {
+  const id = z.string().uuid().parse(req.params.id);
+  const input = z.object({ resolution: z.string().trim().max(1000).optional() }).parse(req.body);
+  const dispute = await prisma.dispute.findFirst({ where: { id, OR: [{ openedById: req.auth!.id }, { order: { buyerId: req.auth!.id } }] }, include: { order: true } });
+  if (!dispute) throw new ApiError(404, "Dispute not found.", "DISPUTE_NOT_FOUND");
+  const updated = await prisma.dispute.update({ where: { id }, data: { status: DisputeStatus.CLOSED, resolution: input.resolution ?? "Closed by buyer.", resolvedAt: new Date(), awaitingParty: null, autoCloseAt: null } });
+  res.json({ dispute: updated });
+}));
+
+commerceRouter.post("/disputes/:id/refund", asyncHandler(async (req, res) => {
+  const id = z.string().uuid().parse(req.params.id);
+  const input = z.object({ reason: z.string().trim().min(10).max(2000).optional(), amountCents: z.number().int().positive().optional() }).parse(req.body);
+  const dispute = await prisma.dispute.findFirst({ where: { id, OR: [{ openedById: req.auth!.id }, { order: { buyerId: req.auth!.id } }] }, include: { order: true } });
+  if (!dispute?.order.paidAt) throw new ApiError(400, "Only paid disputed orders can request a refund.", "REFUND_NOT_ALLOWED");
+  const refund = await prisma.refund.create({ data: { orderId: dispute.orderId, requestedById: req.auth!.id, reason: input.reason ?? `Refund demanded for dispute ${dispute.subject}`, amountCents: Math.min(input.amountCents ?? dispute.order.totalCents, dispute.order.totalCents) } });
+  const updated = await prisma.dispute.update({ where: { id }, data: { refundDemanded: true, status: DisputeStatus.UNDER_REVIEW, awaitingParty: null, autoCloseAt: null } });
+  res.status(201).json({ refund, dispute: updated });
 }));
 
 commerceRouter.get("/orders/:id/messages", asyncHandler(async (req, res) => {
   const orderId = z.string().uuid().parse(req.params.id);
   const order = await prisma.order.findFirst({ where: { id: orderId, OR: [{ buyerId: req.auth!.id }, { items: { some: { sellerId: req.auth!.id } } }] } });
   if (!order) throw new ApiError(404, "Order not found.", "ORDER_NOT_FOUND");
-  const messages = await prisma.orderMessage.findMany({ where: { orderId }, orderBy: { createdAt: "asc" }, include: { author: { select: { firstName: true, role: true } } } });
+  const messages = await prisma.orderMessage.findMany({ where: { orderId }, orderBy: { createdAt: "asc" }, include: { author: { select: { id: true, firstName: true, role: true } } } });
   res.json({ messages });
 }));
 
-commerceRouter.post("/orders/:id/messages", asyncHandler(async (req, res) => {
+commerceRouter.post("/orders/:id/messages", imageUpload.single("attachment"), asyncHandler(async (req, res) => {
   const orderId = z.string().uuid().parse(req.params.id);
   const { body } = z.object({ body: z.string().trim().min(1).max(4000) }).parse(req.body);
-  const order = await prisma.order.findFirst({ where: { id: orderId, OR: [{ buyerId: req.auth!.id }, { items: { some: { sellerId: req.auth!.id } } }] } });
+  const order = await prisma.order.findFirst({
+    where: { id: orderId, OR: [{ buyerId: req.auth!.id }, { items: { some: { sellerId: req.auth!.id } } }] },
+    include: { items: { select: { sellerId: true } } }
+  });
   if (!order) throw new ApiError(404, "Order not found.", "ORDER_NOT_FOUND");
-  const message = await prisma.orderMessage.create({ data: { orderId, authorId: req.auth!.id, body } });
+  const message = await prisma.orderMessage.create({
+    data: {
+      orderId,
+      authorId: req.auth!.id,
+      body,
+      attachmentUrl: req.file ? publicUploadUrl(req.file.filename) : undefined,
+      attachmentName: req.file?.originalname,
+      attachmentMimeType: req.file?.mimetype
+    },
+    include: { author: { select: { id: true, firstName: true, role: true } } }
+  });
+  await markDisputeTurn(orderId, { id: req.auth!.id, role: req.auth!.role as Role }, order.buyerId, [...new Set(order.items.map((item) => item.sellerId))]);
   res.status(201).json({ message });
 }));
 

@@ -22,6 +22,7 @@ import {
   UserRoundX,
   Users,
   WalletCards,
+  Landmark,
   type LucideIcon
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -37,6 +38,7 @@ type Tab =
   | "orders"
   | "payments"
   | "deposits"
+  | "withdrawals"
   | "refunds"
   | "disputes"
   | "tickets"
@@ -53,6 +55,7 @@ type Overview = Record<
   | "refundRequests"
   | "awaitingPayments"
   | "pendingDeposits"
+  | "pendingWithdrawals"
   | "users"
   | "orders",
   number
@@ -119,7 +122,8 @@ type Refund = {
   requestedBy: { email: string };
 };
 
-type Dispute = { id: string; status: string; subject: string; description: string; createdAt: string; order: { orderNumber: string }; openedBy: { email: string } };
+type Withdrawal = { id: string; amountCents: number; blockchain: string; walletAddress: string; status: string; providerReference?: string | null; adminNotes?: string | null; createdAt: string; processedAt?: string | null; user: { firstName: string; lastName: string; email: string; username: string; balanceCents: number; role?: string } };
+type Dispute = { id: string; status: string; subject: string; description: string; refundDemanded?: boolean; awaitingParty?: string | null; autoCloseAt?: string | null; closedInFavorOf?: string | null; resolution?: string | null; createdAt: string; order: { id?: string; orderNumber: string; buyer?: { email: string }; items?: Array<{ productName?: string; product?: { name?: string } }> }; openedBy: { email: string } };
 type Ticket = { id: string; ticketNumber: string; status: string; category: string; subject: string; updatedAt: string; creator: { email: string }; messages: Array<{ id: string; body: string; isInternal: boolean; author: { firstName: string; role: string } }> };
 type Category = { id: string; name: string; slug: string; description: string; isActive: boolean; sortOrder: number };
 type Coupon = { id: string; code: string; percentOff?: number | null; amountOffCents?: number | null; redemptionCount: number; maxRedemptions?: number | null; isActive: boolean; expiresAt?: string | null };
@@ -136,6 +140,7 @@ const nav: NavItem[] = [
   { id: "orders", label: "All orders", icon: PackageCheck },
   { id: "payments", label: "Order approvals", icon: CircleDollarSign },
   { id: "deposits", label: "Deposit approvals", icon: WalletCards },
+  { id: "withdrawals", label: "Withdrawals", icon: Landmark },
   { id: "refunds", label: "Refunds", icon: RefreshCw },
   { id: "disputes", label: "Disputes", icon: Gavel },
   { id: "tickets", label: "Support tickets", icon: Headphones },
@@ -166,6 +171,7 @@ export function OperationsAdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [deposits, setDeposits] = useState<Deposit[]>([]);
+  const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [refunds, setRefunds] = useState<Refund[]>([]);
   const [disputes, setDisputes] = useState<Dispute[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -184,6 +190,7 @@ export function OperationsAdminPage() {
       orders: "/api/admin/orders",
       payments: "/api/admin/orders",
       deposits: "/api/admin/wallet-deposits",
+      withdrawals: "/api/admin/withdrawals",
       refunds: "/api/admin/refunds",
       disputes: "/api/admin/disputes",
       tickets: "/api/admin/tickets",
@@ -201,6 +208,7 @@ export function OperationsAdminPage() {
       if (tab === "users") setUsers(data.users as AdminUser[]);
       if (tab === "orders" || tab === "payments") setOrders(data.orders as Order[]);
       if (tab === "deposits") setDeposits(data.deposits as Deposit[]);
+      if (tab === "withdrawals") setWithdrawals(data.withdrawals as Withdrawal[]);
       if (tab === "refunds") setRefunds(data.refunds as Refund[]);
       if (tab === "disputes") setDisputes(data.disputes as Dispute[]);
       if (tab === "tickets") setTickets(data.tickets as Ticket[]);
@@ -302,8 +310,12 @@ export function OperationsAdminPage() {
           <section className="ops-table"><div className="ops-row ops-row-head"><span>Deposit</span><span>Buyer</span><span>Status</span><span>Actions</span></div>{deposits.map((deposit) => <div className="ops-row" key={deposit.id}><div><strong>{money(deposit.amountCents)}</strong><small>{deposit.method} · {deposit.providerReference ?? "No reference"}</small><small>{new Date(deposit.createdAt).toLocaleString()}</small></div><div><strong>{deposit.user.firstName} {deposit.user.lastName}</strong><small>{deposit.user.email}</small><small>Balance: {money(deposit.user.balanceCents)}</small></div><div><Status value={deposit.status} /><small>{deposit.adminNotes}</small></div><div className="row-actions"><button className="approve" disabled={busy === deposit.id || deposit.status !== "PENDING"} onClick={() => void act(deposit.id, `/api/admin/wallet-deposits/${deposit.id}/approve`, {})}><BadgeCheck size={14} /> Approve deposit</button><button className="danger" disabled={busy === deposit.id || deposit.status !== "PENDING"} onClick={() => void act(deposit.id, `/api/admin/wallet-deposits/${deposit.id}/reject`, { adminNotes: window.prompt("Reason for rejecting this deposit") || "Deposit proof could not be verified." })}><AlertTriangle size={14} /> Reject</button></div></div>)}</section>
         )}
 
+        {tab === "withdrawals" && (
+          <section className="ops-table"><div className="ops-row ops-row-head"><span>Withdrawal</span><span>User</span><span>Status</span><span>Actions</span></div>{withdrawals.map((withdrawal) => <div className="ops-row" key={withdrawal.id}><div><strong>{money(withdrawal.amountCents)}</strong><small>{withdrawal.blockchain} · {withdrawal.providerReference ?? "No reference"}</small><small>{withdrawal.walletAddress}</small><small>{new Date(withdrawal.createdAt).toLocaleString()}</small></div><div><strong>{withdrawal.user.firstName} {withdrawal.user.lastName}</strong><small>{withdrawal.user.email} · @{withdrawal.user.username}</small><small>Available: {money(withdrawal.user.balanceCents)}</small></div><div><Status value={withdrawal.status} /><small>{withdrawal.adminNotes}</small></div><div className="row-actions"><button className="approve" disabled={busy === withdrawal.id || withdrawal.status !== "PENDING"} onClick={() => void act(withdrawal.id, `/api/admin/withdrawals/${withdrawal.id}/approve`, { adminNotes: window.prompt("Approval note / tx hash") || "Withdrawal sent by admin." })}><BadgeCheck size={14} /> Approve paid</button><button className="danger" disabled={busy === withdrawal.id || withdrawal.status !== "PENDING"} onClick={() => void act(withdrawal.id, `/api/admin/withdrawals/${withdrawal.id}/reject`, { adminNotes: window.prompt("Reason for rejection") || "Withdrawal rejected by admin." })}><AlertTriangle size={14} /> Reject & return</button></div></div>)}</section>
+        )}
+
         {tab === "refunds" && <SimpleRows rows={refunds.map((refund) => ({ id: refund.id, title: `${refund.order.orderNumber} · ${money(refund.amountCents)}`, meta: `${refund.requestedBy.email} · ${refund.reason}`, status: refund.status, actions: <><button disabled={busy === refund.id} onClick={() => void act(refund.id, `/api/admin/refunds/${refund.id}`, { status: "COMPLETED" })}>Complete refund</button><button disabled={busy === refund.id} onClick={() => void act(refund.id, `/api/admin/refunds/${refund.id}`, { status: "REJECTED", adminNotes: window.prompt("Reason") || "Rejected by admin." })}>Reject</button></> }))} />}
-        {tab === "disputes" && <SimpleRows rows={disputes.map((dispute) => ({ id: dispute.id, title: `${dispute.order.orderNumber} · ${dispute.subject}`, meta: `${dispute.openedBy.email} · ${dispute.description}`, status: dispute.status, actions: <><button disabled={busy === dispute.id} onClick={() => void act(dispute.id, `/api/admin/disputes/${dispute.id}`, { status: "CLOSED", resolution: window.prompt("Resolution note") || "Closed by admin." })}>Close</button></> }))} />}
+        {tab === "disputes" && <SimpleRows rows={disputes.map((dispute) => ({ id: dispute.id, title: `${dispute.order.orderNumber} · ${dispute.subject}`, meta: `${dispute.openedBy.email} · ${dispute.description}${dispute.autoCloseAt ? ` · waiting for ${dispute.awaitingParty} until ${new Date(dispute.autoCloseAt).toLocaleString()}` : ""}`, status: dispute.status, actions: <><button className="approve" disabled={busy === dispute.id} onClick={() => void act(dispute.id, `/api/admin/disputes/${dispute.id}`, { status: "RESOLVED_BUYER", resolution: window.prompt("Buyer-favor resolution") || "Admin favored buyer." })}>Favor buyer</button><button disabled={busy === dispute.id} onClick={() => void act(dispute.id, `/api/admin/disputes/${dispute.id}`, { status: "RESOLVED_SELLER", resolution: window.prompt("Seller-favor resolution") || "Admin favored seller." })}>Favor seller</button><button disabled={busy === dispute.id} onClick={() => void post(dispute.id, `/api/admin/disputes/${dispute.id}/message`, { body: window.prompt("Admin message") || "Admin is reviewing this dispute." })}>Message</button><button className="danger" disabled={busy === dispute.id} onClick={() => void act(dispute.id, `/api/admin/disputes/${dispute.id}`, { status: "CLOSED", resolution: window.prompt("Resolution note") || "Closed by admin." })}>Close</button></> }))} />}
         {tab === "tickets" && <SimpleRows rows={tickets.map((ticket) => ({ id: ticket.id, title: `${ticket.ticketNumber} · ${ticket.subject}`, meta: `${ticket.creator.email} · ${ticket.category}`, status: ticket.status, actions: <><button disabled={busy === ticket.id} onClick={() => void post(ticket.id, `/api/admin/tickets/${ticket.id}/reply`, { body: window.prompt("Reply") || "Admin reviewed this ticket.", status: "PENDING", isInternal: false })}>Reply</button></> }))} />}
         {tab === "categories" && <SimpleRows rows={categories.map((category) => ({ id: category.id, title: category.name, meta: `${category.slug} · ${category.description}`, status: category.isActive ? "ACTIVE" : "HIDDEN" }))} />}
         {tab === "coupons" && <SimpleRows rows={coupons.map((coupon) => ({ id: coupon.id, title: coupon.code, meta: coupon.percentOff ? `${coupon.percentOff}% off` : `${money(coupon.amountOffCents ?? 0)} off`, status: coupon.isActive ? "ACTIVE" : "INACTIVE" }))} />}
@@ -320,6 +332,7 @@ function OverviewPanel({ overview, onOpen }: { overview: Overview | null; onOpen
     { label: "Product approvals", value: overview?.pendingProducts ?? 0, tab: "products" as Tab },
     { label: "Order approvals", value: overview?.awaitingPayments ?? 0, tab: "payments" as Tab },
     { label: "Deposit approvals", value: overview?.pendingDeposits ?? 0, tab: "deposits" as Tab },
+    { label: "Withdrawal approvals", value: overview?.pendingWithdrawals ?? 0, tab: "withdrawals" as Tab },
     { label: "Refund requests", value: overview?.refundRequests ?? 0, tab: "refunds" as Tab },
     { label: "Open disputes", value: overview?.openDisputes ?? 0, tab: "disputes" as Tab },
     { label: "Support tickets", value: overview?.openTickets ?? 0, tab: "tickets" as Tab },

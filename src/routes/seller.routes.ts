@@ -73,7 +73,6 @@ const requireSeller = asyncHandler(async (req, _res, next) => {
   next();
 });
 
-
 function getSellerDocumentFiles(req: Request) {
   const files = req.files as Record<string, Express.Multer.File[]> | undefined;
   const front = files?.documentFront?.[0];
@@ -93,29 +92,84 @@ async function deleteUploadedApplicationDocuments(req: Request) {
 }
 
 const emptyToNull = (value: unknown) => value === "" || value === "null" ? null : value;
-const emptyToUndefined = (value: unknown) => value === "" ? undefined : value;
+const emptyToUndefined = (value: unknown) => value === "" || value === undefined ? undefined : value;
+const checkboxToBoolean = (value: unknown) => {
+  if (value === "true" || value === "on") return true;
+  if (value === "false") return false;
+  return value;
+};
+
+const optionalCents = z.preprocess(emptyToUndefined, z.coerce.number().int().min(0).max(100_000_000).optional());
 
 const productSchema = z.object({
   categoryId: z.string().uuid(),
   name: z.string().trim().min(3).max(160),
   shortDescription: z.string().trim().min(10).max(240),
   description: z.string().trim().min(30).max(20000),
-  type: z.nativeEnum(ProductType),
-  priceCents: z.coerce.number().int().min(50).max(10_000_000),
+  type: z.nativeEnum(ProductType).default(ProductType.DOWNLOAD),
+  priceCents: optionalCents,
+  priceUsdCents: optionalCents,
+  priceCnyCents: optionalCents.default(0),
+  priceRubCents: optionalCents.default(0),
   compareAtPriceCents: z.preprocess(emptyToNull, z.coerce.number().int().positive().nullable().optional()),
   currency: z.string().length(3).default("USD"),
   coverImageUrl: z.preprocess(emptyToNull, z.string().url().nullable().optional()),
   deliveryNote: z.preprocess(emptyToNull, z.string().trim().max(1000).nullable().optional()),
   downloadLimit: z.coerce.number().int().min(1).max(100).default(5),
   downloadExpiryHours: z.coerce.number().int().min(1).max(8760).default(168),
-  buyersGetUpdates: z.preprocess((value) => {
-    if (value === "true" || value === "on") return true;
-    if (value === "false") return false;
-    return value;
-  }, z.boolean().default(true)),
+  afterSalesServiceHours: z.coerce.number().int().min(12).max(8760).default(12),
+  buyersGetUpdates: z.preprocess(checkboxToBoolean, z.boolean().default(true)),
+  inventoryLines: z.preprocess(emptyToUndefined, z.string().trim().max(500_000).optional()),
   seoTitle: z.preprocess(emptyToUndefined, z.string().trim().max(70).optional()),
   seoDescription: z.preprocess(emptyToUndefined, z.string().trim().max(170).optional())
 });
+
+function parseInventoryLines(raw?: string | null) {
+  if (!raw) return [];
+  const lines = raw
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .map((line) => line.replace(/^"(.*)"$/, "$1").trim())
+    .filter(Boolean);
+  const unique = [...new Set(lines)];
+  if (unique.length > 5000) {
+    throw new ApiError(400, "Upload at most 5,000 product inventory rows at once.", "INVENTORY_LIMIT");
+  }
+  const tooLong = unique.find((line) => line.length > 4000);
+  if (tooLong) {
+    throw new ApiError(400, "Each product inventory row must be 4,000 characters or less.", "INVENTORY_ROW_TOO_LONG");
+  }
+  return unique;
+}
+
+function productDataFromInput(input: z.infer<typeof productSchema>, coverImageUrl: string | null) {
+  const priceUsdCents = input.priceUsdCents ?? input.priceCents;
+  if (!priceUsdCents || priceUsdCents < 50) {
+    throw new ApiError(400, "Set a USD price of at least $0.50.", "USD_PRICE_REQUIRED");
+  }
+
+  return {
+    categoryId: input.categoryId,
+    name: input.name,
+    shortDescription: input.shortDescription,
+    description: input.description,
+    type: input.type,
+    priceCents: priceUsdCents,
+    priceUsdCents,
+    priceCnyCents: input.priceCnyCents ?? 0,
+    priceRubCents: input.priceRubCents ?? 0,
+    compareAtPriceCents: input.compareAtPriceCents,
+    currency: "USD",
+    coverImageUrl,
+    deliveryNote: input.deliveryNote,
+    downloadLimit: input.downloadLimit,
+    downloadExpiryHours: input.downloadExpiryHours,
+    afterSalesServiceHours: input.afterSalesServiceHours,
+    buyersGetUpdates: input.buyersGetUpdates,
+    seoTitle: input.seoTitle,
+    seoDescription: input.seoDescription
+  };
+}
 
 async function deleteUploadedFile(file?: Express.Multer.File) {
   if (!file) return;
@@ -134,17 +188,37 @@ sellerRouter.patch("/profile", requireSeller, asyncHandler(async (req, res) => {
 }));
 
 sellerRouter.get("/products", requireSeller, asyncHandler(async (req, res) => {
-  const products = await prisma.product.findMany({ where: { sellerId: req.auth!.id }, orderBy: { updatedAt: "desc" }, include: { category: true, files: true } });
+  const products = await prisma.product.findMany({
+    where: { sellerId: req.auth!.id },
+    orderBy: { updatedAt: "desc" },
+    include: {
+      category: { include: { parent: true } },
+      files: { where: { isActive: true } },
+      inventoryItems: { select: { id: true, deliveredAt: true, isActive: true, createdAt: true } }
+    }
+  });
   res.json({ products });
 }));
 
 sellerRouter.post("/products", requireSeller, imageUpload.single("coverImage"), asyncHandler(async (req, res) => {
   try {
     const input = productSchema.parse(req.body);
+    const inventoryLines = parseInventoryLines(input.inventoryLines);
     const base = input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "product";
     const coverImageUrl = req.file ? publicUploadUrl(req.file.filename) : input.coverImageUrl ?? null;
-    const product = await prisma.product.create({ data: { ...input, coverImageUrl, slug: `${base}-${crypto.randomUUID().slice(0, 8)}`, sellerId: req.auth!.id, status: ProductStatus.DRAFT } });
-    res.status(201).json({ product });
+    const productData = productDataFromInput(input, coverImageUrl);
+    const status = inventoryLines.length > 0 ? ProductStatus.PENDING : ProductStatus.DRAFT;
+    const product = await prisma.product.create({
+      data: {
+        ...productData,
+        slug: `${base}-${crypto.randomUUID().slice(0, 8)}`,
+        sellerId: req.auth!.id,
+        status,
+        ...(inventoryLines.length ? { inventoryItems: { createMany: { data: inventoryLines.map((content) => ({ content, source: "MANUAL" })) } } } : {})
+      },
+      include: { category: true, files: true, inventoryItems: { select: { id: true, deliveredAt: true, isActive: true } } }
+    });
+    res.status(201).json({ product, message: status === ProductStatus.PENDING ? "Product submitted for admin approval." : "Product draft created." });
   } catch (error) {
     await deleteUploadedFile(req.file);
     throw error;
@@ -156,17 +230,41 @@ sellerRouter.patch("/products/:id", requireSeller, asyncHandler(async (req, res)
   const input = productSchema.partial().parse(req.body);
   const existing = await prisma.product.findFirst({ where: { id, sellerId: req.auth!.id } });
   if (!existing) throw new ApiError(404, "Product not found.", "PRODUCT_NOT_FOUND");
-  const product = await prisma.product.update({ where: { id }, data: { ...input, status: existing.status === ProductStatus.APPROVED ? ProductStatus.PENDING : existing.status } });
+
+  const data: any = { ...input };
+  delete data.inventoryLines;
+  if (input.priceUsdCents !== undefined || input.priceCents !== undefined) {
+    const priceUsdCents = input.priceUsdCents ?? input.priceCents;
+    if (!priceUsdCents || priceUsdCents < 50) throw new ApiError(400, "Set a USD price of at least $0.50.", "USD_PRICE_REQUIRED");
+    data.priceCents = priceUsdCents;
+    data.priceUsdCents = priceUsdCents;
+  }
+  if (input.currency) data.currency = "USD";
+  data.status = existing.status === ProductStatus.APPROVED ? ProductStatus.PENDING : existing.status;
+
+  const product = await prisma.product.update({ where: { id }, data });
+  const inventoryLines = parseInventoryLines(input.inventoryLines);
+  if (inventoryLines.length) {
+    await prisma.productInventoryItem.createMany({ data: inventoryLines.map((content) => ({ productId: id, content, source: "MANUAL" })) });
+  }
   res.json({ product });
 }));
 
 sellerRouter.post("/products/:id/submit", requireSeller, asyncHandler(async (req, res) => {
   const id = z.string().uuid().parse(req.params.id);
-  const existing = await prisma.product.findFirst({ where: { id, sellerId: req.auth!.id }, include: { files: { where: { isActive: true } } } });
+  const existing = await prisma.product.findFirst({
+    where: { id, sellerId: req.auth!.id },
+    include: { files: { where: { isActive: true } }, inventoryItems: { where: { isActive: true, orderItemId: null } } }
+  });
   if (!existing) throw new ApiError(404, "Product not found.", "PRODUCT_NOT_FOUND");
-  if (existing.type === ProductType.DOWNLOAD && existing.files.length === 0) throw new ApiError(400, "Upload at least one file before review.", "PRODUCT_FILE_REQUIRED");
+  if (existing.type === ProductType.DOWNLOAD && existing.files.length === 0 && existing.inventoryItems.length === 0) {
+    throw new ApiError(400, "Add at least one delivery file or one inventory line before review.", "PRODUCT_DELIVERY_REQUIRED");
+  }
+  if (existing.afterSalesServiceHours < 12) {
+    throw new ApiError(400, "After-sales service time must be at least 12 hours.", "AFTER_SALES_MINIMUM");
+  }
   const product = await prisma.product.update({ where: { id }, data: { status: ProductStatus.PENDING, rejectionReason: null } });
-  res.json({ product });
+  res.json({ product, message: "Product submitted for admin approval." });
 }));
 
 sellerRouter.post("/products/:id/image", requireSeller, imageUpload.single("coverImage"), asyncHandler(async (req, res) => {
@@ -216,8 +314,43 @@ sellerRouter.post("/products/:id/files", requireSeller, productFileUpload.single
   res.status(201).json({ file });
 }));
 
+sellerRouter.post("/products/:id/inventory/manual", requireSeller, asyncHandler(async (req, res) => {
+  const id = z.string().uuid().parse(req.params.id);
+  const { inventoryLines } = z.object({ inventoryLines: z.string().trim().min(1).max(500_000) }).parse(req.body);
+  const product = await prisma.product.findFirst({ where: { id, sellerId: req.auth!.id } });
+  if (!product) throw new ApiError(404, "Product not found.", "PRODUCT_NOT_FOUND");
+  const lines = parseInventoryLines(inventoryLines);
+  if (!lines.length) throw new ApiError(400, "Add at least one inventory row.", "INVENTORY_REQUIRED");
+  await prisma.productInventoryItem.createMany({ data: lines.map((content) => ({ productId: id, content, source: "MANUAL" })) });
+  res.status(201).json({ count: lines.length });
+}));
+
+sellerRouter.post("/products/:id/inventory/file", requireSeller, productFileUpload.single("file"), asyncHandler(async (req, res) => {
+  try {
+    const id = z.string().uuid().parse(req.params.id);
+    const product = await prisma.product.findFirst({ where: { id, sellerId: req.auth!.id } });
+    if (!product) throw new ApiError(404, "Product not found.", "PRODUCT_NOT_FOUND");
+    if (!req.file) throw new ApiError(400, "Choose a text or CSV inventory file.", "INVENTORY_FILE_REQUIRED");
+    const text = await fs.readFile(req.file.path, "utf8");
+    const lines = parseInventoryLines(text);
+    if (!lines.length) throw new ApiError(400, "The inventory file did not contain any rows.", "INVENTORY_FILE_EMPTY");
+    await prisma.productInventoryItem.createMany({ data: lines.map((content) => ({ productId: id, content, source: "FILE" })) });
+    res.status(201).json({ count: lines.length });
+  } finally {
+    await deleteUploadedFile(req.file);
+  }
+}));
+
 sellerRouter.get("/orders", requireSeller, asyncHandler(async (req, res) => {
-  const items = await prisma.orderItem.findMany({ where: { sellerId: req.auth!.id }, orderBy: { order: { createdAt: "desc" } }, include: { order: { include: { payment: true, buyer: { select: { firstName: true, lastName: true } } } }, product: true } });
+  const items = await prisma.orderItem.findMany({
+    where: { sellerId: req.auth!.id },
+    orderBy: { order: { createdAt: "desc" } },
+    include: {
+      order: { include: { payment: true, buyer: { select: { firstName: true, lastName: true } }, disputes: { orderBy: { createdAt: "desc" }, take: 1 } } },
+      product: true,
+      inventoryItems: { select: { id: true, deliveredAt: true } }
+    }
+  });
   res.json({ items });
 }));
 

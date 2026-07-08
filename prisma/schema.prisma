@@ -307,6 +307,9 @@ model Product {
   type               ProductType   @default(DOWNLOAD)
   status             ProductStatus @default(PENDING)
   priceCents         Int
+  priceUsdCents      Int           @default(0)
+  priceCnyCents      Int           @default(0)
+  priceRubCents      Int           @default(0)
   compareAtPriceCents Int?
   currency           String        @default("USD")
   coverImageUrl      String?
@@ -314,6 +317,7 @@ model Product {
   downloadLimit      Int           @default(5)
   downloadExpiryHours Int          @default(168)
   buyersGetUpdates   Boolean       @default(true)
+  afterSalesServiceHours Int        @default(12)
   rejectionReason    String?
   averageRating      Decimal       @default(0) @db.Decimal(3, 2)
   reviewCount        Int           @default(0)
@@ -327,6 +331,7 @@ model Product {
   seller    User          @relation("ProductSeller", fields: [sellerId], references: [id], onDelete: Cascade)
   category  Category      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   files     ProductFile[]
+  inventoryItems ProductInventoryItem[]
   orderItems OrderItem[]
   reviews   Review[]
   reports   ProductReport[]
@@ -351,6 +356,23 @@ model ProductFile {
   downloadGrants DownloadGrant[]
 
   @@index([productId, isActive])
+}
+
+model ProductInventoryItem {
+  id          String   @id @default(uuid())
+  productId   String
+  orderItemId String?
+  content     String
+  source      String   @default("MANUAL")
+  isActive    Boolean  @default(true)
+  deliveredAt DateTime?
+  createdAt   DateTime @default(now())
+
+  product   Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderItem OrderItem? @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
+
+  @@index([productId, isActive, deliveredAt])
+  @@index([orderItemId])
 }
 
 model Coupon {
@@ -418,6 +440,7 @@ model OrderItem {
   product        Product         @relation(fields: [productId], references: [id], onDelete: Restrict)
   seller         User            @relation("OrderItemSeller", fields: [sellerId], references: [id], onDelete: Restrict)
   downloadGrants DownloadGrant[]
+  inventoryItems ProductInventoryItem[]
   review         Review?
 
   @@index([orderId])

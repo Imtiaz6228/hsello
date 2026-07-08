@@ -159,7 +159,7 @@ adminRouter.get("/products", requireStaff, asyncHandler(async (req, res) => {
   const status = z.nativeEnum(ProductStatus).optional().parse(req.query.status);
   const products = await prisma.product.findMany({
     where: status ? { status } : undefined, orderBy: { createdAt: "desc" },
-    include: { category: true, seller: { select: { id: true, email: true, username: true, sellerProfile: true } }, files: true }
+    include: { category: true, seller: { select: { id: true, email: true, username: true, sellerProfile: true } }, files: true, inventoryItems: { select: { id: true, deliveredAt: true, isActive: true } } }
   });
   res.json({ products });
 }));

@@ -44,11 +44,13 @@ export function ProductPage() {
             <span><Clock3 /> {product.delivery}</span>
             <span><RefreshCw /> Updated files included</span>
             <span><ShieldCheck /> Buyer protection</span>
+            <span><RefreshCw /> {product.afterSalesServiceHours ?? 12}h after-sales dispute window</span>
             {product.type === "DOWNLOAD" ? <span><Download /> 5 protected downloads</span> : <span><MessageCircle /> Protected delivery chat</span>}
           </div>
         </div>
         <aside className="buy-panel">
           <span>One-time purchase</span><strong>${(product.priceCents / 100).toFixed(2)}</strong><small>USD · taxes shown at checkout</small>
+          <small>¥{((product.priceCnyCents ?? 0) / 100).toFixed(2)} CNY · ₽{((product.priceRubCents ?? 0) / 100).toFixed(2)} RUB</small>
           <button type="button" onClick={addToCart}>{added ? <Check /> : <ShoppingBag />}{added ? "Added to cart" : "Add to cart"}</button>
           <Link to="/cart">View cart</Link>
           <ul><li><Check /> Secure payment confirmation</li><li><Check /> Invoice included</li><li><Check /> Support if anything goes wrong</li></ul>

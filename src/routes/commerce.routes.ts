@@ -1,6 +1,6 @@
 import path from "node:path";
 import { Router } from "express";
-import { PaymentMethod, TicketCategory } from "@prisma/client";
+import { DisputeStatus, PaymentMethod, ProductType, TicketCategory } from "@prisma/client";
 import { z } from "zod";
 import { sha256 } from "../lib/crypto.js";
 import { sendTicketUpdateEmail } from "../lib/email.js";
@@ -16,6 +16,39 @@ const checkoutSchema = z.object({
   method: z.nativeEnum(PaymentMethod),
   couponCode: z.string().trim().max(40).optional()
 });
+
+const activeDisputeStatuses = new Set<DisputeStatus>([
+  DisputeStatus.OPEN,
+  DisputeStatus.UNDER_REVIEW,
+  DisputeStatus.AWAITING_BUYER,
+  DisputeStatus.AWAITING_SELLER
+]);
+
+type OrderForDisputeWindow = {
+  paidAt: Date | null;
+  createdAt: Date;
+  disputes?: Array<{ status: DisputeStatus }>;
+  items: Array<{ product: { afterSalesServiceHours?: number | null } }>;
+};
+
+function getDisputeWindow(order: OrderForDisputeWindow) {
+  const windowHours = Math.max(
+    12,
+    ...order.items.map((item) => item.product.afterSalesServiceHours ?? 12)
+  );
+  const startsAt = order.paidAt ?? order.createdAt;
+  const deadline = new Date(startsAt.getTime() + windowHours * 60 * 60 * 1000);
+  const hasActiveDispute = Boolean(order.disputes?.some((dispute) => activeDisputeStatuses.has(dispute.status)));
+  return {
+    disputeWindowHours: windowHours,
+    disputeDeadline: deadline.toISOString(),
+    canOpenDispute: Boolean(order.paidAt) && !hasActiveDispute && Date.now() <= deadline.getTime()
+  };
+}
+
+function withDisputeWindow<T extends OrderForDisputeWindow>(order: T) {
+  return { ...order, ...getDisputeWindow(order) };
+}
 
 commerceRouter.get("/payment-methods", (_req, res) => res.json({ methods: availablePaymentMethods() }));
 
@@ -54,11 +87,40 @@ commerceRouter.get("/orders", asyncHandler(async (req, res) => {
     where: { buyerId: req.auth!.id }, orderBy: { createdAt: "desc" },
     include: {
       payment: true,
-      items: { include: { product: { select: { slug: true, type: true, coverImageUrl: true } }, downloadGrants: { include: { productFile: true } } } },
-      refunds: { orderBy: { createdAt: "desc" }, take: 1 }, disputes: { orderBy: { createdAt: "desc" }, take: 1 }
+      items: {
+        include: {
+          product: { select: { slug: true, type: true, coverImageUrl: true, afterSalesServiceHours: true } },
+          downloadGrants: { include: { productFile: true } },
+          inventoryItems: { where: { deliveredAt: { not: null } }, select: { id: true, content: true, source: true, deliveredAt: true } }
+        }
+      },
+      refunds: { orderBy: { createdAt: "desc" }, take: 1 },
+      disputes: { orderBy: { createdAt: "desc" }, take: 3 }
     }
   });
-  res.json({ orders });
+  res.json({ orders: orders.map(withDisputeWindow) });
+}));
+
+commerceRouter.get("/orders/:id", asyncHandler(async (req, res) => {
+  const id = z.string().uuid().parse(req.params.id);
+  const order = await prisma.order.findFirst({
+    where: { id, OR: [{ buyerId: req.auth!.id }, { items: { some: { sellerId: req.auth!.id } } }] },
+    include: {
+      buyer: { select: { firstName: true, lastName: true, email: true } },
+      payment: true,
+      items: {
+        include: {
+          product: { select: { slug: true, type: true, coverImageUrl: true, afterSalesServiceHours: true, deliveryNote: true } },
+          downloadGrants: { include: { productFile: true } },
+          inventoryItems: { where: { deliveredAt: { not: null } }, select: { id: true, content: true, source: true, deliveredAt: true } }
+        }
+      },
+      refunds: { orderBy: { createdAt: "desc" }, take: 3 },
+      disputes: { orderBy: { createdAt: "desc" }, take: 3 }
+    }
+  });
+  if (!order) throw new ApiError(404, "Order not found.", "ORDER_NOT_FOUND");
+  res.json({ order: withDisputeWindow(order) });
 }));
 
 commerceRouter.get("/orders/:id/invoice", asyncHandler(async (req, res) => {
@@ -97,8 +159,22 @@ commerceRouter.post("/orders/:id/refunds", asyncHandler(async (req, res) => {
 commerceRouter.post("/orders/:id/disputes", asyncHandler(async (req, res) => {
   const orderId = z.string().uuid().parse(req.params.id);
   const input = z.object({ subject: z.string().trim().min(5).max(140), description: z.string().trim().min(20).max(4000) }).parse(req.body);
-  const order = await prisma.order.findFirst({ where: { id: orderId, buyerId: req.auth!.id } });
+  const order = await prisma.order.findFirst({
+    where: { id: orderId, buyerId: req.auth!.id },
+    include: {
+      items: { include: { product: { select: { afterSalesServiceHours: true } } } },
+      disputes: { orderBy: { createdAt: "desc" }, take: 10 }
+    }
+  });
   if (!order) throw new ApiError(404, "Order not found.", "ORDER_NOT_FOUND");
+  if (!order.paidAt) throw new ApiError(400, "Only paid orders can be disputed.", "DISPUTE_PAYMENT_REQUIRED");
+  const window = getDisputeWindow(order);
+  if (order.disputes.some((dispute) => activeDisputeStatuses.has(dispute.status))) {
+    throw new ApiError(409, "This order already has an active dispute.", "DISPUTE_ALREADY_OPEN");
+  }
+  if (!window.canOpenDispute) {
+    throw new ApiError(400, `The dispute window closed on ${new Date(window.disputeDeadline).toLocaleString()}.`, "DISPUTE_WINDOW_CLOSED");
+  }
   const dispute = await prisma.dispute.create({ data: { orderId, openedById: req.auth!.id, ...input } });
   await prisma.order.update({ where: { id: orderId }, data: { status: "DISPUTED" } });
   res.status(201).json({ dispute });
@@ -122,7 +198,7 @@ commerceRouter.post("/orders/:id/messages", asyncHandler(async (req, res) => {
 }));
 
 commerceRouter.get("/tickets", asyncHandler(async (req, res) => {
-  const tickets = await prisma.ticket.findMany({ where: { creatorId: req.auth!.id }, orderBy: { updatedAt: "desc" }, include: { messages: { orderBy: { createdAt: "asc" } } } });
+  const tickets = await prisma.ticket.findMany({ where: { creatorId: req.auth!.id }, orderBy: { updatedAt: "desc" }, include: { messages: { orderBy: { createdAt: "asc" }, include: { author: { select: { firstName: true, role: true } } } } } });
   res.json({ tickets });
 }));
 

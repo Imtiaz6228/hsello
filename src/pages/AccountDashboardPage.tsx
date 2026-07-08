@@ -11,7 +11,8 @@ import { useAuth } from "../auth/AuthContext";
 import { Seo } from "../components/Seo";
 
 type Grant = { id: string; downloadCount: number; maxDownloads: number; expiresAt: string; productFile: { displayName: string; version: number } };
-type Order = { id: string; orderNumber: string; invoiceNumber: string; status: string; totalCents: number; currency: string; createdAt: string; payment?: { method: string; status: string }; items: Array<{ id: string; productName: string; product: { slug: string; type: string; coverImageUrl?: string }; downloadGrants: Grant[] }>; refunds: Array<{ status: string }>; disputes: Array<{ status: string }> };
+type InventoryItem = { id: string; content: string; source: string; deliveredAt?: string | null };
+type Order = { id: string; orderNumber: string; invoiceNumber: string; status: string; totalCents: number; currency: string; createdAt: string; canOpenDispute?: boolean; disputeDeadline?: string; disputeWindowHours?: number; payment?: { method: string; status: string }; items: Array<{ id: string; productName: string; product: { slug: string; type: string; coverImageUrl?: string; afterSalesServiceHours?: number }; downloadGrants: Grant[]; inventoryItems?: InventoryItem[] }>; refunds: Array<{ status: string }>; disputes: Array<{ status: string }> };
 type Ticket = { id: string; ticketNumber: string; category: string; status: string; subject: string; updatedAt: string; messages: Array<{ id: string; body: string; author: { firstName: string; role: string } }> };
 type Review = { id: string; rating: number; body: string; createdAt: string; product: { name: string; slug: string }; sellerResponse?: string };
 type Tab = "overview" | "orders" | "downloads" | "tickets" | "reviews" | "seller" | "wallet" | "profile";
@@ -49,7 +50,7 @@ export function AccountDashboardPage() {
     void Promise.all([
       apiRequest<{ orders: Order[] }>("/api/commerce/orders").then((d) => setOrders(d.orders)).catch(() => undefined),
       apiRequest<{ tickets: Ticket[] }>("/api/commerce/tickets").then((d) => setTickets(d.tickets)).catch(() => undefined),
-      apiRequest<{ reviews: Review[] }>("/api/commerce/reviews").catch(() => undefined),
+      apiRequest<{ reviews: Review[] }>("/api/commerce/reviews").then((d) => setReviews(d.reviews)).catch(() => undefined),
     ]).finally(() => setLoading(false));
   }, []);
 
@@ -77,6 +78,20 @@ export function AccountDashboardPage() {
       setOrders(data.orders);
     } catch (error) {
       setMessage(error instanceof ApiError ? error.message : "Could not submit the request.");
+    }
+  }
+  async function openDispute(order: Order) {
+    const subject = window.prompt("Dispute subject (5+ characters):");
+    if (!subject || subject.trim().length < 5) return;
+    const description = window.prompt("Describe the issue (20+ characters):");
+    if (!description || description.trim().length < 20) return;
+    try {
+      await apiRequest(`/api/commerce/orders/${order.id}/disputes`, { method: "POST", body: { subject, description } });
+      setMessage("Dispute opened. Admin support can now review the order, chat, and delivery record.");
+      const data = await apiRequest<{ orders: Order[] }>("/api/commerce/orders");
+      setOrders(data.orders);
+    } catch (error) {
+      setMessage(error instanceof ApiError ? error.message : "Could not open a dispute.");
     }
   }
   async function createTicket() {
@@ -252,6 +267,11 @@ export function AccountDashboardPage() {
                               <a key={grant.id} href={`/api/commerce/downloads/${grant.id}`} className="action-link"><Download size={14} /> {grant.productFile.displayName} <small>({grant.maxDownloads - grant.downloadCount} left)</small></a>
                             ))}
                           </div>
+                          {item.inventoryItems?.length ? (
+                            <div className="digital-delivery-rows">
+                              {item.inventoryItems.map((row) => <code key={row.id}>{row.content}</code>)}
+                            </div>
+                          ) : null}
                         </div>
                       ))}
                     </div>
@@ -260,6 +280,9 @@ export function AccountDashboardPage() {
                       <Link to={`/orders/${order.id}`} className="action-link"><MessageCircle size={14} /> Order chat</Link>
                       <button disabled={Boolean(order.refunds.length)} onClick={() => void requestRefund(order)} className="action-link">
                         <RefreshCw size={14} /> {order.refunds.length ? `Refund ${order.refunds[0].status.toLowerCase()}` : "Request refund"}
+                      </button>
+                      <button disabled={!order.canOpenDispute} onClick={() => void openDispute(order)} className="action-link">
+                        <ShieldCheck size={14} /> {order.disputes.length ? `Dispute ${order.disputes[0].status.toLowerCase().replaceAll("_", " ")}` : order.canOpenDispute ? "Open dispute" : `Dispute until ${order.disputeDeadline ? new Date(order.disputeDeadline).toLocaleString() : "after payment"}`}
                       </button>
                     </footer>
                   </article>

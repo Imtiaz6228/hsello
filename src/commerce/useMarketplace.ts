@@ -4,7 +4,7 @@ import { catalogProducts, type CatalogProduct } from "../data/catalog";
 
 type ApiProduct = {
   id: string; slug: string; name: string; shortDescription: string; description: string;
-  type: "DOWNLOAD" | "SERVICE"; priceCents: number; averageRating: number | string;
+  type: "DOWNLOAD" | "SERVICE"; priceCents: number; priceCnyCents?: number; priceRubCents?: number; afterSalesServiceHours?: number; averageRating: number | string;
   reviewCount: number; salesCount: number; deliveryNote?: string | null; coverImageUrl?: string | null;
   category: { name: string; slug: string };
   seller: { sellerProfile?: { storeName: string; slug: string } | null };
@@ -16,6 +16,7 @@ function mapProduct(product: ApiProduct, index = 0): CatalogProduct {
     title: product.name, description: product.shortDescription, longDescription: product.description,
     seller: product.seller.sellerProfile?.storeName ?? "Verified seller",
     sellerSlug: product.seller.sellerProfile?.slug ?? "", priceCents: product.priceCents,
+    priceCnyCents: product.priceCnyCents, priceRubCents: product.priceRubCents, afterSalesServiceHours: product.afterSalesServiceHours,
     rating: Number(product.averageRating) || 0, reviews: product.reviewCount,
     sales: product.salesCount.toLocaleString(), delivery: product.deliveryNote || (product.type === "DOWNLOAD" ? "Instant download" : "Seller delivery"),
     badge: product.salesCount > 50 ? "Popular" : "New", type: product.type,

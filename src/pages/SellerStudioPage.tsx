@@ -1,34 +1,50 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, FileUp, ImagePlus, LogOut, PackagePlus, Send, Store, Upload } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { ApiError, apiRequest } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { Seo } from "../components/Seo";
 
-type Category = { id: string; name: string };
+type Category = { id: string; name: string; parentId?: string | null };
 type Product = {
   id: string;
   name: string;
   status: string;
   type: string;
   priceCents: number;
+  priceUsdCents?: number;
+  priceCnyCents?: number;
+  priceRubCents?: number;
+  afterSalesServiceHours?: number;
   coverImageUrl?: string | null;
   rejectionReason?: string;
+  category?: Category & { parent?: Category | null };
   files: Array<{ id: string; displayName: string; version: number; sizeBytes: number }>;
+  inventoryItems: Array<{ id: string; deliveredAt?: string | null; isActive: boolean }>;
 };
 
 const initialForm = {
   categoryId: "",
+  subCategoryId: "",
   name: "",
   shortDescription: "",
   description: "",
   type: "DOWNLOAD",
-  price: "",
+  priceUsd: "",
+  priceCny: "",
+  priceRub: "",
   deliveryNote: "",
+  afterSalesServiceHours: 12,
   downloadLimit: 5,
   downloadExpiryHours: 168,
-  buyersGetUpdates: true
+  buyersGetUpdates: true,
+  inventoryLines: ""
 };
+
+function cents(value: string) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.round(parsed * 100) : 0;
+}
 
 export function SellerStudioPage() {
   const { logout } = useAuth();
@@ -41,6 +57,10 @@ export function SellerStudioPage() {
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [form, setForm] = useState(initialForm);
 
+  const parentCategories = useMemo(() => categories.filter((category) => !category.parentId), [categories]);
+  const subCategories = useMemo(() => categories.filter((category) => category.parentId === form.categoryId), [categories, form.categoryId]);
+  const selectedCategoryId = form.subCategoryId || form.categoryId;
+
   const load = () => Promise.all([
     apiRequest<{ products: Product[] }>("/api/seller/products"),
     apiRequest<{ categories: Category[] }>("/api/marketplace/categories")
@@ -48,7 +68,9 @@ export function SellerStudioPage() {
     setProducts(productsData.products);
     setCategories(categoriesData.categories);
     if (!form.categoryId && categoriesData.categories[0]) {
-      setForm((current) => ({ ...current, categoryId: categoriesData.categories[0].id }));
+      const firstParent = categoriesData.categories.find((category) => !category.parentId) ?? categoriesData.categories[0];
+      const firstChild = categoriesData.categories.find((category) => category.parentId === firstParent.id);
+      setForm((current) => ({ ...current, categoryId: firstParent.id, subCategoryId: firstChild?.id ?? "" }));
     }
   });
 
@@ -56,33 +78,47 @@ export function SellerStudioPage() {
     void load().catch(() => undefined);
   }, []);
 
+  useEffect(() => {
+    const firstChild = categories.find((category) => category.parentId === form.categoryId);
+    if (form.categoryId && subCategories.length && !subCategories.some((category) => category.id === form.subCategoryId)) {
+      setForm((current) => ({ ...current, subCategoryId: firstChild?.id ?? "" }));
+    }
+    if (!subCategories.length && form.subCategoryId) {
+      setForm((current) => ({ ...current, subCategoryId: "" }));
+    }
+  }, [categories, form.categoryId, form.subCategoryId, subCategories]);
+
   async function create(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
     setMessage("");
 
     const data = new FormData();
-    data.append("categoryId", form.categoryId);
+    data.append("categoryId", selectedCategoryId);
     data.append("name", form.name);
     data.append("shortDescription", form.shortDescription);
     data.append("description", form.description);
     data.append("type", form.type);
-    data.append("priceCents", String(Math.round(Number(form.price) * 100)));
+    data.append("priceUsdCents", String(cents(form.priceUsd)));
+    data.append("priceCnyCents", String(cents(form.priceCny)));
+    data.append("priceRubCents", String(cents(form.priceRub)));
     data.append("currency", "USD");
     data.append("deliveryNote", form.deliveryNote);
+    data.append("afterSalesServiceHours", String(form.afterSalesServiceHours));
     data.append("downloadLimit", String(form.downloadLimit));
     data.append("downloadExpiryHours", String(form.downloadExpiryHours));
     data.append("buyersGetUpdates", String(form.buyersGetUpdates));
+    data.append("inventoryLines", form.inventoryLines);
     data.append("seoTitle", form.name);
     data.append("seoDescription", form.shortDescription);
     if (coverImage) data.append("coverImage", coverImage);
 
     try {
-      await apiRequest("/api/seller/products", { method: "POST", body: data });
+      const result = await apiRequest<{ message?: string }>("/api/seller/products", { method: "POST", body: data });
       setOpen(false);
       setCoverImage(null);
-      setForm((current) => ({ ...initialForm, categoryId: current.categoryId }));
-      setMessage("Draft created. Add a delivery file if needed, then submit it for review.");
+      setForm((current) => ({ ...initialForm, categoryId: current.categoryId, subCategoryId: current.subCategoryId }));
+      setMessage(result.message ?? "Product saved. Submit it for review when delivery is ready.");
       await load();
     } catch (error) {
       setMessage(error instanceof ApiError ? error.message : "Product could not be created.");
@@ -112,17 +148,43 @@ export function SellerStudioPage() {
     setMessage("Uploading delivery file...");
     try {
       await apiRequest(`/api/seller/products/${productId}/files`, { method: "POST", body: data });
-      setMessage("New file version uploaded.");
+      setMessage("New delivery file uploaded. Submit the product for approval when ready.");
       await load();
     } catch (error) {
       setMessage(error instanceof ApiError ? error.message : "File upload failed.");
     }
   }
 
+  async function uploadInventoryFile(productId: string, file?: File) {
+    if (!file) return;
+    const data = new FormData();
+    data.append("file", file);
+    setMessage("Uploading inventory rows...");
+    try {
+      const result = await apiRequest<{ count: number }>(`/api/seller/products/${productId}/inventory/file`, { method: "POST", body: data });
+      setMessage(`${result.count} inventory row${result.count === 1 ? "" : "s"} added. Submit the product for approval when ready.`);
+      await load();
+    } catch (error) {
+      setMessage(error instanceof ApiError ? error.message : "Inventory upload failed.");
+    }
+  }
+
+  async function addInventoryRows(productId: string) {
+    const inventoryLines = window.prompt("Paste one digital product / code / account per line:");
+    if (!inventoryLines?.trim()) return;
+    try {
+      const result = await apiRequest<{ count: number }>(`/api/seller/products/${productId}/inventory/manual`, { method: "POST", body: { inventoryLines } });
+      setMessage(`${result.count} inventory row${result.count === 1 ? "" : "s"} added.`);
+      await load();
+    } catch (error) {
+      setMessage(error instanceof ApiError ? error.message : "Inventory rows could not be added.");
+    }
+  }
+
   async function submit(productId: string) {
     try {
       await apiRequest(`/api/seller/products/${productId}/submit`, { method: "POST" });
-      setMessage("Product submitted for staff review.");
+      setMessage("Product submitted for admin approval. It will show as pending until staff approves it.");
       await load();
     } catch (error) {
       setMessage(error instanceof ApiError ? error.message : "Product could not be submitted.");
@@ -147,58 +209,74 @@ export function SellerStudioPage() {
       </nav>
       <header>
         <span className="section-index">VERIFIED SELLER WORKSPACE</span>
-        <h1>Ship good work.<br />Keep it current.</h1>
-        <p>Product changes return to review. New file versions remain available to eligible previous buyers.</p>
+        <h1>Submit digital products.<br />Admin approves before publishing.</h1>
+        <p>Add title, category, subcategory, multi-currency prices, after-sales time, and delivery inventory. Pending products stay hidden from buyers.</p>
       </header>
       {message ? <div className="dashboard-message">{message}</div> : null}
       <section className="seller-product-list">
-        <div className="seller-list-heading"><span>Product</span><span>Status</span><span>Files</span><span>Actions</span></div>
-        {products.length ? products.map((product) => (
-          <article key={product.id}>
-            <div>
-              <span className="seller-product-mark">
-                {product.coverImageUrl ? <img src={product.coverImageUrl} alt="" /> : product.name[0]}
-              </span>
+        <div className="seller-list-heading"><span>Product</span><span>Status</span><span>Delivery</span><span>Actions</span></div>
+        {products.length ? products.map((product) => {
+          const availableRows = product.inventoryItems.filter((item) => item.isActive && !item.deliveredAt).length;
+          const deliveredRows = product.inventoryItems.filter((item) => item.deliveredAt).length;
+          return (
+            <article key={product.id}>
               <div>
-                <strong>{product.name}</strong>
-                <small>{product.type} - ${(product.priceCents / 100).toFixed(2)}</small>
-                {product.rejectionReason ? <p>{product.rejectionReason}</p> : null}
+                <span className="seller-product-mark">
+                  {product.coverImageUrl ? <img src={product.coverImageUrl} alt="" /> : product.name[0]}
+                </span>
+                <div>
+                  <strong>{product.name}</strong>
+                  <small>{product.category?.parent?.name ? `${product.category.parent.name} / ` : ""}{product.category?.name ?? product.type}</small>
+                  <small>${((product.priceUsdCents ?? product.priceCents) / 100).toFixed(2)} · ¥{((product.priceCnyCents ?? 0) / 100).toFixed(2)} · ₽{((product.priceRubCents ?? 0) / 100).toFixed(2)}</small>
+                  <small>After-sales: {product.afterSalesServiceHours ?? 12}h minimum dispute window</small>
+                  {product.rejectionReason ? <p>{product.rejectionReason}</p> : null}
+                </div>
               </div>
-            </div>
-            <span className={`status-pill ${product.status.toLowerCase()}`}>{product.status}</span>
-            <div className="file-versions">
-              {product.files.length ? product.files.map((file) => <span key={file.id}>{file.displayName} <small>v{file.version}</small></span>) : <small>No files</small>}
-            </div>
-            <div className="seller-product-actions">
-              <label className="upload-action"><ImagePlus /> Product image<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void uploadImage(product.id, event.target.files?.[0])} /></label>
-              <label className="upload-action"><Upload /> Delivery file<input type="file" onChange={(event) => void uploadDeliveryFile(product.id, event.target.files?.[0])} /></label>
-              {["DRAFT", "REJECTED"].includes(product.status) ? <button onClick={() => void submit(product.id)}><Send /> Submit review</button> : null}
-            </div>
-          </article>
-        )) : <div className="dashboard-empty"><FileUp /><h2>No products yet</h2><p>Create a draft, upload its product image and delivery file, then submit it for review.</p></div>}
+              <span className={`status-pill ${product.status.toLowerCase()}`}>{product.status === "PENDING" ? "PENDING APPROVAL" : product.status}</span>
+              <div className="file-versions">
+                {product.files.length ? product.files.map((file) => <span key={file.id}>{file.displayName} <small>v{file.version}</small></span>) : null}
+                {availableRows || deliveredRows ? <span>{availableRows} unsold rows <small>{deliveredRows} sold</small></span> : null}
+                {!product.files.length && !availableRows && !deliveredRows ? <small>No delivery added</small> : null}
+              </div>
+              <div className="seller-product-actions">
+                <label className="upload-action"><ImagePlus /> Product image<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void uploadImage(product.id, event.target.files?.[0])} /></label>
+                <label className="upload-action"><Upload /> Delivery file<input type="file" onChange={(event) => void uploadDeliveryFile(product.id, event.target.files?.[0])} /></label>
+                <label className="upload-action"><FileUp /> Inventory file<input type="file" accept=".txt,.csv,text/plain,text/csv" onChange={(event) => void uploadInventoryFile(product.id, event.target.files?.[0])} /></label>
+                <button type="button" onClick={() => void addInventoryRows(product.id)}><PackagePlus /> Add rows</button>
+                {!["PENDING", "APPROVED", "REMOVED"].includes(product.status) ? <button onClick={() => void submit(product.id)}><Send /> Submit review</button> : null}
+              </div>
+            </article>
+          );
+        }) : <div className="dashboard-empty"><FileUp /><h2>No products yet</h2><p>Create a product, add delivery rows or files, then submit it for admin approval.</p></div>}
       </section>
 
       {open ? (
         <div className="modal-backdrop">
           <form className="seller-product-form" onSubmit={create}>
             <button type="button" className="modal-close" onClick={() => setOpen(false)}>x</button>
-            <span className="section-index">NEW PRODUCT DRAFT</span>
-            <h2>Describe the work clearly.</h2>
+            <span className="section-index">NEW PRODUCT SUBMISSION</span>
+            <h2>Describe the product clearly.</h2>
             <label className="seller-image-picker">
               <span>Product image</span>
               <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setCoverImage(event.target.files?.[0] ?? null)} />
               <small>{coverImage ? coverImage.name : "JPEG, PNG, or WebP"}</small>
             </label>
             <div className="form-grid two">
-              <label><span>Name</span><input required minLength={3} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label>
-              <label><span>Category</span><select required value={form.categoryId} onChange={(event) => setForm({ ...form, categoryId: event.target.value })}>{categories.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select></label>
-              <label><span>Type</span><select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })}><option value="DOWNLOAD">Digital download</option><option value="SERVICE">Service</option></select></label>
-              <label><span>Price (USD)</span><input required type="number" min="0.50" step="0.01" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} /></label>
+              <label><span>Product title</span><input required minLength={3} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label>
+              <label><span>Category</span><select required value={form.categoryId} onChange={(event) => setForm({ ...form, categoryId: event.target.value, subCategoryId: "" })}>{(parentCategories.length ? parentCategories : categories).map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select></label>
+              <label><span>Subcategory</span><select value={form.subCategoryId} onChange={(event) => setForm({ ...form, subCategoryId: event.target.value })}><option value="">Use selected category</option>{subCategories.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select></label>
+              <label><span>Type</span><select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })}><option value="DOWNLOAD">Digital product</option><option value="SERVICE">Service</option></select></label>
+              <label><span>Price (USD)</span><input required type="number" min="0.50" step="0.01" value={form.priceUsd} onChange={(event) => setForm({ ...form, priceUsd: event.target.value })} /></label>
+              <label><span>Price (Yuan / CNY)</span><input type="number" min="0" step="0.01" value={form.priceCny} onChange={(event) => setForm({ ...form, priceCny: event.target.value })} /></label>
+              <label><span>Price (Russian Ruble)</span><input type="number" min="0" step="0.01" value={form.priceRub} onChange={(event) => setForm({ ...form, priceRub: event.target.value })} /></label>
+              <label><span>After-sales service time (hours)</span><input required type="number" min={12} max={8760} value={form.afterSalesServiceHours} onChange={(event) => setForm({ ...form, afterSalesServiceHours: Number(event.target.value) })} /></label>
             </div>
             <label><span>Short description</span><input required minLength={10} maxLength={240} value={form.shortDescription} onChange={(event) => setForm({ ...form, shortDescription: event.target.value })} /></label>
             <label><span>Full description</span><textarea required minLength={30} rows={6} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label>
             <label><span>Delivery note</span><textarea rows={3} value={form.deliveryNote} onChange={(event) => setForm({ ...form, deliveryNote: event.target.value })} /></label>
-            <button className="primary-button" disabled={busy}><PackagePlus /> {busy ? "Creating..." : "Create draft"}</button>
+            <label><span>Manual digital product rows</span><textarea rows={6} placeholder="One product / code / account / license per line" value={form.inventoryLines} onChange={(event) => setForm({ ...form, inventoryLines: event.target.value })} /></label>
+            <small>Manual rows submit the product directly for pending admin approval. You can also create a draft, then upload an inventory text/CSV file from the product list.</small>
+            <button className="primary-button" disabled={busy}><PackagePlus /> {busy ? "Submitting..." : "Submit product"}</button>
           </form>
         </div>
       ) : null}

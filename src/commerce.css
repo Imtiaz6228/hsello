@@ -175,3 +175,5 @@
   .ops-sidebar > div:last-child,
   .admin-sidebar-footer { justify-content: center; }
 }
+
+.digital-delivery-rows{grid-column:1/-1;display:grid;gap:6px;margin-top:8px}.digital-delivery-rows code{display:block;padding:9px;border:1px solid var(--line);border-radius:8px;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--panel-2);color:var(--text);font-size:11px}.order-delivery-summary{display:grid;gap:12px;padding:22px;border:1px solid var(--line);border-radius:17px;background:var(--panel)}.order-delivery-summary header,.order-delivery-item{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;border-bottom:1px solid var(--line);padding-bottom:12px}.order-delivery-summary header>div,.order-delivery-item>div:first-child{display:grid;gap:5px}.order-delivery-item{display:grid;grid-template-columns:1fr auto;align-items:start}.order-delivery-item .digital-delivery-rows{grid-column:1/-1}.seller-product-list .seller-product-actions{display:grid;gap:6px}.seller-product-form>small{color:var(--muted);line-height:1.5}.status-pill.pending{color:var(--amber);background:rgba(255,196,85,.08)}

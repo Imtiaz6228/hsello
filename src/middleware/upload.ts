@@ -47,7 +47,7 @@ export function publicUploadUrl(fileName: string) {
 
 const allowedProductTypes = new Set([
   "application/zip", "application/x-zip-compressed", "application/pdf",
-  "application/octet-stream", "text/plain", "audio/mpeg", "video/mp4",
+  "application/octet-stream", "text/plain", "text/csv", "application/csv", "audio/mpeg", "video/mp4",
   "image/jpeg", "image/png", "image/webp"
 ]);
 

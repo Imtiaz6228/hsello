@@ -23,17 +23,25 @@ marketplaceRouter.get("/products", asyncHandler(async (req, res) => {
     take: z.coerce.number().int().min(1).max(48).default(24)
   }).parse(req.query);
 
+  const filters: any[] = [];
+  if (query.category) {
+    filters.push({ OR: [{ category: { slug: query.category } }, { category: { parent: { slug: query.category } } }] });
+  }
+  if (query.q) {
+    filters.push({ OR: [
+      { name: { contains: query.q, mode: "insensitive" } },
+      { shortDescription: { contains: query.q, mode: "insensitive" } },
+      { category: { name: { contains: query.q, mode: "insensitive" } } }
+    ] });
+  }
+
   const products = await prisma.product.findMany({
     where: {
       status: ProductStatus.APPROVED,
-      seller: { isSuspended: false, sellerProfile: { isSuspended: false, isVerified: true } },
-      ...(query.category ? { category: { slug: query.category } } : {}),
-      ...(query.seller ? { seller: { sellerProfile: { slug: query.seller, isSuspended: false } } } : {}),
-      ...(query.q ? { OR: [
-        { name: { contains: query.q, mode: "insensitive" } },
-        { shortDescription: { contains: query.q, mode: "insensitive" } },
-        { category: { name: { contains: query.q, mode: "insensitive" } } }
-      ] } : {})
+      seller: query.seller
+        ? { isSuspended: false, sellerProfile: { slug: query.seller, isSuspended: false, isVerified: true } }
+        : { isSuspended: false, sellerProfile: { isSuspended: false, isVerified: true } },
+      ...(filters.length ? { AND: filters } : {})
     },
     take: query.take,
     orderBy: [{ salesCount: "desc" }, { publishedAt: "desc" }],

@@ -141,10 +141,20 @@ export async function createCheckout(
   const productIds = [...normalized.keys()];
   const products = await prisma.product.findMany({
     where: { id: { in: productIds }, status: ProductStatus.APPROVED, seller: { isSuspended: false, sellerProfile: { isSuspended: false } } },
-    include: { files: { where: { isActive: true } } }
+    include: {
+      files: { where: { isActive: true } },
+      inventoryItems: { where: { isActive: true, orderItemId: null }, select: { id: true } }
+    }
   });
   if (!products.length || products.length !== productIds.length) {
     throw new ApiError(400, "One or more products are unavailable.", "PRODUCT_UNAVAILABLE");
+  }
+  for (const product of products) {
+    const requestedQuantity = normalized.get(product.id) ?? 1;
+    const isLineInventoryProduct = product.type === ProductType.DOWNLOAD && product.files.length === 0;
+    if (isLineInventoryProduct && product.inventoryItems.length < requestedQuantity) {
+      throw new ApiError(400, `${product.name} does not have enough available inventory.`, "PRODUCT_OUT_OF_STOCK");
+    }
   }
 
   const subtotalCents = products.reduce((total, product) => total + product.priceCents * (normalized.get(product.id) ?? 1), 0);
@@ -226,6 +236,22 @@ export async function completePayment(orderId: string, approvedById?: string) {
             }
           });
           rawLinks.push({ name: `${item.productName} — ${file.displayName}`, token });
+        }
+
+        const inventoryRows = await tx.productInventoryItem.findMany({
+          where: { productId: item.productId, isActive: true, orderItemId: null },
+          orderBy: { createdAt: "asc" },
+          take: item.quantity,
+          select: { id: true }
+        });
+        if (item.product.files.length === 0 && inventoryRows.length < item.quantity) {
+          throw new ApiError(409, `${item.productName} no longer has enough available inventory.`, "PRODUCT_OUT_OF_STOCK");
+        }
+        if (inventoryRows.length) {
+          await tx.productInventoryItem.updateMany({
+            where: { id: { in: inventoryRows.map((row) => row.id) } },
+            data: { orderItemId: item.id, deliveredAt: new Date() }
+          });
         }
       }
     }

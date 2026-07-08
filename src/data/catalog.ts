@@ -9,6 +9,9 @@ export type CatalogProduct = {
   seller: string;
   sellerSlug: string;
   priceCents: number;
+  priceCnyCents?: number;
+  priceRubCents?: number;
+  afterSalesServiceHours?: number;
   rating: number;
   reviews: number;
   sales: string;

@@ -1,3 +1,5 @@
+import fs from "node:fs/promises";
+import path from "node:path";
 import { Router } from "express";
 import {
   DisputeStatus, PaymentStatus, ProductStatus, RefundStatus, ReportStatus,
@@ -5,7 +7,7 @@ import {
 } from "@prisma/client";
 import { z } from "zod";
 import { requireAuth, requireRole, requireVerifiedUser } from "../middleware/auth.js";
-import { asyncHandler } from "../middleware/error-handler.js";
+import { ApiError, asyncHandler } from "../middleware/error-handler.js";
 import { sellerReviewSchema } from "../schemas/seller.schemas.js";
 import {
   listSellerApplications,
@@ -15,6 +17,7 @@ import { listUsersForAdministration, updateUserRole } from "../services/user.ser
 import { prisma } from "../lib/prisma.js";
 import { completePayment, issueRefund } from "../services/payment.service.js";
 import { sendTicketUpdateEmail } from "../lib/email.js";
+import { privateUploadRoot } from "../middleware/upload.js";
 
 export const adminRouter = Router();
 
@@ -47,6 +50,45 @@ adminRouter.patch("/seller-applications/:id", requireStaff, asyncHandler(async (
     message: "Seller application reviewed successfully.",
     application
   });
+}));
+
+adminRouter.get("/seller-applications/:id/documents/:side", requireStaff, asyncHandler(async (req, res) => {
+  const applicationId = z.string().uuid().parse(req.params.id);
+  const side = z.enum(["front", "back"]).parse(req.params.side);
+  const application = await (prisma.sellerApplication as any).findUnique({
+    where: { id: applicationId },
+    select: {
+      documentFrontPath: true,
+      documentFrontOriginalName: true,
+      documentBackPath: true,
+      documentBackOriginalName: true
+    }
+  });
+
+  if (!application) {
+    throw new ApiError(404, "Seller application not found.", "APPLICATION_NOT_FOUND");
+  }
+
+  const storagePath = side === "front" ? application.documentFrontPath : application.documentBackPath;
+  const originalName = side === "front" ? application.documentFrontOriginalName : application.documentBackOriginalName;
+
+  if (!storagePath) {
+    throw new ApiError(404, "Document upload not found for this application.", "DOCUMENT_NOT_FOUND");
+  }
+
+  const resolvedPath = path.resolve(storagePath);
+  const resolvedPrivateRoot = path.resolve(privateUploadRoot);
+  if (!resolvedPath.startsWith(`${resolvedPrivateRoot}${path.sep}`)) {
+    throw new ApiError(403, "Document path is outside private uploads.", "DOCUMENT_PATH_INVALID");
+  }
+
+  try {
+    await fs.access(resolvedPath);
+  } catch {
+    throw new ApiError(404, "Document file is missing from private storage.", "DOCUMENT_FILE_MISSING");
+  }
+
+  res.download(resolvedPath, originalName ?? `seller-document-${side}`);
 }));
 
 adminRouter.get(

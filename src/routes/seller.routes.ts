@@ -1,11 +1,11 @@
 import fs from "node:fs/promises";
-import { Router } from "express";
-import { ProductStatus, ProductType, Role } from "@prisma/client";
+import { Router, type Request } from "express";
+import { ProductStatus, ProductType, Role, SellerApplicationStatus } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth, requireVerifiedUser } from "../middleware/auth.js";
 import { ApiError, asyncHandler } from "../middleware/error-handler.js";
-import { imageUpload, productFileUpload, publicUploadUrl } from "../middleware/upload.js";
+import { imageUpload, productFileUpload, publicUploadUrl, sellerDocumentUpload } from "../middleware/upload.js";
 import { sendTicketUpdateEmail } from "../lib/email.js";
 import { randomToken, sha256 } from "../lib/crypto.js";
 import { sellerApplicationSchema } from "../schemas/seller.schemas.js";
@@ -24,24 +24,73 @@ sellerRouter.get("/application", asyncHandler(async (req, res) => {
   res.json({ application });
 }));
 
-sellerRouter.post("/application", asyncHandler(async (req, res) => {
-  const input = sellerApplicationSchema.parse(req.body);
-  const application = await submitSellerApplication(req.auth!.id, input);
+sellerRouter.post(
+  "/application",
+  sellerDocumentUpload.fields([
+    { name: "documentFront", maxCount: 1 },
+    { name: "documentBack", maxCount: 1 }
+  ]),
+  asyncHandler(async (req, res) => {
+    try {
+      const input = sellerApplicationSchema.parse(req.body);
+      const documents = getSellerDocumentFiles(req);
+      const application = await submitSellerApplication(req.auth!.id, input, documents);
 
-  res.status(201).json({
-    message: "Seller application submitted successfully.",
-    application
-  });
-}));
+      res.status(201).json({
+        message: "Seller application submitted successfully. It is now pending approval / in moderation.",
+        application
+      });
+    } catch (error) {
+      await deleteUploadedApplicationDocuments(req);
+      throw error;
+    }
+  })
+);
 
-const requireSeller = (req: Parameters<typeof requireVerifiedUser>[0], _res: Parameters<typeof requireVerifiedUser>[1], next: Parameters<typeof requireVerifiedUser>[2]) => {
-  const sellerRoles: Role[] = [Role.SELLER, Role.ADMIN, Role.SUPER_ADMIN];
-  if (!req.auth || !sellerRoles.includes(req.auth.role)) {
-    next(new ApiError(403, "Approved seller access is required.", "SELLER_REQUIRED"));
+const requireSeller = asyncHandler(async (req, _res, next) => {
+  if (!req.auth) {
+    throw new ApiError(403, "Approved seller access is required.", "SELLER_REQUIRED");
+  }
+
+  if ([Role.ADMIN, Role.SUPER_ADMIN].includes(req.auth.role)) {
+    next();
     return;
   }
+
+  if (req.auth.role !== Role.SELLER) {
+    throw new ApiError(403, "Approved seller access is required.", "SELLER_REQUIRED");
+  }
+
+  const [application, profile] = await Promise.all([
+    prisma.sellerApplication.findUnique({ where: { userId: req.auth.id }, select: { status: true } }),
+    prisma.sellerProfile.findUnique({ where: { userId: req.auth.id }, select: { isVerified: true, isSuspended: true } })
+  ]);
+
+  if (application?.status !== SellerApplicationStatus.APPROVED || !profile?.isVerified || profile.isSuspended) {
+    throw new ApiError(403, "Your seller account is not approved yet or is currently suspended.", "SELLER_NOT_APPROVED");
+  }
+
   next();
-};
+});
+
+
+function getSellerDocumentFiles(req: Request) {
+  const files = req.files as Record<string, Express.Multer.File[]> | undefined;
+  const front = files?.documentFront?.[0];
+  const back = files?.documentBack?.[0];
+
+  if (!front || !back) {
+    throw new ApiError(400, "Upload both the front and back side of the seller document.", "SELLER_DOCUMENTS_REQUIRED");
+  }
+
+  return { front, back };
+}
+
+async function deleteUploadedApplicationDocuments(req: Request) {
+  const files = req.files as Record<string, Express.Multer.File[]> | undefined;
+  const uploadedFiles = Object.values(files ?? {}).flat();
+  await Promise.all(uploadedFiles.map((file) => deleteUploadedFile(file)));
+}
 
 const emptyToNull = (value: unknown) => value === "" || value === "null" ? null : value;
 const emptyToUndefined = (value: unknown) => value === "" ? undefined : value;

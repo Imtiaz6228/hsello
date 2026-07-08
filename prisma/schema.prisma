@@ -21,6 +21,11 @@ enum SellerApplicationStatus {
   REJECTED
 }
 
+enum SellerDocumentType {
+  ID_CARD
+  PASSPORT
+}
+
 enum ProductStatus {
   DRAFT
   PENDING
@@ -222,6 +227,14 @@ model SellerApplication {
   fullAddress       String
   postalCode        String
   storeName         String
+  documentName      String?
+  documentType      SellerDocumentType?
+  documentFrontPath String?
+  documentFrontOriginalName String?
+  documentFrontMimeType String?
+  documentBackPath  String?
+  documentBackOriginalName String?
+  documentBackMimeType String?
   storeDescription  String
   productCategories String[]
   termsAccepted     Boolean

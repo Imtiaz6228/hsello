@@ -4,7 +4,16 @@ import { prisma } from "../lib/prisma.js";
 import { ApiError } from "../middleware/error-handler.js";
 import type { SellerApplicationInput } from "../schemas/seller.schemas.js";
 
-export async function submitSellerApplication(userId: string, input: SellerApplicationInput) {
+type SellerDocumentUploads = {
+  front: Express.Multer.File;
+  back: Express.Multer.File;
+};
+
+export async function submitSellerApplication(
+  userId: string,
+  input: SellerApplicationInput,
+  documents: SellerDocumentUploads
+) {
   const existing = await prisma.sellerApplication.findUnique({
     where: { userId }
   });
@@ -16,8 +25,14 @@ export async function submitSellerApplication(userId: string, input: SellerAppli
   const application = await prisma.sellerApplication.create({
     data: {
       userId,
-      ...input
-    }
+      ...input,
+      documentFrontPath: documents.front.path,
+      documentFrontOriginalName: documents.front.originalname,
+      documentFrontMimeType: documents.front.mimetype,
+      documentBackPath: documents.back.path,
+      documentBackOriginalName: documents.back.originalname,
+      documentBackMimeType: documents.back.mimetype
+    } as any
   });
 
   try {

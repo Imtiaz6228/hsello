@@ -70,3 +70,34 @@ export const productFileUpload = multer({
     callback(null, true);
   }
 });
+
+
+const allowedSellerDocumentTypes = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/pdf"
+]);
+
+const sellerDocumentStorage = multer.diskStorage({
+  destination: (_req, _file, callback) => callback(null, privateUploadRoot),
+  filename: (_req, file, callback) => {
+    const extension = path.extname(file.originalname).toLowerCase();
+    callback(null, `${Date.now()}-${crypto.randomUUID()}${extension}`);
+  }
+});
+
+export const sellerDocumentUpload = multer({
+  storage: sellerDocumentStorage,
+  limits: {
+    fileSize: env.MAX_UPLOAD_BYTES,
+    files: 2
+  },
+  fileFilter: (_req, file, callback) => {
+    if (!allowedSellerDocumentTypes.has(file.mimetype)) {
+      callback(new Error("Seller documents must be JPEG, PNG, WebP, or PDF files."));
+      return;
+    }
+    callback(null, true);
+  }
+});

@@ -36,6 +36,12 @@ export type SellerApplication = {
   fullAddress: string;
   postalCode: string;
   storeName: string;
+  documentName?: string | null;
+  documentType?: "ID_CARD" | "PASSPORT" | null;
+  documentFrontOriginalName?: string | null;
+  documentFrontMimeType?: string | null;
+  documentBackOriginalName?: string | null;
+  documentBackMimeType?: string | null;
   storeDescription: string;
   productCategories: string[];
   termsAccepted: boolean;

@@ -41,6 +41,7 @@ export function AccountDashboardPage() {
   const [sellerTickets, setSellerTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [walletBalance, setWalletBalance] = useState(user?.balanceCents ?? 0);
 
   const downloads = useMemo(() => orders.flatMap((order) => order.items.flatMap((item) => item.downloadGrants.map((grant) => ({ order, item, grant })))), [orders]);
   const totalSpent = useMemo(() => orders.reduce((sum, o) => sum + o.totalCents, 0), [orders]);
@@ -53,6 +54,14 @@ export function AccountDashboardPage() {
       apiRequest<{ reviews: Review[] }>("/api/commerce/reviews").then((d) => setReviews(d.reviews)).catch(() => undefined),
     ]).finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    setWalletBalance(user.balanceCents ?? 0);
+    void apiRequest<{ balanceCents: number }>("/api/wallet/balance")
+      .then((data) => setWalletBalance(data.balanceCents))
+      .catch(() => undefined);
+  }, [user?.id, user?.balanceCents]);
 
   useEffect(() => {
     if (tab === "seller" && user?.role === "SELLER") {
@@ -188,6 +197,7 @@ export function AccountDashboardPage() {
               <div className="metric-card"><Activity size={22} /><span><strong>{activeOrders}</strong><small>Active orders</small></span></div>
               <div className="metric-card"><Download size={22} /><span><strong>{downloads.length}</strong><small>Available files</small></span></div>
               <div className="metric-card"><TrendingUp size={22} /><span><strong>${(totalSpent / 100).toFixed(2)}</strong><small>Total spent</small></span></div>
+              <div className="metric-card"><Wallet size={22} /><span><strong>${(walletBalance / 100).toFixed(2)}</strong><small>Available balance</small></span></div>
               <div className="metric-card"><TicketCheck size={22} /><span><strong>{tickets.filter((t) => t.status !== "CLOSED" && t.status !== "RESOLVED").length}</strong><small>Open tickets</small></span></div>
               <div className="metric-card"><Headphones size={22} /><span><strong>Every day</strong><small>Support coverage</small></span></div>
             </div>
@@ -505,7 +515,7 @@ export function AccountDashboardPage() {
         )}
 
         {tab === "wallet" && (
-          <WalletTabContent user={user} setMessage={setMessage} />
+          <WalletTabContent user={user} setMessage={setMessage} initialBalance={walletBalance} onBalanceChange={setWalletBalance} />
         )}
 
         {tab === "profile" && (
@@ -537,21 +547,33 @@ export function AccountDashboardPage() {
 
 type Deposit = { id: string; amountCents: number; method: string; status: string; providerReference?: string; createdAt: string };
 
-function WalletTabContent({ user, setMessage }: { user: NonNullable<ReturnType<typeof useAuth>["user"]>; setMessage: (m: string) => void }) {
+function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }: {
+  user: NonNullable<ReturnType<typeof useAuth>["user"]>;
+  setMessage: (m: string) => void;
+  initialBalance: number;
+  onBalanceChange: (balanceCents: number) => void;
+}) {
   const [deposits, setDeposits] = useState<Deposit[]>([]);
-  const [balance, setBalance] = useState(user.balanceCents ?? 0);
+  const [balance, setBalance] = useState(initialBalance ?? user.balanceCents ?? 0);
   const [busy, setBusy] = useState(false);
   const [depositMethod, setDepositMethod] = useState("CARD");
   const [depositAmount, setDepositAmount] = useState("");
 
   useEffect(() => {
+    setBalance(initialBalance ?? user.balanceCents ?? 0);
+  }, [initialBalance, user.balanceCents]);
+
+  useEffect(() => {
     void apiRequest<{ balanceCents: number }>("/api/wallet/balance")
-      .then((d) => setBalance(d.balanceCents))
+      .then((d) => {
+        setBalance(d.balanceCents);
+        onBalanceChange(d.balanceCents);
+      })
       .catch(() => undefined);
     void apiRequest<{ deposits: Deposit[] }>("/api/wallet/deposits")
       .then((d) => setDeposits(d.deposits))
       .catch(() => undefined);
-  }, []);
+  }, [onBalanceChange]);
 
   async function submitDeposit() {
     const cents = Math.round(parseFloat(depositAmount) * 100);
@@ -572,6 +594,7 @@ function WalletTabContent({ user, setMessage }: { user: NonNullable<ReturnType<t
         apiRequest<{ deposits: Deposit[] }>("/api/wallet/deposits")
       ]);
       setBalance(b.balanceCents);
+      onBalanceChange(b.balanceCents);
       setDeposits(d.deposits);
     } catch (error) {
       setMessage(error instanceof ApiError ? error.message : "Deposit failed.");

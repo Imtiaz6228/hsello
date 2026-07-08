@@ -35,3 +35,10 @@ Body: { "orderId": "...", "txHash": "...", "amount": "...", "asset": "USDT", "ne
 ```
 
 The app does not include a full blockchain node/indexer. Detection becomes automatic once a real detector or payment processor is connected to the webhook.
+
+## Wallet checkout hotfix
+
+- Wallet checkout now completes the order and creates delivery grants even if SMTP/order-confirmation email delivery fails. Email failure is logged only and no longer rolls back the paid wallet order.
+- Checkout now displays the current available wallet balance in the order summary.
+- Successful wallet checkout updates the authenticated user's in-app balance immediately.
+- Account dashboard overview now includes an "Available balance" metric, and the Wallet tab syncs the same latest balance from `/api/wallet/balance`.

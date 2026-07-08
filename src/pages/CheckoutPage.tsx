@@ -23,7 +23,7 @@ type CryptoPayment = {
 const icons: Record<MethodId, typeof CreditCard> = { STRIPE: CreditCard, PAYPAL: WalletCards, BANK_TRANSFER: Building2, CRYPTO: Bitcoin, MANUAL: BadgeDollarSign, WALLET: WalletCards };
 
 export function CheckoutPage() {
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const { items, subtotalCents, clear } = useCart();
   const navigate = useNavigate();
   const [methods, setMethods] = useState<Method[]>([
@@ -72,6 +72,7 @@ export function CheckoutPage() {
           body: { items: cartItems }
         });
         setBalanceCents(data.balanceCents);
+        if (user) setUser({ ...user, balanceCents: data.balanceCents });
         clear();
         navigate(`/checkout/confirmation?order=${data.order.id}`, { state: { paid: true, instructions: data.message } });
         return;
@@ -114,7 +115,7 @@ export function CheckoutPage() {
         <aside className="checkout-summary">
           <span className="section-index">ORDER SUMMARY</span>
           {items.map(({ product, quantity }) => <div className="checkout-line" key={product.id}><span>{product.icon}</span><div><strong>{product.title}</strong><small>Qty {quantity} · {product.delivery}</small></div><b>${(product.priceCents * quantity / 100).toFixed(2)}</b></div>)}
-          <div className="checkout-totals"><p><span>Subtotal</span><b>${(subtotalCents / 100).toFixed(2)}</b></p><p><span>Delivery</span><b>$0.00</b></p><p><span>Total</span><b>${(subtotalCents / 100).toFixed(2)}</b></p></div>
+          <div className="checkout-totals"><p><span>Subtotal</span><b>${(subtotalCents / 100).toFixed(2)}</b></p><p><span>Delivery</span><b>$0.00</b></p><p><span>Available balance</span><b>${(balanceCents / 100).toFixed(2)}</b></p><p><span>Total</span><b>${(subtotalCents / 100).toFixed(2)}</b></p></div>
           <button className="pay-button" type="submit" disabled={busy || !selectedMethod?.available}><LockKeyhole /> {busy ? "Creating secure order…" : selectedMethod?.id === "WALLET" ? `Pay with wallet · $${(subtotalCents / 100).toFixed(2)}` : `Pay $${(subtotalCents / 100).toFixed(2)}`}</button>
           <p className="secure-note"><ShieldCheck /> Payment confirmation required · ZIP/download delivery unlocks after confirmation</p>
         </aside>

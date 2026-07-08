@@ -372,11 +372,19 @@ export async function completePayment(orderId: string, approvedById?: string) {
     }
   });
 
-  await sendOrderConfirmation(
-    order.buyerEmail, order.buyerName, order.orderNumber, order.invoiceNumber,
-    money(order.totalCents, order.currency),
-    rawLinks.map((link) => ({ name: link.name, url: `${env.API_URL}/api/commerce/download/token/${encodeURIComponent(link.token)}` }))
-  );
+  try {
+    await sendOrderConfirmation(
+      order.buyerEmail, order.buyerName, order.orderNumber, order.invoiceNumber,
+      money(order.totalCents, order.currency),
+      rawLinks.map((link) => ({ name: link.name, url: `${env.API_URL}/api/commerce/download/token/${encodeURIComponent(link.token)}` }))
+    );
+  } catch (error) {
+    console.error(
+      `Order ${order.orderNumber} was paid and delivered, but the confirmation email could not be sent:`,
+      error instanceof Error ? error.message : error
+    );
+  }
+
   return prisma.order.findUnique({ where: { id: orderId }, include: { payment: true, items: true } });
 }
 

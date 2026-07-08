@@ -1,24 +1,78 @@
-import { ArrowRight, ShoppingBag, Star } from "lucide-react";
+import { ArrowRight, Grid2X2, List, Search, SlidersHorizontal } from "lucide-react";
 import { Link, Navigate, useParams } from "react-router-dom";
+import { useMemo, useState } from "react";
 import { useCart } from "../commerce/CartContext";
+import { useMarketplaceCategories, useMarketplaceCategory, useMarketplaceProducts } from "../commerce/useMarketplace";
 import { MarketFooter, MarketHeader } from "../components/MarketHeader";
+import { MarketplaceProductCard } from "../components/MarketplaceProductCard";
 import { Seo } from "../components/Seo";
-import { catalogProducts, categoryDescriptions } from "../data/catalog";
-import { useMarketplaceCategory, useMarketplaceProducts } from "../commerce/useMarketplace";
+import type { CatalogProduct } from "../data/catalog";
+
+type SortMode = "popular" | "price_asc" | "price_desc" | "newest";
+type ViewMode = "list" | "grid";
+
+function sortProducts(products: CatalogProduct[], sort: SortMode) {
+  return [...products].sort((a, b) => {
+    if (sort === "price_asc") return a.priceCents - b.priceCents;
+    if (sort === "price_desc") return b.priceCents - a.priceCents;
+    if (sort === "newest") return a.badge === "New" ? -1 : b.badge === "New" ? 1 : b.reviews - a.reviews;
+    return b.reviews - a.reviews;
+  });
+}
 
 export function CategoryPage() {
   const { slug } = useParams();
   const { add } = useCart();
-  const liveProducts = useMarketplaceProducts();
+  const [sort, setSort] = useState<SortMode>("popular");
+  const [view, setView] = useState<ViewMode>("list");
+  const [subFilter, setSubFilter] = useState("all");
+  const products = useMarketplaceProducts();
+  const categories = useMarketplaceCategories();
   const { category, loading } = useMarketplaceCategory(slug);
+  const children = useMemo(() => categories.filter((item) => item.parentSlug === slug), [categories, slug]);
+  const siblings = useMemo(() => categories.filter((item) => !item.parentSlug && item.slug !== slug).slice(0, 8), [categories, slug]);
+
+  const filteredProducts = useMemo(() => {
+    if (!slug) return [];
+    const matches = products.filter((product) => {
+      const productCategory = categories.find((item) => item.slug === product.categorySlug);
+      const inCurrent = product.categorySlug === slug || productCategory?.parentSlug === slug;
+      const inSubFilter = subFilter === "all" || product.categorySlug === subFilter;
+      return inCurrent && inSubFilter;
+    });
+    return sortProducts(matches, sort);
+  }, [categories, products, slug, sort, subFilter]);
+
   if (loading) return <main className="commerce-page"><MarketHeader /><p className="empty-state">Loading category…</p></main>;
   if (!category || !slug) return <Navigate to="/catalog" replace />;
-  const products = liveProducts.filter((product) => product.categorySlug === slug);
-  return <main className="commerce-page"><Seo title={category.name} description={category.description} canonicalPath={`/categories/${slug}`} /><MarketHeader />
-    <section className="category-landing"><span className="section-index">CURATED CATEGORY</span><h1>{category.name}</h1><p>{category.description}</p><div><ShieldLine /><span>Every product is reviewed before publishing.</span></div></section>
-    <section className="catalog-product-grid">{products.map((product) => <article key={product.id}><Link className="catalog-product-art" to={`/products/${product.slug}`}><span>{product.badge}</span><b>{product.icon}</b></Link><div><span>{product.category}</span><Link to={`/products/${product.slug}`}><h2>{product.title}</h2></Link><p>{product.description}</p><div className="catalog-rating"><Star fill="currentColor" /> {product.rating} <small>({product.reviews})</small></div><footer><strong>${(product.priceCents / 100).toFixed(2)}</strong><button onClick={() => add(product)}><ShoppingBag /> Add</button></footer></div></article>)}</section>
-    <section className="internal-links"><strong>Keep exploring</strong>{Object.entries(categoryDescriptions).filter(([key]) => key !== slug).map(([key, value]) => <Link to={`/categories/${key}`} key={key}>{value.name}<ArrowRight /></Link>)}</section><MarketFooter />
-  </main>;
+
+  return (
+    <main className="commerce-page market-browse-page">
+      <Seo title={category.name} description={category.description} canonicalPath={`/categories/${slug}`} />
+      <MarketHeader />
+      <section className="category-landing category-market-heading">
+        <span className="section-index">CATEGORY</span>
+        <h1>{category.name}</h1>
+        <p>{category.description}</p>
+        <div><ShieldLine /><span>Buyers can scroll products here; sellers can add products and request new categories from Seller Studio.</span></div>
+      </section>
+      {children.length ? <section className="subcategory-strip"><button className={subFilter === "all" ? "active" : ""} onClick={() => setSubFilter("all")}>All</button>{children.map((child) => <button key={child.slug} className={subFilter === child.slug ? "active" : ""} onClick={() => setSubFilter(child.slug)}>{child.name}</button>)}</section> : null}
+      <section className="category-product-shell">
+        <div className="market-filter-bar">
+          <div><strong>{filteredProducts.length}</strong><span>products</span></div>
+          <div className="filter-controls">
+            <label><SlidersHorizontal /> <select value={sort} onChange={(event) => setSort(event.target.value as SortMode)}><option value="popular">Default - Popular</option><option value="price_asc">Price: Low → High</option><option value="price_desc">Price: High → Low</option><option value="newest">Newest</option></select></label>
+            <button className={view === "list" ? "active" : ""} onClick={() => setView("list")} aria-label="List view"><List /></button>
+            <button className={view === "grid" ? "active" : ""} onClick={() => setView("grid")} aria-label="Grid view"><Grid2X2 /></button>
+          </div>
+        </div>
+        <div className={`market-product-scroll ${view === "grid" ? "grid" : ""}`}>{filteredProducts.map((product) => <MarketplaceProductCard key={product.id} product={product} onBuy={add} layout={view} />)}</div>
+        {!filteredProducts.length ? <div className="no-results"><Search /><strong>No products yet</strong><span>Try another subcategory or return to all categories.</span></div> : null}
+      </section>
+      <section className="internal-links"><strong>Keep exploring</strong>{siblings.map((item) => <Link to={`/categories/${item.slug}`} key={item.slug}>{item.name}<ArrowRight /></Link>)}</section>
+      <MarketFooter />
+    </main>
+  );
 }
 
 function ShieldLine() { return <span aria-hidden="true">✓</span>; }

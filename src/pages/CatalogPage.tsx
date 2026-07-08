@@ -1,20 +1,122 @@
-import { Search, ShoppingBag, Star } from "lucide-react";
+import { ChevronDown, Grid2X2, List, Search, SlidersHorizontal } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../commerce/CartContext";
+import { useMarketplaceCategories, useMarketplaceProducts } from "../commerce/useMarketplace";
 import { MarketFooter, MarketHeader } from "../components/MarketHeader";
+import { MarketplaceProductCard } from "../components/MarketplaceProductCard";
 import { Seo } from "../components/Seo";
-import { catalogProducts, categoryDescriptions } from "../data/catalog";
-import { useMarketplaceProducts } from "../commerce/useMarketplace";
+import type { CatalogCategory, CatalogProduct } from "../data/catalog";
+
+type SortMode = "popular" | "price_asc" | "price_desc" | "newest";
+type ViewMode = "list" | "grid";
+
+function productMatchesCategory(product: CatalogProduct, selected: string, categories: CatalogCategory[]) {
+  if (selected === "all") return true;
+  if (product.categorySlug === selected) return true;
+  const productCategory = categories.find((category) => category.slug === product.categorySlug);
+  return productCategory?.parentSlug === selected;
+}
+
+function sortProducts(products: CatalogProduct[], sort: SortMode) {
+  return [...products].sort((a, b) => {
+    if (sort === "price_asc") return a.priceCents - b.priceCents;
+    if (sort === "price_desc") return b.priceCents - a.priceCents;
+    if (sort === "newest") return a.badge === "New" ? -1 : b.badge === "New" ? 1 : b.reviews - a.reviews;
+    return Number(String(b.sales).replace(/[^0-9.]/g, "")) - Number(String(a.sales).replace(/[^0-9.]/g, "")) || b.reviews - a.reviews;
+  });
+}
 
 export function CatalogPage() {
-  const { add } = useCart(); const [query, setQuery] = useState(""); const [category, setCategory] = useState("all");
-  const liveProducts = useMarketplaceProducts();
-  const products = useMemo(() => liveProducts.filter((product) => (category === "all" || product.categorySlug === category) && (!query.trim() || `${product.title} ${product.description} ${product.seller}`.toLowerCase().includes(query.toLowerCase()))), [category, query, liveProducts]);
-  return <main className="commerce-page"><Seo title="Digital product marketplace" description="Browse reviewed templates, creative assets, AI workflows, game assets, and expert services from verified sellers." canonicalPath="/catalog" /><MarketHeader />
-    <section className="catalog-hero"><span className="section-index">THE FULL MARKET</span><h1>Original work.<br />Useful outcomes.</h1><div className="catalog-search"><Search /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search products and sellers" /></div></section>
-    <section className="catalog-shell"><aside><button className={category === "all" ? "active" : ""} onClick={() => setCategory("all")}>All products <span>{catalogProducts.length}</span></button>{Object.entries(categoryDescriptions).map(([key, value]) => <button className={category === key ? "active" : ""} onClick={() => setCategory(key)} key={key}>{value.name}<span>{catalogProducts.filter((product) => product.categorySlug === key).length}</span></button>)}</aside>
-      <div><header><strong>{products.length} curated products</strong><span>Reviewed before publishing</span></header><div className="catalog-product-grid">{products.map((product) => <article key={product.id}><Link className="catalog-product-art" to={`/products/${product.slug}`}><span>{product.badge}</span><b>{product.icon}</b></Link><div><span>{product.category}</span><Link to={`/products/${product.slug}`}><h2>{product.title}</h2></Link><p>{product.description}</p><div className="catalog-rating"><Star fill="currentColor" /> {product.rating} <small>({product.reviews})</small></div><footer><strong>${(product.priceCents / 100).toFixed(2)}</strong><button onClick={() => add(product)}><ShoppingBag /> Add</button></footer></div></article>)}</div>{!products.length ? <div className="no-results"><Search /><strong>No matching products</strong><span>Try another category or a broader phrase.</span></div> : null}</div>
-    </section><MarketFooter />
-  </main>;
+  const { add } = useCart();
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("all");
+  const [expanded, setExpanded] = useState("instagram");
+  const [categoryQuery, setCategoryQuery] = useState("");
+  const [sort, setSort] = useState<SortMode>("popular");
+  const [view, setView] = useState<ViewMode>("list");
+  const [stockOnly, setStockOnly] = useState(false);
+  const products = useMarketplaceProducts();
+  const categories = useMarketplaceCategories();
+
+  const parentCategories = useMemo(() => categories.filter((item) => !item.parentSlug), [categories]);
+  const childrenByParent = useMemo(() => new Map(parentCategories.map((parent) => [parent.slug, categories.filter((item) => item.parentSlug === parent.slug)])), [categories, parentCategories]);
+  const categoryCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const product of products) {
+      counts.set(product.categorySlug, (counts.get(product.categorySlug) ?? 0) + 1);
+      const productCategory = categories.find((item) => item.slug === product.categorySlug);
+      if (productCategory?.parentSlug) counts.set(productCategory.parentSlug, (counts.get(productCategory.parentSlug) ?? 0) + 1);
+    }
+    return counts;
+  }, [categories, products]);
+
+  const filteredProducts = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    const matches = products.filter((product) => {
+      const isInStock = product.type === "SERVICE" || (product.stockCount ?? 0) > 0;
+      return productMatchesCategory(product, category, categories)
+        && (!stockOnly || isInStock)
+        && (!normalizedQuery || `${product.title} ${product.description} ${product.seller} ${product.category}`.toLowerCase().includes(normalizedQuery));
+    });
+    return sortProducts(matches, sort);
+  }, [category, categories, products, query, sort, stockOnly]);
+
+  const visibleParents = parentCategories.filter((item) => !categoryQuery.trim() || `${item.name} ${item.description}`.toLowerCase().includes(categoryQuery.toLowerCase()) || (childrenByParent.get(item.slug) ?? []).some((child) => `${child.name} ${child.description}`.toLowerCase().includes(categoryQuery.toLowerCase())));
+  const activeCategory = categories.find((item) => item.slug === category);
+
+  return (
+    <main className="commerce-page market-browse-page">
+      <Seo title="Browse products and categories" description="Scrollable marketplace categories, subcategories, stocked digital products, and secure buying from verified sellers." canonicalPath="/catalog" />
+      <MarketHeader />
+      <section className="catalog-hero market-browser-hero">
+        <span className="section-index">ALL CATEGORIES</span>
+        <h1>Browse, filter,<br />and buy.</h1>
+        <div className="catalog-search"><Search /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search product name, seller, category..." /></div>
+      </section>
+      <section className="mobile-category-pills" aria-label="Quick categories">
+        <button className={category === "all" ? "active" : ""} onClick={() => setCategory("all")}>All <span>{products.length}</span></button>
+        {parentCategories.map((item) => <button key={item.slug} className={category === item.slug ? "active" : ""} onClick={() => { setCategory(item.slug); setExpanded(item.slug); }}>{item.name} <span>{categoryCounts.get(item.slug) ?? item.productCount ?? 0}</span></button>)}
+      </section>
+      <section className="market-browser-layout">
+        <aside className="category-directory">
+          <div className="directory-card">
+            <header><strong>All categories</strong><span>{categories.length}</span></header>
+            <label className="directory-check"><input type="checkbox" checked={stockOnly} onChange={(event) => setStockOnly(event.target.checked)} /> Show in-stock products only</label>
+            <div className="directory-search"><Search /><input value={categoryQuery} onChange={(event) => setCategoryQuery(event.target.value)} placeholder="Search category name..." /></div>
+            <button className={category === "all" ? "directory-all active" : "directory-all"} onClick={() => setCategory("all")}>View All <span>{products.length}</span></button>
+          </div>
+          <div className="directory-list">
+            {visibleParents.map((parent) => {
+              const children = childrenByParent.get(parent.slug) ?? [];
+              const open = expanded === parent.slug;
+              return (
+                <div className={`directory-group ${open ? "open" : ""}`} key={parent.slug}>
+                  <button className={category === parent.slug ? "active" : ""} onClick={() => { setExpanded(open ? "" : parent.slug); setCategory(parent.slug); }}>
+                    <span className="cat-icon">{parent.icon}</span><strong>{parent.name}</strong><small>{categoryCounts.get(parent.slug) ?? parent.productCount ?? 0}</small><ChevronDown />
+                  </button>
+                  {open ? <div className="subcategory-chip-list"><Link to={`/categories/${parent.slug}`}>→ View All</Link>{children.map((child) => <button type="button" className={category === child.slug ? "active" : ""} key={child.slug} onClick={() => setCategory(child.slug)}>{child.name}</button>)}</div> : null}
+                </div>
+              );
+            })}
+          </div>
+        </aside>
+        <div className="market-results-panel">
+          <div className="market-filter-bar">
+            <div><strong>{filteredProducts.length}</strong><span>{activeCategory ? activeCategory.name : "products"}</span></div>
+            <div className="filter-controls">
+              <label><SlidersHorizontal /> <select value={sort} onChange={(event) => setSort(event.target.value as SortMode)}><option value="popular">Default - Popular</option><option value="price_asc">Price: Low → High</option><option value="price_desc">Price: High → Low</option><option value="newest">Newest</option></select></label>
+              <button className={view === "list" ? "active" : ""} onClick={() => setView("list")} aria-label="List view"><List /></button>
+              <button className={view === "grid" ? "active" : ""} onClick={() => setView("grid")} aria-label="Grid view"><Grid2X2 /></button>
+            </div>
+          </div>
+          <div className={`market-product-scroll ${view === "grid" ? "grid" : ""}`}>
+            {filteredProducts.map((product) => <MarketplaceProductCard key={product.id} product={product} onBuy={add} layout={view} />)}
+          </div>
+          {!filteredProducts.length ? <div className="no-results"><Search /><strong>No matching products</strong><span>Try another category, remove the stock filter, or use a broader phrase.</span></div> : null}
+        </div>
+      </section>
+      <MarketFooter />
+    </main>
+  );
 }

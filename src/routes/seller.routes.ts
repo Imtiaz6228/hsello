@@ -176,6 +176,55 @@ async function deleteUploadedFile(file?: Express.Multer.File) {
   await fs.unlink(file.path).catch(() => undefined);
 }
 
+
+function slugifyCategoryName(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 90) || "category";
+}
+
+async function uniqueCategorySlug(name: string) {
+  const base = slugifyCategoryName(name);
+  let slug = base;
+  let suffix = 2;
+  while (await prisma.category.findUnique({ where: { slug }, select: { id: true } })) {
+    slug = `${base}-${suffix++}`;
+  }
+  return slug;
+}
+
+sellerRouter.post("/categories", requireSeller, asyncHandler(async (req, res) => {
+  const input = z.object({
+    name: z.string().trim().min(2).max(100),
+    description: z.string().trim().min(12).max(4000),
+    parentId: z.preprocess(emptyToNull, z.string().uuid().nullable().optional()),
+    sortOrder: z.coerce.number().int().min(0).max(10000).default(1000)
+  }).parse(req.body);
+
+  if (input.parentId) {
+    const parent = await prisma.category.findFirst({ where: { id: input.parentId, isActive: true }, select: { id: true } });
+    if (!parent) throw new ApiError(404, "Parent category not found.", "CATEGORY_PARENT_NOT_FOUND");
+  }
+
+  const slug = await uniqueCategorySlug(input.name);
+  const category = await prisma.category.create({
+    data: {
+      name: input.name,
+      slug,
+      description: input.description,
+      parentId: input.parentId ?? null,
+      sortOrder: input.sortOrder,
+      seoTitle: input.name,
+      seoDescription: input.description.slice(0, 170),
+      isActive: true
+    }
+  });
+
+  res.status(201).json({ category, message: "Category added. You can select it when creating products." });
+}));
+
 sellerRouter.get("/profile", requireSeller, asyncHandler(async (req, res) => {
   const profile = await prisma.sellerProfile.findUnique({ where: { userId: req.auth!.id } });
   res.json({ profile });

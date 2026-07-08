@@ -1,11 +1,11 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, FileUp, ImagePlus, LogOut, PackagePlus, Send, Store, Upload } from "lucide-react";
+import { ArrowLeft, FileUp, FolderPlus, ImagePlus, LogOut, PackagePlus, PlusCircle, Send, Store, Upload } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { ApiError, apiRequest } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { Seo } from "../components/Seo";
 
-type Category = { id: string; name: string; parentId?: string | null };
+type Category = { id: string; name: string; slug?: string; description?: string; parentId?: string | null };
 type Product = {
   id: string;
   name: string;
@@ -52,10 +52,12 @@ export function SellerStudioPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [open, setOpen] = useState(false);
+  const [categoryOpen, setCategoryOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [form, setForm] = useState(initialForm);
+  const [categoryForm, setCategoryForm] = useState({ name: "", description: "", parentId: "" });
 
   const parentCategories = useMemo(() => categories.filter((category) => !category.parentId), [categories]);
   const subCategories = useMemo(() => categories.filter((category) => category.parentId === form.categoryId), [categories, form.categoryId]);
@@ -87,6 +89,37 @@ export function SellerStudioPage() {
       setForm((current) => ({ ...current, subCategoryId: "" }));
     }
   }, [categories, form.categoryId, form.subCategoryId, subCategories]);
+
+
+  async function createCategory(event: FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setMessage("");
+    try {
+      const result = await apiRequest<{ category: Category; message?: string }>("/api/seller/categories", {
+        method: "POST",
+        body: {
+          name: categoryForm.name,
+          description: categoryForm.description,
+          parentId: categoryForm.parentId || null,
+          sortOrder: categoryForm.parentId ? 1000 : 900
+        }
+      });
+      setCategoryOpen(false);
+      setCategoryForm({ name: "", description: "", parentId: "" });
+      setMessage(result.message ?? "Category added.");
+      await load();
+      setForm((current) => ({
+        ...current,
+        categoryId: result.category.parentId ? (result.category.parentId ?? current.categoryId) : result.category.id,
+        subCategoryId: result.category.parentId ? result.category.id : ""
+      }));
+    } catch (error) {
+      setMessage(error instanceof ApiError ? error.message : "Category could not be created.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function create(event: FormEvent) {
     event.preventDefault();
@@ -203,6 +236,7 @@ export function SellerStudioPage() {
         <Link to="/dashboard"><ArrowLeft /> Account</Link>
         <strong><Store /> Seller studio</strong>
         <div className="seller-nav-actions">
+          <button onClick={() => setCategoryOpen(true)}><FolderPlus /> New category</button>
           <button onClick={() => setOpen(true)}><PackagePlus /> New product</button>
           <button className="secondary-button" onClick={() => void signOut()}><LogOut /> Sign out</button>
         </div>
@@ -210,9 +244,10 @@ export function SellerStudioPage() {
       <header>
         <span className="section-index">VERIFIED SELLER WORKSPACE</span>
         <h1>Submit digital products.<br />Admin approves before publishing.</h1>
-        <p>Add title, category, subcategory, multi-currency prices, after-sales time, and delivery inventory. Pending products stay hidden from buyers.</p>
+        <p>Add scrollable buyer categories, subcategories, products, multi-currency prices, after-sales time, images, and delivery inventory. Pending products stay hidden from buyers until approval.</p>
       </header>
       {message ? <div className="dashboard-message">{message}</div> : null}
+      <section className="seller-category-panel"><div><FolderPlus /><span><strong>Marketplace categories</strong><small>{parentCategories.length} parent categories · {categories.length - parentCategories.length} subcategories available</small></span></div><button type="button" onClick={() => setCategoryOpen(true)}><PlusCircle /> Add category or subcategory</button></section>
       <section className="seller-product-list">
         <div className="seller-list-heading"><span>Product</span><span>Status</span><span>Delivery</span><span>Actions</span></div>
         {products.length ? products.map((product) => {
@@ -250,6 +285,24 @@ export function SellerStudioPage() {
         }) : <div className="dashboard-empty"><FileUp /><h2>No products yet</h2><p>Create a product, add delivery rows or files, then submit it for admin approval.</p></div>}
       </section>
 
+
+      {categoryOpen ? (
+        <div className="modal-backdrop">
+          <form className="seller-product-form seller-category-form" onSubmit={createCategory}>
+            <button type="button" className="modal-close" onClick={() => setCategoryOpen(false)}>x</button>
+            <span className="section-index">NEW CATEGORY</span>
+            <h2>Add a buyer category.</h2>
+            <p className="modal-helper">Create a parent category or choose a parent to create a subcategory. New categories appear in buyer browsing, product forms, and category filters.</p>
+            <div className="form-grid two">
+              <label><span>Category name</span><input required minLength={2} value={categoryForm.name} onChange={(event) => setCategoryForm({ ...categoryForm, name: event.target.value })} placeholder="e.g. Instagram design packs" /></label>
+              <label><span>Parent category</span><select value={categoryForm.parentId} onChange={(event) => setCategoryForm({ ...categoryForm, parentId: event.target.value })}><option value="">Create as parent category</option>{parentCategories.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select></label>
+            </div>
+            <label><span>Description</span><textarea required minLength={12} rows={5} value={categoryForm.description} onChange={(event) => setCategoryForm({ ...categoryForm, description: event.target.value })} placeholder="Explain what buyers will find in this category." /></label>
+            <button className="primary-button" disabled={busy}><FolderPlus /> {busy ? "Creating..." : "Create category"}</button>
+          </form>
+        </div>
+      ) : null}
+
       {open ? (
         <div className="modal-backdrop">
           <form className="seller-product-form" onSubmit={create}>
@@ -263,8 +316,8 @@ export function SellerStudioPage() {
             </label>
             <div className="form-grid two">
               <label><span>Product title</span><input required minLength={3} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label>
-              <label><span>Category</span><select required value={form.categoryId} onChange={(event) => setForm({ ...form, categoryId: event.target.value, subCategoryId: "" })}>{(parentCategories.length ? parentCategories : categories).map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select></label>
-              <label><span>Subcategory</span><select value={form.subCategoryId} onChange={(event) => setForm({ ...form, subCategoryId: event.target.value })}><option value="">Use selected category</option>{subCategories.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select></label>
+              <label><span>Category</span><select required value={form.categoryId} onChange={(event) => setForm({ ...form, categoryId: event.target.value, subCategoryId: "" })}>{(parentCategories.length ? parentCategories : categories).map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select><button className="inline-form-link" type="button" onClick={() => setCategoryOpen(true)}>+ Add category</button></label>
+              <label><span>Subcategory</span><select value={form.subCategoryId} onChange={(event) => setForm({ ...form, subCategoryId: event.target.value })}><option value="">Use selected category</option>{subCategories.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select><button className="inline-form-link" type="button" onClick={() => { setCategoryForm((current) => ({ ...current, parentId: form.categoryId })); setCategoryOpen(true); }}>+ Add subcategory</button></label>
               <label><span>Type</span><select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })}><option value="DOWNLOAD">Digital product</option><option value="SERVICE">Service</option></select></label>
               <label><span>Price (USD)</span><input required type="number" min="0.50" step="0.01" value={form.priceUsd} onChange={(event) => setForm({ ...form, priceUsd: event.target.value })} /></label>
               <label><span>Price (Yuan / CNY)</span><input type="number" min="0" step="0.01" value={form.priceCny} onChange={(event) => setForm({ ...form, priceCny: event.target.value })} /></label>

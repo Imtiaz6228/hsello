@@ -33,7 +33,7 @@ export function ProductPage() {
       <MarketHeader />
       <div className="breadcrumbs"><Link to="/">Home</Link><span>/</span><Link to={`/categories/${product.categorySlug}`}>{product.category}</Link><span>/</span><span>{product.title}</span></div>
       <section className="product-detail">
-        <div className="product-detail-art"><span>{product.badge}</span><b>{product.icon}</b><small>ORIGINAL DIGITAL WORK</small></div>
+        <div className="product-detail-art">{product.imageUrl ? <img src={product.imageUrl} alt="" /> : <b>{product.icon}</b>}<span>{product.badge}</span><small>ORIGINAL DIGITAL WORK</small></div>
         <div className="product-detail-copy">
           <span className="section-index">{product.category}</span>
           <h1>{product.title}</h1>

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { BadgeCheck, Check, Clock3, Download, Flag, MessageCircle, RefreshCw, ShieldCheck, ShoppingBag, Star } from "lucide-react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { useCart } from "../commerce/CartContext";
 import { MarketFooter, MarketHeader } from "../components/MarketHeader";
@@ -10,6 +10,7 @@ import { useMarketplaceProduct } from "../commerce/useMarketplace";
 export function ProductPage() {
   const { slug } = useParams();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { add } = useCart();
   const [added, setAdded] = useState(false);
   const { product, loading } = useMarketplaceProduct(slug);
@@ -24,7 +25,7 @@ export function ProductPage() {
   if (!product) return <Navigate to="/catalog" replace />;
 
   function addToCart() {
-    add(product!); setAdded(true); window.setTimeout(() => setAdded(false), 1800);
+    add(product!); setAdded(true); navigate("/cart");
   }
 
   return (

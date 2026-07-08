@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth, requireRole, requireVerifiedUser } from "../middleware/auth.js";
 import { ApiError, asyncHandler } from "../middleware/error-handler.js";
+import { createWalletCheckout } from "../services/payment.service.js";
 
 export const walletRouter = Router();
 
@@ -90,68 +91,29 @@ walletRouter.patch("/deposits/:id/reject", requireRole(Role.ADMIN, Role.SUPER_AD
 }));
 
 // Purchase with wallet balance
+const walletItemsSchema = z.array(z.object({
+  productId: z.string().uuid(),
+  quantity: z.number().int().min(1).max(20).default(1)
+})).min(1).max(30);
+
+walletRouter.post("/purchase-cart", asyncHandler(async (req, res) => {
+  const input = z.object({ items: walletItemsSchema }).parse(req.body);
+  const result = await createWalletCheckout(req.auth!.id, input.items);
+  res.status(201).json({
+    message: "Purchase completed with wallet balance. Downloads are ready in your dashboard.",
+    ...result
+  });
+}));
+
 walletRouter.post("/purchase", asyncHandler(async (req, res) => {
   const input = z.object({
     productId: z.string().uuid(),
-    quantity: z.number().int().min(1).max(20).default(1),
-    method: z.enum(["BANK_TRANSFER", "CRYPTO", "MANUAL"]).default("MANUAL")
+    quantity: z.number().int().min(1).max(20).default(1)
   }).parse(req.body);
 
-  const product = await prisma.product.findUnique({ where: { id: input.productId } });
-  if (!product || product.status !== "APPROVED") throw new ApiError(404, "Product is not available.", "PRODUCT_UNAVAILABLE");
-
-  const totalCents = product.priceCents * input.quantity;
-  const user = await prisma.user.findUnique({ where: { id: req.auth!.id } });
-
-  if (!user) throw new ApiError(401, "Session invalid.", "SESSION_INVALID");
-
-  if (user.balanceCents < totalCents) {
-    throw new ApiError(402, `Insufficient wallet balance. You need $${(totalCents / 100).toFixed(2)} but have $${(user.balanceCents / 100).toFixed(2)}.`, "INSUFFICIENT_FUNDS");
-  }
-
-  const orderNumber = `ORD-${Date.now().toString(36).toUpperCase()}`;
-  const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
-
-  await prisma.$transaction([
-    prisma.user.update({
-      where: { id: req.auth!.id },
-      data: { balanceCents: { decrement: totalCents } }
-    }),
-    prisma.order.create({
-      data: {
-        orderNumber,
-        invoiceNumber,
-        buyerId: req.auth!.id,
-        status: "COMPLETED",
-        currency: "USD",
-        subtotalCents: totalCents,
-        totalCents,
-        buyerEmail: user.email,
-        buyerName: `${user.firstName} ${user.lastName}`,
-        paidAt: new Date(),
-        completedAt: new Date(),
-        items: {
-          create: {
-            productId: product.id,
-            sellerId: product.sellerId,
-            productName: product.name,
-            quantity: input.quantity,
-            unitPriceCents: product.priceCents,
-            totalCents
-          }
-        }
-      }
-    })
-  ]);
-
-  const updatedUser = await prisma.user.findUnique({
-    where: { id: req.auth!.id },
-    select: { balanceCents: true }
-  });
-
+  const result = await createWalletCheckout(req.auth!.id, [{ productId: input.productId, quantity: input.quantity }]);
   res.status(201).json({
-    message: "Purchase completed with wallet balance.",
-    orderNumber,
-    balanceCents: updatedUser?.balanceCents ?? 0
+    message: "Purchase completed with wallet balance. Downloads are ready in your dashboard.",
+    ...result
   });
 }));

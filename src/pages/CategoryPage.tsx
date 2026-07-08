@@ -1,5 +1,5 @@
 import { ArrowRight, Grid2X2, List, Search, SlidersHorizontal } from "lucide-react";
-import { Link, Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useMemo, useState } from "react";
 import { useCart } from "../commerce/CartContext";
 import { useMarketplaceCategories, useMarketplaceCategory, useMarketplaceProducts } from "../commerce/useMarketplace";
@@ -23,9 +23,15 @@ function sortProducts(products: CatalogProduct[], sort: SortMode) {
 export function CategoryPage() {
   const { slug } = useParams();
   const { add } = useCart();
+  const navigate = useNavigate();
   const [sort, setSort] = useState<SortMode>("popular");
   const [view, setView] = useState<ViewMode>("list");
   const [subFilter, setSubFilter] = useState("all");
+  function addToCart(product: CatalogProduct) {
+    add(product);
+    navigate("/cart");
+  }
+
   const products = useMarketplaceProducts();
   const categories = useMarketplaceCategories();
   const { category, loading } = useMarketplaceCategory(slug);
@@ -66,7 +72,7 @@ export function CategoryPage() {
             <button className={view === "grid" ? "active" : ""} onClick={() => setView("grid")} aria-label="Grid view"><Grid2X2 /></button>
           </div>
         </div>
-        <div className={`market-product-scroll ${view === "grid" ? "grid" : ""}`}>{filteredProducts.map((product) => <MarketplaceProductCard key={product.id} product={product} onBuy={add} layout={view} />)}</div>
+        <div className={`market-product-scroll ${view === "grid" ? "grid" : ""}`}>{filteredProducts.map((product) => <MarketplaceProductCard key={product.id} product={product} onBuy={addToCart} layout={view} />)}</div>
         {!filteredProducts.length ? <div className="no-results"><Search /><strong>No products yet</strong><span>Try another subcategory or return to all categories.</span></div> : null}
       </section>
       <section className="internal-links"><strong>Keep exploring</strong>{siblings.map((item) => <Link to={`/categories/${item.slug}`} key={item.slug}>{item.name}<ArrowRight /></Link>)}</section>

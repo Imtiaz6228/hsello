@@ -3,12 +3,13 @@ import { Router } from "express";
 import { DisputeStatus, PaymentMethod, ProductType, TicketCategory } from "@prisma/client";
 import { z } from "zod";
 import { sha256 } from "../lib/crypto.js";
+import { env } from "../config/env.js";
 import { createZipBuffer } from "../lib/zip.js";
 import { sendTicketUpdateEmail } from "../lib/email.js";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth, requireVerifiedUser } from "../middleware/auth.js";
 import { ApiError, asyncHandler } from "../middleware/error-handler.js";
-import { availablePaymentMethods, confirmHostedPayment, createCheckout } from "../services/payment.service.js";
+import { availablePaymentMethods, checkCryptoPayment, confirmCryptoWebhook, confirmHostedPayment, createCheckout, getPaymentStatusForBuyer } from "../services/payment.service.js";
 
 export const commerceRouter = Router();
 
@@ -53,6 +54,24 @@ function withDisputeWindow<T extends OrderForDisputeWindow>(order: T) {
 
 commerceRouter.get("/payment-methods", (_req, res) => res.json({ methods: availablePaymentMethods() }));
 
+commerceRouter.post("/crypto/webhook", asyncHandler(async (req, res) => {
+  const providedSecret = req.get("x-hsello-crypto-secret") || z.string().optional().parse(req.body?.secret);
+  if (!env.CRYPTO_WEBHOOK_SECRET || providedSecret !== env.CRYPTO_WEBHOOK_SECRET) {
+    throw new ApiError(401, "Crypto webhook authentication failed.", "CRYPTO_WEBHOOK_UNAUTHORIZED");
+  }
+  const input = z.object({
+    orderId: z.string().uuid().optional(),
+    providerReference: z.string().trim().min(3).max(160).optional(),
+    txHash: z.string().trim().max(200).optional(),
+    amount: z.string().trim().max(80).optional(),
+    asset: z.string().trim().max(40).optional(),
+    network: z.string().trim().max(80).optional()
+  }).refine((value) => value.orderId || value.providerReference, "Provide orderId or providerReference.").parse(req.body);
+  const order = await confirmCryptoWebhook(input);
+  res.json({ order });
+}));
+
+
 commerceRouter.get("/download/token/:token", asyncHandler(async (req, res) => {
   const token = z.string().min(20).max(200).parse(req.params.token);
   const grant = await prisma.downloadGrant.findUnique({
@@ -81,6 +100,18 @@ commerceRouter.post("/checkout/:orderId/confirm", asyncHandler(async (req, res) 
   const orderId = z.string().uuid().parse(req.params.orderId);
   const order = await confirmHostedPayment(orderId, req.auth!.id);
   res.json({ order });
+}));
+
+commerceRouter.get("/checkout/:orderId/status", asyncHandler(async (req, res) => {
+  const orderId = z.string().uuid().parse(req.params.orderId);
+  const status = await getPaymentStatusForBuyer(orderId, req.auth!.id);
+  res.json(status);
+}));
+
+commerceRouter.post("/checkout/:orderId/check-crypto", asyncHandler(async (req, res) => {
+  const orderId = z.string().uuid().parse(req.params.orderId);
+  const status = await checkCryptoPayment(orderId, req.auth!.id);
+  res.json(status);
 }));
 
 commerceRouter.get("/orders", asyncHandler(async (req, res) => {

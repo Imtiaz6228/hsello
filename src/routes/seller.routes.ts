@@ -7,6 +7,7 @@ import { requireAuth, requireVerifiedUser } from "../middleware/auth.js";
 import { ApiError, asyncHandler } from "../middleware/error-handler.js";
 import { imageUpload, productFileUpload, publicUploadUrl, sellerDocumentUpload } from "../middleware/upload.js";
 import { sendTicketUpdateEmail } from "../lib/email.js";
+import { ensureDefaultMarketplaceCategories } from "../services/category.service.js";
 import { randomToken, sha256 } from "../lib/crypto.js";
 import { sellerApplicationSchema } from "../schemas/seller.schemas.js";
 import {
@@ -195,6 +196,16 @@ async function uniqueCategorySlug(name: string) {
   return slug;
 }
 
+sellerRouter.get("/categories", requireSeller, asyncHandler(async (_req, res) => {
+  await ensureDefaultMarketplaceCategories();
+  const categories = await prisma.category.findMany({
+    where: { isActive: true },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    include: { parent: { select: { id: true, slug: true, name: true } } }
+  });
+  res.json({ categories });
+}));
+
 sellerRouter.post("/categories", requireSeller, asyncHandler(async (req, res) => {
   const input = z.object({
     name: z.string().trim().min(2).max(100),
@@ -256,7 +267,7 @@ sellerRouter.post("/products", requireSeller, imageUpload.single("coverImage"), 
     const base = input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "product";
     const coverImageUrl = req.file ? publicUploadUrl(req.file.filename) : input.coverImageUrl ?? null;
     const productData = productDataFromInput(input, coverImageUrl);
-    const status = inventoryLines.length > 0 ? ProductStatus.PENDING : ProductStatus.DRAFT;
+    const status = ProductStatus.PENDING;
     const product = await prisma.product.create({
       data: {
         ...productData,
@@ -267,7 +278,7 @@ sellerRouter.post("/products", requireSeller, imageUpload.single("coverImage"), 
       },
       include: { category: true, files: true, inventoryItems: { select: { id: true, deliveredAt: true, isActive: true } } }
     });
-    res.status(201).json({ product, message: status === ProductStatus.PENDING ? "Product submitted for admin approval." : "Product draft created." });
+    res.status(201).json({ product, message: "Product submitted for admin approval." });
   } catch (error) {
     await deleteUploadedFile(req.file);
     throw error;
@@ -306,9 +317,6 @@ sellerRouter.post("/products/:id/submit", requireSeller, asyncHandler(async (req
     include: { files: { where: { isActive: true } }, inventoryItems: { where: { isActive: true, orderItemId: null } } }
   });
   if (!existing) throw new ApiError(404, "Product not found.", "PRODUCT_NOT_FOUND");
-  if (existing.type === ProductType.DOWNLOAD && existing.files.length === 0 && existing.inventoryItems.length === 0) {
-    throw new ApiError(400, "Add at least one delivery file or one inventory line before review.", "PRODUCT_DELIVERY_REQUIRED");
-  }
   if (existing.afterSalesServiceHours < 12) {
     throw new ApiError(400, "After-sales service time must be at least 12 hours.", "AFTER_SALES_MINIMUM");
   }

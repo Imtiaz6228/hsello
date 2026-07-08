@@ -112,14 +112,86 @@ async function createPaypalOrder(order: {
   return { redirectUrl: approve.href, providerReference: data.id };
 }
 
+function cryptoAddress() {
+  if (env.CRYPTO_PAYMENT_ADDRESS) return env.CRYPTO_PAYMENT_ADDRESS;
+  const match = env.CRYPTO_PAYMENT_INSTRUCTIONS?.match(/(?:address|wallet)\s*[:=-]\s*([A-Za-z0-9:_\-.]+)/i);
+  return match?.[1];
+}
+
+type CryptoPaymentPayload = {
+  kind: "CRYPTO_INVOICE";
+  asset: string;
+  network: string;
+  address: string;
+  amountUsdCents: number;
+  amountLabel: string;
+  expiresAt: string;
+  providerReference: string;
+  instructions: string;
+  status: "AWAITING_PAYMENT" | "DETECTED" | "EXPIRED" | "PAID";
+  txHash?: string;
+  detectedAt?: string;
+};
+
+function createCryptoPaymentPayload(order: { orderNumber: string; totalCents: number; currency: string }, providerReference: string): CryptoPaymentPayload {
+  const address = cryptoAddress();
+  if (!address) {
+    throw new ApiError(503, "Crypto checkout is not configured. Add CRYPTO_PAYMENT_ADDRESS or CRYPTO_PAYMENT_INSTRUCTIONS.", "PAYMENT_METHOD_UNAVAILABLE");
+  }
+  const asset = env.CRYPTO_PAYMENT_ASSET || "USDT";
+  const network = env.CRYPTO_PAYMENT_NETWORK || "TRC20";
+  const amountLabel = `${(order.totalCents / 100).toFixed(2)} ${order.currency}`;
+  const expiresAt = new Date(Date.now() + env.CRYPTO_PAYMENT_TIMEOUT_MINUTES * 60 * 1000).toISOString();
+  const instructions = env.CRYPTO_PAYMENT_INSTRUCTIONS
+    || `Send exactly ${amountLabel} worth of ${asset} on ${network} to ${address}. Use order ${order.orderNumber} as the payment reference. The invoice expires at ${new Date(expiresAt).toLocaleString()}.`;
+
+  return { kind: "CRYPTO_INVOICE", asset, network, address, amountUsdCents: order.totalCents, amountLabel, expiresAt, providerReference, instructions, status: "AWAITING_PAYMENT" };
+}
+
 export function availablePaymentMethods() {
   return [
     { id: PaymentMethod.STRIPE, label: "Card / Stripe", available: Boolean(env.STRIPE_SECRET_KEY), kind: "hosted" },
     { id: PaymentMethod.PAYPAL, label: "PayPal", available: Boolean(env.PAYPAL_CLIENT_ID && env.PAYPAL_CLIENT_SECRET), kind: "hosted" },
     { id: PaymentMethod.BANK_TRANSFER, label: "Local bank transfer", available: Boolean(env.BANK_TRANSFER_INSTRUCTIONS), kind: "manual" },
-    { id: PaymentMethod.CRYPTO, label: "Crypto", available: Boolean(env.CRYPTO_PAYMENT_INSTRUCTIONS), kind: "manual" },
-    { id: PaymentMethod.MANUAL, label: "Manual approval", available: true, kind: "manual" }
+    { id: PaymentMethod.CRYPTO, label: `${env.CRYPTO_PAYMENT_ASSET || "USDT"} crypto checkout`, available: Boolean(cryptoAddress()), kind: "crypto" }
   ];
+}
+
+async function checkoutBuyer(buyerId: string) {
+  const buyer = await prisma.user.findUnique({ where: { id: buyerId } });
+  if (!buyer || buyer.isSuspended) throw new ApiError(403, "This account cannot place orders.", "ACCOUNT_RESTRICTED");
+  return buyer;
+}
+
+async function checkoutProducts(items: CheckoutItemInput[]) {
+  const normalized = new Map<string, number>();
+  for (const item of items) normalized.set(item.productId, (normalized.get(item.productId) ?? 0) + item.quantity);
+  const productIds = [...normalized.keys()];
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds }, status: ProductStatus.APPROVED, seller: { isSuspended: false, sellerProfile: { isSuspended: false, isVerified: true } } },
+    include: {
+      files: { where: { isActive: true } },
+      inventoryItems: { where: { isActive: true, orderItemId: null }, select: { id: true } }
+    }
+  });
+  if (!products.length || products.length !== productIds.length) {
+    const availableIds = new Set(products.map((product) => product.id));
+    throw new ApiError(
+      409,
+      "Your cart contains a product that is no longer published. Remove it from the cart and try again.",
+      "PRODUCT_UNAVAILABLE",
+      { unavailableProductIds: productIds.filter((id) => !availableIds.has(id)) }
+    );
+  }
+  for (const product of products) {
+    const requestedQuantity = normalized.get(product.id) ?? 1;
+    const isLineInventoryProduct = product.type === ProductType.DOWNLOAD && product.files.length === 0;
+    if (isLineInventoryProduct && product.inventoryItems.length < requestedQuantity) {
+      throw new ApiError(409, `${product.name} needs ${requestedQuantity} available delivery row${requestedQuantity === 1 ? "" : "s"}, but only ${product.inventoryItems.length} remain.`, "PRODUCT_OUT_OF_STOCK");
+    }
+  }
+  const subtotalCents = products.reduce((total, product) => total + product.priceCents * (normalized.get(product.id) ?? 1), 0);
+  return { normalized, products, subtotalCents };
 }
 
 export async function createCheckout(
@@ -133,31 +205,8 @@ export async function createCheckout(
     throw new ApiError(400, "That payment method is not available.", "PAYMENT_METHOD_UNAVAILABLE");
   }
 
-  const buyer = await prisma.user.findUnique({ where: { id: buyerId } });
-  if (!buyer || buyer.isSuspended) throw new ApiError(403, "This account cannot place orders.", "ACCOUNT_RESTRICTED");
-
-  const normalized = new Map<string, number>();
-  for (const item of items) normalized.set(item.productId, (normalized.get(item.productId) ?? 0) + item.quantity);
-  const productIds = [...normalized.keys()];
-  const products = await prisma.product.findMany({
-    where: { id: { in: productIds }, status: ProductStatus.APPROVED, seller: { isSuspended: false, sellerProfile: { isSuspended: false } } },
-    include: {
-      files: { where: { isActive: true } },
-      inventoryItems: { where: { isActive: true, orderItemId: null }, select: { id: true } }
-    }
-  });
-  if (!products.length || products.length !== productIds.length) {
-    throw new ApiError(400, "One or more products are unavailable.", "PRODUCT_UNAVAILABLE");
-  }
-  for (const product of products) {
-    const requestedQuantity = normalized.get(product.id) ?? 1;
-    const isLineInventoryProduct = product.type === ProductType.DOWNLOAD && product.files.length === 0;
-    if (isLineInventoryProduct && product.inventoryItems.length < requestedQuantity) {
-      throw new ApiError(400, `${product.name} does not have enough available inventory.`, "PRODUCT_OUT_OF_STOCK");
-    }
-  }
-
-  const subtotalCents = products.reduce((total, product) => total + product.priceCents * (normalized.get(product.id) ?? 1), 0);
+  const buyer = await checkoutBuyer(buyerId);
+  const { normalized, products, subtotalCents } = await checkoutProducts(items);
   const now = new Date();
   const coupon = couponCode ? await prisma.coupon.findFirst({
     where: {
@@ -175,39 +224,95 @@ export async function createCheckout(
     ? Math.min(subtotalCents, coupon.percentOff ? Math.round(subtotalCents * coupon.percentOff / 100) : coupon.amountOffCents ?? 0)
     : 0;
 
+  const totalCents = subtotalCents - discountCents;
   const order = await prisma.order.create({
     data: {
       orderNumber: reference("HS"), invoiceNumber: reference("INV"), buyerId,
-      couponId: coupon?.id, subtotalCents, discountCents, totalCents: subtotalCents - discountCents,
+      couponId: coupon?.id, subtotalCents, discountCents, totalCents,
       buyerEmail: buyer.email, buyerName: `${buyer.firstName} ${buyer.lastName}`,
       items: { create: products.map((product) => ({
         productId: product.id, sellerId: product.sellerId, productName: product.name,
         quantity: normalized.get(product.id) ?? 1, unitPriceCents: product.priceCents,
         totalCents: product.priceCents * (normalized.get(product.id) ?? 1)
       })) },
-      payment: { create: { method, amountCents: subtotalCents - discountCents, currency: "USD", status: PaymentStatus.REQUIRES_ACTION } }
+      payment: { create: { method, amountCents: totalCents, currency: "USD", status: PaymentStatus.REQUIRES_ACTION } }
     },
     include: { payment: true, items: true }
   });
 
-  let provider: ProviderResult;
+  let provider: ProviderResult & { cryptoPayment?: CryptoPaymentPayload };
   try {
     if (method === PaymentMethod.STRIPE) provider = await createStripeSession(order);
     else if (method === PaymentMethod.PAYPAL) provider = await createPaypalOrder(order);
     else if (method === PaymentMethod.BANK_TRANSFER) provider = { instructions: env.BANK_TRANSFER_INSTRUCTIONS };
-    else if (method === PaymentMethod.CRYPTO) provider = { instructions: env.CRYPTO_PAYMENT_INSTRUCTIONS };
+    else if (method === PaymentMethod.CRYPTO) {
+      const providerReference = reference("CRYPTO");
+      const cryptoPayment = createCryptoPaymentPayload(order, providerReference);
+      provider = { instructions: cryptoPayment.instructions, providerReference, cryptoPayment };
+    }
     else provider = { instructions: `Order ${order.orderNumber} is awaiting staff approval. Add proof of payment in support if requested.` };
   } catch (error) {
     await prisma.payment.update({ where: { orderId: order.id }, data: { status: PaymentStatus.FAILED, failureReason: error instanceof Error ? error.message : "Provider error" } });
     throw error;
   }
 
-  if (provider.providerReference) {
-    await prisma.payment.update({ where: { orderId: order.id }, data: { providerReference: provider.providerReference } });
+  if (provider.providerReference || provider.cryptoPayment) {
+    await prisma.payment.update({
+      where: { orderId: order.id },
+      data: { providerReference: provider.providerReference, providerPayload: provider.cryptoPayment ?? undefined }
+    });
   }
   if (coupon) await prisma.coupon.update({ where: { id: coupon.id }, data: { redemptionCount: { increment: 1 } } });
 
   return { order, ...provider };
+}
+
+export async function createWalletCheckout(buyerId: string, items: CheckoutItemInput[]) {
+  const buyer = await checkoutBuyer(buyerId);
+  const { normalized, products, subtotalCents } = await checkoutProducts(items);
+
+  if (buyer.balanceCents < subtotalCents) {
+    throw new ApiError(402, `Insufficient wallet balance. You need ${money(subtotalCents, "USD")} but have ${money(buyer.balanceCents, "USD")}.`, "INSUFFICIENT_FUNDS");
+  }
+
+  const order = await prisma.$transaction(async (tx) => {
+    const freshBuyer = await tx.user.findUnique({ where: { id: buyerId }, select: { balanceCents: true, email: true, firstName: true, lastName: true } });
+    if (!freshBuyer || freshBuyer.balanceCents < subtotalCents) {
+      throw new ApiError(402, "Insufficient wallet balance for this order.", "INSUFFICIENT_FUNDS");
+    }
+    await tx.user.update({ where: { id: buyerId }, data: { balanceCents: { decrement: subtotalCents } } });
+    return tx.order.create({
+      data: {
+        orderNumber: reference("HS"), invoiceNumber: reference("INV"), buyerId,
+        status: OrderStatus.AWAITING_PAYMENT,
+        subtotalCents,
+        discountCents: 0,
+        totalCents: subtotalCents,
+        buyerEmail: freshBuyer.email,
+        buyerName: `${freshBuyer.firstName} ${freshBuyer.lastName}`,
+        items: { create: products.map((product) => ({
+          productId: product.id, sellerId: product.sellerId, productName: product.name,
+          quantity: normalized.get(product.id) ?? 1, unitPriceCents: product.priceCents,
+          totalCents: product.priceCents * (normalized.get(product.id) ?? 1)
+        })) },
+        payment: { create: { method: PaymentMethod.MANUAL, amountCents: subtotalCents, currency: "USD", status: PaymentStatus.REQUIRES_ACTION, providerReference: reference("WALLET"), providerPayload: { kind: "WALLET_BALANCE", debitedCents: subtotalCents } } }
+      },
+      include: { payment: true, items: true }
+    });
+  });
+
+  try {
+    const completedOrder = await completePayment(order.id);
+    const updatedBuyer = await prisma.user.findUnique({ where: { id: buyerId }, select: { balanceCents: true } });
+    return { order: completedOrder, balanceCents: updatedBuyer?.balanceCents ?? 0 };
+  } catch (error) {
+    await prisma.$transaction([
+      prisma.user.update({ where: { id: buyerId }, data: { balanceCents: { increment: subtotalCents } } }),
+      prisma.payment.update({ where: { orderId: order.id }, data: { status: PaymentStatus.FAILED, failureReason: error instanceof Error ? error.message : "Wallet delivery failed" } }),
+      prisma.order.update({ where: { id: order.id }, data: { status: OrderStatus.CANCELLED } })
+    ]).catch(() => undefined);
+    throw error;
+  }
 }
 
 export async function completePayment(orderId: string, approvedById?: string) {
@@ -275,6 +380,69 @@ export async function completePayment(orderId: string, approvedById?: string) {
   return prisma.order.findUnique({ where: { id: orderId }, include: { payment: true, items: true } });
 }
 
+export async function getPaymentStatusForBuyer(orderId: string, buyerId: string) {
+  const order = await prisma.order.findFirst({
+    where: { id: orderId, buyerId },
+    include: { payment: true, items: true }
+  });
+  if (!order?.payment) throw new ApiError(404, "Order not found.", "ORDER_NOT_FOUND");
+
+  const payload = order.payment.providerPayload as CryptoPaymentPayload | null;
+  if (order.payment.method === PaymentMethod.CRYPTO && payload?.kind === "CRYPTO_INVOICE" && order.payment.status === PaymentStatus.REQUIRES_ACTION) {
+    const expired = new Date(payload.expiresAt).getTime() <= Date.now();
+    if (expired) {
+      const expiredPayload = { ...payload, status: "EXPIRED" as const };
+      await prisma.$transaction([
+        prisma.payment.update({ where: { orderId: order.id }, data: { status: PaymentStatus.CANCELLED, providerPayload: expiredPayload } }),
+        prisma.order.update({ where: { id: order.id }, data: { status: OrderStatus.CANCELLED } })
+      ]);
+      return { order: { ...order, status: OrderStatus.CANCELLED, payment: { ...order.payment, status: PaymentStatus.CANCELLED, providerPayload: expiredPayload } }, cryptoPayment: expiredPayload };
+    }
+  }
+
+  return { order, cryptoPayment: payload?.kind === "CRYPTO_INVOICE" ? payload : undefined };
+}
+
+export async function checkCryptoPayment(orderId: string, buyerId: string) {
+  const status = await getPaymentStatusForBuyer(orderId, buyerId);
+  if (status.order.payment?.status === PaymentStatus.PAID) return status;
+  if (status.order.payment?.method !== PaymentMethod.CRYPTO) {
+    throw new ApiError(400, "This order is not a crypto checkout.", "PAYMENT_METHOD_INVALID");
+  }
+  return status;
+}
+
+export async function confirmCryptoWebhook(input: { orderId?: string; providerReference?: string; txHash?: string; amount?: string; asset?: string; network?: string }) {
+  if (!env.CRYPTO_WEBHOOK_SECRET) {
+    throw new ApiError(503, "Crypto webhook is not enabled.", "CRYPTO_WEBHOOK_DISABLED");
+  }
+  const payment = await prisma.payment.findFirst({
+    where: {
+      method: PaymentMethod.CRYPTO,
+      status: PaymentStatus.REQUIRES_ACTION,
+      OR: [
+        input.orderId ? { orderId: input.orderId } : undefined,
+        input.providerReference ? { providerReference: input.providerReference } : undefined
+      ].filter(Boolean) as Array<{ orderId: string } | { providerReference: string }>
+    },
+    include: { order: true }
+  });
+  if (!payment) throw new ApiError(404, "Pending crypto payment not found.", "PAYMENT_NOT_FOUND");
+  const payload = payment.providerPayload as CryptoPaymentPayload | null;
+  if (payload?.kind === "CRYPTO_INVOICE" && new Date(payload.expiresAt).getTime() <= Date.now()) {
+    throw new ApiError(410, "Crypto invoice expired.", "CRYPTO_INVOICE_EXPIRED");
+  }
+  await prisma.payment.update({
+    where: { id: payment.id },
+    data: {
+      providerPayload: payload?.kind === "CRYPTO_INVOICE"
+        ? { ...payload, status: "DETECTED", txHash: input.txHash, detectedAt: new Date().toISOString() }
+        : { kind: "CRYPTO_DETECTED", txHash: input.txHash, detectedAt: new Date().toISOString(), amount: input.amount, asset: input.asset, network: input.network }
+    }
+  });
+  return completePayment(payment.orderId);
+}
+
 export async function confirmHostedPayment(orderId: string, buyerId: string) {
   const order = await prisma.order.findFirst({ where: { id: orderId, buyerId }, include: { payment: true } });
   if (!order?.payment) throw new ApiError(404, "Order not found.", "ORDER_NOT_FOUND");
@@ -301,7 +469,7 @@ export async function confirmHostedPayment(orderId: string, buyerId: string) {
       await prisma.payment.update({ where: { orderId: order.id }, data: { providerPayload: { captureId } } });
     }
   } else {
-    throw new ApiError(400, "This payment requires staff approval.", "MANUAL_APPROVAL_REQUIRED");
+    throw new ApiError(400, "This payment is not a hosted provider checkout.", "MANUAL_APPROVAL_REQUIRED");
   }
   return completePayment(order.id);
 }

@@ -1,6 +1,6 @@
 import { ChevronDown, Grid2X2, List, Search, SlidersHorizontal } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../commerce/CartContext";
 import { useMarketplaceCategories, useMarketplaceProducts } from "../commerce/useMarketplace";
 import { MarketFooter, MarketHeader } from "../components/MarketHeader";
@@ -29,6 +29,7 @@ function sortProducts(products: CatalogProduct[], sort: SortMode) {
 
 export function CatalogPage() {
   const { add } = useCart();
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
   const [expanded, setExpanded] = useState("instagram");
@@ -61,6 +62,11 @@ export function CatalogPage() {
     });
     return sortProducts(matches, sort);
   }, [category, categories, products, query, sort, stockOnly]);
+
+  function addToCart(product: CatalogProduct) {
+    add(product);
+    navigate("/cart");
+  }
 
   const visibleParents = parentCategories.filter((item) => !categoryQuery.trim() || `${item.name} ${item.description}`.toLowerCase().includes(categoryQuery.toLowerCase()) || (childrenByParent.get(item.slug) ?? []).some((child) => `${child.name} ${child.description}`.toLowerCase().includes(categoryQuery.toLowerCase())));
   const activeCategory = categories.find((item) => item.slug === category);
@@ -111,7 +117,7 @@ export function CatalogPage() {
             </div>
           </div>
           <div className={`market-product-scroll ${view === "grid" ? "grid" : ""}`}>
-            {filteredProducts.map((product) => <MarketplaceProductCard key={product.id} product={product} onBuy={add} layout={view} />)}
+            {filteredProducts.map((product) => <MarketplaceProductCard key={product.id} product={product} onBuy={addToCart} layout={view} />)}
           </div>
           {!filteredProducts.length ? <div className="no-results"><Search /><strong>No matching products</strong><span>Try another category, remove the stock filter, or use a broader phrase.</span></div> : null}
         </div>

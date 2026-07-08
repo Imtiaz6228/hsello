@@ -11,7 +11,8 @@ const publicAuthPaths = new Set([
   "/auth/verify-email",
   "/auth/resend-verification",
   "/auth/forgot-password",
-  "/auth/reset-password"
+  "/auth/reset-password",
+  "/commerce/crypto/webhook"
 ]);
 
 function apiPath(reqPath: string) {

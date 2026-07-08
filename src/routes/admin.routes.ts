@@ -16,6 +16,7 @@ import {
 import { listUsersForAdministration, updateUserRole } from "../services/user.service.js";
 import { prisma } from "../lib/prisma.js";
 import { completePayment, issueRefund } from "../services/payment.service.js";
+import { ensureDefaultMarketplaceCategories } from "../services/category.service.js";
 import { sendTicketUpdateEmail } from "../lib/email.js";
 import { privateUploadRoot } from "../middleware/upload.js";
 
@@ -171,6 +172,16 @@ adminRouter.patch("/products/:id/status", requireStaff, asyncHandler(async (req,
   if (input.status !== "APPROVED" && !input.reason) {
     res.status(400).json({ message: "A moderation reason is required.", code: "REASON_REQUIRED" }); return;
   }
+  if (input.status === "APPROVED") {
+    const productForApproval = await prisma.product.findUnique({
+      where: { id },
+      include: { files: { where: { isActive: true } }, inventoryItems: { where: { isActive: true, orderItemId: null }, select: { id: true } } }
+    });
+    if (!productForApproval) throw new ApiError(404, "Product not found.", "PRODUCT_NOT_FOUND");
+    if (productForApproval.type === "DOWNLOAD" && productForApproval.files.length === 0 && productForApproval.inventoryItems.length === 0) {
+      throw new ApiError(400, "Add at least one delivery file or inventory row before approving this digital product.", "PRODUCT_DELIVERY_REQUIRED");
+    }
+  }
   const product = await prisma.product.update({
     where: { id },
     data: { status: input.status, rejectionReason: input.status === "APPROVED" ? null : input.reason, publishedAt: input.status === "APPROVED" ? new Date() : undefined }
@@ -289,6 +300,7 @@ adminRouter.post("/tickets/:id/reply", requireStaff, asyncHandler(async (req, re
 }));
 
 adminRouter.get("/categories", requireStaff, asyncHandler(async (_req, res) => {
+  await ensureDefaultMarketplaceCategories();
   const categories = await prisma.category.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] });
   res.json({ categories });
 }));

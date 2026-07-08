@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiRequest } from "../api/client";
-import { catalogCategories, catalogProducts, type CatalogCategory, type CatalogProduct } from "../data/catalog";
+import { catalogCategories, type CatalogCategory, type CatalogProduct } from "../data/catalog";
 
 type ApiCategory = {
   id: string;
@@ -90,11 +90,11 @@ function mapCategories(categories: ApiCategory[]): CatalogCategory[] {
 }
 
 export function useMarketplaceProducts() {
-  const [products, setProducts] = useState<CatalogProduct[]>(catalogProducts);
+  const [products, setProducts] = useState<CatalogProduct[]>([]);
   useEffect(() => {
     void apiRequest<{ products: ApiProduct[] }>("/api/marketplace/products?take=96")
-      .then((data) => { if (data.products.length) setProducts(data.products.map(mapProduct)); })
-      .catch(() => undefined);
+      .then((data) => setProducts(data.products.map(mapProduct)))
+      .catch(() => setProducts([]));
   }, []);
   return products;
 }
@@ -110,14 +110,13 @@ export function useMarketplaceCategories() {
 }
 
 export function useMarketplaceProduct(slug?: string) {
-  const fallback = catalogProducts.find((item) => item.slug === slug);
-  const [product, setProduct] = useState<CatalogProduct | undefined>(fallback);
-  const [loading, setLoading] = useState(!fallback);
+  const [product, setProduct] = useState<CatalogProduct | undefined>();
+  const [loading, setLoading] = useState(Boolean(slug));
   useEffect(() => {
     if (!slug) return;
     void apiRequest<{ product: ApiProduct }>(`/api/marketplace/products/${encodeURIComponent(slug)}`)
       .then((data) => setProduct(mapProduct(data.product)))
-      .catch(() => undefined)
+      .catch(() => setProduct(undefined))
       .finally(() => setLoading(false));
   }, [slug]);
   return { product, loading };

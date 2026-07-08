@@ -60,36 +60,31 @@ export function SellerStudioPage() {
   const [categoryForm, setCategoryForm] = useState({ name: "", description: "", parentId: "" });
 
   const parentCategories = useMemo(() => categories.filter((category) => !category.parentId), [categories]);
-  const subCategories = useMemo(() => categories.filter((category) => category.parentId === form.categoryId), [categories, form.categoryId]);
+  const categoriesById = useMemo(() => new Map(categories.map((category) => [category.id, category])), [categories]);
+  const groupedCategoryOptions = useMemo(() => categories.map((category) => {
+    const parent = category.parentId ? categoriesById.get(category.parentId) : null;
+    return {
+      ...category,
+      label: parent ? `${parent.name} / ${category.name}` : category.name,
+      isParent: !category.parentId
+    };
+  }).sort((a, b) => Number(a.isParent) - Number(b.isParent) || a.label.localeCompare(b.label)), [categories, categoriesById]);
   const selectedCategoryId = form.subCategoryId || form.categoryId;
 
   const load = () => Promise.all([
     apiRequest<{ products: Product[] }>("/api/seller/products"),
-    apiRequest<{ categories: Category[] }>("/api/marketplace/categories")
+    apiRequest<{ categories: Category[] }>("/api/seller/categories")
   ]).then(([productsData, categoriesData]) => {
     setProducts(productsData.products);
     setCategories(categoriesData.categories);
     if (!form.categoryId && categoriesData.categories[0]) {
-      const firstParent = categoriesData.categories.find((category) => !category.parentId) ?? categoriesData.categories[0];
-      const firstChild = categoriesData.categories.find((category) => category.parentId === firstParent.id);
-      setForm((current) => ({ ...current, categoryId: firstParent.id, subCategoryId: firstChild?.id ?? "" }));
+      setForm((current) => ({ ...current, categoryId: categoriesData.categories[0].id, subCategoryId: "" }));
     }
   });
 
   useEffect(() => {
     void load().catch(() => undefined);
   }, []);
-
-  useEffect(() => {
-    const firstChild = categories.find((category) => category.parentId === form.categoryId);
-    if (form.categoryId && subCategories.length && !subCategories.some((category) => category.id === form.subCategoryId)) {
-      setForm((current) => ({ ...current, subCategoryId: firstChild?.id ?? "" }));
-    }
-    if (!subCategories.length && form.subCategoryId) {
-      setForm((current) => ({ ...current, subCategoryId: "" }));
-    }
-  }, [categories, form.categoryId, form.subCategoryId, subCategories]);
-
 
   async function createCategory(event: FormEvent) {
     event.preventDefault();
@@ -111,8 +106,8 @@ export function SellerStudioPage() {
       await load();
       setForm((current) => ({
         ...current,
-        categoryId: result.category.parentId ? (result.category.parentId ?? current.categoryId) : result.category.id,
-        subCategoryId: result.category.parentId ? result.category.id : ""
+        categoryId: result.category.id,
+        subCategoryId: ""
       }));
     } catch (error) {
       setMessage(error instanceof ApiError ? error.message : "Category could not be created.");
@@ -316,8 +311,7 @@ export function SellerStudioPage() {
             </label>
             <div className="form-grid two">
               <label><span>Product title shown to buyers</span><input required minLength={3} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="e.g. Premium design template bundle" /></label>
-              <label><span>Category</span><select required value={form.categoryId} onChange={(event) => setForm({ ...form, categoryId: event.target.value, subCategoryId: "" })}>{(parentCategories.length ? parentCategories : categories).map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select><button className="inline-form-link" type="button" onClick={() => setCategoryOpen(true)}>+ Add category</button></label>
-              <label><span>Subcategory</span><select value={form.subCategoryId} onChange={(event) => setForm({ ...form, subCategoryId: event.target.value })}><option value="">Use selected category</option>{subCategories.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select><button className="inline-form-link" type="button" onClick={() => { setCategoryForm((current) => ({ ...current, parentId: form.categoryId })); setCategoryOpen(true); }}>+ Add subcategory</button></label>
+              <label><span>Category</span><select required value={selectedCategoryId} onChange={(event) => setForm({ ...form, categoryId: event.target.value, subCategoryId: "" })}>{groupedCategoryOptions.map((category) => <option value={category.id} key={category.id}>{category.isParent ? category.label : `↳ ${category.label}`}</option>)}</select><button className="inline-form-link" type="button" onClick={() => setCategoryOpen(true)}>+ Add or request category</button></label>
               <label><span>Type</span><select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })}><option value="DOWNLOAD">Digital product</option><option value="SERVICE">Service</option></select></label>
               <label><span>Price (USD)</span><input required type="number" min="0.50" step="0.01" value={form.priceUsd} onChange={(event) => setForm({ ...form, priceUsd: event.target.value })} /></label>
               <label><span>Price (Yuan / CNY)</span><input type="number" min="0" step="0.01" value={form.priceCny} onChange={(event) => setForm({ ...form, priceCny: event.target.value })} /></label>

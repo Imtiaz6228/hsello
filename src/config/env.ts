@@ -44,7 +44,12 @@ const envSchema = z.object({
   PAYPAL_CLIENT_SECRET: z.preprocess(emptyToUndefined, z.string().optional()),
   PAYPAL_ENVIRONMENT: z.enum(["sandbox", "live"]).default("sandbox"),
   BANK_TRANSFER_INSTRUCTIONS: z.preprocess(emptyToUndefined, z.string().optional()),
-  CRYPTO_PAYMENT_INSTRUCTIONS: z.preprocess(emptyToUndefined, z.string().optional())
+  CRYPTO_PAYMENT_INSTRUCTIONS: z.preprocess(emptyToUndefined, z.string().optional()),
+  CRYPTO_PAYMENT_ADDRESS: z.preprocess(emptyToUndefined, z.string().optional()),
+  CRYPTO_PAYMENT_ASSET: z.preprocess(emptyToUndefined, z.string().default("USDT")),
+  CRYPTO_PAYMENT_NETWORK: z.preprocess(emptyToUndefined, z.string().default("TRC20")),
+  CRYPTO_PAYMENT_TIMEOUT_MINUTES: z.coerce.number().int().min(5).max(240).default(30),
+  CRYPTO_WEBHOOK_SECRET: z.preprocess(emptyToUndefined, z.string().optional())
 });
 
 const parsed = envSchema.safeParse(process.env);

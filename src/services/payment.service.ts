@@ -219,9 +219,19 @@ export async function completePayment(orderId: string, approvedById?: string) {
   if (order.payment.status === PaymentStatus.PAID) return order;
 
   const rawLinks: Array<{ name: string; token: string }> = [];
+  const paidAt = new Date();
+  const autoDeliver = order.items.every((item) => item.product.type === ProductType.DOWNLOAD);
+
   await prisma.$transaction(async (tx) => {
-    await tx.payment.update({ where: { orderId }, data: { status: PaymentStatus.PAID, approvedById, approvedAt: approvedById ? new Date() : undefined } });
-    await tx.order.update({ where: { id: orderId }, data: { status: OrderStatus.PAID, paidAt: new Date() } });
+    await tx.payment.update({ where: { orderId }, data: { status: PaymentStatus.PAID, approvedById, approvedAt: approvedById ? paidAt : undefined } });
+    await tx.order.update({
+      where: { id: orderId },
+      data: {
+        status: autoDeliver ? OrderStatus.DELIVERED : OrderStatus.PROCESSING,
+        paidAt,
+        completedAt: autoDeliver ? paidAt : undefined
+      }
+    });
     for (const item of order.items) {
       await tx.product.update({ where: { id: item.productId }, data: { salesCount: { increment: item.quantity } } });
       await tx.sellerProfile.updateMany({ where: { userId: item.sellerId }, data: { totalSales: { increment: item.quantity } } });

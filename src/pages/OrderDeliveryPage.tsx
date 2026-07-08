@@ -99,9 +99,14 @@ export function OrderDeliveryPage() {
                 <strong>{item.productName}</strong>
                 {item.product.deliveryNote ? <small>{item.product.deliveryNote}</small> : null}
               </div>
-              {item.downloadGrants.length ? item.downloadGrants.map((grant) => (
-                <a key={grant.id} className="action-link" href={`/api/commerce/downloads/${grant.id}`}><Download size={14} /> {grant.productFile.displayName} <small>({grant.maxDownloads - grant.downloadCount} left)</small></a>
-              )) : null}
+              {item.downloadGrants.length ? (
+                <>
+                  <a className="action-link" href={`/api/commerce/order-items/${item.id}/download.zip`}><Download size={14} /> Download all as ZIP</a>
+                  {item.downloadGrants.map((grant) => (
+                    <a key={grant.id} className="action-link" href={`/api/commerce/downloads/${grant.id}`}><Download size={14} /> {grant.productFile.displayName} <small>({grant.maxDownloads - grant.downloadCount} left)</small></a>
+                  ))}
+                </>
+              ) : null}
               {item.inventoryItems?.length ? (
                 <div className="digital-delivery-rows">
                   {item.inventoryItems.map((row) => <code key={row.id}>{row.content}</code>)}

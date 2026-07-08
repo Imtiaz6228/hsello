@@ -22,7 +22,6 @@ export function CheckoutPage() {
     { id: "MANUAL", label: "Manual approval", available: true, kind: "manual" }
   ]);
   const [method, setMethod] = useState<Method["id"]>("STRIPE");
-  const [coupon, setCoupon] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -33,7 +32,7 @@ export function CheckoutPage() {
     event.preventDefault(); setBusy(true); setError("");
     try {
       const data = await apiRequest<{ order: { id: string }; redirectUrl?: string; instructions?: string }>("/api/commerce/checkout", {
-        method: "POST", body: { items: items.map((item) => ({ productId: item.product.id, quantity: item.quantity })), method, couponCode: coupon || undefined }
+        method: "POST", body: { items: items.map((item) => ({ productId: item.product.id, quantity: item.quantity })), method }
       });
       if (data.redirectUrl) { location.assign(data.redirectUrl); return; }
       navigate(`/checkout/confirmation?order=${data.order.id}`, { state: { instructions: data.instructions } });
@@ -57,7 +56,7 @@ export function CheckoutPage() {
               </label>
             ); })}
           </div>
-          <label className="coupon-field"><span>Coupon code</span><div><input value={coupon} onChange={(event) => setCoupon(event.target.value.toUpperCase())} placeholder="Enter code" /><button type="button">Apply at payment</button></div></label>
+          <div className="checkout-approval-note"><ShieldCheck size={16} /> No coupon step. Manual payments are delivered automatically after admin approval.</div>
           {error ? <div className="notice error">{error}</div> : null}
         </section>
         <aside className="checkout-summary">

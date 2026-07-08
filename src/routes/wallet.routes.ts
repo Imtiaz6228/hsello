@@ -1,7 +1,8 @@
 import { Router } from "express";
+import { Role } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
-import { requireAuth, requireVerifiedUser } from "../middleware/auth.js";
+import { requireAuth, requireRole, requireVerifiedUser } from "../middleware/auth.js";
 import { ApiError, asyncHandler } from "../middleware/error-handler.js";
 
 export const walletRouter = Router();
@@ -48,7 +49,7 @@ walletRouter.post("/deposit", asyncHandler(async (req, res) => {
   });
 }));
 
-walletRouter.patch("/deposits/:id/approve", asyncHandler(async (req, res) => {
+walletRouter.patch("/deposits/:id/approve", requireRole(Role.ADMIN, Role.SUPER_ADMIN), asyncHandler(async (req, res) => {
   const id = z.string().uuid().parse(req.params.id);
   const deposit = await prisma.walletDeposit.findUnique({ where: { id } });
 
@@ -72,7 +73,7 @@ walletRouter.patch("/deposits/:id/approve", asyncHandler(async (req, res) => {
   res.json({ message: "Deposit approved and balance updated.", deposit: result[0] });
 }));
 
-walletRouter.patch("/deposits/:id/reject", asyncHandler(async (req, res) => {
+walletRouter.patch("/deposits/:id/reject", requireRole(Role.ADMIN, Role.SUPER_ADMIN), asyncHandler(async (req, res) => {
   const id = z.string().uuid().parse(req.params.id);
   const input = z.object({ adminNotes: z.string().trim().max(500).optional() }).parse(req.body);
   const deposit = await prisma.walletDeposit.findUnique({ where: { id } });

@@ -263,9 +263,14 @@ export function AccountDashboardPage() {
                           <div className="oi-actions">
                             {item.product.type === "SERVICE" ? (
                               <Link to={`/orders/${order.id}`} className="action-link"><MessageCircle size={14} /> Delivery chat</Link>
-                            ) : item.downloadGrants.map((grant) => (
-                              <a key={grant.id} href={`/api/commerce/downloads/${grant.id}`} className="action-link"><Download size={14} /> {grant.productFile.displayName} <small>({grant.maxDownloads - grant.downloadCount} left)</small></a>
-                            ))}
+                            ) : (
+                              <>
+                                {item.downloadGrants.length ? <a href={`/api/commerce/order-items/${item.id}/download.zip`} className="action-link"><Download size={14} /> Download ZIP</a> : null}
+                                {item.downloadGrants.map((grant) => (
+                                  <a key={grant.id} href={`/api/commerce/downloads/${grant.id}`} className="action-link"><Download size={14} /> {grant.productFile.displayName} <small>({grant.maxDownloads - grant.downloadCount} left)</small></a>
+                                ))}
+                              </>
+                            )}
                           </div>
                           {item.inventoryItems?.length ? (
                             <div className="digital-delivery-rows">
@@ -447,6 +452,8 @@ export function AccountDashboardPage() {
                       <strong>{product.name}</strong>
                       <small>{product.type} · ${(product.priceCents / 100).toFixed(2)}</small>
                       <span className="sp-files">{product.files?.length ?? 0} file{(product.files?.length ?? 0) !== 1 ? "s" : ""}</span>
+                      <small>{product.category?.parent?.name ? `${product.category.parent.name} / ` : ""}{product.category?.name ?? "Uncategorized"}</small>
+                      <Link to="/seller" className="action-link">Manage product</Link>
                     </div>
                   ))}
                 </div>

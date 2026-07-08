@@ -3,6 +3,7 @@ import { Router } from "express";
 import { DisputeStatus, PaymentMethod, ProductType, TicketCategory } from "@prisma/client";
 import { z } from "zod";
 import { sha256 } from "../lib/crypto.js";
+import { createZipBuffer } from "../lib/zip.js";
 import { sendTicketUpdateEmail } from "../lib/email.js";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth, requireVerifiedUser } from "../middleware/auth.js";
@@ -145,6 +146,38 @@ commerceRouter.get("/downloads/:grantId", asyncHandler(async (req, res) => {
     prisma.downloadEvent.create({ data: { downloadGrantId: id, ipAddress: req.ip, userAgent: req.get("user-agent") } })
   ]);
   res.download(path.resolve(grant.productFile.storagePath), grant.productFile.displayName);
+}));
+
+commerceRouter.get("/order-items/:id/download.zip", asyncHandler(async (req, res) => {
+  const id = z.string().uuid().parse(req.params.id);
+  const orderItem = await prisma.orderItem.findFirst({
+    where: { id, order: { buyerId: req.auth!.id, paidAt: { not: null } } },
+    include: {
+      downloadGrants: {
+        where: { revokedAt: null, expiresAt: { gt: new Date() } },
+        include: { productFile: true }
+      }
+    }
+  });
+
+  const grants = orderItem?.downloadGrants.filter((grant) => grant.downloadCount < grant.maxDownloads) ?? [];
+  if (!orderItem || grants.length === 0) {
+    throw new ApiError(410, "No downloadable files are available for this order item.", "DOWNLOAD_UNAVAILABLE");
+  }
+
+  const zip = await createZipBuffer(grants.map((grant) => ({
+    name: grant.productFile.displayName,
+    storagePath: grant.productFile.storagePath
+  })));
+
+  await prisma.$transaction(grants.flatMap((grant) => [
+    prisma.downloadGrant.update({ where: { id: grant.id }, data: { downloadCount: { increment: 1 } } }),
+    prisma.downloadEvent.create({ data: { downloadGrantId: grant.id, ipAddress: req.ip, userAgent: req.get("user-agent") } })
+  ]));
+
+  res.setHeader("content-type", "application/zip");
+  res.setHeader("content-disposition", `attachment; filename="${orderItem.productName.replace(/[^a-z0-9-]+/gi, "-").slice(0, 80) || "hsello-download"}.zip"`);
+  res.send(zip);
 }));
 
 commerceRouter.post("/orders/:id/refunds", asyncHandler(async (req, res) => {

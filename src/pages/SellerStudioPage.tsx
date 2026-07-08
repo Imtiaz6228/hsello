@@ -243,11 +243,11 @@ export function SellerStudioPage() {
       </nav>
       <header>
         <span className="section-index">VERIFIED SELLER WORKSPACE</span>
-        <h1>Submit digital products.<br />Admin approves before publishing.</h1>
-        <p>Add scrollable buyer categories, subcategories, products, multi-currency prices, after-sales time, images, and delivery inventory. Pending products stay hidden from buyers until approval.</p>
+        <h1>Seller dashboard.<br />Simple product submissions.</h1>
+        <p>All your products are listed here. Add the buyer-facing title, description, category, price, image, and delivery file or ZIP, then submit for admin approval before buyers can purchase.</p>
       </header>
       {message ? <div className="dashboard-message">{message}</div> : null}
-      <section className="seller-category-panel"><div><FolderPlus /><span><strong>Marketplace categories</strong><small>{parentCategories.length} parent categories · {categories.length - parentCategories.length} subcategories available</small></span></div><button type="button" onClick={() => setCategoryOpen(true)}><PlusCircle /> Add category or subcategory</button></section>
+      <section className="seller-category-panel"><div><FolderPlus /><span><strong>Product categories</strong><small>Select from existing categories when creating a product. Add a simple category only when it is missing.</small></span></div><button type="button" onClick={() => setCategoryOpen(true)}><PlusCircle /> Add category</button></section>
       <section className="seller-product-list">
         <div className="seller-list-heading"><span>Product</span><span>Status</span><span>Delivery</span><span>Actions</span></div>
         {products.length ? products.map((product) => {
@@ -308,14 +308,14 @@ export function SellerStudioPage() {
           <form className="seller-product-form" onSubmit={create}>
             <button type="button" className="modal-close" onClick={() => setOpen(false)}>x</button>
             <span className="section-index">NEW PRODUCT SUBMISSION</span>
-            <h2>Describe the product clearly.</h2>
+            <h2>Create a product buyers can understand.</h2>
             <label className="seller-image-picker">
               <span>Product image</span>
               <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setCoverImage(event.target.files?.[0] ?? null)} />
               <small>{coverImage ? coverImage.name : "JPEG, PNG, or WebP"}</small>
             </label>
             <div className="form-grid two">
-              <label><span>Product title</span><input required minLength={3} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label>
+              <label><span>Product title shown to buyers</span><input required minLength={3} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="e.g. Premium design template bundle" /></label>
               <label><span>Category</span><select required value={form.categoryId} onChange={(event) => setForm({ ...form, categoryId: event.target.value, subCategoryId: "" })}>{(parentCategories.length ? parentCategories : categories).map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select><button className="inline-form-link" type="button" onClick={() => setCategoryOpen(true)}>+ Add category</button></label>
               <label><span>Subcategory</span><select value={form.subCategoryId} onChange={(event) => setForm({ ...form, subCategoryId: event.target.value })}><option value="">Use selected category</option>{subCategories.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select><button className="inline-form-link" type="button" onClick={() => { setCategoryForm((current) => ({ ...current, parentId: form.categoryId })); setCategoryOpen(true); }}>+ Add subcategory</button></label>
               <label><span>Type</span><select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })}><option value="DOWNLOAD">Digital product</option><option value="SERVICE">Service</option></select></label>
@@ -324,12 +324,12 @@ export function SellerStudioPage() {
               <label><span>Price (Russian Ruble)</span><input type="number" min="0" step="0.01" value={form.priceRub} onChange={(event) => setForm({ ...form, priceRub: event.target.value })} /></label>
               <label><span>After-sales service time (hours)</span><input required type="number" min={12} max={8760} value={form.afterSalesServiceHours} onChange={(event) => setForm({ ...form, afterSalesServiceHours: Number(event.target.value) })} /></label>
             </div>
-            <label><span>Short description</span><input required minLength={10} maxLength={240} value={form.shortDescription} onChange={(event) => setForm({ ...form, shortDescription: event.target.value })} /></label>
-            <label><span>Full description</span><textarea required minLength={30} rows={6} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label>
-            <label><span>Delivery note</span><textarea rows={3} value={form.deliveryNote} onChange={(event) => setForm({ ...form, deliveryNote: event.target.value })} /></label>
+            <label><span>Short description shown on product cards</span><input required minLength={10} maxLength={240} value={form.shortDescription} onChange={(event) => setForm({ ...form, shortDescription: event.target.value })} placeholder="One clear sentence about what the buyer gets" /></label>
+            <label><span>Full product description</span><textarea required minLength={30} rows={6} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="Explain features, what is included, compatibility, and delivery details." /></label>
+            <label><span>Buyer delivery note</span><textarea rows={3} value={form.deliveryNote} onChange={(event) => setForm({ ...form, deliveryNote: event.target.value })} placeholder="Optional note shown beside the download after approval." /></label>
             <label><span>Manual digital product rows</span><textarea rows={6} placeholder="One product / code / account / license per line" value={form.inventoryLines} onChange={(event) => setForm({ ...form, inventoryLines: event.target.value })} /></label>
-            <small>Manual rows submit the product directly for pending admin approval. You can also create a draft, then upload an inventory text/CSV file from the product list.</small>
-            <button className="primary-button" disabled={busy}><PackagePlus /> {busy ? "Submitting..." : "Submit product"}</button>
+            <small>Tip: upload your finished delivery file as a ZIP from the product list after creating the product. Products stay hidden until admin approves them.</small>
+            <button className="primary-button" disabled={busy}><PackagePlus /> {busy ? "Submitting..." : "Create product"}</button>
           </form>
         </div>
       ) : null}

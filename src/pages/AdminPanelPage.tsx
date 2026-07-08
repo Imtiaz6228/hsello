@@ -168,6 +168,7 @@ export function AdminPanelPage() {
               <dl className="details-grid">
                 <div><dt>Location</dt><dd>{application.city}, {application.country}</dd></div>
                 <div><dt>Categories</dt><dd>{application.productCategories.join(", ")}</dd></div>
+                <div><dt>Document number</dt><dd>{application.documentNumber ?? "Not provided"}</dd></div>
               </dl>
               <label className="field">
                 <span>Review notes</span>

@@ -19,6 +19,7 @@ type SellerForm = {
   storeName: string;
   documentName: string;
   documentType: "ID_CARD" | "PASSPORT";
+  documentNumber: string;
   storeDescription: string;
   productCategories: string;
   termsAccepted: boolean;
@@ -40,6 +41,7 @@ function initialForm(user: ReturnType<typeof useAuth>["user"]): SellerForm {
     storeName: "",
     documentName: legalName,
     documentType: "ID_CARD",
+    documentNumber: "",
     storeDescription: "",
     productCategories: "",
     termsAccepted: false
@@ -111,6 +113,7 @@ export function SellerApplicationPage() {
     data.append("storeName", form.storeName);
     data.append("documentName", form.documentName);
     data.append("documentType", form.documentType);
+    data.append("documentNumber", form.documentNumber);
     data.append("storeDescription", form.storeDescription);
     data.append("productCategories", form.productCategories);
     data.append("termsAccepted", String(form.termsAccepted));
@@ -187,6 +190,7 @@ export function SellerApplicationPage() {
               <div className="form-grid two">
                 <label className="field" htmlFor="documentName"><span>Name on document</span><input id="documentName" value={form.documentName} onChange={(event) => updateField("documentName", event.target.value)} required /></label>
                 <label className="field" htmlFor="documentType"><span>Document type</span><select id="documentType" value={form.documentType} onChange={(event) => updateField("documentType", event.target.value as SellerForm["documentType"])} required><option value="ID_CARD">ID card / CNIC</option><option value="PASSPORT">Passport</option></select></label>
+                <label className="field" htmlFor="documentNumber"><span>{form.documentType === "PASSPORT" ? "Passport number" : "ID card / CNIC number"}</span><input id="documentNumber" value={form.documentNumber} onChange={(event) => updateField("documentNumber", event.target.value)} placeholder={form.documentType === "PASSPORT" ? "Passport number" : "ID card / CNIC number"} autoComplete="off" required /></label>
                 <label className="field" htmlFor="documentFront"><span>Front side</span><input id="documentFront" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(event) => setDocumentFront(event.target.files?.[0] ?? null)} required /><small>{documentFront ? documentFront.name : "JPEG, PNG, WebP, or PDF"}</small></label>
                 <label className="field" htmlFor="documentBack"><span>Back side</span><input id="documentBack" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(event) => setDocumentBack(event.target.files?.[0] ?? null)} required /><small>{documentBack ? documentBack.name : "JPEG, PNG, WebP, or PDF"}</small></label>
               </div>

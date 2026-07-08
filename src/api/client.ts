@@ -38,6 +38,7 @@ export type SellerApplication = {
   storeName: string;
   documentName?: string | null;
   documentType?: "ID_CARD" | "PASSPORT" | null;
+  documentNumber?: string | null;
   documentFrontOriginalName?: string | null;
   documentFrontMimeType?: string | null;
   documentBackOriginalName?: string | null;

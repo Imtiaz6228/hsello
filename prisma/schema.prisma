@@ -229,6 +229,7 @@ model SellerApplication {
   storeName         String
   documentName      String?
   documentType      SellerDocumentType?
+  documentNumber    String?
   documentFrontPath String?
   documentFrontOriginalName String?
   documentFrontMimeType String?

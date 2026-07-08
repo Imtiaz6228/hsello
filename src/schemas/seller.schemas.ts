@@ -26,6 +26,7 @@ export const sellerApplicationSchema = z.object({
   storeName: z.string().trim().min(2).max(120),
   documentName: z.string().trim().min(2).max(160),
   documentType: z.enum(["ID_CARD", "PASSPORT"]),
+  documentNumber: z.string().trim().min(4).max(64),
   storeDescription: z.string().trim().min(20).max(2000),
   productCategories: productCategoriesSchema,
   termsAccepted: requiredConsent("You must accept the seller terms.")

@@ -16,6 +16,8 @@
     "build:api": "tsc -p tsconfig.api.json",
     "preview": "vite preview",
     "start": "node dist-api/server.js",
+    "start:worker": "node dist-api/server/workers/index.js",
+    "seed:nexus": "tsx src/scripts/seed-nexus.ts",
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",
     "prisma:migrate": "prisma migrate deploy",

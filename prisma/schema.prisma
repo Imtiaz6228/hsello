@@ -93,6 +93,60 @@ enum TicketCategory {
   PRODUCT_PROBLEM
   SELLER_ISSUE
   TECHNICAL_ISSUE
+  ESCROW_DISPUTE
+  DEPOSIT_ISSUE
+  WITHDRAWAL_ISSUE
+}
+
+enum TopupMethod {
+  CRYPTO_TRC20
+  CRYPTO_ERC20
+  CRYPTO_BEP20
+  BTC
+  ETH
+  SOL
+  BANK
+  PAYPAL
+  STRIPE
+}
+
+enum TopupStatus {
+  PENDING
+  VERIFIED
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum KbArticleStatus {
+  DRAFT
+  NEEDS_REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CommissionType {
+  COMMISSION_SALE
+  COMMISSION_WITHDRAW
+}
+
+enum LiveSessionStatus {
+  ACTIVE
+  TAKEN_OVER
+  RELEASED
+  ENDED
+}
+
+enum WalletTxType {
+  TOPUP
+  PURCHASE
+  COMMISSION_SALE
+  COMMISSION_WITHDRAW
+  SELLER_PAYOUT
+  WITHDRAWAL
+  REFUND
+  FROZEN_RELEASE
+  ADJUSTMENT
 }
 
 enum TicketStatus {
@@ -149,6 +203,11 @@ model User {
   disputes                Dispute[]
   walletDeposits          WalletDeposit[]
   productReports          ProductReport[]
+  topupRequests           TopupRequest[]
+  walletTransactions      WalletTransaction[]
+  liveSessions            LiveSession[]
+  chatSessions            ChatSession[]
+  chatMessages            ChatMessage[]
 
   @@index([email])
   @@index([username])
@@ -699,4 +758,164 @@ model HomepageSection {
   updatedAt DateTime @updatedAt
 
   @@index([isVisible, sortOrder])
+}
+
+// ===== NEXUS Marketplace models =====
+
+model TopupRequest {
+  id              String      @id @default(uuid())
+  userId          String
+  amountCents     Int
+  method          TopupMethod
+  status          TopupStatus @default(PENDING)
+  depositAddress  String
+  reference       String      @unique
+  txHash          String?
+  screenshotPath  String?
+  screenshotUrl   String?
+  networkVerified Boolean     @default(false)
+  adminNotes      String?
+  approvedById    String?
+  approvedAt      DateTime?
+  expiresAt       DateTime
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([reference])
+}
+
+model WalletTransaction {
+  id             String        @id @default(uuid())
+  userId         String
+  type           WalletTxType
+  amountCents    Int
+  description    String
+  reference      String?
+  orderId        String?
+  relatedId      String?
+  balanceAfter   Int           @default(0)
+  createdAt      DateTime      @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([type, createdAt])
+}
+
+model KbArticle {
+  id          String          @id @default(uuid())
+  title       String
+  slug        String          @unique
+  category    String
+  content     String
+  excerpt     String?
+  tags        String[]
+  status      KbArticleStatus @default(DRAFT)
+  viewCount   Int             @default(0)
+  helpfulCount Int            @default(0)
+  unhelpfulCount Int          @default(0)
+  createdBy    String?
+  updatedBy    String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([status, category])
+  @@index([slug])
+}
+
+model LiveSession {
+  id           String             @id @default(uuid())
+  userId       String
+  status       LiveSessionStatus  @default(ACTIVE)
+  currentUrl   String?
+  country      String?
+  city         String?
+  ipAddress    String?
+  userAgent    String?
+  isTyping     Boolean            @default(false)
+  screenSharing Boolean           @default(false)
+  takenOverBy  String?
+  lastActivity DateTime           @default(now())
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  user   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events LiveSessionEvent[]
+
+  @@index([status, lastActivity])
+  @@index([userId])
+}
+
+model LiveSessionEvent {
+  id        String   @id @default(uuid())
+  sessionId String
+  type      String
+  payload   Json?
+  createdAt DateTime @default(now())
+
+  session LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+}
+
+model ChatSession {
+  id          String   @id @default(uuid())
+  userId      String
+  status      String   @default("AI")
+  subject     String?
+  resolved    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages ChatMessage[]
+
+  @@index([userId, createdAt])
+  @@index([status])
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid())
+  sessionId String
+  authorId  String?
+  role      String   @default("user")
+  body      String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  author  User?       @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId, createdAt])
+}
+
+model AdminWallet {
+  id              String        @id @default(uuid())
+  label           String        @unique
+  address         String
+  blockchain      String        @default("TRC20")
+  balanceCents    Int           @default(0)
+  totalReceivedCents Int        @default(0)
+  totalSentCents  Int           @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model AdminTransaction {
+  id             String         @id @default(uuid())
+  type           CommissionType
+  amountCents    Int
+  description    String
+  reference      String?
+  orderId        String?
+  withdrawalId   String?
+  walletId       String?
+  createdAt      DateTime       @default(now())
+
+  @@index([type, createdAt])
+  @@index([createdAt])
 }

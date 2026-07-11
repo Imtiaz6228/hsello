@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
 import { OperationsAdminPage } from "./pages/OperationsAdminPage";
+import { AdminEarningsPage } from "./pages/AdminEarningsPage";
 import { AccountDashboardPage } from "./pages/AccountDashboardPage";
 import { MarketplaceLandingPage } from "./pages/MarketplaceLandingPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
@@ -23,10 +24,11 @@ import { OrderDeliveryPage } from "./pages/OrderDeliveryPage";
 import { SellerStudioPage } from "./pages/SellerStudioPage";
 import { SellerApplicationPage } from "./pages/SellerApplicationPage";
 import { HomepageContentBanner } from "./components/HomepageContentBanner";
+import { SupportWidgetPro } from "./components/SupportWidgetPro";
 
 export function App() {
   return (
-    <><HomepageContentBanner /><Routes>
+    <><HomepageContentBanner /><SupportWidgetPro /><Routes>
       <Route path="/" element={<MarketplaceLandingPage />} />
       <Route path="/catalog" element={<CatalogPage />} />
       <Route path="/categories/:slug" element={<CategoryPage />} />
@@ -53,6 +55,10 @@ export function App() {
       <Route element={<ProtectedRoute roles={["MODERATOR", "ADMIN", "SUPER_ADMIN"]} />}>
         <Route path="/admin" element={<OperationsAdminPage />} />
         <Route path="/admin/seller-applications" element={<OperationsAdminPage />} />
+        <Route path="/admin/earnings" element={<AdminEarningsPage />} />
+        <Route path="/admin/approvals" element={<OperationsAdminPage />} />
+        <Route path="/admin/live" element={<OperationsAdminPage />} />
+        <Route path="/admin/kb/editor" element={<OperationsAdminPage />} />
       </Route>
 
       <Route element={<ProtectedRoute roles={["SELLER", "ADMIN", "SUPER_ADMIN"]} />}>

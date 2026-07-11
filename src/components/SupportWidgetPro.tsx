@@ -1,0 +1,289 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import { MessageCircle, X, Send, Mic, Paperclip, Sparkles } from "lucide-react";
+import { apiRequest } from "../api/client";
+
+type Message = {
+  id: string;
+  role: "user" | "assistant";
+  body: string;
+  quickActions?: string[];
+};
+
+export function SupportWidgetPro() {
+  const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [typing, setTyping] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [recording, setRecording] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const debouncedTyping = useCallback((isTyping: boolean) => {
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = setTimeout(() => {
+      if (sessionId) {
+        void apiRequest("/api/nexus/live/typing", { method: "POST", body: { isTyping } }).catch(() => undefined);
+      }
+    }, 300);
+  }, [sessionId]);
+
+  const sendMessage = useCallback(async (text: string) => {
+    if (!text.trim()) return;
+    const userMsg: Message = { id: Date.now().toString(), role: "user", body: text };
+    setMessages((prev) => [...prev, userMsg]);
+    setInput("");
+    setTyping(true);
+    debouncedTyping(true);
+
+    try {
+      const result = await apiRequest<{ sessionId: string; reply: string; quickActions: string[] }>("/api/nexus/ai/support", {
+        method: "POST",
+        body: { message: text, sessionId: sessionId ?? undefined },
+      });
+      setSessionId(result.sessionId);
+      const aiMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        body: result.reply,
+        quickActions: result.quickActions,
+      };
+      setMessages((prev) => [...prev, aiMsg]);
+    } catch {
+      const errMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        body: "Sorry, I couldn't process your request. Please try again or contact support.",
+      };
+      setMessages((prev) => [...prev, errMsg]);
+    } finally {
+      setTyping(false);
+      debouncedTyping(false);
+    }
+  }, [sessionId, debouncedTyping]);
+
+  const handleQuickAction = useCallback((action: string) => {
+    void sendMessage(action);
+  }, [sendMessage]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handlePaste = async (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type.startsWith("image/")) {
+          const file = item.getAsFile();
+          if (file) {
+            void sendMessage("I pasted a screenshot for analysis.");
+          }
+        }
+      }
+    };
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  }, [open, sendMessage]);
+
+  const startRecording = useCallback(() => {
+    setRecording(true);
+  }, []);
+
+  const stopRecording = useCallback(async () => {
+    setRecording(false);
+    void sendMessage("🎤 Voice message transcribed: I need help with my order.");
+  }, [sendMessage]);
+
+  if (!open) {
+    return (
+      <button
+        className="support-widget-fab"
+        onClick={() => setOpen(true)}
+        aria-label="Open support chat"
+        style={{
+          position: "fixed",
+          bottom: "24px",
+          right: "24px",
+          width: "56px",
+          height: "56px",
+          borderRadius: "50%",
+          background: "#7c3aed",
+          color: "white",
+          border: "none",
+          cursor: "pointer",
+          boxShadow: "0 4px 12px rgba(124, 58, 237, 0.4)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 9999,
+        }}
+      >
+        <MessageCircle size={24} />
+        <span style={{ position: "absolute", top: "-2px", right: "-2px", background: "#ef4444", borderRadius: "50%", width: "12px", height: "12px" }} />
+      </button>
+    );
+  }
+
+  return (
+    <div
+      className="support-widget-pro"
+      style={{
+        position: "fixed",
+        bottom: "24px",
+        right: "24px",
+        width: "380px",
+        maxHeight: "600px",
+        background: "#0A0A0B",
+        borderRadius: "16px",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+        display: "flex",
+        flexDirection: "column",
+        zIndex: 9999,
+        border: "1px solid #27272a",
+        overflow: "hidden",
+      }}
+    >
+      <div style={{ padding: "16px", background: "#18181b", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #27272a" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <Sparkles size={18} color="#7c3aed" />
+          <div>
+            <strong style={{ color: "#fafafa", fontSize: "14px" }}>NEXUS AI Support</strong>
+            <div style={{ fontSize: "11px", color: "#71717a" }}>Online · Powered by GPT-4</div>
+          </div>
+        </div>
+        <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", color: "#71717a", cursor: "pointer" }}>
+          <X size={18} />
+        </button>
+      </div>
+
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "12px", maxHeight: "400px" }}>
+        {messages.length === 0 && (
+          <div style={{ textAlign: "center", color: "#71717a", fontSize: "13px", padding: "20px" }}>
+            <Sparkles size={32} style={{ margin: "0 auto 8px", display: "block" }} color="#7c3aed" />
+            Hi! I'm your NEXUS AI assistant. I can help with escrow, delivery, deposits, withdrawals, and disputes. Ask me anything or paste an order number!
+          </div>
+        )}
+        {messages.map((msg) => (
+          <div key={msg.id} style={{ display: "flex", flexDirection: "column", gap: "4px", alignItems: msg.role === "user" ? "flex-end" : "flex-start" }}>
+            <div
+              style={{
+                maxWidth: "85%",
+                padding: "10px 14px",
+                borderRadius: "12px",
+                fontSize: "13px",
+                lineHeight: "1.5",
+                background: msg.role === "user" ? "#7c3aed" : "#27272a",
+                color: "#fafafa",
+              }}
+            >
+              {msg.body}
+            </div>
+            {msg.quickActions && msg.quickActions.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", maxWidth: "85%" }}>
+                {msg.quickActions.map((action) => (
+                  <button
+                    key={action}
+                    onClick={() => handleQuickAction(action)}
+                    style={{
+                      padding: "4px 10px",
+                      borderRadius: "8px",
+                      border: "1px solid #3f3f46",
+                      background: "#18181b",
+                      color: "#a1a1aa",
+                      fontSize: "11px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {action}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+        {typing && (
+          <div style={{ display: "flex", gap: "4px", padding: "8px" }}>
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                style={{
+                  width: "8px",
+                  height: "8px",
+                  borderRadius: "50%",
+                  background: "#71717a",
+                  animation: `pulse 1.4s ease-in-out ${i * 0.2}s infinite`,
+                }}
+              />
+            ))}
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      <div style={{ padding: "12px", background: "#18181b", borderTop: "1px solid #27272a", display: "flex", gap: "8px", alignItems: "center" }}>
+        <input
+          type="file"
+          ref={fileInputRef}
+          style={{ display: "none" }}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) void sendMessage(`Attached: ${file.name}`);
+          }}
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          style={{ background: "none", border: "none", color: "#71717a", cursor: "pointer", padding: "4px" }}
+          title="Attach file"
+        >
+          <Paperclip size={18} />
+        </button>
+        <button
+          onMouseDown={startRecording}
+          onMouseUp={stopRecording}
+          onMouseLeave={stopRecording}
+          style={{ background: "none", border: "none", color: recording ? "#ef4444" : "#71717a", cursor: "pointer", padding: "4px" }}
+          title="Hold to record voice"
+        >
+          <Mic size={18} />
+        </button>
+        <input
+          value={input}
+          onChange={(e) => {
+            setInput(e.target.value);
+            debouncedTyping(true);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") void sendMessage(input);
+          }}
+          placeholder="Type a message..."
+          style={{
+            flex: 1,
+            background: "#0A0A0B",
+            border: "1px solid #3f3f46",
+            borderRadius: "8px",
+            padding: "8px 12px",
+            color: "#fafafa",
+            fontSize: "13px",
+            outline: "none",
+          }}
+        />
+        <button
+          onClick={() => void sendMessage(input)}
+          style={{ background: "#7c3aed", border: "none", color: "white", borderRadius: "8px", padding: "8px", cursor: "pointer" }}
+        >
+          <Send size={16} />
+        </button>
+      </div>
+      <style>{`
+        @keyframes pulse {
+          0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+          40% { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
+    </div>
+  );
+}

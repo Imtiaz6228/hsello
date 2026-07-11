@@ -17,6 +17,7 @@ import { adminRouter } from "./routes/admin.routes.js";
 import { marketplaceRouter } from "./routes/marketplace.routes.js";
 import { commerceRouter } from "./routes/commerce.routes.js";
 import { walletRouter } from "./routes/wallet.routes.js";
+import { nexusRouter } from "./routes/nexus.routes.js";
 import { prisma } from "./lib/prisma.js";
 
 function normalizeOrigin(value: string) {
@@ -126,6 +127,7 @@ app.use("/api/commerce", commerceRouter);
 app.use("/api/wallet", walletRouter);
 app.use("/api/seller", sellerRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api/nexus", nexusRouter);
 
 // Railway builds both targets from this one root and can serve the SPA and API
 // on the same origin. That is the most reliable option for cookie-based auth.

@@ -49,7 +49,30 @@ const envSchema = z.object({
   CRYPTO_PAYMENT_ASSET: z.preprocess(emptyToUndefined, z.string().default("USDT")),
   CRYPTO_PAYMENT_NETWORK: z.preprocess(emptyToUndefined, z.string().default("TRC20")),
   CRYPTO_PAYMENT_TIMEOUT_MINUTES: z.coerce.number().int().min(5).max(240).default(30),
-  CRYPTO_WEBHOOK_SECRET: z.preprocess(emptyToUndefined, z.string().optional())
+  CRYPTO_WEBHOOK_SECRET: z.preprocess(emptyToUndefined, z.string().optional()),
+  REDIS_URL: z.preprocess(emptyToUndefined, z.string().optional()),
+  CRON_SECRET: z.preprocess(emptyToUndefined, z.string().optional()),
+  ADMIN_WALLET_ADDRESS: z.preprocess(emptyToUndefined, z.string().optional()),
+  ADMIN_WALLET_LABEL: z.string().default("main"),
+  COMMISSION_SALE_PERCENT: z.coerce.number().int().min(0).max(50).default(10),
+  COMMISSION_WITHDRAW_PERCENT: z.coerce.number().int().min(0).max(20).default(3),
+  FROZEN_HOLD_HOURS: z.coerce.number().int().min(1).max(720).default(72),
+  DOWNLOAD_LINK_EXPIRY_DAYS: z.coerce.number().int().min(1).max(30).default(7),
+  TRONGRID_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
+  ETHERSCAN_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
+  BSCSCAN_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
+  OPENAI_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
+  DEEPL_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
+  NOWPAYMENTS_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
+  NOWPAYMENTS_IPN_SECRET: z.preprocess(emptyToUndefined, z.string().optional()),
+  R2_ACCOUNT_ID: z.preprocess(emptyToUndefined, z.string().optional()),
+  R2_ACCESS_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
+  R2_SECRET_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
+  R2_BUCKET: z.preprocess(emptyToUndefined, z.string().optional()),
+  R2_PUBLIC_URL: z.preprocess(emptyToUndefined, z.string().optional()),
+  RESEND_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
+  ADMIN_EMAIL: z.preprocess(emptyToUndefined, z.string().email().optional()),
+  ADMIN_PASSWORD: z.preprocess(emptyToUndefined, z.string().optional())
 });
 
 const parsed = envSchema.safeParse(process.env);

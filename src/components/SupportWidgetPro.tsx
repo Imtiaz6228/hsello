@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MessageCircle, X, Send, Mic, Paperclip, Sparkles } from "lucide-react";
 import { apiRequest } from "../api/client";
+import { useAuth } from "../auth/AuthContext";
 
 type Message = {
   id: string;
@@ -10,6 +11,7 @@ type Message = {
 };
 
 export function SupportWidgetPro() {
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -58,14 +60,15 @@ export function SupportWidgetPro() {
       const errMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        body: "Sorry, I couldn't process your request. Please try again or contact support.",
+        body: !user ? "I can help with buying, selling, payments, downloads and buyer protection. Sign in for secure order lookups, tickets, or a live admin." : "Support is reconnecting. Please try once more, or open My Tickets from your dashboard.",
+        quickActions: !user ? ["How buying works", "How to sell", "Buyer protection"] : ["Open my tickets"],
       };
       setMessages((prev) => [...prev, errMsg]);
     } finally {
       setTyping(false);
       debouncedTyping(false);
     }
-  }, [sessionId, debouncedTyping]);
+  }, [sessionId, debouncedTyping, user]);
 
   const handleQuickAction = useCallback((action: string) => {
     void sendMessage(action);
@@ -101,7 +104,7 @@ export function SupportWidgetPro() {
   if (!open) {
     return (
       <button
-        className="support-widget-fab"
+        className="support-widget-fab support-fab-polished"
         onClick={() => setOpen(true)}
         aria-label="Open support chat"
         style={{
@@ -151,8 +154,8 @@ export function SupportWidgetPro() {
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <Sparkles size={18} color="#7c3aed" />
           <div>
-            <strong style={{ color: "#fafafa", fontSize: "14px" }}>NEXUS AI Support</strong>
-            <div style={{ fontSize: "11px", color: "#71717a" }}>Online · Powered by GPT-4</div>
+            <strong style={{ color: "#fafafa", fontSize: "14px" }}>HSello Support</strong>
+            <div style={{ fontSize: "11px", color: "#34d399" }}>● Online · AI + human admins</div>
           </div>
         </div>
         <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", color: "#71717a", cursor: "pointer" }}>
@@ -164,7 +167,7 @@ export function SupportWidgetPro() {
         {messages.length === 0 && (
           <div style={{ textAlign: "center", color: "#71717a", fontSize: "13px", padding: "20px" }}>
             <Sparkles size={32} style={{ margin: "0 auto 8px", display: "block" }} color="#7c3aed" />
-            Hi! I'm your NEXUS AI assistant. I can help with escrow, delivery, deposits, withdrawals, and disputes. Ask me anything or paste an order number!
+            <strong style={{ display: "block", color: "#fafafa", fontSize: "18px", marginBottom: "8px" }}>How can we help?</strong> Ask about buying, selling, delivery, payments or buyer protection. Sign in for secure order help.
           </div>
         )}
         {messages.map((msg) => (
@@ -259,7 +262,7 @@ export function SupportWidgetPro() {
           onKeyDown={(e) => {
             if (e.key === "Enter") void sendMessage(input);
           }}
-          placeholder="Type a message..."
+          placeholder={user ? "Write a message…" : "Ask about HSello…"}
           style={{
             flex: 1,
             background: "#0A0A0B",

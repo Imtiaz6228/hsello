@@ -46,7 +46,7 @@ export async function markDisputeTurn(orderId: string, author: { id: string; rol
   let party: Party = "ADMIN";
   if (author.id === orderBuyerId) party = "BUYER";
   else if (orderSellerIds.includes(author.id)) party = "SELLER";
-  else if ([Role.ADMIN, Role.SUPER_ADMIN, Role.MODERATOR].includes(author.role)) party = "ADMIN";
+  else if (author.role === Role.ADMIN || author.role === Role.SUPER_ADMIN || author.role === Role.MODERATOR) party = "ADMIN";
 
   const data = party === "BUYER"
     ? { lastBuyerMessageAt: now, awaitingParty: "SELLER", autoCloseAt: responseDeadline(now), status: DisputeStatus.AWAITING_SELLER }

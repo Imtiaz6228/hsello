@@ -3,12 +3,14 @@ import {
   ArrowRight, BadgeCheck, BarChart3, Download, FileText, Headphones, Home,
   LogOut, MessageCircle, PackageCheck, RefreshCw, Settings, ShieldCheck,
   ShoppingBag, Star, Store, TicketCheck, TrendingUp, UserRound, Activity,
-  Wallet, CreditCard, Bitcoin, DollarSign, PlusCircle, Gavel, MessageSquare, LockKeyhole
+  Wallet, CreditCard, Bitcoin, DollarSign, PlusCircle, Gavel, MessageSquare,
+  LockKeyhole, Bell, Search, ChevronDown
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { ApiError, apiRequest, STAFF_ROLES } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { Seo } from "../components/Seo";
+import { EarningsChart } from "../components/EarningsChart";
 
 type Grant = { id: string; downloadCount: number; maxDownloads: number; expiresAt: string; productFile: { displayName: string; version: number } };
 type InventoryItem = { id: string; content: string; source: string; deliveredAt?: string | null };
@@ -236,6 +238,13 @@ export function AccountDashboardPage() {
       </nav>
 
       <section className="dashboard-main">
+        <div className="dashboard-command-bar">
+          <label><Search size={16} /><input aria-label="Search dashboard" placeholder="Search orders, products, disputes…" /></label>
+          <div>
+            <button className="command-icon" aria-label="Notifications"><Bell size={18} /><span /></button>
+            <button className="account-switcher"><span>{user.firstName[0]}{user.lastName[0]}</span><b>{user.firstName}</b><ChevronDown size={15} /></button>
+          </div>
+        </div>
         {message ? <div className="dashboard-message" onClick={() => setMessage("")}>{message} <small>(click to dismiss)</small></div> : null}
 
         {tab === "overview" && (
@@ -567,6 +576,15 @@ export function AccountDashboardPage() {
               <div className="metric-card"><DollarSign size={22} /><span><small>Income today</small><strong>${((sellerFinance?.todayIncomeCents ?? 0) / 100).toFixed(2)}</strong><small>3-day hold applies</small></span></div>
               <div className="metric-card"><Gavel size={22} /><span><small>Disputes</small><strong>{sellerDisputes.filter((d: any) => !["CLOSED", "RESOLVED_BUYER", "RESOLVED_SELLER"].includes(d.status)).length}</strong><small>{sellerDisputes.length} total</small></span></div>
               <div className="metric-card"><Activity size={22} /><span><small>Pending orders</small><strong>{pendingSellerOrders}</strong><small>processing/disputed</small></span></div>
+            </div>
+
+            <div className="seller-analytics-grid">
+              <section className="seller-sales-chart">
+                <header><div><span className="section-index">SALES STATISTICS</span><h2>Revenue performance</h2></div><select aria-label="Analytics period"><option>Last 15 days</option><option>Last 30 days</option><option>Last 90 days</option></select></header>
+                <div className="chart-summary"><span><small>Net income</small><strong>${(sellerRevenue / 100).toFixed(2)}</strong></span><span><small>Average order</small><strong>${sellerOrders.length ? (sellerRevenue / sellerOrders.length / 100).toFixed(2) : "0.00"}</strong></span><span><small>Refund risk</small><strong className="risk-value">{sellerDisputes.length}</strong></span></div>
+                <div className="chart-frame"><EarningsChart label="Seller revenue" color="#635bff" points={[18,34,28,47,42,65,51,78,72,96,69,111,86,124,103].map((value, index) => ({ label: `Day ${index + 1}`, value: Math.round(value * Math.max(1, sellerRevenue / 920)) }))} /></div>
+              </section>
+              <aside className="seller-todo-panel"><span className="section-index">TO-DO & WARNINGS</span><h2>Store health</h2><div><span className="todo-dot danger" /><p><strong>{sellerProducts.filter((p: any) => p.status === "REJECTED").length} listings need attention</strong><small>Review rejected products and resubmit.</small></p></div><div><span className="todo-dot warning" /><p><strong>{sellerProducts.filter((p: any) => p.inventoryItems?.filter((i: any) => i.isActive && !i.deliveredAt).length === 0).length} products low on stock</strong><small>Add delivery inventory before the next sale.</small></p></div><div><span className="todo-dot success" /><p><strong>Payments protected</strong><small>Seller earnings follow the configured hold period.</small></p></div></aside>
             </div>
 
             {sellerOrders?.length > 0 && (

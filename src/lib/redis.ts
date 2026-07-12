@@ -1,4 +1,4 @@
-import Redis from "ioredis";
+import { Redis } from "ioredis";
 
 const globalForRedis = globalThis as unknown as { redis?: Redis };
 
@@ -21,7 +21,7 @@ function createRedisClient(): Redis | null {
     lazyConnect: false,
   });
 
-  client.on("error", (error) => {
+  client.on("error", (error: Error) => {
     console.error("[redis] connection error:", error.message);
   });
 

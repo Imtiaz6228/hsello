@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MessageCircle, X, Send, Mic, Paperclip, Sparkles } from "lucide-react";
+import { MessageCircle, X, Send, Mic, Paperclip, Sparkles, UserRoundCheck } from "lucide-react";
 import { apiRequest } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 
 type Message = {
   id: string;
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "admin";
   body: string;
   quickActions?: string[];
 };
@@ -18,6 +18,8 @@ export function SupportWidgetPro() {
   const [typing, setTyping] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [recording, setRecording] = useState(false);
+  const [humanMode, setHumanMode] = useState(false);
+  const [handoffMessage, setHandoffMessage] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -25,6 +27,18 @@ export function SupportWidgetPro() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (!open || !humanMode || !sessionId) return;
+    const refresh = async () => {
+      const data = await apiRequest<{ sessions: Array<{ id: string; messages: Array<{ id: string; role: "user" | "assistant" | "admin"; body: string }> }> }>("/api/nexus/chat/sessions").catch(() => null);
+      const session = data?.sessions.find((item) => item.id === sessionId);
+      if (session) setMessages(session.messages.map((item) => ({ id: item.id, role: item.role, body: item.body })));
+    };
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 5000);
+    return () => window.clearInterval(timer);
+  }, [humanMode, open, sessionId]);
 
   const debouncedTyping = useCallback((isTyping: boolean) => {
     if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
@@ -40,22 +54,21 @@ export function SupportWidgetPro() {
     const userMsg: Message = { id: Date.now().toString(), role: "user", body: text };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
-    setTyping(true);
+    setTyping(!humanMode);
     debouncedTyping(true);
 
     try {
-      const result = await apiRequest<{ sessionId: string; reply: string; quickActions: string[] }>("/api/nexus/ai/support", {
-        method: "POST",
-        body: { message: text, sessionId: sessionId ?? undefined },
-      });
-      setSessionId(result.sessionId);
-      const aiMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        body: result.reply,
-        quickActions: result.quickActions,
-      };
-      setMessages((prev) => [...prev, aiMsg]);
+      if (humanMode && sessionId) {
+        await apiRequest(`/api/nexus/chat/${sessionId}/messages`, { method: "POST", body: { body: text } });
+      } else {
+        const result = await apiRequest<{ sessionId: string; reply: string; quickActions: string[] }>("/api/nexus/ai/support", {
+          method: "POST",
+          body: { message: text, sessionId: sessionId ?? undefined },
+        });
+        setSessionId(result.sessionId);
+        const aiMsg: Message = { id: (Date.now() + 1).toString(), role: "assistant", body: result.reply, quickActions: result.quickActions };
+        setMessages((prev) => [...prev, aiMsg]);
+      }
     } catch {
       const errMsg: Message = {
         id: (Date.now() + 1).toString(),
@@ -68,7 +81,17 @@ export function SupportWidgetPro() {
       setTyping(false);
       debouncedTyping(false);
     }
-  }, [sessionId, debouncedTyping, user]);
+  }, [sessionId, debouncedTyping, user, humanMode]);
+
+  const requestHuman = useCallback(async () => {
+    if (!user) { setHandoffMessage("Sign in to start a secure chat with an administrator."); return; }
+    if (!sessionId) { await sendMessage("I would like to chat with an administrator."); setHandoffMessage("Your support conversation is ready. Tap Chat with admin once more."); return; }
+    try {
+      await apiRequest(`/api/nexus/chat/${sessionId}/human`, { method: "POST" });
+      setHumanMode(true);
+      setHandoffMessage("An administrator has been notified. Messages will appear here in real time.");
+    } catch { setHandoffMessage("Admin handoff could not start. Please try again."); }
+  }, [sendMessage, sessionId, user]);
 
   const handleQuickAction = useCallback((action: string) => {
     void sendMessage(action);
@@ -154,8 +177,8 @@ export function SupportWidgetPro() {
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <Sparkles size={18} color="#7c3aed" />
           <div>
-            <strong style={{ color: "#fafafa", fontSize: "14px" }}>HSello Support</strong>
-            <div style={{ fontSize: "11px", color: "#34d399" }}>● Online · AI + human admins</div>
+            <strong style={{ color: "#fafafa", fontSize: "14px" }}>{humanMode ? "Admin conversation" : "HSello Support"}</strong>
+            <div style={{ fontSize: "11px", color: "#34d399" }}>● {humanMode ? "Secure human support" : "Online · AI + human admins"}</div>
           </div>
         </div>
         <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", color: "#71717a", cursor: "pointer" }}>
@@ -164,6 +187,8 @@ export function SupportWidgetPro() {
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "12px", maxHeight: "400px" }}>
+        <button className="admin-handoff-button" onClick={() => void requestHuman()}><UserRoundCheck size={16} /> {humanMode ? "Admin chat active" : "Chat with admin"}</button>
+        {handoffMessage ? <div className="admin-handoff-note">{handoffMessage}</div> : null}
         {messages.length === 0 && (
           <div style={{ textAlign: "center", color: "#71717a", fontSize: "13px", padding: "20px" }}>
             <Sparkles size={32} style={{ margin: "0 auto 8px", display: "block" }} color="#7c3aed" />
@@ -179,7 +204,7 @@ export function SupportWidgetPro() {
                 borderRadius: "12px",
                 fontSize: "13px",
                 lineHeight: "1.5",
-                background: msg.role === "user" ? "#7c3aed" : "#27272a",
+                background: msg.role === "user" ? "#7c3aed" : msg.role === "admin" ? "#0f766e" : "#27272a",
                 color: "#fafafa",
               }}
             >

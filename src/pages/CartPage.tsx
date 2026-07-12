@@ -3,8 +3,10 @@ import { Link } from "react-router-dom";
 import { useCart } from "../commerce/CartContext";
 import { MarketFooter, MarketHeader } from "../components/MarketHeader";
 import { Seo } from "../components/Seo";
+import { useLocale } from "../i18n/LocaleContext";
 
 export function CartPage() {
+  const { formatMoney } = useLocale();
   const { items, subtotalCents, remove, setQuantity } = useCart();
   return (
     <main className="commerce-page">
@@ -21,12 +23,12 @@ export function CartPage() {
                 <div className="cart-thumb">{product.icon}</div>
                 <div><span>{product.category}</span><Link to={`/products/${product.slug}`}>{product.title}</Link><small>{product.delivery} · {product.seller}</small></div>
                 <div className="quantity-control"><button onClick={() => setQuantity(product.id, quantity - 1)}><Minus /></button><span>{quantity}</span><button onClick={() => setQuantity(product.id, quantity + 1)}><Plus /></button></div>
-                <strong>${(product.priceCents * quantity / 100).toFixed(2)}</strong>
+                <strong>{formatMoney(product.priceCents * quantity)}</strong>
                 <button className="icon-button" onClick={() => remove(product.id)} aria-label={`Remove ${product.title}`}><Trash2 /></button>
               </article>
             ))}
           </div>
-          <aside className="order-summary"><span className="section-index">ORDER SUMMARY</span><div><span>Subtotal</span><strong>${(subtotalCents / 100).toFixed(2)}</strong></div><div><span>Delivery</span><strong>Digital · $0</strong></div><div className="summary-total"><span>Total</span><strong>${(subtotalCents / 100).toFixed(2)}</strong></div><Link className="checkout-button" to="/checkout">Secure checkout <ArrowRight /></Link><p><ShieldCheck /> Payments stay protected. Downloads release only after confirmation.</p></aside>
+          <aside className="order-summary"><span className="section-index">ORDER SUMMARY</span><div><span>Subtotal</span><strong>{formatMoney(subtotalCents)}</strong></div><div><span>Delivery</span><strong>Digital · {formatMoney(0)}</strong></div><div className="summary-total"><span>Total</span><strong>{formatMoney(subtotalCents)}</strong></div><Link className="checkout-button" to="/checkout">Secure checkout <ArrowRight /></Link><p><ShieldCheck /> Payments stay protected. Downloads release only after confirmation.</p></aside>
         </section>
       )}
       <MarketFooter />

@@ -10,6 +10,13 @@ This package contains the complete responsive marketplace application. The uploa
 - Protected post-order delivery workspace with attachments, buyer/seller/admin chat, dispute creation, reply deadlines, refund demands, and dispute closure.
 - Desktop sidebar workspace and mobile bottom navigation, with layouts optimized from small phones through large desktop screens.
 - Premium visual system with a deep navigation rail, violet/blue gradients, elevated white cards, responsive analytics, clear status colors, and consistent interaction states.
+- Persistent language switching for English, Simplified Chinese, Traditional Chinese, Russian, and Vietnamese.
+- Persistent currency display switching for USD, CNY, TWD, RUB, and VND across catalog product cards.
+- Selected currency now carries through catalog, product details, store pages, cart, checkout, wallet totals, buyer orders, and seller analytics while preserving USD as the payment base.
+- Responsive language/currency drawer available from marketplace headers on mobile and desktop.
+- Language/currency access is also present inside buyer, seller, and administrator workspaces.
+- Human-admin support handoff from the floating chat, live conversation refresh, and a dedicated admin chat inbox with reply controls.
+- Expanded catalog experience with category search, nested subcategories, stock filtering, sorting, list/grid modes, and localized controls.
 
 ## Verification completed
 

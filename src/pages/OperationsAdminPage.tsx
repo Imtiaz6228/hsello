@@ -23,12 +23,14 @@ import {
   Users,
   WalletCards,
   Landmark,
+  MessageSquare,
   type LucideIcon
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { ApiError, apiRequest, type Role, type SellerApplication } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { Seo } from "../components/Seo";
+import { LocaleSwitcher } from "../components/LocaleSwitcher";
 
 type Tab =
   | "overview"
@@ -42,6 +44,7 @@ type Tab =
   | "refunds"
   | "disputes"
   | "tickets"
+  | "chats"
   | "categories"
   | "coupons"
   | "reports"
@@ -129,6 +132,7 @@ type Category = { id: string; name: string; slug: string; description: string; i
 type Coupon = { id: string; code: string; percentOff?: number | null; amountOffCents?: number | null; redemptionCount: number; maxRedemptions?: number | null; isActive: boolean; expiresAt?: string | null };
 type Report = { id: string; status: string; reason: string; details?: string | null; createdAt: string; adminNotes?: string | null; product: { name: string; slug: string; status: string }; reporter: { email: string } };
 type HomepageSection = { id: string; key: string; title: string; subtitle?: string | null; isVisible: boolean; sortOrder: number };
+type ChatSession = { id: string; subject?: string | null; status: string; updatedAt: string; user: { firstName: string; lastName: string; email: string; role: string }; messages: Array<{ id: string; role: string; body: string; createdAt: string }> };
 
 type NavItem = { id: Tab; label: string; icon: LucideIcon };
 
@@ -144,6 +148,7 @@ const nav: NavItem[] = [
   { id: "refunds", label: "Refunds", icon: RefreshCw },
   { id: "disputes", label: "Disputes", icon: Gavel },
   { id: "tickets", label: "Support tickets", icon: Headphones },
+  { id: "chats", label: "Admin chat inbox", icon: MessageSquare },
   { id: "categories", label: "Categories", icon: FolderPlus },
   { id: "coupons", label: "Coupons", icon: Tag },
   { id: "reports", label: "Safety reports", icon: ShieldAlert },
@@ -179,6 +184,7 @@ export function OperationsAdminPage() {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [homepageSections, setHomepageSections] = useState<HomepageSection[]>([]);
+  const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
 
   const load = useCallback(async () => {
     setMessage("");
@@ -194,6 +200,7 @@ export function OperationsAdminPage() {
       refunds: "/api/admin/refunds",
       disputes: "/api/admin/disputes",
       tickets: "/api/admin/tickets",
+      chats: "/api/nexus/admin/chats",
       categories: "/api/admin/categories",
       coupons: "/api/admin/coupons",
       reports: "/api/admin/reports",
@@ -212,6 +219,7 @@ export function OperationsAdminPage() {
       if (tab === "refunds") setRefunds(data.refunds as Refund[]);
       if (tab === "disputes") setDisputes(data.disputes as Dispute[]);
       if (tab === "tickets") setTickets(data.tickets as Ticket[]);
+      if (tab === "chats") setChatSessions(data.sessions as ChatSession[]);
       if (tab === "categories") setCategories(data.categories as Category[]);
       if (tab === "coupons") setCoupons(data.coupons as Coupon[]);
       if (tab === "reports") setReports(data.reports as Report[]);
@@ -269,7 +277,7 @@ export function OperationsAdminPage() {
       </aside>
 
       <section className="ops-main">
-        <header className="ops-topbar"><div><Link to="/dashboard"><ArrowLeft size={14} /> Account</Link><span>/</span><strong>{nav.find((item) => item.id === tab)?.label}</strong></div><button onClick={() => void load()}><RefreshCw size={14} /> Refresh</button></header>
+        <header className="ops-topbar"><div><Link to="/dashboard"><ArrowLeft size={14} /> Account</Link><span>/</span><strong>{nav.find((item) => item.id === tab)?.label}</strong></div><div><LocaleSwitcher /><button onClick={() => void load()}><RefreshCw size={14} /> Refresh</button></div></header>
         <div className="ops-heading"><span className="section-index">ADMIN DASHBOARD</span><h1>{nav.find((item) => item.id === tab)?.label}</h1><p>Approve deposits, review products, verify sellers, and release paid orders without complicated workflows.</p></div>
         {message ? <div className={`ops-message ${message.toLowerCase().includes("failed") || message.toLowerCase().includes("could not") ? "error" : ""}`}>{message}</div> : null}
 
@@ -317,6 +325,7 @@ export function OperationsAdminPage() {
         {tab === "refunds" && <SimpleRows rows={refunds.map((refund) => ({ id: refund.id, title: `${refund.order.orderNumber} · ${money(refund.amountCents)}`, meta: `${refund.requestedBy.email} · ${refund.reason}`, status: refund.status, actions: <><button disabled={busy === refund.id} onClick={() => void act(refund.id, `/api/admin/refunds/${refund.id}`, { status: "COMPLETED" })}>Complete refund</button><button disabled={busy === refund.id} onClick={() => void act(refund.id, `/api/admin/refunds/${refund.id}`, { status: "REJECTED", adminNotes: window.prompt("Reason") || "Rejected by admin." })}>Reject</button></> }))} />}
         {tab === "disputes" && <SimpleRows rows={disputes.map((dispute) => ({ id: dispute.id, title: `${dispute.order.orderNumber} · ${dispute.subject}`, meta: `${dispute.openedBy.email} · ${dispute.description}${dispute.autoCloseAt ? ` · waiting for ${dispute.awaitingParty} until ${new Date(dispute.autoCloseAt).toLocaleString()}` : ""}`, status: dispute.status, actions: <><button className="approve" disabled={busy === dispute.id} onClick={() => void act(dispute.id, `/api/admin/disputes/${dispute.id}`, { status: "RESOLVED_BUYER", resolution: window.prompt("Buyer-favor resolution") || "Admin favored buyer." })}>Favor buyer</button><button disabled={busy === dispute.id} onClick={() => void act(dispute.id, `/api/admin/disputes/${dispute.id}`, { status: "RESOLVED_SELLER", resolution: window.prompt("Seller-favor resolution") || "Admin favored seller." })}>Favor seller</button><button disabled={busy === dispute.id} onClick={() => void post(dispute.id, `/api/admin/disputes/${dispute.id}/message`, { body: window.prompt("Admin message") || "Admin is reviewing this dispute." })}>Message</button><button className="danger" disabled={busy === dispute.id} onClick={() => void act(dispute.id, `/api/admin/disputes/${dispute.id}`, { status: "CLOSED", resolution: window.prompt("Resolution note") || "Closed by admin." })}>Close</button></> }))} />}
         {tab === "tickets" && <SimpleRows rows={tickets.map((ticket) => ({ id: ticket.id, title: `${ticket.ticketNumber} · ${ticket.subject}`, meta: `${ticket.creator.email} · ${ticket.category}`, status: ticket.status, actions: <><button disabled={busy === ticket.id} onClick={() => void post(ticket.id, `/api/admin/tickets/${ticket.id}/reply`, { body: window.prompt("Reply") || "Admin reviewed this ticket.", status: "PENDING", isInternal: false })}>Reply</button></> }))} />}
+        {tab === "chats" && <section className="admin-chat-inbox">{chatSessions.length ? chatSessions.map((session) => <article key={session.id}><header><div className="chat-user-avatar">{session.user.firstName[0]}{session.user.lastName[0]}</div><div><strong>{session.user.firstName} {session.user.lastName}</strong><small>{session.user.email} · {session.status.toLowerCase()}</small></div><Status value={session.status} /></header><div className="admin-chat-thread">{session.messages.slice(-6).map((entry) => <div className={`admin-chat-message ${entry.role}`} key={entry.id}><small>{entry.role === "admin" ? "Admin" : entry.role === "assistant" ? "AI assistant" : session.user.firstName}</small><p>{entry.body}</p></div>)}</div><footer><button disabled={busy === session.id} onClick={() => void post(session.id, `/api/nexus/admin/chats/${session.id}/reply`, { body: window.prompt("Reply to this user") || "An administrator has joined the conversation." })}><MessageSquare size={14} /> Reply as admin</button><time>{new Date(session.updatedAt).toLocaleString()}</time></footer></article>) : <EmptyState label="No support conversations yet." />}</section>}
         {tab === "categories" && <SimpleRows rows={categories.map((category) => ({ id: category.id, title: category.name, meta: `${category.slug} · ${category.description}`, status: category.isActive ? "ACTIVE" : "HIDDEN" }))} />}
         {tab === "coupons" && <SimpleRows rows={coupons.map((coupon) => ({ id: coupon.id, title: coupon.code, meta: coupon.percentOff ? `${coupon.percentOff}% off` : `${money(coupon.amountOffCents ?? 0)} off`, status: coupon.isActive ? "ACTIVE" : "INACTIVE" }))} />}
         {tab === "reports" && <SimpleRows rows={reports.map((report) => ({ id: report.id, title: `${report.product.name} · ${report.reason}`, meta: `${report.reporter.email} · ${report.details ?? "No details"}`, status: report.status, actions: <><button disabled={busy === report.id} onClick={() => void act(report.id, `/api/admin/reports/${report.id}`, { status: "ACTIONED", adminNotes: window.prompt("Admin note") || "Reviewed by admin.", removeProduct: false })}>Mark actioned</button><button className="danger" disabled={busy === report.id} onClick={() => void act(report.id, `/api/admin/reports/${report.id}`, { status: "ACTIONED", adminNotes: window.prompt("Removal note") || "Removed after report.", removeProduct: true })}>Remove product</button></> }))} />}

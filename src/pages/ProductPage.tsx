@@ -6,8 +6,10 @@ import { useCart } from "../commerce/CartContext";
 import { MarketFooter, MarketHeader } from "../components/MarketHeader";
 import { Seo } from "../components/Seo";
 import { useMarketplaceProduct } from "../commerce/useMarketplace";
+import { useLocale } from "../i18n/LocaleContext";
 
 export function ProductPage() {
+  const { formatMoney, currency } = useLocale();
   const { slug } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -50,8 +52,7 @@ export function ProductPage() {
           </div>
         </div>
         <aside className="buy-panel">
-          <span>One-time purchase</span><strong>${(product.priceCents / 100).toFixed(2)}</strong><small>USD · taxes shown at checkout</small>
-          <small>¥{((product.priceCnyCents ?? 0) / 100).toFixed(2)} CNY · ₽{((product.priceRubCents ?? 0) / 100).toFixed(2)} RUB</small>
+          <span>One-time purchase</span><strong>{formatMoney(product.priceCents)}</strong><small>{currency} display · charged from the USD base price</small>
           <button type="button" onClick={addToCart}>{added ? <Check /> : <ShoppingBag />}{added ? "Added to cart" : "Add to cart"}</button>
           <Link to="/cart">View cart</Link>
           <ul><li><Check /> Secure payment confirmation</li><li><Check /> Invoice included</li><li><Check /> Support if anything goes wrong</li></ul>

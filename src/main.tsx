@@ -6,13 +6,14 @@ import { AuthProvider } from "./auth/AuthContext";
 import { CartProvider } from "./commerce/CartContext";
 import "./styles.css";
 import "./commerce.css";
+import { LocaleProvider } from "./i18n/LocaleContext";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>
-      <AuthProvider>
+      <LocaleProvider><AuthProvider>
         <CartProvider><App /></CartProvider>
-      </AuthProvider>
+      </AuthProvider></LocaleProvider>
     </BrowserRouter>
   </React.StrictMode>
 );

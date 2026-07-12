@@ -6,6 +6,7 @@ import { useAuth } from "../auth/AuthContext";
 import { useCart } from "../commerce/CartContext";
 import { MarketHeader } from "../components/MarketHeader";
 import { Seo } from "../components/Seo";
+import { useLocale } from "../i18n/LocaleContext";
 
 type MethodId = "STRIPE" | "PAYPAL" | "BANK_TRANSFER" | "CRYPTO" | "MANUAL" | "WALLET";
 type Method = { id: MethodId; label: string; available: boolean; kind: string };
@@ -23,6 +24,7 @@ type CryptoPayment = {
 const icons: Record<MethodId, typeof CreditCard> = { STRIPE: CreditCard, PAYPAL: WalletCards, BANK_TRANSFER: Building2, CRYPTO: Bitcoin, MANUAL: BadgeDollarSign, WALLET: WalletCards };
 
 export function CheckoutPage() {
+  const { formatMoney } = useLocale();
   const { user, setUser } = useAuth();
   const { items, subtotalCents, clear } = useCart();
   const navigate = useNavigate();
@@ -38,12 +40,12 @@ export function CheckoutPage() {
   const paymentMethods = useMemo<Method[]>(() => {
     const walletMethod: Method = {
       id: "WALLET",
-      label: `Wallet balance · $${(balanceCents / 100).toFixed(2)}`,
+      label: `Wallet balance · ${formatMoney(balanceCents)}`,
       available: balanceCents >= subtotalCents && subtotalCents > 0,
       kind: "wallet"
     };
     return [walletMethod, ...methods];
-  }, [balanceCents, methods, subtotalCents]);
+  }, [balanceCents, formatMoney, methods, subtotalCents]);
 
   useEffect(() => {
     void apiRequest<{ methods: Method[] }>("/api/commerce/payment-methods")
@@ -114,9 +116,9 @@ export function CheckoutPage() {
         </section>
         <aside className="checkout-summary">
           <span className="section-index">ORDER SUMMARY</span>
-          {items.map(({ product, quantity }) => <div className="checkout-line" key={product.id}><span>{product.icon}</span><div><strong>{product.title}</strong><small>Qty {quantity} · {product.delivery}</small></div><b>${(product.priceCents * quantity / 100).toFixed(2)}</b></div>)}
-          <div className="checkout-totals"><p><span>Subtotal</span><b>${(subtotalCents / 100).toFixed(2)}</b></p><p><span>Delivery</span><b>$0.00</b></p><p><span>Available balance</span><b>${(balanceCents / 100).toFixed(2)}</b></p><p><span>Total</span><b>${(subtotalCents / 100).toFixed(2)}</b></p></div>
-          <button className="pay-button" type="submit" disabled={busy || !selectedMethod?.available}><LockKeyhole /> {busy ? "Creating secure order…" : selectedMethod?.id === "WALLET" ? `Pay with wallet · $${(subtotalCents / 100).toFixed(2)}` : `Pay $${(subtotalCents / 100).toFixed(2)}`}</button>
+          {items.map(({ product, quantity }) => <div className="checkout-line" key={product.id}><span>{product.icon}</span><div><strong>{product.title}</strong><small>Qty {quantity} · {product.delivery}</small></div><b>{formatMoney(product.priceCents * quantity)}</b></div>)}
+          <div className="checkout-totals"><p><span>Subtotal</span><b>{formatMoney(subtotalCents)}</b></p><p><span>Delivery</span><b>{formatMoney(0)}</b></p><p><span>Available balance</span><b>{formatMoney(balanceCents)}</b></p><p><span>Total</span><b>{formatMoney(subtotalCents)}</b></p></div>
+          <button className="pay-button" type="submit" disabled={busy || !selectedMethod?.available}><LockKeyhole /> {busy ? "Creating secure order…" : selectedMethod?.id === "WALLET" ? `Pay with wallet · ${formatMoney(subtotalCents)}` : `Pay ${formatMoney(subtotalCents)}`}</button>
           <p className="secure-note"><ShieldCheck /> Payment confirmation required · ZIP/download delivery unlocks after confirmation</p>
         </aside>
       </form>

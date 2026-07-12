@@ -11,6 +11,8 @@ import { ApiError, apiRequest, STAFF_ROLES } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { Seo } from "../components/Seo";
 import { EarningsChart } from "../components/EarningsChart";
+import { LocaleSwitcher } from "../components/LocaleSwitcher";
+import { useLocale } from "../i18n/LocaleContext";
 
 type Grant = { id: string; downloadCount: number; maxDownloads: number; expiresAt: string; productFile: { displayName: string; version: number } };
 type InventoryItem = { id: string; content: string; source: string; deliveredAt?: string | null };
@@ -38,6 +40,7 @@ const tabs: Array<{ id: Tab; label: string; icon: typeof Home; roles?: string[] 
 
 export function AccountDashboardPage() {
   const { user, logout } = useAuth(); const navigate = useNavigate();
+  const { formatMoney } = useLocale();
   const [tab, setTab] = useState<Tab>("overview");
   const [orders, setOrders] = useState<Order[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -241,6 +244,7 @@ export function AccountDashboardPage() {
         <div className="dashboard-command-bar">
           <label><Search size={16} /><input aria-label="Search dashboard" placeholder="Search orders, products, disputes…" /></label>
           <div>
+            <LocaleSwitcher />
             <button className="command-icon" aria-label="Notifications"><Bell size={18} /><span /></button>
             <button className="account-switcher"><span>{user.firstName[0]}{user.lastName[0]}</span><b>{user.firstName}</b><ChevronDown size={15} /></button>
           </div>
@@ -258,8 +262,8 @@ export function AccountDashboardPage() {
               <div className="metric-card"><ShoppingBag size={22} /><span><strong>{orders.length}</strong><small>Total orders</small></span></div>
               <div className="metric-card"><Activity size={22} /><span><strong>{activeOrders}</strong><small>Active orders</small></span></div>
               <div className="metric-card"><Download size={22} /><span><strong>{downloads.length}</strong><small>Available files</small></span></div>
-              <div className="metric-card"><TrendingUp size={22} /><span><strong>${(totalSpent / 100).toFixed(2)}</strong><small>Total spent</small></span></div>
-              <div className="metric-card"><Wallet size={22} /><span><strong>${(walletBalance / 100).toFixed(2)}</strong><small>Available balance</small></span></div>
+              <div className="metric-card"><TrendingUp size={22} /><span><strong>{formatMoney(totalSpent)}</strong><small>Total spent</small></span></div>
+              <div className="metric-card"><Wallet size={22} /><span><strong>{formatMoney(walletBalance)}</strong><small>Available balance</small></span></div>
               <div className="metric-card"><TicketCheck size={22} /><span><strong>{tickets.filter((t) => t.status !== "CLOSED" && t.status !== "RESOLVED").length}</strong><small>Open tickets</small></span></div>
               <div className="metric-card"><Headphones size={22} /><span><strong>Every day</strong><small>Support coverage</small></span></div>
             </div>
@@ -277,7 +281,7 @@ export function AccountDashboardPage() {
                         </div>
                       </div>
                       <div className="co-right">
-                        <span>${(order.totalCents / 100).toFixed(2)}</span>
+                        <span>{formatMoney(order.totalCents)}</span>
                         <small>{new Date(order.createdAt).toLocaleDateString()}</small>
                       </div>
                     </div>
@@ -291,7 +295,7 @@ export function AccountDashboardPage() {
                 <div className="quick-seller-stats">
                   <div><Store size={18} /><span><strong>{sellerProfile?.storeName ?? "Store"}</strong><small>{sellerProfile?.isVerified ? "Verified" : "Pending"}</small></span></div>
                   <div><ShoppingBag size={18} /><span><strong>{sellerProducts?.length ?? 0}</strong><small>Products</small></span></div>
-                  <div><TrendingUp size={18} /><span><strong>${(sellerRevenue / 100).toFixed(2)}</strong><small>Revenue</small></span></div>
+                  <div><TrendingUp size={18} /><span><strong>{formatMoney(sellerRevenue)}</strong><small>Revenue</small></span></div>
                 </div>
               </div>
             )}
@@ -322,7 +326,7 @@ export function AccountDashboardPage() {
                         <strong>{order.orderNumber}</strong>
                         <small>{new Date(order.createdAt).toLocaleDateString()} · {order.payment?.method?.replaceAll("_", " ") ?? "Awaiting payment"}</small>
                       </div>
-                      <b>${(order.totalCents / 100).toFixed(2)} {order.currency}</b>
+                      <b>{formatMoney(order.totalCents)}</b>
                     </header>
                     <div className="order-items">
                       {order.items.map((item) => (
@@ -568,12 +572,12 @@ export function AccountDashboardPage() {
               <button className="secondary-button" onClick={() => void Promise.all([apiRequest<{ items: any[] }>("/api/seller/orders").then((d) => setSellerOrders(d.items)), apiRequest<{ disputes: any[] }>("/api/seller/disputes").then((d) => setSellerDisputes(d.disputes)), apiRequest<{ summary: SellerFinance }>("/api/seller/finance").then((d) => setSellerFinance(d.summary))])}><RefreshCw size={16} /> Refresh</button>
             </div>
             <div className="seller-hub-metrics seller-center-grid">
-              <div className="metric-card"><Wallet size={22} /><span><small>Seller balance</small><strong>${((sellerFinance?.availableBalanceCents ?? walletBalance) / 100).toFixed(2)}</strong><small><LockKeyhole size={12} /> frozen: ${((sellerFinance?.frozenBalanceCents ?? 0) / 100).toFixed(2)}</small></span></div>
+              <div className="metric-card"><Wallet size={22} /><span><small>Seller balance</small><strong>{formatMoney(sellerFinance?.availableBalanceCents ?? walletBalance)}</strong><small><LockKeyhole size={12} /> frozen: {formatMoney(sellerFinance?.frozenBalanceCents ?? 0)}</small></span></div>
               <div className="metric-card"><PackageCheck size={22} /><span><small>Product</small><strong>{sellerProducts?.length ?? 0}</strong><small>{sellerProducts.filter((p: any) => p.status === "APPROVED").length} approved · {sellerProducts.filter((p: any) => p.status === "PENDING").length} pending</small></span></div>
               <div className="metric-card"><ShoppingBag size={22} /><span><small>Total order</small><strong>{sellerOrders?.length ?? 0}</strong><small>{sellerOrders.filter((item: any) => item.order?.payment?.status === "PAID").length} paid</small></span></div>
-              <div className="metric-card"><TrendingUp size={22} /><span><small>Total sales</small><strong>${(sellerRevenue / 100).toFixed(2)}</strong><small>Withdrawn: ${((sellerFinance?.withdrawnCents ?? 0) / 100).toFixed(2)}</small></span></div>
+              <div className="metric-card"><TrendingUp size={22} /><span><small>Total sales</small><strong>{formatMoney(sellerRevenue)}</strong><small>Withdrawn: {formatMoney(sellerFinance?.withdrawnCents ?? 0)}</small></span></div>
               <div className="metric-card"><Activity size={22} /><span><small>Today</small><strong>{sellerFinance?.todayOrderCount ?? 0}</strong><small>orders</small></span></div>
-              <div className="metric-card"><DollarSign size={22} /><span><small>Income today</small><strong>${((sellerFinance?.todayIncomeCents ?? 0) / 100).toFixed(2)}</strong><small>3-day hold applies</small></span></div>
+              <div className="metric-card"><DollarSign size={22} /><span><small>Income today</small><strong>{formatMoney(sellerFinance?.todayIncomeCents ?? 0)}</strong><small>3-day hold applies</small></span></div>
               <div className="metric-card"><Gavel size={22} /><span><small>Disputes</small><strong>{sellerDisputes.filter((d: any) => !["CLOSED", "RESOLVED_BUYER", "RESOLVED_SELLER"].includes(d.status)).length}</strong><small>{sellerDisputes.length} total</small></span></div>
               <div className="metric-card"><Activity size={22} /><span><small>Pending orders</small><strong>{pendingSellerOrders}</strong><small>processing/disputed</small></span></div>
             </div>
@@ -581,7 +585,7 @@ export function AccountDashboardPage() {
             <div className="seller-analytics-grid">
               <section className="seller-sales-chart">
                 <header><div><span className="section-index">SALES STATISTICS</span><h2>Revenue performance</h2></div><select aria-label="Analytics period"><option>Last 15 days</option><option>Last 30 days</option><option>Last 90 days</option></select></header>
-                <div className="chart-summary"><span><small>Net income</small><strong>${(sellerRevenue / 100).toFixed(2)}</strong></span><span><small>Average order</small><strong>${sellerOrders.length ? (sellerRevenue / sellerOrders.length / 100).toFixed(2) : "0.00"}</strong></span><span><small>Refund risk</small><strong className="risk-value">{sellerDisputes.length}</strong></span></div>
+                <div className="chart-summary"><span><small>Net income</small><strong>{formatMoney(sellerRevenue)}</strong></span><span><small>Average order</small><strong>{formatMoney(sellerOrders.length ? sellerRevenue / sellerOrders.length : 0)}</strong></span><span><small>Refund risk</small><strong className="risk-value">{sellerDisputes.length}</strong></span></div>
                 <div className="chart-frame"><EarningsChart label="Seller revenue" color="#635bff" points={[18,34,28,47,42,65,51,78,72,96,69,111,86,124,103].map((value, index) => ({ label: `Day ${index + 1}`, value: Math.round(value * Math.max(1, sellerRevenue / 920)) }))} /></div>
               </section>
               <aside className="seller-todo-panel"><span className="section-index">TO-DO & WARNINGS</span><h2>Store health</h2><div><span className="todo-dot danger" /><p><strong>{sellerProducts.filter((p: any) => p.status === "REJECTED").length} listings need attention</strong><small>Review rejected products and resubmit.</small></p></div><div><span className="todo-dot warning" /><p><strong>{sellerProducts.filter((p: any) => p.inventoryItems?.filter((i: any) => i.isActive && !i.deliveredAt).length === 0).length} products low on stock</strong><small>Add delivery inventory before the next sale.</small></p></div><div><span className="todo-dot success" /><p><strong>Payments protected</strong><small>Seller earnings follow the configured hold period.</small></p></div></aside>
@@ -603,7 +607,7 @@ export function AccountDashboardPage() {
                         </div>
                       </div>
                       <div className="co-right">
-                        <span>${(item.totalCents / 100).toFixed(2)}</span>
+                        <span>{formatMoney(item.totalCents)}</span>
                         <small className={`status-pill ${item.order?.status?.toLowerCase()}`}>{item.order?.status?.replaceAll("_", " ")}</small>
                         <div className="seller-row-actions">
                           <Link to={`/orders/${item.order?.id}`} className="action-link"><MessageCircle size={14} /> Chat</Link>
@@ -649,7 +653,7 @@ export function AccountDashboardPage() {
                     <div className="sp-card" key={product.id}>
                       <span className={`sp-status ${product.status.toLowerCase()}`}>{product.status}</span>
                       <strong>{product.name}</strong>
-                      <small>{product.type} · ${(product.priceCents / 100).toFixed(2)}</small>
+                      <small>{product.type} · {formatMoney(product.priceCents)}</small>
                       <span className="sp-files">{product.files?.length ?? 0} file{(product.files?.length ?? 0) !== 1 ? "s" : ""}</span>
                       <small>{product.category?.parent?.name ? `${product.category.parent.name} / ` : ""}{product.category?.name ?? "Uncategorized"}</small>
                       <Link to="/seller" className="action-link">Manage product</Link>
@@ -744,6 +748,7 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }:
   initialBalance: number;
   onBalanceChange: (balanceCents: number) => void;
 }) {
+  const { formatMoney } = useLocale();
   const [deposits, setDeposits] = useState<Deposit[]>([]);
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [balance, setBalance] = useState(initialBalance ?? user.balanceCents ?? 0);
@@ -849,21 +854,21 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }:
         <div className="wallet-balance-banner">
           <Wallet size={32} />
           <div>
-            <strong>${(balance / 100).toFixed(2)}</strong>
+            <strong>{formatMoney(balance)}</strong>
             <small>Available balance</small>
           </div>
         </div>
         <div className="wallet-balance-banner muted">
           <LockKeyhole size={28} />
           <div>
-            <strong>${(frozenBalance / 100).toFixed(2)}</strong>
+            <strong>{formatMoney(frozenBalance)}</strong>
             <small>Frozen seller earnings · releases after 3 days</small>
           </div>
         </div>
         <div className="wallet-balance-banner muted">
           <RefreshCw size={28} />
           <div>
-            <strong>${(pendingWithdrawalCents / 100).toFixed(2)}</strong>
+            <strong>{formatMoney(pendingWithdrawalCents)}</strong>
             <small>Pending withdrawal review</small>
           </div>
         </div>
@@ -939,7 +944,7 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }:
                 <div className="co-left">
                   <Wallet size={16} />
                   <div>
-                    <strong>${(withdrawal.amountCents / 100).toFixed(2)}</strong>
+                    <strong>{formatMoney(withdrawal.amountCents)}</strong>
                     <small>{withdrawal.blockchain} · {withdrawal.walletAddress}</small>
                     {withdrawal.adminNotes ? <small>{withdrawal.adminNotes}</small> : null}
                   </div>
@@ -963,7 +968,7 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }:
                 <div className="co-left">
                   {deposit.method === "CRYPTO" ? <Bitcoin size={16} /> : deposit.method === "PAYPAL" ? <DollarSign size={16} /> : <CreditCard size={16} />}
                   <div>
-                    <strong>${(deposit.amountCents / 100).toFixed(2)}</strong>
+                    <strong>{formatMoney(deposit.amountCents)}</strong>
                     <small>{deposit.method === "CRYPTO" ? "Crypto" : deposit.method === "PAYPAL" ? "PayPal" : "Card"} · {deposit.providerReference}</small>
                   </div>
                 </div>

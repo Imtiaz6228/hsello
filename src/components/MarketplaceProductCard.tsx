@@ -1,6 +1,7 @@
 import { Clock3, Eye, PackageCheck, ShoppingCart, Star, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { CatalogProduct } from "../data/catalog";
+import { useLocale } from "../i18n/LocaleContext";
 
 type Props = {
   product: CatalogProduct;
@@ -9,7 +10,7 @@ type Props = {
 };
 
 export function MarketplaceProductCard({ product, onBuy, layout = "grid" }: Props) {
-  const cny = (product.priceCnyCents ?? 0) > 0 ? `¥${((product.priceCnyCents ?? 0) / 100).toFixed(2)}` : null;
+  const { formatMoney, t } = useLocale();
   const stockLabel = product.type === "SERVICE"
     ? "Service slot"
     : `${product.stockCount ?? 0} in stock`;
@@ -38,12 +39,12 @@ export function MarketplaceProductCard({ product, onBuy, layout = "grid" }: Prop
         </div>
         <footer>
           <div>
-            <strong>${(product.priceCents / 100).toFixed(2)}</strong>
-            {cny ? <small>{cny} CNY</small> : null}
+            <strong>{formatMoney(product.priceCents)}</strong>
+            <small>Secure marketplace checkout</small>
           </div>
           <div className="market-card-actions">
-            <Link to={`/products/${product.slug}`}><Eye /> View Details</Link>
-            <button type="button" onClick={() => onBuy(product)}><ShoppingCart /> Purchase</button>
+            <Link to={`/products/${product.slug}`}><Eye /> {t("details")}</Link>
+            <button type="button" onClick={() => onBuy(product)}><ShoppingCart /> {t("purchase")}</button>
           </div>
         </footer>
       </div>

@@ -7,6 +7,7 @@ import { MarketFooter, MarketHeader } from "../components/MarketHeader";
 import { MarketplaceProductCard } from "../components/MarketplaceProductCard";
 import { Seo } from "../components/Seo";
 import type { CatalogCategory, CatalogProduct } from "../data/catalog";
+import { useLocale } from "../i18n/LocaleContext";
 
 type SortMode = "popular" | "price_asc" | "price_desc" | "newest";
 type ViewMode = "list" | "grid";
@@ -28,6 +29,7 @@ function sortProducts(products: CatalogProduct[], sort: SortMode) {
 }
 
 export function CatalogPage() {
+  const { t } = useLocale();
   const { add } = useCart();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
@@ -76,21 +78,21 @@ export function CatalogPage() {
       <Seo title="Browse products and categories" description="Scrollable marketplace categories, subcategories, stocked digital products, and secure buying from verified sellers." canonicalPath="/catalog" />
       <MarketHeader />
       <section className="catalog-hero market-browser-hero">
-        <span className="section-index">ALL CATEGORIES</span>
-        <h1>Browse, filter,<br />and buy.</h1>
-        <div className="catalog-search"><Search /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search product name, seller, category..." /></div>
+        <span className="section-index">{t("allCategories").toUpperCase()}</span>
+        <h1>{t("browse")}</h1>
+        <div className="catalog-search"><Search /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("search")} /></div>
       </section>
       <section className="mobile-category-pills" aria-label="Quick categories">
-        <button className={category === "all" ? "active" : ""} onClick={() => setCategory("all")}>All <span>{products.length}</span></button>
+        <button className={category === "all" ? "active" : ""} onClick={() => setCategory("all")}>{t("allCategories")} <span>{products.length}</span></button>
         {parentCategories.map((item) => <button key={item.slug} className={category === item.slug ? "active" : ""} onClick={() => { setCategory(item.slug); setExpanded(item.slug); }}>{item.name} <span>{categoryCounts.get(item.slug) ?? item.productCount ?? 0}</span></button>)}
       </section>
       <section className="market-browser-layout">
         <aside className="category-directory">
           <div className="directory-card">
-            <header><strong>All categories</strong><span>{categories.length}</span></header>
-            <label className="directory-check"><input type="checkbox" checked={stockOnly} onChange={(event) => setStockOnly(event.target.checked)} /> Show in-stock products only</label>
+            <header><strong>{t("allCategories")}</strong><span>{categories.length}</span></header>
+            <label className="directory-check"><input type="checkbox" checked={stockOnly} onChange={(event) => setStockOnly(event.target.checked)} /> {t("inStock")}</label>
             <div className="directory-search"><Search /><input value={categoryQuery} onChange={(event) => setCategoryQuery(event.target.value)} placeholder="Search category name..." /></div>
-            <button className={category === "all" ? "directory-all active" : "directory-all"} onClick={() => setCategory("all")}>View All <span>{products.length}</span></button>
+            <button className={category === "all" ? "directory-all active" : "directory-all"} onClick={() => setCategory("all")}>{t("viewAll")} <span>{products.length}</span></button>
           </div>
           <div className="directory-list">
             {visibleParents.map((parent) => {

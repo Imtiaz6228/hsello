@@ -4,6 +4,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { ApiError, apiRequest } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { Seo } from "../components/Seo";
+import { LocaleSwitcher } from "../components/LocaleSwitcher";
+import { useLocale } from "../i18n/LocaleContext";
 
 type Category = { id: string; name: string; slug?: string; description?: string; parentId?: string | null };
 type Product = {
@@ -49,6 +51,7 @@ function cents(value: string) {
 export function SellerStudioPage() {
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const { formatMoney } = useLocale();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [open, setOpen] = useState(false);
@@ -231,6 +234,7 @@ export function SellerStudioPage() {
         <Link to="/dashboard"><ArrowLeft /> Account</Link>
         <strong><Store /> Seller studio</strong>
         <div className="seller-nav-actions">
+          <LocaleSwitcher />
           <button onClick={() => setCategoryOpen(true)}><FolderPlus /> New category</button>
           <button onClick={() => setOpen(true)}><PackagePlus /> New product</button>
           <button className="secondary-button" onClick={() => void signOut()}><LogOut /> Sign out</button>
@@ -257,7 +261,7 @@ export function SellerStudioPage() {
                 <div>
                   <strong>{product.name}</strong>
                   <small>{product.category?.parent?.name ? `${product.category.parent.name} / ` : ""}{product.category?.name ?? product.type}</small>
-                  <small>${((product.priceUsdCents ?? product.priceCents) / 100).toFixed(2)} · ¥{((product.priceCnyCents ?? 0) / 100).toFixed(2)} · ₽{((product.priceRubCents ?? 0) / 100).toFixed(2)}</small>
+                  <small>{formatMoney(product.priceUsdCents ?? product.priceCents)} · base USD ${(product.priceUsdCents ?? product.priceCents) / 100}</small>
                   <small>After-sales: {product.afterSalesServiceHours ?? 12}h minimum dispute window</small>
                   {product.rejectionReason ? <p>{product.rejectionReason}</p> : null}
                 </div>

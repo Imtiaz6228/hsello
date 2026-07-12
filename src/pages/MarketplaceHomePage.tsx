@@ -1,17 +1,19 @@
 import { FormEvent, useMemo, useState } from "react";
 import {
   ArrowRight, BadgeCheck, Bot, Check, ChevronDown, Clock3, Cloud,
-  Gamepad2, Gift, Globe2, Headphones, KeyRound, Mail, Menu, MessageCircle,
-  Search, ShieldCheck, ShoppingBag, Smartphone, Sparkles, Star, Store,
+  Gamepad2, Gift, Globe2, Headphones, KeyRound, LogOut, Mail, Menu, MessageCircle,
+  Search, ShieldCheck, ShoppingBag, Smartphone, Sparkles, Star, Store, UserPlus,
   TrendingUp, Users, WalletCards, Wifi, X, Zap, type LucideIcon
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { STAFF_ROLES } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { useMarketplaceCategories, useMarketplaceProducts } from "../commerce/useMarketplace";
+import { useCart } from "../commerce/CartContext";
 import { LocaleSwitcher } from "../components/LocaleSwitcher";
+import { useLocale } from "../i18n/LocaleContext";
 
-type Category = { name: string; short: string; description: string; subcategories: string[]; icon: LucideIcon; accent: string };
+type Category = { name: string; short: string; description: string; subcategories: string[]; subDetails?: Record<string, Array<{ name: string; slug: string }>>; icon: LucideIcon; accent: string };
 type Product = { slug?: string; imageUrl?: string | null; category: string; title: string; seller: string; price: number; oldPrice?: number; rating: string; reviews: string; delivery: string; badge?: string; icon: LucideIcon; accent: string; tags: string[] };
 
 const fallbackCategories: Category[] = [
@@ -77,6 +79,7 @@ function productVisual(category: string) {
 
 function ProductCard({ product }: { product: Product }) {
   const Icon = product.icon;
+  const { formatMoney } = useLocale();
   const [imageFailed, setImageFailed] = useState(false);
   const productPath = product.slug ? `/products/${product.slug}` : "/catalog";
   return <article className="lux-product-card">
@@ -89,13 +92,15 @@ function ProductCard({ product }: { product: Product }) {
       <Link to={productPath}><h3>{product.title}</h3></Link>
       <div className="lux-seller"><BadgeCheck size={14} /> {product.seller}</div>
       <div className="lux-rating"><Star size={14} fill="currentColor" /> <strong>{product.rating}</strong><span>({product.reviews})</span><i /><Clock3 size={13} /><span>{product.delivery}</span></div>
-      <div className="lux-price"><div><small>From</small><strong>${product.price.toFixed(2)}</strong>{product.oldPrice && <del>${product.oldPrice.toFixed(2)}</del>}</div><Link to={productPath} aria-label="Open product"><ArrowRight size={18} /></Link></div>
+      <div className="lux-price"><div><small>From</small><strong>{formatMoney(Math.round(product.price * 100))}</strong>{product.oldPrice && <del>{formatMoney(Math.round(product.oldPrice * 100))}</del>}</div><Link to={productPath} aria-label="Open product"><ArrowRight size={18} /></Link></div>
     </div>
   </article>;
 }
 
 export function MarketplaceHomePage() {
   const { user } = useAuth();
+  const { count } = useCart();
+  const { t, formatMoney } = useLocale();
   const liveCatalogProducts = useMarketplaceProducts();
   const marketplaceCategories = useMarketplaceCategories();
   const [query, setQuery] = useState("");
@@ -103,26 +108,30 @@ export function MarketplaceHomePage() {
   const [mobileMenu, setMobileMenu] = useState(false);
   const [mobileCatalogOpen, setMobileCatalogOpen] = useState(false);
   const [mobileCategory, setMobileCategory] = useState("Social media");
-  const accountPath = user ? (STAFF_ROLES.includes(user.role) ? "/admin" : "/dashboard") : "/sign-in";
+  const accountPath = user ? (STAFF_ROLES.includes(user.role) ? "/admin" : user.role === "SELLER" ? "/seller" : "/dashboard") : "/sign-in";
   const categories = useMemo<Category[]>(() => {
     const parents = marketplaceCategories.filter((item) => !item.parentId);
     if (!parents.length) return fallbackCategories;
     const icons: LucideIcon[] = [Users, Mail, Bot, Cloud, MessageCircle, Gamepad2, WalletCards, Gift, KeyRound, TrendingUp, Wifi, Smartphone];
     const accents = ["purple", "orange", "blue", "pink", "green", "indigo", "yellow", "red", "cyan", "lime", "teal", "blue"];
-    return parents.map((parent, index) => ({
-      name: parent.name,
-      short: parent.name.split(/\s+/).slice(0, 2).join(" "),
-      description: parent.description,
-      subcategories: marketplaceCategories.filter((item) => item.parentId === parent.id).map((item) => item.name),
-      icon: icons[index % icons.length],
-      accent: accents[index % accents.length]
-    }));
+    return parents.map((parent, index) => {
+      const children = marketplaceCategories.filter((item) => item.parentId === parent.id);
+      return {
+        name: parent.name,
+        short: parent.name.split(/\s+/).slice(0, 2).join(" "),
+        description: parent.description,
+        subcategories: children.map((item) => item.name),
+        subDetails: Object.fromEntries(children.map((child) => [child.name, marketplaceCategories.filter((item) => item.parentId === child.id).map((item) => ({ name: item.name, slug: item.slug }))])),
+        icon: icons[index % icons.length],
+        accent: accents[index % accents.length]
+      };
+    });
   }, [marketplaceCategories]);
   const displayProducts = useMemo<Product[]>(() => liveCatalogProducts.length ? liveCatalogProducts.map((product) => {
     const match = categories.find((item) => item.name.toLowerCase() === product.category.toLowerCase() || item.subcategories.some((sub) => sub.toLowerCase() === product.category.toLowerCase()));
     const visual = { icon: match?.icon ?? ShoppingBag, accent: match?.accent ?? "purple" };
     return { slug: product.slug, imageUrl: product.imageUrl, category: product.category, title: product.title, seller: product.seller, price: product.priceCents / 100, rating: product.rating ? product.rating.toFixed(2) : "New", reviews: String(product.reviews), delivery: product.delivery, badge: product.badge, icon: visual.icon, accent: visual.accent, tags: [product.title, product.category, product.seller] };
-  }) : products, [liveCatalogProducts]);
+  }) : products, [categories, liveCatalogProducts]);
   const visibleProducts = useMemo(() => {
     const q = query.trim().toLowerCase();
     return displayProducts.filter(p => (activeCategory === "All" || p.category === activeCategory || categories.find(c => c.name === activeCategory)?.subcategories.includes(p.category)) && (!q || [p.title, p.seller, p.category, ...p.tags].some(v => v.toLowerCase().includes(q))));
@@ -135,28 +144,33 @@ export function MarketplaceHomePage() {
     <header className="lux-header">
       <Link className="lux-logo" to="/" aria-label="HSello home"><span>H</span><div><strong>HSELLO</strong><small>DIGITAL MARKET</small></div></Link>
       <nav className={mobileMenu ? "open" : ""} aria-label="Main navigation">
-        <button className="mobile-close" onClick={() => setMobileMenu(false)} aria-label="Close menu"><X /></button>
+        <button className="mobile-close" onClick={() => setMobileMenu(false)} aria-label={t("close")}><X /></button>
         <div className="mobile-locale-row"><LocaleSwitcher /></div>
-        <a className="desktop-categories-link" href="#categories">Categories <ChevronDown size={14} /></a>
-        <button className={`mobile-catalog-trigger ${mobileCatalogOpen ? "active" : ""}`} type="button" onClick={() => setMobileCatalogOpen((open) => !open)}>Categories <ChevronDown size={16} /></button>
+        <a className="desktop-categories-link" href="#categories">{t("categories")} <ChevronDown size={14} /></a>
+        <button className={`mobile-catalog-trigger ${mobileCatalogOpen ? "active" : ""}`} type="button" onClick={() => setMobileCatalogOpen((open) => !open)}>{t("categories")} <ChevronDown size={16} /></button>
         {mobileCatalogOpen ? <div className="mobile-catalog-panel">
           <div className="mobile-main-categories">{categories.map((category) => { const Icon = category.icon; return <button type="button" key={category.name} className={mobileCategory === category.name ? `active accent-${category.accent}` : `accent-${category.accent}`} onClick={() => setMobileCategory(category.name)}><span><Icon /></span>{category.name}<ChevronDown /></button>; })}</div>
-          <div className="mobile-subcategory-list"><header><strong>{mobileCategory}</strong><Link to="/catalog" onClick={() => setMobileMenu(false)}>View all</Link></header>{categories.find((item) => item.name === mobileCategory)?.subcategories.map((platform) => <details key={platform}><summary><span>{platform.slice(0,2).toUpperCase()}</span><strong>{platform}</strong><ChevronDown /></summary><div>{detailOptions(platform, mobileCategory).map((detail) => <Link key={detail} to={`/catalog?category=${encodeURIComponent(platformSlugs[platform] ?? platform.toLowerCase().replace(/[^a-z0-9]+/g,"-"))}&q=${encodeURIComponent(detail)}`} onClick={() => setMobileMenu(false)}>{detail}<ArrowRight /></Link>)}</div></details>)}</div>
+          <div className="mobile-subcategory-list"><header><strong>{mobileCategory}</strong><Link to="/catalog" onClick={() => setMobileMenu(false)}>View all</Link></header>{categories.find((item) => item.name === mobileCategory)?.subcategories.map((platform) => <details key={platform}><summary><span>{platform.slice(0,2).toUpperCase()}</span><strong>{platform}</strong><ChevronDown /></summary><div>{(() => {
+              const liveDetails = categories.find((item) => item.name === mobileCategory)?.subDetails?.[platform] ?? [];
+              const options = liveDetails.length ? liveDetails : detailOptions(platform, mobileCategory).map((name) => ({ name, slug: platformSlugs[platform] ?? platform.toLowerCase().replace(/[^a-z0-9]+/g, "-") }));
+              return options.map((detail) => <Link key={`${platform}-${detail.name}`} to={`/catalog?category=${encodeURIComponent(detail.slug)}${liveDetails.length ? "" : `&q=${encodeURIComponent(detail.name)}`}`} onClick={() => setMobileMenu(false)}>{detail.name}<ArrowRight /></Link>);
+            })()}</div></details>)}</div>
         </div> : null}
-        <a href="#products" onClick={() => setMobileMenu(false)}>Products</a>
-        <a href="#sellers" onClick={() => setMobileMenu(false)}>Top sellers</a>
-        <a href="#journal" onClick={() => setMobileMenu(false)}>Blog</a>
-        <Link to="/seller/apply">Sell on HSello</Link>
+        <a href="#products" onClick={() => setMobileMenu(false)}>{t("products")}</a>
+        <a href="#sellers" onClick={() => setMobileMenu(false)}>{t("topSellers")}</a>
+        <a href="#journal" onClick={() => setMobileMenu(false)}>{t("blog")}</a>
+        <Link to="/seller/apply" onClick={() => setMobileMenu(false)}>{t("sellOn")}</Link>
+        <div className="mobile-auth-links">{!user ? <><Link to="/sign-in" onClick={() => setMobileMenu(false)}>{t("signIn")}</Link><Link className="primary" to="/register" onClick={() => setMobileMenu(false)}><UserPlus size={16} /> {t("register")}</Link></> : <><Link to={accountPath} onClick={() => setMobileMenu(false)}>{t("dashboard")}</Link><Link className="danger" to="/sign-out" onClick={() => setMobileMenu(false)}><LogOut size={16} /> {t("signOut")}</Link></>}</div>
       </nav>
-      <div className="lux-header-actions"><button className="menu-button" onClick={() => setMobileMenu(true)} aria-label="Open menu"><Menu /></button><LocaleSwitcher compact /><Link className="lux-signin" to={accountPath}>{user ? "My account" : "Sign in"}</Link><Link className="lux-cart" to="/cart"><ShoppingBag size={18} /><span>0</span></Link></div>
+      <div className="lux-header-actions"><button className="menu-button" onClick={() => setMobileMenu(true)} aria-label={t("menu")}><Menu /></button><LocaleSwitcher compact /><Link className="lux-signin" to={accountPath}>{user ? t("account") : t("signIn")}</Link><Link className="lux-cart" to="/cart"><ShoppingBag size={18} /><span>{count}</span></Link></div>
     </header>
 
     <section className="lux-hero">
       <div className="lux-hero-copy">
-        <span className="lux-eyebrow"><i /> THE PREMIUM DIGITAL MARKETPLACE</span>
-        <h1>Everything digital.<br /><em>One trusted place.</em></h1>
-        <p>Discover exceptional digital products, tools and services from verified sellers—delivered fast and protected from checkout to completion.</p>
-        <form className="lux-search" onSubmit={submitSearch}><Search size={21} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="What are you looking for?" aria-label="Search products"/><button>Search marketplace</button></form>
+        <span className="lux-eyebrow"><i /> {t("homeEyebrow")}</span>
+        <h1>{t("homeTitleA")}<br /><em>{t("homeTitleB")}</em></h1>
+        <p>{t("homeIntro")}</p>
+        <form className="lux-search" onSubmit={submitSearch}><Search size={21} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder={t("homeSearch")} aria-label="Search products"/><button>{t("searchMarketplace")}</button></form>
         <div className="lux-popular"><span>Trending:</span>{["ChatGPT", "Microsoft 365", "Spotify", "Gift cards"].map(t => <button key={t} onClick={() => { setQuery(t); document.querySelector("#products")?.scrollIntoView({ behavior: "smooth" }); }}>{t}</button>)}</div>
         <div className="lux-proof"><div><strong>30K+</strong><span>Verified products</span></div><div><strong>4.9/5</strong><span>Buyer satisfaction</span></div><div><strong>24/7</strong><span>Human support</span></div></div>
       </div>
@@ -171,23 +185,23 @@ export function MarketplaceHomePage() {
     <section className="lux-trust"><div><ShieldCheck /><span><strong>Buyer protection</strong><small>Every transaction is covered</small></span></div><div><BadgeCheck /><span><strong>Verified sellers</strong><small>Reviewed before they can sell</small></span></div><div><Zap /><span><strong>Fast delivery</strong><small>Most products arrive instantly</small></span></div><div><Headphones /><span><strong>Real support</strong><small>Help whenever you need it</small></span></div></section>
 
     <section className="lux-section" id="categories">
-      <div className="lux-section-head"><div><span>EXPLORE THE MARKETPLACE</span><h2>Shop by category</h2></div><Link to="/catalog">Browse all categories <ArrowRight size={16} /></Link></div>
+      <div className="lux-section-head"><div><span>EXPLORE THE MARKETPLACE</span><h2>{t("shopByCategory")}</h2></div><Link to="/catalog">Browse all categories <ArrowRight size={16} /></Link></div>
       <div className="lux-category-grid">{categories.map(c => { const Icon = c.icon; return <button key={c.name} onClick={() => pickCategory(c.name)} className={`lux-category-card accent-${c.accent}`}><span className="category-symbol"><Icon /></span><span className="category-text"><strong>{c.name}</strong><small>{c.description}</small></span><span className="category-tags">{c.subcategories.slice(0,3).map(s => <i key={s}>{s}</i>)}</span><span className="category-more">{c.subcategories.length > 3 ? `+${c.subcategories.length - 3} more` : "Explore"} <ArrowRight size={14} /></span></button>; })}</div>
     </section>
 
     <section className="lux-flash">
       <div className="flash-copy"><span><Zap size={15} fill="currentColor" /> FLASH SALE</span><h2>The smartest tools.<br />Prices that won’t last.</h2><p>Save up to 40% on this week’s most wanted digital products.</p><Link to="/catalog">Shop flash sale <ArrowRight size={17} /></Link></div>
       <div className="flash-countdown"><span>ENDS IN</span><div><strong>08</strong><small>HOURS</small></div><b>:</b><div><strong>42</strong><small>MINUTES</small></div><b>:</b><div><strong>19</strong><small>SECONDS</small></div></div>
-      <div className="flash-product"><div className="flash-art"><KeyRound size={55} /><span>-33%</span></div><div><small>TODAY’S HERO DEAL</small><h3>Microsoft 365<br />Annual access</h3><p><strong>$39.50</strong><del>$59.00</del></p><span><Star size={13} fill="currentColor" /> 4.95 · 2,100 reviews</span></div></div>
+      <div className="flash-product"><div className="flash-art"><KeyRound size={55} /><span>-33%</span></div><div><small>TODAY’S HERO DEAL</small><h3>Microsoft 365<br />Annual access</h3><p><strong>{formatMoney(3950)}</strong><del>{formatMoney(5900)}</del></p><span><Star size={13} fill="currentColor" /> 4.95 · 2,100 reviews</span></div></div>
     </section>
 
     <section className="lux-section" id="products">
-      <div className="lux-section-head"><div><span>CURATED FOR YOU</span><h2>Popular right now</h2></div><Link to="/catalog">View all products <ArrowRight size={16} /></Link></div>
+      <div className="lux-section-head"><div><span>CURATED FOR YOU</span><h2>{t("popularNow")}</h2></div><Link to="/catalog">View all products <ArrowRight size={16} /></Link></div>
       <div className="lux-tabs">{["All", ...categories.slice(0,6).map(c => c.name)].map(c => <button key={c} className={activeCategory === c ? "active" : ""} onClick={() => setActiveCategory(c)}>{c}</button>)}</div>
       {visibleProducts.length ? <div className="lux-product-grid">{visibleProducts.map(p => <ProductCard key={p.title} product={p} />)}</div> : <div className="lux-empty"><Search /><h3>No matching products</h3><p>Try another search or browse all categories.</p><button onClick={() => { setQuery(""); setActiveCategory("All"); }}>Reset filters</button></div>}
     </section>
 
-    <section className="lux-new-section"><div className="lux-section-head"><div><span>FRESH TO THE MARKET</span><h2>New arrivals</h2></div><Link to="/catalog">See what’s new <ArrowRight size={16} /></Link></div><div className="lux-new-grid">{displayProducts.slice().reverse().slice(0,4).map(p => <ProductCard key={`new-${p.title}`} product={{...p, badge: "Just in"}} />)}</div></section>
+    <section className="lux-new-section"><div className="lux-section-head"><div><span>FRESH TO THE MARKET</span><h2>{t("newArrivals")}</h2></div><Link to="/catalog">See what’s new <ArrowRight size={16} /></Link></div><div className="lux-new-grid">{displayProducts.slice().reverse().slice(0,4).map(p => <ProductCard key={`new-${p.title}`} product={{...p, badge: "Just in"}} />)}</div></section>
 
     <section className="lux-sellers lux-section" id="sellers">
       <div className="lux-section-head"><div><span>THE BEST OF HSELLO</span><h2>Top sellers</h2></div><Link to="/catalog">Discover all stores <ArrowRight size={16} /></Link></div>

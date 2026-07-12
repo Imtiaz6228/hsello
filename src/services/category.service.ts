@@ -24,6 +24,16 @@ export const defaultMarketplaceCategories: DefaultCategory[] = [
   { slug: "reddit", parentSlug: "social-media", name: "Reddit", description: "Reddit community planning, moderation guides, launch checklists, and transparent campaign resources.", icon: "R", sortOrder: 21 },
   { slug: "twitch", parentSlug: "social-media", name: "Twitch", description: "Twitch stream overlays, schedule templates, channel point ideas, moderation docs, and sponsorship kits.", icon: "T", sortOrder: 22 },
 
+  // Third-level listing types create the smooth Category → Platform → Type flow.
+  // These describe legitimate digital assets/services; account credentials and account trading remain prohibited.
+  ...["instagram", "facebook", "tiktok", "twitter-x", "linkedin", "snapchat"].flatMap((platformSlug, platformIndex) => [
+    { slug: `${platformSlug}-new`, parentSlug: platformSlug, name: "New", description: "Newly created, original templates, setup services, or digital assets for this platform. Account credentials are not included.", icon: "N", sortOrder: 30 + platformIndex * 10 },
+    { slug: `${platformSlug}-old`, parentSlug: platformSlug, name: "Old / established", description: "Established content systems, mature brand assets, audits, or migration services for this platform. Account trading is prohibited.", icon: "O", sortOrder: 31 + platformIndex * 10 },
+    { slug: `${platformSlug}-with-followers`, parentSlug: platformSlug, name: "With audience", description: "Audience-growth resources, analytics, or content systems for existing communities. Fake engagement and follower sales are prohibited.", icon: "A", sortOrder: 32 + platformIndex * 10 },
+    { slug: `${platformSlug}-with-posts`, parentSlug: platformSlug, name: "With content", description: "Ready-to-customize content packs, post libraries, and publishing workflows for this platform.", icon: "P", sortOrder: 33 + platformIndex * 10 },
+    { slug: `${platformSlug}-business`, parentSlug: platformSlug, name: "Business ready", description: "Business setup documentation, brand kits, moderation workflows, and lawful commercial resources for this platform.", icon: "B", sortOrder: 34 + platformIndex * 10 }
+  ]),
+
   { slug: "email-services", name: "Email services", description: "Email templates, newsletter systems, deliverability education, campaign workflows, and integrations. Email accounts, harvested lists, spam tools, and credentials are prohibited.", icon: "✉", sortOrder: 100 },
   { slug: "gmail", parentSlug: "email-services", name: "Gmail", description: "Gmail and Google Workspace templates, inbox organization systems, filters, signatures, and training materials.", icon: "G", sortOrder: 101 },
   { slug: "outlook", parentSlug: "email-services", name: "Outlook / Microsoft mail", description: "Outlook templates, Microsoft 365 email workflows, calendar coordination systems, and mailbox organization resources.", icon: "O", sortOrder: 102 },
@@ -97,61 +107,47 @@ export async function ensureDefaultMarketplaceCategories(force = false) {
   if (!force && now - ensuredCategoriesAt < 60_000) return;
   ensuredCategoriesAt = now;
 
-  const parents = defaultMarketplaceCategories.filter((category) => !category.parentSlug);
-  const children = defaultMarketplaceCategories.filter((category) => category.parentSlug);
+  const pending = [...defaultMarketplaceCategories].sort((a, b) => a.sortOrder - b.sortOrder);
   const bySlug = new Map<string, { id: string }>();
+  let passes = 0;
 
-  for (const category of parents) {
-    const saved = await prisma.category.upsert({
-      where: { slug: category.slug },
-      create: {
-        name: category.name,
-        slug: category.slug,
-        description: category.description,
-        seoTitle: category.name,
-        seoDescription: category.description.slice(0, 170),
-        sortOrder: category.sortOrder,
-        isActive: true
-      },
-      update: {
-        name: category.name,
-        description: category.description,
-        seoTitle: category.name,
-        seoDescription: category.description.slice(0, 170),
-        sortOrder: category.sortOrder,
-        isActive: true
-      },
-      select: { id: true }
-    });
-    bySlug.set(category.slug, saved);
-  }
+  while (pending.length && passes < defaultMarketplaceCategories.length + 2) {
+    passes += 1;
+    let progressed = false;
 
-  for (const category of children) {
-    const parentId = category.parentSlug ? bySlug.get(category.parentSlug)?.id : undefined;
-    if (!parentId) continue;
-    const saved = await prisma.category.upsert({
-      where: { slug: category.slug },
-      create: {
-        parentId,
-        name: category.name,
-        slug: category.slug,
-        description: category.description,
-        seoTitle: category.name,
-        seoDescription: category.description.slice(0, 170),
-        sortOrder: category.sortOrder,
-        isActive: true
-      },
-      update: {
-        parentId,
-        name: category.name,
-        description: category.description,
-        seoTitle: category.name,
-        seoDescription: category.description.slice(0, 170),
-        sortOrder: category.sortOrder,
-        isActive: true
-      },
-      select: { id: true }
-    });
-    bySlug.set(category.slug, saved);
+    for (let index = pending.length - 1; index >= 0; index -= 1) {
+      const category = pending[index];
+      const parentId = category.parentSlug ? bySlug.get(category.parentSlug)?.id : undefined;
+      if (category.parentSlug && !parentId) continue;
+
+      const saved = await prisma.category.upsert({
+        where: { slug: category.slug },
+        create: {
+          parentId: parentId ?? null,
+          name: category.name,
+          slug: category.slug,
+          description: category.description,
+          seoTitle: category.name,
+          seoDescription: category.description.slice(0, 170),
+          sortOrder: category.sortOrder,
+          isActive: true
+        },
+        update: {
+          parentId: parentId ?? null,
+          name: category.name,
+          description: category.description,
+          seoTitle: category.name,
+          seoDescription: category.description.slice(0, 170),
+          sortOrder: category.sortOrder
+        },
+        select: { id: true }
+      });
+
+      bySlug.set(category.slug, saved);
+      pending.splice(index, 1);
+      progressed = true;
+    }
+
+    if (!progressed) break;
   }
 }

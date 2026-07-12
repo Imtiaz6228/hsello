@@ -35,7 +35,7 @@ const envSchema = z.object({
   ADMIN_NOTIFICATION_EMAIL: z.preprocess(emptyToUndefined, z.string().email().optional()),
   UPLOAD_DIR: z.string().min(1).default("uploads"),
   PRIVATE_UPLOAD_DIR: z.string().min(1).default("private-uploads"),
-  MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(2_097_152),
+  MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(8_388_608),
   MAX_PRODUCT_FILE_BYTES: z.coerce.number().int().positive().default(104_857_600),
   TURNSTILE_REQUIRED: booleanFromEnv.default(false),
   TURNSTILE_SECRET_KEY: z.preprocess(emptyToUndefined, z.string().optional()),

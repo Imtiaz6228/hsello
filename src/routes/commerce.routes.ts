@@ -336,7 +336,7 @@ commerceRouter.post("/orders/:id/messages", imageUpload.single("attachment"), as
     },
     include: { author: { select: { id: true, firstName: true, role: true } } }
   });
-  await markDisputeTurn(orderId, { id: req.auth!.id, role: req.auth!.role as Role }, order.buyerId, [...new Set(order.items.map((item) => item.sellerId))]);
+  await markDisputeTurn(orderId, { id: req.auth!.id, role: req.auth!.role as Role }, order.buyerId, [...new Set(order.items.map((item) => String(item.sellerId)))]);
   res.status(201).json({ message });
 }));
 

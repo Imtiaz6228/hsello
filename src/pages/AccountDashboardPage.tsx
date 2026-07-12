@@ -6,7 +6,7 @@ import {
   Wallet, CreditCard, Bitcoin, DollarSign, PlusCircle, Gavel, MessageSquare,
   LockKeyhole, Bell, Search, ChevronDown
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { ApiError, apiRequest, STAFF_ROLES } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { Seo } from "../components/Seo";
@@ -39,7 +39,7 @@ const tabs: Array<{ id: Tab; label: string; icon: typeof Home; roles?: string[] 
 ];
 
 export function AccountDashboardPage() {
-  const { user, logout } = useAuth(); const navigate = useNavigate();
+  const { user } = useAuth();
   const { formatMoney } = useLocale();
   const [tab, setTabState] = useState<Tab>(() => {
     const hash = window.location.hash.replace("#", "") as Tab;
@@ -102,7 +102,6 @@ export function AccountDashboardPage() {
     }
   }, [tab, user?.role]);
 
-  async function signOut() { await logout(); navigate("/"); }
   async function requestRefund(order: Order) {
     const reason = window.prompt("Tell us what went wrong (at least 20 characters):");
     if (!reason) return;
@@ -243,7 +242,7 @@ export function AccountDashboardPage() {
         <div className="sidebar-footer">
           {user.role === "SELLER" ? <Link to="/seller" className="secondary-button"><Store size={16} /> Seller studio</Link> : <Link to="/seller/apply" className="secondary-button"><Store size={16} /> Become a seller</Link>}
           {STAFF_ROLES.includes(user.role) ? <Link to="/admin" className="secondary-button"><ShieldCheck size={16} /> Admin</Link> : null}
-          <button onClick={() => void signOut()} className="danger-button"><LogOut size={16} /> Sign out</button>
+          <Link to="/sign-out" className="danger-button"><LogOut size={16} /> Sign out</Link>
         </div>
       </nav>
 
@@ -253,7 +252,7 @@ export function AccountDashboardPage() {
           <div>
             <LocaleSwitcher />
             <button className="command-icon" aria-label="Notifications"><Bell size={18} /><span /></button>
-            <button className="account-switcher"><span>{user.firstName[0]}{user.lastName[0]}</span><b>{user.firstName}</b><ChevronDown size={15} /></button>
+            <Link className="account-switcher" to="/sign-out" title="Open sign-out page"><span>{user.firstName[0]}{user.lastName[0]}</span><b>{user.firstName}</b><LogOut size={15} /></Link>
           </div>
         </div>
         {message ? <div className="dashboard-message" onClick={() => setMessage("")}>{message} <small>(click to dismiss)</small></div> : null}

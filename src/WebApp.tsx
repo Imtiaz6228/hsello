@@ -8,6 +8,7 @@ import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { SignInPage } from "./pages/SignInPage";
+import { SignOutPage } from "./pages/SignOutPage";
 import { VerifyEmailPage } from "./pages/VerifyEmailPage";
 import { VerifyRequiredPage } from "./pages/VerifyRequiredPage";
 import { BlogPage } from "./pages/BlogPage";
@@ -50,6 +51,7 @@ export function App() {
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/checkout/confirmation" element={<OrderConfirmationPage />} />
         <Route path="/support" element={<SupportPage />} />
+        <Route path="/sign-out" element={<SignOutPage />} />
       </Route>
 
       <Route element={<ProtectedRoute roles={["MODERATOR", "ADMIN", "SUPER_ADMIN"]} />}>

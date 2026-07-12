@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { Router } from "express";
 import {
-  DisputeStatus, PaymentStatus, ProductStatus, RefundStatus, ReportStatus,
+  DisputeStatus, PaymentStatus, ProductStatus, ProductType, RefundStatus, ReportStatus,
   Role, SellerApplicationStatus, TicketStatus
 } from "@prisma/client";
 import { z } from "zod";
@@ -20,12 +20,73 @@ import { releaseAvailableSellerEarnings, reviewWithdrawalRequest } from "../serv
 import { autoResolveExpiredDisputes, markDisputeTurn } from "../services/dispute.service.js";
 import { ensureDefaultMarketplaceCategories } from "../services/category.service.js";
 import { sendTicketUpdateEmail } from "../lib/email.js";
-import { privateUploadRoot } from "../middleware/upload.js";
+import { imageUpload, privateUploadRoot, publicUploadUrl } from "../middleware/upload.js";
 
 export const adminRouter = Router();
 
 const requireStaff = requireRole(Role.MODERATOR, Role.ADMIN, Role.SUPER_ADMIN);
 const requireAdmin = requireRole(Role.ADMIN, Role.SUPER_ADMIN);
+
+const emptyToUndefined = (value: unknown) => value === "" || value === undefined ? undefined : value;
+
+function parseAdminInventoryLines(raw?: string) {
+  if (!raw) return [];
+  const lines = [...new Set(raw.split(/\r?\n/).map((line) => line.trim()).filter(Boolean))];
+  if (lines.length > 5000) throw new ApiError(400, "Add at most 5,000 inventory rows at once.", "INVENTORY_LIMIT");
+  if (lines.some((line) => line.length > 4000)) throw new ApiError(400, "Each inventory row must be 4,000 characters or less.", "INVENTORY_ROW_TOO_LONG");
+  return lines;
+}
+
+function slugBase(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 90) || "item";
+}
+
+async function uniqueProductSlug(name: string) {
+  const base = slugBase(name);
+  let slug = base;
+  let suffix = 2;
+  while (await prisma.product.findUnique({ where: { slug }, select: { id: true } })) slug = `${base}-${suffix++}`;
+  return slug;
+}
+
+async function ensureAdminSellerProfile(userId: string) {
+  const existing = await prisma.sellerProfile.findUnique({ where: { userId } });
+  if (existing) {
+    if (!existing.isVerified || existing.isSuspended) {
+      return prisma.sellerProfile.update({ where: { userId }, data: { isVerified: true, isSuspended: false, suspensionReason: null } });
+    }
+    return existing;
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { username: true } });
+  const base = slugBase(user?.username ? `${user.username}-official` : "hsello-official");
+  let slug = base;
+  let suffix = 2;
+  while (await prisma.sellerProfile.findUnique({ where: { slug }, select: { id: true } })) slug = `${base}-${suffix++}`;
+  return prisma.sellerProfile.create({
+    data: {
+      userId,
+      storeName: "HSello Official",
+      slug,
+      about: "Official marketplace catalog managed by the HSello administration team.",
+      policy: "Products are reviewed and supported through the marketplace order system.",
+      isVerified: true
+    }
+  });
+}
+
+async function categoryDepth(categoryId: string) {
+  let depth = 1;
+  let current = await prisma.category.findUnique({ where: { id: categoryId }, select: { parentId: true } });
+  if (!current) return 0;
+  while (current.parentId) {
+    depth += 1;
+    if (depth > 10) break;
+    current = await prisma.category.findUnique({ where: { id: current.parentId }, select: { parentId: true } });
+    if (!current) break;
+  }
+  return depth;
+}
 
 adminRouter.use(requireAuth, requireVerifiedUser);
 
@@ -164,9 +225,71 @@ adminRouter.get("/products", requireStaff, asyncHandler(async (req, res) => {
   const status = z.nativeEnum(ProductStatus).optional().parse(req.query.status);
   const products = await prisma.product.findMany({
     where: status ? { status } : undefined, orderBy: { createdAt: "desc" },
-    include: { category: true, seller: { select: { id: true, email: true, username: true, sellerProfile: true } }, files: true, inventoryItems: { select: { id: true, deliveredAt: true, isActive: true } } }
+    include: { category: { include: { parent: { include: { parent: true } } } }, seller: { select: { id: true, email: true, username: true, sellerProfile: true } }, files: true, inventoryItems: { select: { id: true, deliveredAt: true, isActive: true } } }
   });
   res.json({ products });
+}));
+
+adminRouter.post("/products", requireAdmin, imageUpload.single("coverImage"), asyncHandler(async (req, res) => {
+  try {
+    const input = z.object({
+      categoryId: z.string().uuid(),
+      name: z.string().trim().min(3).max(160),
+      shortDescription: z.string().trim().min(10).max(240),
+      description: z.string().trim().min(30).max(20000),
+      type: z.nativeEnum(ProductType).default(ProductType.SERVICE),
+      priceUsdCents: z.coerce.number().int().min(50).max(100_000_000),
+      priceCnyCents: z.preprocess(emptyToUndefined, z.coerce.number().int().min(0).max(100_000_000).optional()),
+      priceRubCents: z.preprocess(emptyToUndefined, z.coerce.number().int().min(0).max(100_000_000).optional()),
+      afterSalesServiceHours: z.coerce.number().int().min(12).max(8760).default(12),
+      deliveryNote: z.preprocess(emptyToUndefined, z.string().trim().max(1000).optional()),
+      inventoryLines: z.preprocess(emptyToUndefined, z.string().trim().max(500_000).optional()),
+      publish: z.preprocess((value) => value === "true" || value === true, z.boolean()).default(true)
+    }).parse(req.body);
+
+    if (!req.file) throw new ApiError(400, "Choose a clear product image.", "PRODUCT_IMAGE_REQUIRED");
+    const category = await prisma.category.findFirst({ where: { id: input.categoryId, isActive: true }, select: { id: true } });
+    if (!category) throw new ApiError(404, "Choose an active catalog category.", "CATEGORY_NOT_FOUND");
+
+    await ensureAdminSellerProfile(req.auth!.id);
+    const inventoryLines = parseAdminInventoryLines(input.inventoryLines);
+    const canPublish = input.publish && (input.type === ProductType.SERVICE || inventoryLines.length > 0);
+    const product = await prisma.product.create({
+      data: {
+        sellerId: req.auth!.id,
+        categoryId: input.categoryId,
+        name: input.name,
+        slug: await uniqueProductSlug(input.name),
+        shortDescription: input.shortDescription,
+        description: input.description,
+        type: input.type,
+        status: canPublish ? ProductStatus.APPROVED : ProductStatus.DRAFT,
+        priceCents: input.priceUsdCents,
+        priceUsdCents: input.priceUsdCents,
+        priceCnyCents: input.priceCnyCents ?? 0,
+        priceRubCents: input.priceRubCents ?? 0,
+        currency: "USD",
+        coverImageUrl: publicUploadUrl(req.file.filename),
+        afterSalesServiceHours: input.afterSalesServiceHours,
+        deliveryNote: input.deliveryNote,
+        publishedAt: canPublish ? new Date() : null,
+        seoTitle: input.name.slice(0, 70),
+        seoDescription: input.shortDescription.slice(0, 170),
+        ...(inventoryLines.length ? { inventoryItems: { createMany: { data: inventoryLines.map((content) => ({ content, source: "ADMIN" })) } } } : {})
+      },
+      include: { category: { include: { parent: { include: { parent: true } } } }, seller: { include: { sellerProfile: true } }, files: true, inventoryItems: { select: { id: true, deliveredAt: true, isActive: true } } }
+    });
+
+    res.status(201).json({
+      product,
+      message: canPublish
+        ? "Catalog product created and published."
+        : "Product saved as a draft. Add inventory before publishing a downloadable item."
+    });
+  } catch (error) {
+    if (req.file) await fs.unlink(req.file.path).catch(() => undefined);
+    throw error;
+  }
 }));
 
 adminRouter.patch("/products/:id/status", requireStaff, asyncHandler(async (req, res) => {
@@ -318,7 +441,7 @@ adminRouter.post("/disputes/:id/message", requireStaff, asyncHandler(async (req,
   const dispute = await prisma.dispute.findUnique({ where: { id }, include: { order: { include: { items: { select: { sellerId: true } } } } } });
   if (!dispute) throw new ApiError(404, "Dispute not found.", "DISPUTE_NOT_FOUND");
   const message = await prisma.orderMessage.create({ data: { orderId: dispute.orderId, authorId: req.auth!.id, body: input.body }, include: { author: { select: { firstName: true, role: true } } } });
-  await markDisputeTurn(dispute.orderId, { id: req.auth!.id, role: req.auth!.role as Role }, dispute.order.buyerId, [...new Set(dispute.order.items.map((item) => item.sellerId))]);
+  await markDisputeTurn(dispute.orderId, { id: req.auth!.id, role: req.auth!.role as Role }, dispute.order.buyerId, [...new Set(dispute.order.items.map((item) => String(item.sellerId)))]);
   res.status(201).json({ message });
 }));
 
@@ -347,8 +470,9 @@ adminRouter.get("/categories", requireStaff, asyncHandler(async (_req, res) => {
 adminRouter.post("/categories", requireAdmin, asyncHandler(async (req, res) => {
   const input = z.object({ name: z.string().trim().min(2).max(100), slug: z.string().trim().regex(/^[a-z0-9-]+$/).max(100).optional(), description: z.string().trim().min(12).max(4000), parentId: z.string().uuid().nullable().optional(), seoTitle: z.string().trim().max(70).optional(), seoDescription: z.string().trim().max(170).optional(), sortOrder: z.coerce.number().int().min(0).max(10000).default(0) }).parse(req.body);
   if (input.parentId) {
-    const parent = await prisma.category.findFirst({ where: { id: input.parentId, parentId: null }, select: { id: true } });
-    if (!parent) { res.status(400).json({ message: "Choose a valid parent category.", code: "INVALID_PARENT_CATEGORY" }); return; }
+    const parent = await prisma.category.findUnique({ where: { id: input.parentId }, select: { id: true, isActive: true } });
+    if (!parent?.isActive) throw new ApiError(400, "Choose an active parent category.", "INVALID_PARENT_CATEGORY");
+    if (await categoryDepth(input.parentId) >= 3) throw new ApiError(400, "Categories support up to three levels: category, platform, and listing type.", "CATEGORY_DEPTH_LIMIT");
   }
   const base = (input.slug || input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "category").slice(0, 90);
   let slug = base;
@@ -361,7 +485,16 @@ adminRouter.post("/categories", requireAdmin, asyncHandler(async (req, res) => {
 adminRouter.patch("/categories/:id", requireAdmin, asyncHandler(async (req, res) => {
   const id = z.string().uuid().parse(req.params.id);
   const input = z.object({ name: z.string().trim().min(2).max(100).optional(), description: z.string().trim().min(12).max(4000).optional(), parentId: z.string().uuid().nullable().optional(), isActive: z.boolean().optional(), sortOrder: z.coerce.number().int().min(0).max(10000).optional() }).parse(req.body);
-  if (input.parentId === id) { res.status(400).json({ message: "A category cannot be its own parent.", code: "INVALID_PARENT_CATEGORY" }); return; }
+  if (input.parentId === id) throw new ApiError(400, "A category cannot be its own parent.", "INVALID_PARENT_CATEGORY");
+  if (input.parentId) {
+    if (await categoryDepth(input.parentId) >= 3) throw new ApiError(400, "Categories support up to three levels.", "CATEGORY_DEPTH_LIMIT");
+    let cursor: string | null = input.parentId;
+    while (cursor) {
+      if (cursor === id) throw new ApiError(400, "A category cannot be moved inside one of its own children.", "CATEGORY_CYCLE");
+      const next: { parentId: string | null } | null = await prisma.category.findUnique({ where: { id: cursor }, select: { parentId: true } });
+      cursor = next?.parentId ?? null;
+    }
+  }
   const category = await prisma.category.update({ where: { id }, data: input });
   res.json({ category });
 }));

@@ -288,7 +288,7 @@ sellerRouter.get("/products", requireSeller, asyncHandler(async (req, res) => {
     where: { sellerId: req.auth!.id },
     orderBy: { updatedAt: "desc" },
     include: {
-      category: { include: { parent: true } },
+      category: { include: { parent: { include: { parent: true } } } },
       files: { where: { isActive: true } },
       inventoryItems: { select: { id: true, deliveredAt: true, isActive: true, createdAt: true } }
     }
@@ -299,9 +299,14 @@ sellerRouter.get("/products", requireSeller, asyncHandler(async (req, res) => {
 sellerRouter.post("/products", requireSeller, imageUpload.single("coverImage"), asyncHandler(async (req, res) => {
   try {
     const input = productSchema.parse(req.body);
+    if (!req.file) throw new ApiError(400, "Choose a clear product image before creating the listing.", "PRODUCT_IMAGE_REQUIRED");
+    const category = await prisma.category.findFirst({ where: { id: input.categoryId, isActive: true }, select: { id: true } });
+    if (!category) throw new ApiError(400, "Choose a valid active category path.", "CATEGORY_NOT_FOUND");
+    const sellerProfile = await prisma.sellerProfile.findUnique({ where: { userId: req.auth!.id }, select: { id: true, isVerified: true, isSuspended: true } });
+    if (!sellerProfile?.isVerified || sellerProfile.isSuspended) throw new ApiError(403, "Complete seller approval before creating products.", "SELLER_NOT_APPROVED");
     const inventoryLines = parseInventoryLines(input.inventoryLines);
     const base = input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "product";
-    const coverImageUrl = req.file ? publicUploadUrl(req.file.filename) : input.coverImageUrl ?? null;
+    const coverImageUrl = publicUploadUrl(req.file.filename);
     const productData = productDataFromInput(input, coverImageUrl);
     const status = ProductStatus.PENDING;
     const product = await prisma.product.create({
@@ -312,7 +317,7 @@ sellerRouter.post("/products", requireSeller, imageUpload.single("coverImage"), 
         status,
         ...(inventoryLines.length ? { inventoryItems: { createMany: { data: inventoryLines.map((content) => ({ content, source: "MANUAL" })) } } } : {})
       },
-      include: { category: true, files: true, inventoryItems: { select: { id: true, deliveredAt: true, isActive: true } } }
+      include: { category: { include: { parent: { include: { parent: true } } } }, files: true, inventoryItems: { select: { id: true, deliveredAt: true, isActive: true } } }
     });
     res.status(201).json({ product, message: "Product submitted for admin approval." });
   } catch (error) {

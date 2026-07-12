@@ -28,7 +28,7 @@ type ApiProduct = {
   salesCount: number;
   deliveryNote?: string | null;
   coverImageUrl?: string | null;
-  category: { name: string; slug: string };
+  category: { name: string; slug: string; parent?: { name: string; slug: string; parent?: { name: string; slug: string } | null } | null };
   seller: { sellerProfile?: { storeName: string; slug: string } | null };
   _count?: { inventoryItems?: number; files?: number };
 };
@@ -60,7 +60,9 @@ function mapProduct(product: ApiProduct, index = 0): CatalogProduct {
   return {
     id: product.id,
     slug: product.slug,
-    category: product.category.name,
+    category: [product.category.parent?.parent?.name, product.category.parent?.name, product.category.name]
+      .filter(Boolean)
+      .join(" / "),
     categorySlug: product.category.slug,
     title: product.name,
     description: product.shortDescription,
@@ -134,7 +136,7 @@ export function useMarketplaceProduct(slug?: string) {
   return { product, loading };
 }
 
-export type PublicStore = { name: string; about: string; policy: string; rating: number; sales: string; joined: string; mark: string };
+export type PublicStore = { name: string; about: string; policy: string; rating: number; sales: string; joined: string; mark: string; logoUrl?: string | null; bannerUrl?: string | null };
 
 export function useMarketplaceStore(slug?: string) {
   const [store, setStore] = useState<PublicStore>();
@@ -142,9 +144,9 @@ export function useMarketplaceStore(slug?: string) {
   const [loading, setLoading] = useState(Boolean(slug));
   useEffect(() => {
     if (!slug) return;
-    void apiRequest<{ store: { storeName: string; about: string; policy?: string | null; averageRating: number | string; totalSales: number; createdAt: string }; products: Array<Omit<ApiProduct, "seller">> }>(`/api/marketplace/stores/${encodeURIComponent(slug)}`)
+    void apiRequest<{ store: { storeName: string; about: string; policy?: string | null; averageRating: number | string; totalSales: number; createdAt: string; logoUrl?: string | null; bannerUrl?: string | null }; products: Array<Omit<ApiProduct, "seller">> }>(`/api/marketplace/stores/${encodeURIComponent(slug)}`)
       .then((data) => {
-        setStore({ name: data.store.storeName, about: data.store.about, policy: data.store.policy || "HSello buyer protection applies to every order.", rating: Number(data.store.averageRating), sales: data.store.totalSales.toLocaleString(), joined: new Date(data.store.createdAt).getFullYear().toString(), mark: data.store.storeName.split(/\s+/).map((word) => word[0]).join("").slice(0, 2).toUpperCase() });
+        setStore({ name: data.store.storeName, about: data.store.about, policy: data.store.policy || "HSello buyer protection applies to every order.", rating: Number(data.store.averageRating), sales: data.store.totalSales.toLocaleString(), joined: new Date(data.store.createdAt).getFullYear().toString(), mark: data.store.storeName.split(/\s+/).map((word) => word[0]).join("").slice(0, 2).toUpperCase(), logoUrl: normalizePublicMediaUrl(data.store.logoUrl), bannerUrl: normalizePublicMediaUrl(data.store.bannerUrl) });
         setProducts(data.products.map((product, index) => mapProduct({ ...product, seller: { sellerProfile: { storeName: data.store.storeName, slug } } }, index)));
       })
       .catch(() => undefined)

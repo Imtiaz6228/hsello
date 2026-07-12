@@ -7,6 +7,28 @@ import { ensureDefaultMarketplaceCategories } from "../services/category.service
 
 export const marketplaceRouter = Router();
 
+async function categoryAndDescendantIds(slug: string) {
+  const categories = await prisma.category.findMany({
+    where: { isActive: true },
+    select: { id: true, parentId: true, slug: true }
+  });
+  const target = categories.find((category) => category.slug === slug);
+  if (!target) return [];
+
+  const ids = new Set([target.id]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const category of categories) {
+      if (category.parentId && ids.has(category.parentId) && !ids.has(category.id)) {
+        ids.add(category.id);
+        changed = true;
+      }
+    }
+  }
+  return [...ids];
+}
+
 marketplaceRouter.get("/categories", asyncHandler(async (_req, res) => {
   await ensureDefaultMarketplaceCategories();
   const categories = await prisma.category.findMany({
@@ -32,7 +54,9 @@ marketplaceRouter.get("/products", asyncHandler(async (req, res) => {
 
   const filters: any[] = [];
   if (query.category) {
-    filters.push({ OR: [{ category: { slug: query.category } }, { category: { parent: { slug: query.category } } }] });
+    const categoryIds = await categoryAndDescendantIds(query.category);
+    if (categoryIds.length) filters.push({ categoryId: { in: categoryIds } });
+    else filters.push({ categoryId: "__missing_category__" });
   }
   if (query.q) {
     filters.push({ OR: [
@@ -71,7 +95,7 @@ marketplaceRouter.get("/products", asyncHandler(async (req, res) => {
     take: query.take,
     orderBy,
     include: {
-      category: { select: { name: true, slug: true } },
+      category: { include: { parent: { include: { parent: true } } } },
       seller: { select: { sellerProfile: true } },
       _count: { select: { files: { where: { isActive: true } }, inventoryItems: { where: { isActive: true, orderItemId: null } } } }
     }
@@ -84,7 +108,7 @@ marketplaceRouter.get("/products/:slug", asyncHandler(async (req, res) => {
   const product = await prisma.product.findFirst({
     where: { slug, status: ProductStatus.APPROVED, seller: { isSuspended: false, sellerProfile: { isSuspended: false } } },
     include: {
-      category: true,
+      category: { include: { parent: { include: { parent: true } } } },
       seller: { select: { sellerProfile: true } },
       reviews: {
         where: { isVisible: true }, orderBy: { createdAt: "desc" }, take: 20,
@@ -108,7 +132,7 @@ marketplaceRouter.get("/stores/:slug", asyncHandler(async (req, res) => {
   if (!store) { res.status(404).json({ message: "Store not found.", code: "STORE_NOT_FOUND" }); return; }
   const products = await prisma.product.findMany({
     where: { sellerId: store.userId, status: ProductStatus.APPROVED },
-    include: { category: { select: { name: true, slug: true } }, _count: { select: { files: { where: { isActive: true } }, inventoryItems: { where: { isActive: true, orderItemId: null } } } } },
+    include: { category: { include: { parent: { include: { parent: true } } } }, _count: { select: { files: { where: { isActive: true } }, inventoryItems: { where: { isActive: true, orderItemId: null } } } } },
     orderBy: { publishedAt: "desc" }
   });
   res.json({ store, products });

@@ -345,9 +345,25 @@ adminRouter.get("/categories", requireStaff, asyncHandler(async (_req, res) => {
 }));
 
 adminRouter.post("/categories", requireAdmin, asyncHandler(async (req, res) => {
-  const input = z.object({ name: z.string().trim().min(2).max(100), slug: z.string().trim().regex(/^[a-z0-9-]+$/).max(100), description: z.string().trim().min(20).max(4000), parentId: z.string().uuid().nullable().optional(), seoTitle: z.string().trim().max(70).optional(), seoDescription: z.string().trim().max(170).optional(), sortOrder: z.number().int().min(0).max(10000).default(0) }).parse(req.body);
-  const category = await prisma.category.create({ data: input });
+  const input = z.object({ name: z.string().trim().min(2).max(100), slug: z.string().trim().regex(/^[a-z0-9-]+$/).max(100).optional(), description: z.string().trim().min(12).max(4000), parentId: z.string().uuid().nullable().optional(), seoTitle: z.string().trim().max(70).optional(), seoDescription: z.string().trim().max(170).optional(), sortOrder: z.coerce.number().int().min(0).max(10000).default(0) }).parse(req.body);
+  if (input.parentId) {
+    const parent = await prisma.category.findFirst({ where: { id: input.parentId, parentId: null }, select: { id: true } });
+    if (!parent) { res.status(400).json({ message: "Choose a valid parent category.", code: "INVALID_PARENT_CATEGORY" }); return; }
+  }
+  const base = (input.slug || input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "category").slice(0, 90);
+  let slug = base;
+  let suffix = 2;
+  while (await prisma.category.findUnique({ where: { slug }, select: { id: true } })) slug = `${base}-${suffix++}`;
+  const category = await prisma.category.create({ data: { ...input, slug, seoTitle: input.seoTitle || input.name, seoDescription: input.seoDescription || input.description.slice(0, 170), isActive: true } });
   res.status(201).json({ category });
+}));
+
+adminRouter.patch("/categories/:id", requireAdmin, asyncHandler(async (req, res) => {
+  const id = z.string().uuid().parse(req.params.id);
+  const input = z.object({ name: z.string().trim().min(2).max(100).optional(), description: z.string().trim().min(12).max(4000).optional(), parentId: z.string().uuid().nullable().optional(), isActive: z.boolean().optional(), sortOrder: z.coerce.number().int().min(0).max(10000).optional() }).parse(req.body);
+  if (input.parentId === id) { res.status(400).json({ message: "A category cannot be its own parent.", code: "INVALID_PARENT_CATEGORY" }); return; }
+  const category = await prisma.category.update({ where: { id }, data: input });
+  res.json({ category });
 }));
 
 adminRouter.get("/coupons", requireStaff, asyncHandler(async (_req, res) => {

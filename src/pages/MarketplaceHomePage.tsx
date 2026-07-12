@@ -8,12 +8,13 @@ import {
 import { Link } from "react-router-dom";
 import { STAFF_ROLES } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
-import { useMarketplaceProducts } from "../commerce/useMarketplace";
+import { useMarketplaceCategories, useMarketplaceProducts } from "../commerce/useMarketplace";
+import { LocaleSwitcher } from "../components/LocaleSwitcher";
 
 type Category = { name: string; short: string; description: string; subcategories: string[]; icon: LucideIcon; accent: string };
 type Product = { slug?: string; imageUrl?: string | null; category: string; title: string; seller: string; price: number; oldPrice?: number; rating: string; reviews: string; delivery: string; badge?: string; icon: LucideIcon; accent: string; tags: string[] };
 
-const categories: Category[] = [
+const fallbackCategories: Category[] = [
   { name: "Social media", short: "Social", description: "Creator resources and growth tools", subcategories: ["Instagram", "TikTok", "Facebook", "X / Twitter", "LinkedIn", "Snapchat"], icon: Users, accent: "purple" },
   { name: "Email products", short: "Email", description: "Mail tools and business resources", subcategories: ["Gmail", "Outlook", "Yahoo", "Proton Mail", "iCloud", "Business mail"], icon: Mail, accent: "orange" },
   { name: "AI & productivity", short: "AI tools", description: "Premium tools for modern work", subcategories: ["ChatGPT", "Claude", "Midjourney", "Gemini", "Perplexity", "Copilot"], icon: Bot, accent: "blue" },
@@ -70,7 +71,7 @@ function detailOptions(platform: string, category: string) {
 }
 
 function productVisual(category: string) {
-  const match = categories.find((item) => item.name.toLowerCase() === category.toLowerCase() || item.subcategories.some((sub) => sub.toLowerCase() === category.toLowerCase()));
+  const match = fallbackCategories.find((item) => item.name.toLowerCase() === category.toLowerCase() || item.subcategories.some((sub) => sub.toLowerCase() === category.toLowerCase()));
   return { icon: match?.icon ?? ShoppingBag, accent: match?.accent ?? "purple" };
 }
 
@@ -96,14 +97,30 @@ function ProductCard({ product }: { product: Product }) {
 export function MarketplaceHomePage() {
   const { user } = useAuth();
   const liveCatalogProducts = useMarketplaceProducts();
+  const marketplaceCategories = useMarketplaceCategories();
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [mobileMenu, setMobileMenu] = useState(false);
   const [mobileCatalogOpen, setMobileCatalogOpen] = useState(false);
   const [mobileCategory, setMobileCategory] = useState("Social media");
   const accountPath = user ? (STAFF_ROLES.includes(user.role) ? "/admin" : "/dashboard") : "/sign-in";
+  const categories = useMemo<Category[]>(() => {
+    const parents = marketplaceCategories.filter((item) => !item.parentId);
+    if (!parents.length) return fallbackCategories;
+    const icons: LucideIcon[] = [Users, Mail, Bot, Cloud, MessageCircle, Gamepad2, WalletCards, Gift, KeyRound, TrendingUp, Wifi, Smartphone];
+    const accents = ["purple", "orange", "blue", "pink", "green", "indigo", "yellow", "red", "cyan", "lime", "teal", "blue"];
+    return parents.map((parent, index) => ({
+      name: parent.name,
+      short: parent.name.split(/\s+/).slice(0, 2).join(" "),
+      description: parent.description,
+      subcategories: marketplaceCategories.filter((item) => item.parentId === parent.id).map((item) => item.name),
+      icon: icons[index % icons.length],
+      accent: accents[index % accents.length]
+    }));
+  }, [marketplaceCategories]);
   const displayProducts = useMemo<Product[]>(() => liveCatalogProducts.length ? liveCatalogProducts.map((product) => {
-    const visual = productVisual(product.category);
+    const match = categories.find((item) => item.name.toLowerCase() === product.category.toLowerCase() || item.subcategories.some((sub) => sub.toLowerCase() === product.category.toLowerCase()));
+    const visual = { icon: match?.icon ?? ShoppingBag, accent: match?.accent ?? "purple" };
     return { slug: product.slug, imageUrl: product.imageUrl, category: product.category, title: product.title, seller: product.seller, price: product.priceCents / 100, rating: product.rating ? product.rating.toFixed(2) : "New", reviews: String(product.reviews), delivery: product.delivery, badge: product.badge, icon: visual.icon, accent: visual.accent, tags: [product.title, product.category, product.seller] };
   }) : products, [liveCatalogProducts]);
   const visibleProducts = useMemo(() => {
@@ -119,6 +136,7 @@ export function MarketplaceHomePage() {
       <Link className="lux-logo" to="/" aria-label="HSello home"><span>H</span><div><strong>HSELLO</strong><small>DIGITAL MARKET</small></div></Link>
       <nav className={mobileMenu ? "open" : ""} aria-label="Main navigation">
         <button className="mobile-close" onClick={() => setMobileMenu(false)} aria-label="Close menu"><X /></button>
+        <div className="mobile-locale-row"><LocaleSwitcher /></div>
         <a className="desktop-categories-link" href="#categories">Categories <ChevronDown size={14} /></a>
         <button className={`mobile-catalog-trigger ${mobileCatalogOpen ? "active" : ""}`} type="button" onClick={() => setMobileCatalogOpen((open) => !open)}>Categories <ChevronDown size={16} /></button>
         {mobileCatalogOpen ? <div className="mobile-catalog-panel">
@@ -130,7 +148,7 @@ export function MarketplaceHomePage() {
         <a href="#journal" onClick={() => setMobileMenu(false)}>Blog</a>
         <Link to="/seller/apply">Sell on HSello</Link>
       </nav>
-      <div className="lux-header-actions"><button className="menu-button" onClick={() => setMobileMenu(true)} aria-label="Open menu"><Menu /></button><Link className="lux-signin" to={accountPath}>{user ? "My account" : "Sign in"}</Link><Link className="lux-cart" to="/cart"><ShoppingBag size={18} /><span>0</span></Link></div>
+      <div className="lux-header-actions"><button className="menu-button" onClick={() => setMobileMenu(true)} aria-label="Open menu"><Menu /></button><LocaleSwitcher compact /><Link className="lux-signin" to={accountPath}>{user ? "My account" : "Sign in"}</Link><Link className="lux-cart" to="/cart"><ShoppingBag size={18} /><span>0</span></Link></div>
     </header>
 
     <section className="lux-hero">
@@ -154,7 +172,7 @@ export function MarketplaceHomePage() {
 
     <section className="lux-section" id="categories">
       <div className="lux-section-head"><div><span>EXPLORE THE MARKETPLACE</span><h2>Shop by category</h2></div><Link to="/catalog">Browse all categories <ArrowRight size={16} /></Link></div>
-      <div className="lux-category-grid">{categories.map(c => { const Icon = c.icon; return <button key={c.name} onClick={() => pickCategory(c.name)} className={`lux-category-card accent-${c.accent}`}><span className="category-symbol"><Icon /></span><span className="category-text"><strong>{c.name}</strong><small>{c.description}</small></span><span className="category-tags">{c.subcategories.slice(0,3).map(s => <i key={s}>{s}</i>)}</span><span className="category-more">+{c.subcategories.length - 3} more <ArrowRight size={14} /></span></button>; })}</div>
+      <div className="lux-category-grid">{categories.map(c => { const Icon = c.icon; return <button key={c.name} onClick={() => pickCategory(c.name)} className={`lux-category-card accent-${c.accent}`}><span className="category-symbol"><Icon /></span><span className="category-text"><strong>{c.name}</strong><small>{c.description}</small></span><span className="category-tags">{c.subcategories.slice(0,3).map(s => <i key={s}>{s}</i>)}</span><span className="category-more">{c.subcategories.length > 3 ? `+${c.subcategories.length - 3} more` : "Explore"} <ArrowRight size={14} /></span></button>; })}</div>
     </section>
 
     <section className="lux-flash">

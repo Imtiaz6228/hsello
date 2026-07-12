@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -128,7 +128,7 @@ type Refund = {
 type Withdrawal = { id: string; amountCents: number; blockchain: string; walletAddress: string; status: string; providerReference?: string | null; adminNotes?: string | null; createdAt: string; processedAt?: string | null; user: { firstName: string; lastName: string; email: string; username: string; balanceCents: number; role?: string } };
 type Dispute = { id: string; status: string; subject: string; description: string; refundDemanded?: boolean; awaitingParty?: string | null; autoCloseAt?: string | null; closedInFavorOf?: string | null; resolution?: string | null; createdAt: string; order: { id?: string; orderNumber: string; buyer?: { email: string }; items?: Array<{ productName?: string; product?: { name?: string } }> }; openedBy: { email: string } };
 type Ticket = { id: string; ticketNumber: string; status: string; category: string; subject: string; updatedAt: string; creator: { email: string }; messages: Array<{ id: string; body: string; isInternal: boolean; author: { firstName: string; role: string } }> };
-type Category = { id: string; name: string; slug: string; description: string; isActive: boolean; sortOrder: number };
+type Category = { id: string; parentId?: string | null; name: string; slug: string; description: string; isActive: boolean; sortOrder: number };
 type Coupon = { id: string; code: string; percentOff?: number | null; amountOffCents?: number | null; redemptionCount: number; maxRedemptions?: number | null; isActive: boolean; expiresAt?: string | null };
 type Report = { id: string; status: string; reason: string; details?: string | null; createdAt: string; adminNotes?: string | null; product: { name: string; slug: string; status: string }; reporter: { email: string } };
 type HomepageSection = { id: string; key: string; title: string; subtitle?: string | null; isVisible: boolean; sortOrder: number };
@@ -166,7 +166,10 @@ function Status({ value }: { value: string }) {
 export function OperationsAdminPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<Tab>("overview");
+  const [tab, setTabState] = useState<Tab>(() => {
+    const hash = window.location.hash.replace("#", "") as Tab;
+    return nav.some((item) => item.id === hash) ? hash : "overview";
+  });
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
   const [search, setSearch] = useState("");
@@ -185,6 +188,13 @@ export function OperationsAdminPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [homepageSections, setHomepageSections] = useState<HomepageSection[]>([]);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
+  const [categoryForm, setCategoryForm] = useState({ name: "", slug: "", description: "", parentId: "", sortOrder: 1000 });
+  const [categoryCreating, setCategoryCreating] = useState(false);
+
+  function selectTab(next: Tab) {
+    setTabState(next);
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${next}`);
+  }
 
   const load = useCallback(async () => {
     setMessage("");
@@ -261,6 +271,35 @@ export function OperationsAdminPage() {
     }
   };
 
+  async function createCategory(event: FormEvent) {
+    event.preventDefault();
+    setCategoryCreating(true);
+    setMessage("");
+    try {
+      await apiRequest("/api/admin/categories", {
+        method: "POST",
+        body: {
+          name: categoryForm.name,
+          slug: categoryForm.slug || undefined,
+          description: categoryForm.description,
+          parentId: categoryForm.parentId || null,
+          sortOrder: categoryForm.sortOrder
+        }
+      });
+      setCategoryForm({ name: "", slug: "", description: "", parentId: "", sortOrder: 1000 });
+      setMessage("Category created. It is now available on the homepage and seller product form.");
+      await load();
+    } catch (error) {
+      setMessage(error instanceof ApiError ? error.message : "Category could not be created.");
+    } finally {
+      setCategoryCreating(false);
+    }
+  }
+
+  async function toggleCategory(category: Category) {
+    await act(category.id, `/api/admin/categories/${category.id}`, { isActive: !category.isActive });
+  }
+
   const filteredUsers = useMemo(
     () => users.filter((entry) => `${entry.firstName} ${entry.lastName} ${entry.email} ${entry.username}`.toLowerCase().includes(search.toLowerCase())),
     [search, users]
@@ -272,7 +311,7 @@ export function OperationsAdminPage() {
       <Seo title="Admin dashboard" description="HSello administration for seller approval, product moderation, deposits, orders, and support." />
       <aside className="ops-sidebar">
         <Link className="brand-lockup" to="/"><span className="brand-glyph">H</span><span><strong>HSELLO</strong><small>ADMIN</small></span></Link>
-        <nav>{nav.map(({ id, label, icon: Icon }) => <button className={tab === id ? "active" : ""} onClick={() => setTab(id)} key={id}><Icon size={16} />{label}<ChevronRight size={14} /></button>)}</nav>
+        <nav>{nav.map(({ id, label, icon: Icon }) => <button className={tab === id ? "active" : ""} onClick={() => selectTab(id)} key={id}><Icon size={16} />{label}<ChevronRight size={14} /></button>)}</nav>
         <div className="admin-sidebar-footer"><div><span>{user?.firstName[0]}{user?.lastName[0]}</span><div><strong>{user?.firstName} {user?.lastName}</strong><small>{user?.role.replace("_", " ")}</small></div></div><button className="secondary-button" onClick={async () => { await logout(); navigate("/"); }}><LogOut size={14} /> Sign out</button></div>
       </aside>
 
@@ -281,7 +320,7 @@ export function OperationsAdminPage() {
         <div className="ops-heading"><span className="section-index">ADMIN DASHBOARD</span><h1>{nav.find((item) => item.id === tab)?.label}</h1><p>Approve deposits, review products, verify sellers, and release paid orders without complicated workflows.</p></div>
         {message ? <div className={`ops-message ${message.toLowerCase().includes("failed") || message.toLowerCase().includes("could not") ? "error" : ""}`}>{message}</div> : null}
 
-        {tab === "overview" && <OverviewPanel overview={overview} onOpen={setTab} />}
+        {tab === "overview" && <OverviewPanel overview={overview} onOpen={selectTab} />}
 
         {tab === "sellers" && (
           <section className="ops-grid">
@@ -326,7 +365,22 @@ export function OperationsAdminPage() {
         {tab === "disputes" && <SimpleRows rows={disputes.map((dispute) => ({ id: dispute.id, title: `${dispute.order.orderNumber} · ${dispute.subject}`, meta: `${dispute.openedBy.email} · ${dispute.description}${dispute.autoCloseAt ? ` · waiting for ${dispute.awaitingParty} until ${new Date(dispute.autoCloseAt).toLocaleString()}` : ""}`, status: dispute.status, actions: <><button className="approve" disabled={busy === dispute.id} onClick={() => void act(dispute.id, `/api/admin/disputes/${dispute.id}`, { status: "RESOLVED_BUYER", resolution: window.prompt("Buyer-favor resolution") || "Admin favored buyer." })}>Favor buyer</button><button disabled={busy === dispute.id} onClick={() => void act(dispute.id, `/api/admin/disputes/${dispute.id}`, { status: "RESOLVED_SELLER", resolution: window.prompt("Seller-favor resolution") || "Admin favored seller." })}>Favor seller</button><button disabled={busy === dispute.id} onClick={() => void post(dispute.id, `/api/admin/disputes/${dispute.id}/message`, { body: window.prompt("Admin message") || "Admin is reviewing this dispute." })}>Message</button><button className="danger" disabled={busy === dispute.id} onClick={() => void act(dispute.id, `/api/admin/disputes/${dispute.id}`, { status: "CLOSED", resolution: window.prompt("Resolution note") || "Closed by admin." })}>Close</button></> }))} />}
         {tab === "tickets" && <SimpleRows rows={tickets.map((ticket) => ({ id: ticket.id, title: `${ticket.ticketNumber} · ${ticket.subject}`, meta: `${ticket.creator.email} · ${ticket.category}`, status: ticket.status, actions: <><button disabled={busy === ticket.id} onClick={() => void post(ticket.id, `/api/admin/tickets/${ticket.id}/reply`, { body: window.prompt("Reply") || "Admin reviewed this ticket.", status: "PENDING", isInternal: false })}>Reply</button></> }))} />}
         {tab === "chats" && <section className="admin-chat-inbox">{chatSessions.length ? chatSessions.map((session) => <article key={session.id}><header><div className="chat-user-avatar">{session.user.firstName[0]}{session.user.lastName[0]}</div><div><strong>{session.user.firstName} {session.user.lastName}</strong><small>{session.user.email} · {session.status.toLowerCase()}</small></div><Status value={session.status} /></header><div className="admin-chat-thread">{session.messages.slice(-6).map((entry) => <div className={`admin-chat-message ${entry.role}`} key={entry.id}><small>{entry.role === "admin" ? "Admin" : entry.role === "assistant" ? "AI assistant" : session.user.firstName}</small><p>{entry.body}</p></div>)}</div><footer><button disabled={busy === session.id} onClick={() => void post(session.id, `/api/nexus/admin/chats/${session.id}/reply`, { body: window.prompt("Reply to this user") || "An administrator has joined the conversation." })}><MessageSquare size={14} /> Reply as admin</button><time>{new Date(session.updatedAt).toLocaleString()}</time></footer></article>) : <EmptyState label="No support conversations yet." />}</section>}
-        {tab === "categories" && <SimpleRows rows={categories.map((category) => ({ id: category.id, title: category.name, meta: `${category.slug} · ${category.description}`, status: category.isActive ? "ACTIVE" : "HIDDEN" }))} />}
+        {tab === "categories" && <section className="admin-category-workspace">
+          <form className="admin-category-creator" onSubmit={createCategory}>
+            <header><span><FolderPlus /></span><div><h2>Create category or subcategory</h2><p>New entries instantly flow into homepage browsing and the seller product form.</p></div></header>
+            <div className="form-grid two">
+              <label><span>Name</span><input required minLength={2} value={categoryForm.name} onChange={(event) => setCategoryForm({ ...categoryForm, name: event.target.value, slug: event.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") })} placeholder="Facebook services" /></label>
+              <label><span>URL slug</span><input value={categoryForm.slug} onChange={(event) => setCategoryForm({ ...categoryForm, slug: event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") })} placeholder="facebook-services" /></label>
+              <label><span>Parent category</span><select value={categoryForm.parentId} onChange={(event) => setCategoryForm({ ...categoryForm, parentId: event.target.value })}><option value="">Create as main category</option>{categories.filter((category) => !category.parentId).map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select></label>
+              <label><span>Sort order</span><input type="number" min={0} max={10000} value={categoryForm.sortOrder} onChange={(event) => setCategoryForm({ ...categoryForm, sortOrder: Number(event.target.value) })} /></label>
+            </div>
+            <label><span>Description</span><textarea required minLength={12} rows={4} value={categoryForm.description} onChange={(event) => setCategoryForm({ ...categoryForm, description: event.target.value })} placeholder="Explain what buyers will find in this category." /></label>
+            <button className="primary-button" disabled={categoryCreating}><FolderPlus size={16} /> {categoryCreating ? "Creating…" : "Create category"}</button>
+          </form>
+          <div className="admin-category-tree">
+            {categories.filter((category) => !category.parentId).map((parent) => <article key={parent.id} className={!parent.isActive ? "disabled" : ""}><header><div><span>{parent.name.slice(0, 2).toUpperCase()}</span><div><strong>{parent.name}</strong><small>/{parent.slug}</small></div></div><button onClick={() => void toggleCategory(parent)}>{parent.isActive ? "Visible" : "Hidden"}</button></header><p>{parent.description}</p><div>{categories.filter((child) => child.parentId === parent.id).map((child) => <button type="button" key={child.id} className={!child.isActive ? "disabled" : ""} onClick={() => void toggleCategory(child)}><span>{child.name}</span><small>{child.isActive ? "Live" : "Hidden"}</small></button>)}</div></article>)}
+          </div>
+        </section>}
         {tab === "coupons" && <SimpleRows rows={coupons.map((coupon) => ({ id: coupon.id, title: coupon.code, meta: coupon.percentOff ? `${coupon.percentOff}% off` : `${money(coupon.amountOffCents ?? 0)} off`, status: coupon.isActive ? "ACTIVE" : "INACTIVE" }))} />}
         {tab === "reports" && <SimpleRows rows={reports.map((report) => ({ id: report.id, title: `${report.product.name} · ${report.reason}`, meta: `${report.reporter.email} · ${report.details ?? "No details"}`, status: report.status, actions: <><button disabled={busy === report.id} onClick={() => void act(report.id, `/api/admin/reports/${report.id}`, { status: "ACTIONED", adminNotes: window.prompt("Admin note") || "Reviewed by admin.", removeProduct: false })}>Mark actioned</button><button className="danger" disabled={busy === report.id} onClick={() => void act(report.id, `/api/admin/reports/${report.id}`, { status: "ACTIONED", adminNotes: window.prompt("Removal note") || "Removed after report.", removeProduct: true })}>Remove product</button></> }))} />}
         {tab === "homepage" && <SimpleRows rows={homepageSections.map((section) => ({ id: section.id, title: section.title, meta: `${section.key} · ${section.subtitle ?? "No subtitle"}`, status: section.isVisible ? "VISIBLE" : "HIDDEN" }))} />}

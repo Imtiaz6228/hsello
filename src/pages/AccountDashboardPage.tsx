@@ -41,7 +41,14 @@ const tabs: Array<{ id: Tab; label: string; icon: typeof Home; roles?: string[] 
 export function AccountDashboardPage() {
   const { user, logout } = useAuth(); const navigate = useNavigate();
   const { formatMoney } = useLocale();
-  const [tab, setTab] = useState<Tab>("overview");
+  const [tab, setTabState] = useState<Tab>(() => {
+    const hash = window.location.hash.replace("#", "") as Tab;
+    return tabs.some((item) => item.id === hash) ? hash : "overview";
+  });
+  function selectTab(next: Tab) {
+    setTabState(next);
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${next}`);
+  }
   const [orders, setOrders] = useState<Order[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [chats, setChats] = useState<Chat[]>([]);
@@ -225,7 +232,7 @@ export function AccountDashboardPage() {
         </div>
         <div className="sidebar-nav">
           {visibleTabs.map(({ id, label, icon: Icon }) => (
-            <button key={id} className={tab === id ? "active" : ""} onClick={() => setTab(id)}>
+            <button key={id} className={tab === id ? "active" : ""} onClick={() => selectTab(id)}>
               <Icon size={18} /> {label}
               {id === "orders" && activeOrders > 0 ? <span className="sidebar-badge">{activeOrders}</span> : null}
               {id === "disputes" && disputes.filter((d) => !["CLOSED", "RESOLVED_BUYER", "RESOLVED_SELLER"].includes(d.status)).length > 0 ? <span className="sidebar-badge">{disputes.filter((d) => !["CLOSED", "RESOLVED_BUYER", "RESOLVED_SELLER"].includes(d.status)).length}</span> : null}
@@ -269,7 +276,7 @@ export function AccountDashboardPage() {
             </div>
             {orders.length > 0 && (
               <div className="recent-section">
-                <div className="section-heading-row"><h2>Recent orders</h2><Link to="#orders" onClick={() => setTab("orders")}>View all <ArrowRight size={16} /></Link></div>
+                <div className="section-heading-row"><h2>Recent orders</h2><Link to="#orders" onClick={() => selectTab("orders")}>View all <ArrowRight size={16} /></Link></div>
                 <div className="compact-orders">
                   {orders.slice(0, 3).map((order) => (
                     <div className="compact-order" key={order.id}>
@@ -291,7 +298,7 @@ export function AccountDashboardPage() {
             )}
             {user.role === "SELLER" && (
               <div className="recent-section">
-                <div className="section-heading-row"><h2>Seller snapshot</h2><Link to="#seller" onClick={() => setTab("seller")}>Open seller hub <ArrowRight size={16} /></Link></div>
+                <div className="section-heading-row"><h2>Seller snapshot</h2><Link to="#seller" onClick={() => selectTab("seller")}>Open seller hub <ArrowRight size={16} /></Link></div>
                 <div className="quick-seller-stats">
                   <div><Store size={18} /><span><strong>{sellerProfile?.storeName ?? "Store"}</strong><small>{sellerProfile?.isVerified ? "Verified" : "Pending"}</small></span></div>
                   <div><ShoppingBag size={18} /><span><strong>{sellerProducts?.length ?? 0}</strong><small>Products</small></span></div>
@@ -302,9 +309,9 @@ export function AccountDashboardPage() {
             <div className="quick-actions">
               <Link to="/catalog" className="action-card"><PackageCheck size={20} /><span><strong>Browse marketplace</strong><small>Discover new products</small></span><ArrowRight size={16} /></Link>
               <Link to="/support" className="action-card"><Headphones size={20} /><span><strong>Get help</strong><small>Support center & tickets</small></span><ArrowRight size={16} /></Link>
-              <Link to="#orders" onClick={() => setTab("orders")} className="action-card"><ShoppingBag size={20} /><span><strong>My orders</strong><small>{orders.length} orders</small></span><ArrowRight size={16} /></Link>
-              <Link to="#chats" onClick={() => setTab("chats")} className="action-card"><MessageSquare size={20} /><span><strong>Order chats</strong><small>{chats.length} conversations</small></span><ArrowRight size={16} /></Link>
-              <Link to="#disputes" onClick={() => setTab("disputes")} className="action-card"><Gavel size={20} /><span><strong>Disputes</strong><small>{disputes.length} cases</small></span><ArrowRight size={16} /></Link>
+              <Link to="#orders" onClick={() => selectTab("orders")} className="action-card"><ShoppingBag size={20} /><span><strong>My orders</strong><small>{orders.length} orders</small></span><ArrowRight size={16} /></Link>
+              <Link to="#chats" onClick={() => selectTab("chats")} className="action-card"><MessageSquare size={20} /><span><strong>Order chats</strong><small>{chats.length} conversations</small></span><ArrowRight size={16} /></Link>
+              <Link to="#disputes" onClick={() => selectTab("disputes")} className="action-card"><Gavel size={20} /><span><strong>Disputes</strong><small>{disputes.length} cases</small></span><ArrowRight size={16} /></Link>
             </div>
           </div>
         )}

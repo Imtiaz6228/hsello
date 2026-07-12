@@ -1,5 +1,8 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, FileUp, FolderPlus, ImagePlus, LogOut, PackagePlus, PlusCircle, Send, Store, Upload } from "lucide-react";
+import {
+  ArrowLeft, BadgeCheck, BarChart3, Boxes, FileUp, ImagePlus, LayoutDashboard,
+  LogOut, PackagePlus, Palette, Send, ShoppingBag, Store, Upload, WalletCards
+} from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { ApiError, apiRequest } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
@@ -7,7 +10,7 @@ import { Seo } from "../components/Seo";
 import { LocaleSwitcher } from "../components/LocaleSwitcher";
 import { useLocale } from "../i18n/LocaleContext";
 
-type Category = { id: string; name: string; slug?: string; description?: string; parentId?: string | null };
+type Category = { id: string; name: string; slug?: string; description?: string; parentId?: string | null; parent?: Category | null };
 type Product = {
   id: string;
   name: string;
@@ -24,6 +27,16 @@ type Product = {
   files: Array<{ id: string; displayName: string; version: number; sizeBytes: number }>;
   inventoryItems: Array<{ id: string; deliveredAt?: string | null; isActive: boolean }>;
 };
+type SellerProfile = { storeName: string; slug: string; about: string; policy?: string | null; logoUrl?: string | null; bannerUrl?: string | null; isVerified: boolean; totalSales: number; averageRating: number | string };
+type SellerOrder = { id: string; productName: string; totalCents: number; quantity: number; order: { orderNumber: string; status: string; createdAt: string; buyer: { firstName: string; lastName: string; email: string }; payment?: { status: string } | null } };
+type Tab = "overview" | "products" | "orders" | "storefront";
+
+const sellerTabs: Array<{ id: Tab; label: string; icon: typeof Store }> = [
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "products", label: "Products", icon: Boxes },
+  { id: "orders", label: "Orders", icon: ShoppingBag },
+  { id: "storefront", label: "Store branding", icon: Palette }
+];
 
 const initialForm = {
   categoryId: "",
@@ -48,82 +61,71 @@ function cents(value: string) {
   return Number.isFinite(parsed) ? Math.round(parsed * 100) : 0;
 }
 
+function validTab(value: string): value is Tab {
+  return sellerTabs.some((item) => item.id === value);
+}
+
 export function SellerStudioPage() {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const { formatMoney } = useLocale();
+  const [tab, setTabState] = useState<Tab>(() => {
+    const hash = window.location.hash.replace("#", "");
+    return validTab(hash) ? hash : "overview";
+  });
   const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<SellerOrder[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [profile, setProfile] = useState<SellerProfile | null>(null);
+  const [profileForm, setProfileForm] = useState({ about: "", policy: "" });
   const [open, setOpen] = useState(false);
-  const [categoryOpen, setCategoryOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [coverImage, setCoverImage] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState("");
   const [form, setForm] = useState(initialForm);
-  const [categoryForm, setCategoryForm] = useState({ name: "", description: "", parentId: "" });
 
   const parentCategories = useMemo(() => categories.filter((category) => !category.parentId), [categories]);
-  const categoriesById = useMemo(() => new Map(categories.map((category) => [category.id, category])), [categories]);
-  const groupedCategoryOptions = useMemo(() => categories.map((category) => {
-    const parent = category.parentId ? categoriesById.get(category.parentId) : null;
-    return {
-      ...category,
-      label: parent ? `${parent.name} / ${category.name}` : category.name,
-      isParent: !category.parentId
-    };
-  }).sort((a, b) => Number(a.isParent) - Number(b.isParent) || a.label.localeCompare(b.label)), [categories, categoriesById]);
+  const subCategories = useMemo(() => categories.filter((category) => category.parentId === form.categoryId), [categories, form.categoryId]);
   const selectedCategoryId = form.subCategoryId || form.categoryId;
+  const pendingProducts = products.filter((product) => product.status === "PENDING").length;
+  const liveProducts = products.filter((product) => product.status === "APPROVED").length;
+  const grossSales = orders.reduce((sum, item) => sum + item.totalCents, 0);
+
+  function selectTab(next: Tab) {
+    setTabState(next);
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${next}`);
+  }
 
   const load = () => Promise.all([
     apiRequest<{ products: Product[] }>("/api/seller/products"),
-    apiRequest<{ categories: Category[] }>("/api/seller/categories")
-  ]).then(([productsData, categoriesData]) => {
+    apiRequest<{ categories: Category[] }>("/api/seller/categories"),
+    apiRequest<{ profile: SellerProfile }>("/api/seller/profile"),
+    apiRequest<{ items: SellerOrder[] }>("/api/seller/orders")
+  ]).then(([productsData, categoriesData, profileData, ordersData]) => {
     setProducts(productsData.products);
     setCategories(categoriesData.categories);
-    if (!form.categoryId && categoriesData.categories[0]) {
-      setForm((current) => ({ ...current, categoryId: categoriesData.categories[0].id, subCategoryId: "" }));
-    }
+    setOrders(ordersData.items);
+    setProfile(profileData.profile);
+    setProfileForm({ about: profileData.profile?.about ?? "", policy: profileData.profile?.policy ?? "" });
+    const firstParent = categoriesData.categories.find((category) => !category.parentId);
+    if (!form.categoryId && firstParent) setForm((current) => ({ ...current, categoryId: firstParent.id, subCategoryId: "" }));
   });
 
-  useEffect(() => {
-    void load().catch(() => undefined);
-  }, []);
+  useEffect(() => { void load().catch(() => setMessage("Some seller data could not be loaded.")); }, []);
 
-  async function createCategory(event: FormEvent) {
-    event.preventDefault();
-    setBusy(true);
-    setMessage("");
-    try {
-      const result = await apiRequest<{ category: Category; message?: string }>("/api/seller/categories", {
-        method: "POST",
-        body: {
-          name: categoryForm.name,
-          description: categoryForm.description,
-          parentId: categoryForm.parentId || null,
-          sortOrder: categoryForm.parentId ? 1000 : 900
-        }
-      });
-      setCategoryOpen(false);
-      setCategoryForm({ name: "", description: "", parentId: "" });
-      setMessage(result.message ?? "Category added.");
-      await load();
-      setForm((current) => ({
-        ...current,
-        categoryId: result.category.id,
-        subCategoryId: ""
-      }));
-    } catch (error) {
-      setMessage(error instanceof ApiError ? error.message : "Category could not be created.");
-    } finally {
-      setBusy(false);
-    }
-  }
+  useEffect(() => {
+    if (!coverImage) { setCoverPreview(""); return; }
+    const url = URL.createObjectURL(coverImage);
+    setCoverPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [coverImage]);
 
   async function create(event: FormEvent) {
     event.preventDefault();
+    if (!selectedCategoryId) { setMessage("Choose a category before creating the product."); return; }
     setBusy(true);
     setMessage("");
-
     const data = new FormData();
     data.append("categoryId", selectedCategoryId);
     data.append("name", form.name);
@@ -149,55 +151,37 @@ export function SellerStudioPage() {
       setOpen(false);
       setCoverImage(null);
       setForm((current) => ({ ...initialForm, categoryId: current.categoryId, subCategoryId: current.subCategoryId }));
-      setMessage(result.message ?? "Product saved. Submit it for review when delivery is ready.");
+      setMessage(result.message ?? "Product created and sent for approval.");
+      selectTab("products");
       await load();
     } catch (error) {
       setMessage(error instanceof ApiError ? error.message : "Product could not be created.");
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
   }
 
   async function uploadImage(productId: string, file?: File) {
     if (!file) return;
-    const data = new FormData();
-    data.append("coverImage", file);
-    setMessage("Uploading product image...");
-    try {
-      await apiRequest(`/api/seller/products/${productId}/image`, { method: "POST", body: data });
-      setMessage("Product image updated.");
-      await load();
-    } catch (error) {
-      setMessage(error instanceof ApiError ? error.message : "Image upload failed.");
-    }
+    const data = new FormData(); data.append("coverImage", file);
+    setMessage("Uploading product image…");
+    try { await apiRequest(`/api/seller/products/${productId}/image`, { method: "POST", body: data }); setMessage("Product image uploaded successfully."); await load(); }
+    catch (error) { setMessage(error instanceof ApiError ? error.message : "Image upload failed."); }
   }
 
   async function uploadDeliveryFile(productId: string, file?: File) {
     if (!file) return;
-    const data = new FormData();
-    data.append("file", file);
-    setMessage("Uploading delivery file...");
-    try {
-      await apiRequest(`/api/seller/products/${productId}/files`, { method: "POST", body: data });
-      setMessage("New delivery file uploaded. Submit the product for approval when ready.");
-      await load();
-    } catch (error) {
-      setMessage(error instanceof ApiError ? error.message : "File upload failed.");
-    }
+    const data = new FormData(); data.append("file", file);
+    setMessage("Uploading delivery file…");
+    try { await apiRequest(`/api/seller/products/${productId}/files`, { method: "POST", body: data }); setMessage("Delivery file uploaded."); await load(); }
+    catch (error) { setMessage(error instanceof ApiError ? error.message : "File upload failed."); }
   }
 
   async function uploadInventoryFile(productId: string, file?: File) {
     if (!file) return;
-    const data = new FormData();
-    data.append("file", file);
-    setMessage("Uploading inventory rows...");
+    const data = new FormData(); data.append("file", file);
     try {
       const result = await apiRequest<{ count: number }>(`/api/seller/products/${productId}/inventory/file`, { method: "POST", body: data });
-      setMessage(`${result.count} inventory row${result.count === 1 ? "" : "s"} added. Submit the product for approval when ready.`);
-      await load();
-    } catch (error) {
-      setMessage(error instanceof ApiError ? error.message : "Inventory upload failed.");
-    }
+      setMessage(`${result.count} inventory row${result.count === 1 ? "" : "s"} added.`); await load();
+    } catch (error) { setMessage(error instanceof ApiError ? error.message : "Inventory upload failed."); }
   }
 
   async function addInventoryRows(productId: string) {
@@ -205,132 +189,92 @@ export function SellerStudioPage() {
     if (!inventoryLines?.trim()) return;
     try {
       const result = await apiRequest<{ count: number }>(`/api/seller/products/${productId}/inventory/manual`, { method: "POST", body: { inventoryLines } });
-      setMessage(`${result.count} inventory row${result.count === 1 ? "" : "s"} added.`);
-      await load();
-    } catch (error) {
-      setMessage(error instanceof ApiError ? error.message : "Inventory rows could not be added.");
-    }
+      setMessage(`${result.count} inventory row${result.count === 1 ? "" : "s"} added.`); await load();
+    } catch (error) { setMessage(error instanceof ApiError ? error.message : "Inventory rows could not be added."); }
   }
 
   async function submit(productId: string) {
-    try {
-      await apiRequest(`/api/seller/products/${productId}/submit`, { method: "POST" });
-      setMessage("Product submitted for admin approval. It will show as pending until staff approves it.");
-      await load();
-    } catch (error) {
-      setMessage(error instanceof ApiError ? error.message : "Product could not be submitted.");
-    }
+    try { await apiRequest(`/api/seller/products/${productId}/submit`, { method: "POST" }); setMessage("Product submitted for admin approval."); await load(); }
+    catch (error) { setMessage(error instanceof ApiError ? error.message : "Product could not be submitted."); }
   }
 
-  async function signOut() {
-    await logout();
-    navigate("/");
+  async function uploadStoreMedia(kind: "logo" | "banner", file?: File) {
+    if (!file) return;
+    const data = new FormData(); data.append(kind, file);
+    setBusy(true); setMessage(`Uploading store ${kind}…`);
+    try {
+      const result = await apiRequest<{ profile: SellerProfile; message?: string }>(`/api/seller/profile/${kind}`, { method: "POST", body: data });
+      setProfile(result.profile); setMessage(result.message ?? `Store ${kind} uploaded.`);
+    } catch (error) { setMessage(error instanceof ApiError ? error.message : `Store ${kind} upload failed.`); }
+    finally { setBusy(false); }
   }
+
+  async function saveProfile(event: FormEvent) {
+    event.preventDefault(); setBusy(true); setMessage("");
+    try {
+      const result = await apiRequest<{ profile: SellerProfile }>("/api/seller/profile", { method: "PATCH", body: profileForm });
+      setProfile(result.profile); setMessage("Store information saved.");
+    } catch (error) { setMessage(error instanceof ApiError ? error.message : "Store information could not be saved."); }
+    finally { setBusy(false); }
+  }
+
+  async function signOut() { await logout(); navigate("/"); }
 
   return (
-    <main className="seller-workspace">
-      <Seo title="Seller studio" description="Manage HSello store products, files, review submissions, and digital delivery." />
-      <nav>
-        <Link to="/dashboard"><ArrowLeft /> Account</Link>
-        <strong><Store /> Seller studio</strong>
-        <div className="seller-nav-actions">
-          <LocaleSwitcher />
-          <button onClick={() => setCategoryOpen(true)}><FolderPlus /> New category</button>
-          <button onClick={() => setOpen(true)}><PackagePlus /> New product</button>
-          <button className="secondary-button" onClick={() => void signOut()}><LogOut /> Sign out</button>
+    <main className="seller-pro-dashboard">
+      <Seo title="Seller studio" description="Manage your storefront, products, files, orders, and digital delivery." />
+      <aside className="seller-pro-sidebar">
+        <Link className="brand-lockup" to="/"><span className="brand-glyph">H</span><span><strong>HSELLO</strong><small>SELLER CENTER</small></span></Link>
+        <div className="seller-store-card">
+          <span>{profile?.logoUrl ? <img src={profile.logoUrl} alt={`${profile.storeName} logo`} /> : (profile?.storeName ?? "Store").slice(0, 2).toUpperCase()}</span>
+          <div><strong>{profile?.storeName ?? "Your store"}</strong><small>{profile?.isVerified ? "Verified seller" : "Seller account"}</small></div>
+          {profile?.isVerified ? <BadgeCheck size={17} /> : null}
         </div>
-      </nav>
-      <header>
-        <span className="section-index">VERIFIED SELLER WORKSPACE</span>
-        <h1>Seller dashboard.<br />Simple product submissions.</h1>
-        <p>All your products are listed here. Add the buyer-facing title, description, category, price, image, and delivery file or ZIP, then submit for admin approval before buyers can purchase.</p>
-      </header>
-      {message ? <div className="dashboard-message">{message}</div> : null}
-      <section className="seller-category-panel"><div><FolderPlus /><span><strong>Product categories</strong><small>Select from existing categories when creating a product. Add a simple category only when it is missing.</small></span></div><button type="button" onClick={() => setCategoryOpen(true)}><PlusCircle /> Add category</button></section>
-      <section className="seller-product-list">
-        <div className="seller-list-heading"><span>Product</span><span>Status</span><span>Delivery</span><span>Actions</span></div>
-        {products.length ? products.map((product) => {
-          const availableRows = product.inventoryItems.filter((item) => item.isActive && !item.deliveredAt).length;
-          const deliveredRows = product.inventoryItems.filter((item) => item.deliveredAt).length;
-          return (
-            <article key={product.id}>
-              <div>
-                <span className="seller-product-mark">
-                  {product.coverImageUrl ? <img src={product.coverImageUrl} alt="" /> : product.name[0]}
-                </span>
-                <div>
-                  <strong>{product.name}</strong>
-                  <small>{product.category?.parent?.name ? `${product.category.parent.name} / ` : ""}{product.category?.name ?? product.type}</small>
-                  <small>{formatMoney(product.priceUsdCents ?? product.priceCents)} · base USD ${(product.priceUsdCents ?? product.priceCents) / 100}</small>
-                  <small>After-sales: {product.afterSalesServiceHours ?? 12}h minimum dispute window</small>
-                  {product.rejectionReason ? <p>{product.rejectionReason}</p> : null}
-                </div>
-              </div>
-              <span className={`status-pill ${product.status.toLowerCase()}`}>{product.status === "PENDING" ? "PENDING APPROVAL" : product.status}</span>
-              <div className="file-versions">
-                {product.files.length ? product.files.map((file) => <span key={file.id}>{file.displayName} <small>v{file.version}</small></span>) : null}
-                {availableRows || deliveredRows ? <span>{availableRows} unsold rows <small>{deliveredRows} sold</small></span> : null}
-                {!product.files.length && !availableRows && !deliveredRows ? <small>No delivery added</small> : null}
-              </div>
-              <div className="seller-product-actions">
-                <label className="upload-action"><ImagePlus /> Product image<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void uploadImage(product.id, event.target.files?.[0])} /></label>
-                <label className="upload-action"><Upload /> Delivery file<input type="file" onChange={(event) => void uploadDeliveryFile(product.id, event.target.files?.[0])} /></label>
-                <label className="upload-action"><FileUp /> Inventory file<input type="file" accept=".txt,.csv,text/plain,text/csv" onChange={(event) => void uploadInventoryFile(product.id, event.target.files?.[0])} /></label>
-                <button type="button" onClick={() => void addInventoryRows(product.id)}><PackagePlus /> Add rows</button>
-                {!["PENDING", "APPROVED", "REMOVED"].includes(product.status) ? <button onClick={() => void submit(product.id)}><Send /> Submit review</button> : null}
-              </div>
-            </article>
-          );
-        }) : <div className="dashboard-empty"><FileUp /><h2>No products yet</h2><p>Create a product, add delivery rows or files, then submit it for admin approval.</p></div>}
+        <nav>{sellerTabs.map(({ id, label, icon: Icon }) => <button type="button" key={id} className={tab === id ? "active" : ""} onClick={() => selectTab(id)}><Icon size={18} />{label}</button>)}</nav>
+        <div className="seller-pro-sidebar-footer"><Link to="/dashboard"><ArrowLeft size={16} /> Buyer account</Link><button onClick={() => void signOut()}><LogOut size={16} /> Sign out</button></div>
+      </aside>
+
+      <section className="seller-pro-main">
+        <header className="seller-pro-topbar"><div><span>Seller center</span><strong>{sellerTabs.find((item) => item.id === tab)?.label}</strong></div><div><LocaleSwitcher compact /><button className="seller-create-button" onClick={() => setOpen(true)}><PackagePlus size={17} /> New product</button></div></header>
+        <div className="seller-pro-heading"><span className="section-index">SELLER WORKSPACE</span><h1>{tab === "overview" ? `Welcome back to ${profile?.storeName ?? "your store"}.` : sellerTabs.find((item) => item.id === tab)?.label}</h1><p>Manage every part of your digital business from one colorful, connected workspace.</p></div>
+        {message ? <div className="dashboard-message">{message}</div> : null}
+
+        {tab === "overview" ? <>
+          <section className="seller-metric-grid">
+            <article><span><Boxes /></span><div><small>Total products</small><strong>{products.length}</strong><p>{liveProducts} currently live</p></div></article>
+            <article><span><BarChart3 /></span><div><small>Pending approval</small><strong>{pendingProducts}</strong><p>Admin review queue</p></div></article>
+            <article><span><ShoppingBag /></span><div><small>Orders</small><strong>{orders.length}</strong><p>Across all products</p></div></article>
+            <article><span><WalletCards /></span><div><small>Gross order value</small><strong>{formatMoney(grossSales)}</strong><p>Before platform fees</p></div></article>
+          </section>
+          <section className="seller-overview-grid">
+            <article className="seller-gradient-card"><span>STORE PERFORMANCE</span><h2>Build listings buyers trust.</h2><p>Use a sharp logo, clear product image, accurate category, and complete delivery inventory.</p><button onClick={() => selectTab("storefront")}><Palette size={17} /> Polish storefront</button></article>
+            <article className="seller-action-panel"><header><h2>Quick actions</h2><small>Everything opens instantly</small></header><button onClick={() => setOpen(true)}><PackagePlus /><span><strong>Create product</strong><small>Add image, price and category</small></span></button><button onClick={() => selectTab("products")}><Upload /><span><strong>Manage delivery</strong><small>Files, codes and inventory</small></span></button><button onClick={() => selectTab("orders")}><ShoppingBag /><span><strong>View orders</strong><small>Buyer and payment status</small></span></button></article>
+          </section>
+        </> : null}
+
+        {tab === "products" ? <section className="seller-product-list seller-pro-products">
+          <div className="seller-list-heading"><span>Product</span><span>Status</span><span>Delivery</span><span>Actions</span></div>
+          {products.length ? products.map((product) => {
+            const availableRows = product.inventoryItems.filter((item) => item.isActive && !item.deliveredAt).length;
+            const deliveredRows = product.inventoryItems.filter((item) => item.deliveredAt).length;
+            return <article key={product.id}>
+              <div><span className="seller-product-mark">{product.coverImageUrl ? <img src={product.coverImageUrl} alt={product.name} /> : product.name[0]}</span><div><strong>{product.name}</strong><small>{product.category?.parent?.name ? `${product.category.parent.name} / ` : ""}{product.category?.name ?? product.type}</small><small>{formatMoney(product.priceUsdCents ?? product.priceCents)} · After-sales {product.afterSalesServiceHours ?? 12}h</small>{product.rejectionReason ? <p>{product.rejectionReason}</p> : null}</div></div>
+              <span className={`status-pill ${product.status.toLowerCase()}`}>{product.status.replaceAll("_", " ")}</span>
+              <div className="file-versions">{product.files.map((file) => <span key={file.id}>{file.displayName} <small>v{file.version}</small></span>)}{availableRows || deliveredRows ? <span>{availableRows} available <small>{deliveredRows} delivered</small></span> : null}{!product.files.length && !availableRows && !deliveredRows ? <small>No delivery added</small> : null}</div>
+              <div className="seller-product-actions"><label className="upload-action"><ImagePlus /> Change image<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void uploadImage(product.id, event.target.files?.[0])} /></label><label className="upload-action"><Upload /> Delivery file<input type="file" onChange={(event) => void uploadDeliveryFile(product.id, event.target.files?.[0])} /></label><label className="upload-action"><FileUp /> Inventory file<input type="file" accept=".txt,.csv,text/plain,text/csv" onChange={(event) => void uploadInventoryFile(product.id, event.target.files?.[0])} /></label><button type="button" onClick={() => void addInventoryRows(product.id)}><PackagePlus /> Add rows</button>{!["PENDING", "APPROVED", "REMOVED"].includes(product.status) ? <button onClick={() => void submit(product.id)}><Send /> Submit review</button> : null}</div>
+            </article>;
+          }) : <div className="dashboard-empty"><FileUp /><h2>No products yet</h2><p>Create your first listing with a product image and the correct admin-managed category.</p><button className="primary-button" onClick={() => setOpen(true)}>Create product</button></div>}
+        </section> : null}
+
+        {tab === "orders" ? <section className="seller-orders-grid">{orders.length ? orders.map((item) => <article key={item.id}><header><span>{item.productName.slice(0, 2).toUpperCase()}</span><div><strong>{item.productName}</strong><small>{item.order.orderNumber} · {new Date(item.order.createdAt).toLocaleDateString()}</small></div><b>{item.order.status.replaceAll("_", " ")}</b></header><div><span><small>Buyer</small><strong>{item.order.buyer.firstName} {item.order.buyer.lastName}</strong></span><span><small>Quantity</small><strong>{item.quantity}</strong></span><span><small>Total</small><strong>{formatMoney(item.totalCents)}</strong></span><span><small>Payment</small><strong>{item.order.payment?.status ?? "Pending"}</strong></span></div></article>) : <div className="dashboard-empty"><ShoppingBag /><h2>No seller orders yet</h2><p>Approved products and completed purchases will appear here.</p></div>}</section> : null}
+
+        {tab === "storefront" ? <section className="seller-branding-layout">
+          <article className="seller-brand-preview" style={profile?.bannerUrl ? { backgroundImage: `linear-gradient(135deg, rgba(19,27,52,.78), rgba(87,62,211,.55)), url(${profile.bannerUrl})` } : undefined}><span>{profile?.logoUrl ? <img src={profile.logoUrl} alt="Store logo" /> : (profile?.storeName ?? "Store").slice(0, 2).toUpperCase()}</span><div><small>PUBLIC STOREFRONT</small><h2>{profile?.storeName}</h2><p>{profile?.about}</p><b>{profile?.isVerified ? "✓ Verified seller" : "Seller"}</b></div></article>
+          <form className="seller-brand-form" onSubmit={saveProfile}><header><span><Store /></span><div><h2>Store identity</h2><p>Upload real image files. They are saved and displayed on your storefront.</p></div></header><div className="seller-media-upload-grid"><label><span>{profile?.logoUrl ? <img src={profile.logoUrl} alt="Current logo" /> : <ImagePlus />}</span><strong>Upload logo</strong><small>Square JPEG, PNG or WebP</small><input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={(event) => void uploadStoreMedia("logo", event.target.files?.[0])} /></label><label><span className="wide">{profile?.bannerUrl ? <img src={profile.bannerUrl} alt="Current banner" /> : <ImagePlus />}</span><strong>Upload banner</strong><small>Wide JPEG, PNG or WebP</small><input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={(event) => void uploadStoreMedia("banner", event.target.files?.[0])} /></label></div><label><span>About your store</span><textarea required minLength={20} rows={6} value={profileForm.about} onChange={(event) => setProfileForm({ ...profileForm, about: event.target.value })} /></label><label><span>Store policy</span><textarea rows={5} value={profileForm.policy} onChange={(event) => setProfileForm({ ...profileForm, policy: event.target.value })} placeholder="Delivery, support and refund expectations" /></label><button className="primary-button" disabled={busy}><Store /> {busy ? "Saving…" : "Save storefront"}</button></form>
+        </section> : null}
       </section>
 
-
-      {categoryOpen ? (
-        <div className="modal-backdrop">
-          <form className="seller-product-form seller-category-form" onSubmit={createCategory}>
-            <button type="button" className="modal-close" onClick={() => setCategoryOpen(false)}>x</button>
-            <span className="section-index">NEW CATEGORY</span>
-            <h2>Add a buyer category.</h2>
-            <p className="modal-helper">Create a parent category or choose a parent to create a subcategory. New categories appear in buyer browsing, product forms, and category filters.</p>
-            <div className="form-grid two">
-              <label><span>Category name</span><input required minLength={2} value={categoryForm.name} onChange={(event) => setCategoryForm({ ...categoryForm, name: event.target.value })} placeholder="e.g. Instagram design packs" /></label>
-              <label><span>Parent category</span><select value={categoryForm.parentId} onChange={(event) => setCategoryForm({ ...categoryForm, parentId: event.target.value })}><option value="">Create as parent category</option>{parentCategories.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select></label>
-            </div>
-            <label><span>Description</span><textarea required minLength={12} rows={5} value={categoryForm.description} onChange={(event) => setCategoryForm({ ...categoryForm, description: event.target.value })} placeholder="Explain what buyers will find in this category." /></label>
-            <button className="primary-button" disabled={busy}><FolderPlus /> {busy ? "Creating..." : "Create category"}</button>
-          </form>
-        </div>
-      ) : null}
-
-      {open ? (
-        <div className="modal-backdrop">
-          <form className="seller-product-form" onSubmit={create}>
-            <button type="button" className="modal-close" onClick={() => setOpen(false)}>x</button>
-            <span className="section-index">NEW PRODUCT SUBMISSION</span>
-            <h2>Create a product buyers can understand.</h2>
-            <label className="seller-image-picker">
-              <span>Product image</span>
-              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setCoverImage(event.target.files?.[0] ?? null)} />
-              <small>{coverImage ? coverImage.name : "JPEG, PNG, or WebP"}</small>
-            </label>
-            <div className="form-grid two">
-              <label><span>Product title shown to buyers</span><input required minLength={3} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="e.g. Premium design template bundle" /></label>
-              <label><span>Category</span><select required value={selectedCategoryId} onChange={(event) => setForm({ ...form, categoryId: event.target.value, subCategoryId: "" })}>{groupedCategoryOptions.map((category) => <option value={category.id} key={category.id}>{category.isParent ? category.label : `↳ ${category.label}`}</option>)}</select><button className="inline-form-link" type="button" onClick={() => setCategoryOpen(true)}>+ Add or request category</button></label>
-              <label><span>Type</span><select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })}><option value="DOWNLOAD">Digital product</option><option value="SERVICE">Service</option></select></label>
-              <label><span>Price (USD)</span><input required type="number" min="0.50" step="0.01" value={form.priceUsd} onChange={(event) => setForm({ ...form, priceUsd: event.target.value })} /></label>
-              <label><span>Price (Yuan / CNY)</span><input type="number" min="0" step="0.01" value={form.priceCny} onChange={(event) => setForm({ ...form, priceCny: event.target.value })} /></label>
-              <label><span>Price (Russian Ruble)</span><input type="number" min="0" step="0.01" value={form.priceRub} onChange={(event) => setForm({ ...form, priceRub: event.target.value })} /></label>
-              <label><span>After-sales service time (hours)</span><input required type="number" min={12} max={8760} value={form.afterSalesServiceHours} onChange={(event) => setForm({ ...form, afterSalesServiceHours: Number(event.target.value) })} /></label>
-            </div>
-            <label><span>Short description shown on product cards</span><input required minLength={10} maxLength={240} value={form.shortDescription} onChange={(event) => setForm({ ...form, shortDescription: event.target.value })} placeholder="One clear sentence about what the buyer gets" /></label>
-            <label><span>Full product description</span><textarea required minLength={30} rows={6} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="Explain features, what is included, compatibility, and delivery details." /></label>
-            <label><span>Buyer delivery note</span><textarea rows={3} value={form.deliveryNote} onChange={(event) => setForm({ ...form, deliveryNote: event.target.value })} placeholder="Optional note shown beside the download after approval." /></label>
-            <label><span>Manual digital product rows</span><textarea rows={6} placeholder="One product / code / account / license per line" value={form.inventoryLines} onChange={(event) => setForm({ ...form, inventoryLines: event.target.value })} /></label>
-            <small>Tip: upload your finished delivery file as a ZIP from the product list after creating the product. Products stay hidden until admin approves them.</small>
-            <button className="primary-button" disabled={busy}><PackagePlus /> {busy ? "Submitting..." : "Create product"}</button>
-          </form>
-        </div>
-      ) : null}
+      {open ? <div className="modal-backdrop"><form className="seller-product-form seller-pro-product-form" onSubmit={create}><button type="button" className="modal-close" onClick={() => setOpen(false)}>×</button><span className="section-index">NEW PRODUCT</span><h2>Create a listing buyers understand.</h2><p className="modal-helper">Categories and subcategories come directly from the admin panel and automatically appear here.</p><label className={`seller-image-picker ${coverPreview ? "has-preview" : ""}`}>{coverPreview ? <img src={coverPreview} alt="Product preview" /> : <ImagePlus size={34} />}<span>Product image</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setCoverImage(event.target.files?.[0] ?? null)} /><small>{coverImage ? coverImage.name : "JPEG, PNG, or WebP"}</small></label><div className="form-grid two"><label><span>Product title</span><input required minLength={3} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Premium design template bundle" /></label><label><span>Main category</span><select required value={form.categoryId} onChange={(event) => setForm({ ...form, categoryId: event.target.value, subCategoryId: "" })}><option value="">Choose category</option>{parentCategories.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select></label><label><span>Subcategory</span><select value={form.subCategoryId} disabled={!subCategories.length} onChange={(event) => setForm({ ...form, subCategoryId: event.target.value })}><option value="">{subCategories.length ? "Use main category" : "No subcategories available"}</option>{subCategories.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select></label><label><span>Type</span><select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })}><option value="DOWNLOAD">Digital product</option><option value="SERVICE">Service</option></select></label><label><span>Price (USD)</span><input required type="number" min="0.50" step="0.01" value={form.priceUsd} onChange={(event) => setForm({ ...form, priceUsd: event.target.value })} /></label><label><span>Price (CNY)</span><input type="number" min="0" step="0.01" value={form.priceCny} onChange={(event) => setForm({ ...form, priceCny: event.target.value })} /></label><label><span>Price (RUB)</span><input type="number" min="0" step="0.01" value={form.priceRub} onChange={(event) => setForm({ ...form, priceRub: event.target.value })} /></label><label><span>After-sales hours</span><input required type="number" min={12} max={8760} value={form.afterSalesServiceHours} onChange={(event) => setForm({ ...form, afterSalesServiceHours: Number(event.target.value) })} /></label></div><label><span>Short description</span><input required minLength={10} maxLength={240} value={form.shortDescription} onChange={(event) => setForm({ ...form, shortDescription: event.target.value })} /></label><label><span>Full description</span><textarea required minLength={30} rows={6} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label><label><span>Buyer delivery note</span><textarea rows={3} value={form.deliveryNote} onChange={(event) => setForm({ ...form, deliveryNote: event.target.value })} /></label><label><span>Digital inventory rows</span><textarea rows={5} placeholder="One code, account, license, or item per line" value={form.inventoryLines} onChange={(event) => setForm({ ...form, inventoryLines: event.target.value })} /></label><button className="primary-button" disabled={busy}><PackagePlus /> {busy ? "Creating…" : "Create product"}</button></form></div> : null}
     </main>
   );
 }

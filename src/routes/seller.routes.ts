@@ -254,6 +254,35 @@ sellerRouter.patch("/profile", requireSeller, asyncHandler(async (req, res) => {
   res.json({ profile });
 }));
 
+
+sellerRouter.post("/profile/logo", requireSeller, imageUpload.single("logo"), asyncHandler(async (req, res) => {
+  try {
+    if (!req.file) throw new ApiError(400, "Choose a store logo image.", "SELLER_LOGO_REQUIRED");
+    const profile = await prisma.sellerProfile.update({
+      where: { userId: req.auth!.id },
+      data: { logoUrl: publicUploadUrl(req.file.filename) }
+    });
+    res.json({ profile, message: "Store logo uploaded." });
+  } catch (error) {
+    await deleteUploadedFile(req.file);
+    throw error;
+  }
+}));
+
+sellerRouter.post("/profile/banner", requireSeller, imageUpload.single("banner"), asyncHandler(async (req, res) => {
+  try {
+    if (!req.file) throw new ApiError(400, "Choose a store banner image.", "SELLER_BANNER_REQUIRED");
+    const profile = await prisma.sellerProfile.update({
+      where: { userId: req.auth!.id },
+      data: { bannerUrl: publicUploadUrl(req.file.filename) }
+    });
+    res.json({ profile, message: "Store banner uploaded." });
+  } catch (error) {
+    await deleteUploadedFile(req.file);
+    throw error;
+  }
+}));
+
 sellerRouter.get("/products", requireSeller, asyncHandler(async (req, res) => {
   const products = await prisma.product.findMany({
     where: { sellerId: req.auth!.id },

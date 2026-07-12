@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { ArrowLeft, Download, MessageCircle, Send, ShieldCheck } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { ApiError, apiRequest } from "../api/client";
+import { useAuth } from "../auth/AuthContext";
 import { MarketHeader } from "../components/MarketHeader";
 import { Seo } from "../components/Seo";
 
@@ -24,6 +25,7 @@ type OrderDetail = {
 };
 
 export function OrderDeliveryPage() {
+  const { user } = useAuth();
   const { id } = useParams();
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -121,7 +123,7 @@ export function OrderDeliveryPage() {
               <strong>{order.orderNumber}</strong>
               <small>Dispute window: {order.disputeWindowHours ?? 12}h · {order.disputeDeadline ? `until ${new Date(order.disputeDeadline).toLocaleString()}` : "after payment"}</small>
             </div>
-            {order.canOpenDispute ? <button className="secondary-button" onClick={() => void openDispute()}><ShieldCheck size={14} /> Open dispute</button> : null}
+            {user?.role === "CUSTOMER" && order.canOpenDispute ? <button className="secondary-button" onClick={() => void openDispute()}><ShieldCheck size={14} /> Open dispute</button> : null}
           </header>
           {order.disputes?.length ? (
             <div className="dispute-alert-card">
@@ -131,10 +133,10 @@ export function OrderDeliveryPage() {
                   <span className={`status-pill ${dispute.status.toLowerCase()}`}>{dispute.status.replaceAll("_", " ")}</span>
                   {dispute.autoCloseAt ? <small>Waiting for {dispute.awaitingParty?.toLowerCase()} · auto-close {new Date(dispute.autoCloseAt).toLocaleString()}</small> : null}
                   {dispute.resolution ? <p>{dispute.resolution}</p> : null}
-                  <div className="quick-dispute-actions">
+                  {user?.role === "CUSTOMER" ? <div className="quick-dispute-actions">
                     <button className="secondary-button" onClick={() => void closeDispute(dispute.id)}>Close dispute</button>
                     <button className="secondary-button" disabled={dispute.refundDemanded} onClick={() => void demandRefund(dispute.id)}>{dispute.refundDemanded ? "Refund demanded" : "Demand refund"}</button>
-                  </div>
+                  </div> : null}
                 </div>
               ))}
             </div>

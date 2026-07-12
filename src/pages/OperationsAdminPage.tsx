@@ -401,7 +401,7 @@ export function OperationsAdminPage() {
       </aside>
 
       <section className="ops-main">
-        <header className="ops-topbar"><div><Link to="/dashboard"><ArrowLeft size={14} /> Account</Link><span>/</span><strong>{nav.find((item) => item.id === tab)?.label}</strong></div><div><LocaleSwitcher /><Link className="dashboard-signout-link" to="/sign-out"><LogOut size={14} /><span>Sign out</span></Link><button onClick={() => void load()}><RefreshCw size={14} /> Refresh</button></div></header>
+        <header className="ops-topbar"><div><Link to="/"><ArrowLeft size={14} /> Marketplace</Link><span>/</span><strong>{nav.find((item) => item.id === tab)?.label}</strong></div><div><LocaleSwitcher /><Link className="dashboard-signout-link" to="/sign-out"><LogOut size={14} /><span>Sign out</span></Link><button onClick={() => void load()}><RefreshCw size={14} /> Refresh</button></div></header>
         <div className="ops-heading"><span className="section-index">ADMIN DASHBOARD</span><h1>{nav.find((item) => item.id === tab)?.label}</h1><p>Approve deposits, review products, verify sellers, and release paid orders without complicated workflows.</p></div>
         {message ? <div className={`ops-message ${message.toLowerCase().includes("failed") || message.toLowerCase().includes("could not") ? "error" : ""}`}>{message}</div> : null}
 

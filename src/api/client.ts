@@ -3,7 +3,9 @@ export type Role = "CUSTOMER" | "SELLER" | "MODERATOR" | "ADMIN" | "SUPER_ADMIN"
 export const STAFF_ROLES: Role[] = ["MODERATOR", "ADMIN", "SUPER_ADMIN"];
 
 export function homePathForRole(role: Role) {
-  return STAFF_ROLES.includes(role) ? "/admin" : "/dashboard";
+  if (STAFF_ROLES.includes(role)) return "/admin";
+  if (role === "SELLER") return "/seller";
+  return "/dashboard";
 }
 
 export type User = {

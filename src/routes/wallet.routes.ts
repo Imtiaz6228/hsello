@@ -51,7 +51,7 @@ walletRouter.post("/withdrawals", asyncHandler(async (req, res) => {
 
 const depositSchema = z.object({
   amountCents: z.number().int().min(100).max(500000),
-  method: z.enum(["CARD", "CRYPTO", "PAYPAL"])
+  method: z.enum(["CARD", "CRYPTO", "PAYPAL", "BANK_TRANSFER", "EASYPAISA", "JAZZCASH"])
 });
 
 walletRouter.post("/deposit", asyncHandler(async (req, res) => {
@@ -68,7 +68,7 @@ walletRouter.post("/deposit", asyncHandler(async (req, res) => {
   });
 
   res.status(201).json({
-    message: `$${(input.amountCents / 100).toFixed(2)} deposit request submitted with ${input.method === "CRYPTO" ? "crypto" : input.method === "PAYPAL" ? "PayPal" : "card"}. Admin will review and approve.`,
+    message: `$${(input.amountCents / 100).toFixed(2)} top-up submitted with ${input.method.replaceAll("_", " ").toLowerCase()}. Your balance updates after payment verification.`,
     deposit
   });
 }));

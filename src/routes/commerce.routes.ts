@@ -7,7 +7,7 @@ import { env } from "../config/env.js";
 import { createZipBuffer } from "../lib/zip.js";
 import { sendTicketUpdateEmail } from "../lib/email.js";
 import { prisma } from "../lib/prisma.js";
-import { requireAuth, requireVerifiedUser } from "../middleware/auth.js";
+import { requireAuth, requireRole, requireVerifiedUser } from "../middleware/auth.js";
 import { ApiError, asyncHandler } from "../middleware/error-handler.js";
 import { imageUpload, publicUploadUrl } from "../middleware/upload.js";
 import { activeDisputeWhere, autoResolveExpiredDisputes, markDisputeTurn, responseDeadline } from "../services/dispute.service.js";
@@ -241,7 +241,7 @@ commerceRouter.get("/order-items/:id/download.zip", asyncHandler(async (req, res
   res.send(zip);
 }));
 
-commerceRouter.post("/orders/:id/refunds", asyncHandler(async (req, res) => {
+commerceRouter.post("/orders/:id/refunds", requireRole(Role.CUSTOMER), asyncHandler(async (req, res) => {
   const orderId = z.string().uuid().parse(req.params.id);
   const input = z.object({ reason: z.string().trim().min(20).max(2000), amountCents: z.number().int().positive().optional() }).parse(req.body);
   const order = await prisma.order.findFirst({ where: { id: orderId, buyerId: req.auth!.id } });
@@ -250,7 +250,7 @@ commerceRouter.post("/orders/:id/refunds", asyncHandler(async (req, res) => {
   res.status(201).json({ refund });
 }));
 
-commerceRouter.post("/orders/:id/disputes", asyncHandler(async (req, res) => {
+commerceRouter.post("/orders/:id/disputes", requireRole(Role.CUSTOMER), asyncHandler(async (req, res) => {
   const orderId = z.string().uuid().parse(req.params.id);
   const input = z.object({ subject: z.string().trim().min(5).max(140), description: z.string().trim().min(20).max(4000), orderItemId: z.string().uuid().optional(), demandRefund: z.boolean().default(false) }).parse(req.body);
   const order = await prisma.order.findFirst({
@@ -290,7 +290,7 @@ commerceRouter.post("/orders/:id/disputes", asyncHandler(async (req, res) => {
   res.status(201).json({ dispute });
 }));
 
-commerceRouter.post("/disputes/:id/close", asyncHandler(async (req, res) => {
+commerceRouter.post("/disputes/:id/close", requireRole(Role.CUSTOMER), asyncHandler(async (req, res) => {
   const id = z.string().uuid().parse(req.params.id);
   const input = z.object({ resolution: z.string().trim().max(1000).optional() }).parse(req.body);
   const dispute = await prisma.dispute.findFirst({ where: { id, OR: [{ openedById: req.auth!.id }, { order: { buyerId: req.auth!.id } }] }, include: { order: true } });
@@ -299,7 +299,7 @@ commerceRouter.post("/disputes/:id/close", asyncHandler(async (req, res) => {
   res.json({ dispute: updated });
 }));
 
-commerceRouter.post("/disputes/:id/refund", asyncHandler(async (req, res) => {
+commerceRouter.post("/disputes/:id/refund", requireRole(Role.CUSTOMER), asyncHandler(async (req, res) => {
   const id = z.string().uuid().parse(req.params.id);
   const input = z.object({ reason: z.string().trim().min(10).max(2000).optional(), amountCents: z.number().int().positive().optional() }).parse(req.body);
   const dispute = await prisma.dispute.findFirst({ where: { id, OR: [{ openedById: req.auth!.id }, { order: { buyerId: req.auth!.id } }] }, include: { order: true } });

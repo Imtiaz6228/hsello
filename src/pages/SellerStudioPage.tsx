@@ -99,11 +99,16 @@ function validTab(value: string): value is Tab {
 
 function errorText(error: unknown, fallback: string) {
   if (!(error instanceof ApiError)) return fallback;
-  const details = error.details as { fieldErrors?: Record<string, string[]>; formErrors?: string[] } | undefined;
+  const details = error.details as { fieldErrors?: Record<string, string[]>; formErrors?: string[]; issues?: Array<{ path?: string; message?: string }> } | Array<{ path?: string; message?: string }> | undefined;
+  if (Array.isArray(details)) {
+    const issue = details.find((entry) => entry?.message);
+    return issue ? `${issue.path ? `${issue.path}: ` : ""}${issue.message}` : error.message;
+  }
   const fieldMessage = details?.fieldErrors
-    ? Object.values(details.fieldErrors).flat().find(Boolean)
+    ? Object.entries(details.fieldErrors).flatMap(([field, messages]) => messages.map((message) => `${field}: ${message}`)).find(Boolean)
     : undefined;
-  return fieldMessage || details?.formErrors?.[0] || error.message;
+  const issue = details?.issues?.find((entry) => entry.message);
+  return fieldMessage || details?.formErrors?.[0] || (issue ? `${issue.path ? `${issue.path}: ` : ""}${issue.message}` : undefined) || error.message;
 }
 
 function categoryLabel(category?: Product["category"]) {
@@ -219,27 +224,36 @@ export function SellerStudioPage() {
       showMessage("Upload a clear product image before creating the listing.", "error");
       return;
     }
+    if (form.name.trim().length < 3 || form.shortDescription.trim().length < 10 || form.description.trim().length < 30) {
+      showMessage("Complete the title, short description, and full description before submitting.", "error");
+      return;
+    }
+    if (cents(form.priceUsd) < 50) {
+      showMessage("Set a USD price of at least $0.50.", "error");
+      return;
+    }
 
     setBusy(true);
     setMessage("");
     const data = new FormData();
     data.append("categoryId", selectedCategoryId);
-    data.append("name", form.name);
-    data.append("shortDescription", form.shortDescription);
-    data.append("description", form.description);
+    data.append("name", form.name.trim());
+    data.append("shortDescription", form.shortDescription.trim());
+    data.append("description", form.description.trim());
     data.append("type", form.type);
     data.append("priceUsdCents", String(cents(form.priceUsd)));
     if (form.priceCny) data.append("priceCnyCents", String(cents(form.priceCny)));
     if (form.priceRub) data.append("priceRubCents", String(cents(form.priceRub)));
     data.append("currency", "USD");
-    data.append("deliveryNote", form.deliveryNote);
+    data.append("deliveryNote", form.deliveryNote.trim());
     data.append("afterSalesServiceHours", String(form.afterSalesServiceHours));
     data.append("downloadLimit", String(form.downloadLimit));
     data.append("downloadExpiryHours", String(form.downloadExpiryHours));
     data.append("buyersGetUpdates", String(form.buyersGetUpdates));
-    data.append("inventoryLines", form.inventoryLines);
-    data.append("seoTitle", form.name);
-    data.append("seoDescription", form.shortDescription);
+    data.append("inventoryLines", form.inventoryLines.trim());
+    // SEO limits are intentionally smaller than the visible product fields.
+    data.append("seoTitle", form.name.trim().slice(0, 70));
+    data.append("seoDescription", form.shortDescription.trim().slice(0, 170));
     data.append("coverImage", coverImage);
 
     try {

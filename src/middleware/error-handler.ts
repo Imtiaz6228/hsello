@@ -44,14 +44,21 @@ export function errorHandler(
   }
 
   if (error instanceof ZodError) {
-    const fieldErrors = error.issues.map((issue) => ({
+    const issues = error.issues.map((issue) => ({
       path: issue.path.join("."),
       message: issue.message
     }));
+    const fieldErrors = issues.reduce<Record<string, string[]>>((result, issue) => {
+      const key = issue.path || "form";
+      result[key] = [...(result[key] ?? []), issue.message];
+      return result;
+    }, {});
     res.status(400).json({
-      message: "Please fix the highlighted fields.",
+      message: issues[0]?.path
+        ? `${issues[0].path}: ${issues[0].message}`
+        : issues[0]?.message ?? "Please check the form and try again.",
       code: "VALIDATION_ERROR",
-      details: fieldErrors
+      details: { fieldErrors, formErrors: fieldErrors.form ?? [], issues }
     });
     return;
   }

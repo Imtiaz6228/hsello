@@ -4,9 +4,9 @@ import {
   LogOut, MessageCircle, PackageCheck, RefreshCw, Settings, ShieldCheck,
   ShoppingBag, Star, Store, TicketCheck, TrendingUp, UserRound, Activity,
   Wallet, CreditCard, Bitcoin, DollarSign, PlusCircle, Gavel, MessageSquare,
-  LockKeyhole, Bell, Search, ChevronDown
+  LockKeyhole, Bell, Search, ChevronDown, Landmark, Smartphone
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { ApiError, apiRequest, STAFF_ROLES } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { Seo } from "../components/Seo";
@@ -37,6 +37,12 @@ const tabs: Array<{ id: Tab; label: string; icon: typeof Home; roles?: string[] 
   { id: "wallet", label: "Wallet", icon: Wallet },
   { id: "profile", label: "Profile", icon: UserRound },
 ];
+
+function roleDashboardRedirect(role: string) {
+  if (STAFF_ROLES.some((staffRole) => staffRole === role)) return "/admin";
+  if (role === "SELLER") return "/seller";
+  return null;
+}
 
 export function AccountDashboardPage() {
   const { user } = useAuth();
@@ -203,6 +209,8 @@ export function AccountDashboardPage() {
   }
 
   if (!user) return null;
+  const redirectPath = roleDashboardRedirect(user.role);
+  if (redirectPath) return <Navigate to={redirectPath} replace />;
 
   const sellerRevenue = sellerFinance?.totalSellerEarningsCents ?? sellerOrders?.reduce((sum: number, item: any) => {
     if (item.order?.status && !["REFUNDED", "CANCELLED"].includes(item.order.status)) return sum + item.totalCents;
@@ -845,15 +853,18 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }:
     { value: "CARD", label: "Credit / Debit Card", icon: CreditCard },
     { value: "CRYPTO", label: "Cryptocurrency", icon: Bitcoin },
     { value: "PAYPAL", label: "PayPal", icon: DollarSign },
+    { value: "BANK_TRANSFER", label: "Bank Transfer", icon: Landmark },
+    { value: "EASYPAISA", label: "Easypaisa", icon: Smartphone },
+    { value: "JAZZCASH", label: "JazzCash", icon: Smartphone },
   ];
   const chains = ["TRC20 USDT", "ERC20 USDT", "BEP20 USDT", "BTC", "ETH", "SOL", "TON", "Polygon USDT"];
 
   return (
     <div className="tab-content wallet-tab">
       <header className="tab-header">
-        <span className="section-index">WALLET</span>
-        <h1>Your balance</h1>
-        <p>Deposit, spend from balance, and withdraw available funds after admin approval. Seller revenue stays frozen for three days before release.</p>
+        <span className="section-index">BUYER WALLET</span>
+        <h1>Top up your balance</h1>
+        <p>Add funds with card, bank, local wallet, PayPal, or crypto and use the verified balance at checkout.</p>
       </header>
 
       <div className="wallet-summary-grid">
@@ -864,25 +875,26 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }:
             <small>Available balance</small>
           </div>
         </div>
-        <div className="wallet-balance-banner muted">
+        {user.role === "SELLER" ? <div className="wallet-balance-banner muted">
           <LockKeyhole size={28} />
           <div>
             <strong>{formatMoney(frozenBalance)}</strong>
             <small>Frozen seller earnings · releases after 3 days</small>
           </div>
-        </div>
-        <div className="wallet-balance-banner muted">
+        </div> : null}
+        {user.role === "SELLER" ? <div className="wallet-balance-banner muted">
           <RefreshCw size={28} />
           <div>
             <strong>{formatMoney(pendingWithdrawalCents)}</strong>
             <small>Pending withdrawal review</small>
           </div>
-        </div>
+        </div> : null}
       </div>
 
       <div className="wallet-action-grid">
         <div className="wallet-deposit-form">
-          <h2>Add funds</h2>
+          <h2>Choose a top-up method</h2>
+          <p>Select a payment channel and enter the amount. A reference is created immediately so staff can verify the payment safely.</p>
           <div className="deposit-method-tabs">
             {methods.map((m) => {
               const Icon = m.icon;
@@ -916,7 +928,7 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }:
           </div>
         </div>
 
-        <div className="wallet-deposit-form withdrawal-form">
+        {user.role === "SELLER" ? <div className="wallet-deposit-form withdrawal-form">
           <h2>Withdraw funds</h2>
           <p>Select blockchain, enter your wallet address, and request withdrawal. Admin approval marks it successful.</p>
           <div className="withdraw-grid">
@@ -938,10 +950,10 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }:
           <button className="primary-button" disabled={busy} onClick={() => void submitWithdrawal()}>
             <Wallet size={16} /> {busy ? "Submitting…" : "Request withdrawal"}
           </button>
-        </div>
+        </div> : null}
       </div>
 
-      {withdrawals.length > 0 && (
+      {user.role === "SELLER" && withdrawals.length > 0 && (
         <div className="section-block">
           <h2>Withdrawal history <small>({withdrawals.length} total)</small></h2>
           <div className="compact-orders">
@@ -972,10 +984,10 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }:
             {deposits.map((deposit) => (
               <div className="compact-order" key={deposit.id}>
                 <div className="co-left">
-                  {deposit.method === "CRYPTO" ? <Bitcoin size={16} /> : deposit.method === "PAYPAL" ? <DollarSign size={16} /> : <CreditCard size={16} />}
+                  {deposit.method === "CRYPTO" ? <Bitcoin size={16} /> : deposit.method === "PAYPAL" ? <DollarSign size={16} /> : ["EASYPAISA", "JAZZCASH"].includes(deposit.method) ? <Smartphone size={16} /> : deposit.method === "BANK_TRANSFER" ? <Landmark size={16} /> : <CreditCard size={16} />}
                   <div>
                     <strong>{formatMoney(deposit.amountCents)}</strong>
-                    <small>{deposit.method === "CRYPTO" ? "Crypto" : deposit.method === "PAYPAL" ? "PayPal" : "Card"} · {deposit.providerReference}</small>
+                    <small>{deposit.method.replaceAll("_", " ").toLowerCase().replace(/^\w/, (letter) => letter.toUpperCase())} · {deposit.providerReference}</small>
                   </div>
                 </div>
                 <div className="co-right">
@@ -988,11 +1000,11 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }:
         </div>
       )}
 
-      {!deposits.length && !withdrawals.length && (
+      {!deposits.length && (user.role !== "SELLER" || !withdrawals.length) && (
         <div className="empty-state-large">
           <Bitcoin size={48} />
           <h2>No wallet history yet</h2>
-          <p>Add funds, receive seller revenue, or request withdrawals. Transactions show here after submission.</p>
+          <p>Your top-ups will appear here after submission, with a clear pending, completed, or rejected status.</p>
         </div>
       )}
     </div>

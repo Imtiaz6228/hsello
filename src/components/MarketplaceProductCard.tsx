@@ -2,6 +2,7 @@ import { Clock3, Eye, PackageCheck, ShoppingCart, Star, Zap } from "lucide-react
 import { Link } from "react-router-dom";
 import type { CatalogProduct } from "../data/catalog";
 import { useLocale } from "../i18n/LocaleContext";
+import { useState } from "react";
 
 type Props = {
   product: CatalogProduct;
@@ -11,6 +12,7 @@ type Props = {
 
 export function MarketplaceProductCard({ product, onBuy, layout = "grid" }: Props) {
   const { formatMoney, t } = useLocale();
+  const [imageFailed, setImageFailed] = useState(false);
   const stockLabel = product.type === "SERVICE"
     ? "Service slot"
     : `${product.stockCount ?? 0} in stock`;
@@ -18,7 +20,7 @@ export function MarketplaceProductCard({ product, onBuy, layout = "grid" }: Prop
   return (
     <article className={`market-product-card ${layout === "list" ? "list" : ""}`}>
       <Link className="market-product-thumb" to={`/products/${product.slug}`} aria-label={product.title}>
-        {product.imageUrl ? <img src={product.imageUrl} alt="" /> : <b>{product.icon}</b>}
+        {product.imageUrl && !imageFailed ? <img src={product.imageUrl} alt={product.title} loading="lazy" onError={() => setImageFailed(true)} /> : <b>{product.icon}</b>}
         <span className="badge green">{product.badge}</span>
         {product.sales !== "0" ? <span className="badge amber">Sold {product.sales}</span> : null}
       </Link>

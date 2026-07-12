@@ -8,9 +8,10 @@ import {
 import { Link } from "react-router-dom";
 import { STAFF_ROLES } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
+import { useMarketplaceProducts } from "../commerce/useMarketplace";
 
 type Category = { name: string; short: string; description: string; subcategories: string[]; icon: LucideIcon; accent: string };
-type Product = { category: string; title: string; seller: string; price: number; oldPrice?: number; rating: string; reviews: string; delivery: string; badge?: string; icon: LucideIcon; accent: string; tags: string[] };
+type Product = { slug?: string; imageUrl?: string | null; category: string; title: string; seller: string; price: number; oldPrice?: number; rating: string; reviews: string; delivery: string; badge?: string; icon: LucideIcon; accent: string; tags: string[] };
 
 const categories: Category[] = [
   { name: "Social media", short: "Social", description: "Creator resources and growth tools", subcategories: ["Instagram", "TikTok", "Facebook", "X / Twitter", "LinkedIn", "Snapchat"], icon: Users, accent: "purple" },
@@ -51,33 +52,64 @@ const blogPosts = [
   { tag: "SELLER PLAYBOOK", title: "Build a storefront buyers immediately trust", excerpt: "Better listings, clearer delivery promises and a support workflow that converts.", date: "June 29", accent: "blue" }
 ];
 
+const platformSlugs: Record<string, string> = {
+  Facebook: "facebook", Instagram: "instagram", TikTok: "tiktok", "X / Twitter": "twitter-x", LinkedIn: "linkedin", Snapchat: "snapchat",
+  Gmail: "gmail", Outlook: "outlook", Yahoo: "yahoo-mail", "Proton Mail": "proton-mail", Steam: "pc-games-steam", PlayStation: "playstation",
+  Xbox: "xbox", "Epic Games": "epic-games", Valorant: "valorant", Roblox: "roblox", Netflix: "netflix", Spotify: "spotify",
+  "Disney+": "disney-plus", YouTube: "youtube-premium", "Prime Video": "prime-video", ChatGPT: "chatgpt", Claude: "claude",
+  Midjourney: "midjourney", Gemini: "gemini", Canva: "canva", "Microsoft 365": "microsoft-365", Windows: "microsoft-365"
+};
+
+function detailOptions(platform: string, category: string) {
+  if (platform === "Facebook") return ["New Facebook", "Old Facebook", "Facebook pages", "With friends", "Business manager"];
+  if (["Instagram", "TikTok", "X / Twitter", "LinkedIn", "Snapchat"].includes(platform)) return [`New ${platform}`, `Old ${platform}`, "With followers", "With posts", "Business ready"];
+  if (category === "Gaming" || category === "Game currency") return [`New ${platform}`, `Old ${platform}`, "Full access", "Currency & items", "Ranked profiles"];
+  if (category === "Email products" || category === "Messaging") return [`New ${platform}`, `Old ${platform}`, "Phone verified", "Recovery included", "Bulk packs"];
+  if (category === "Streaming" || category === "AI & productivity" || category === "Software") return ["1 month", "3 months", "6 months", "12 months", "Family / team"];
+  return ["New listings", "Old listings", "Premium", "Bulk packs", "Instant delivery"];
+}
+
+function productVisual(category: string) {
+  const match = categories.find((item) => item.name.toLowerCase() === category.toLowerCase() || item.subcategories.some((sub) => sub.toLowerCase() === category.toLowerCase()));
+  return { icon: match?.icon ?? ShoppingBag, accent: match?.accent ?? "purple" };
+}
+
 function ProductCard({ product }: { product: Product }) {
   const Icon = product.icon;
+  const [imageFailed, setImageFailed] = useState(false);
+  const productPath = product.slug ? `/products/${product.slug}` : "/catalog";
   return <article className="lux-product-card">
-    <Link to="/catalog" className={`lux-product-art accent-${product.accent}`} aria-label={`View ${product.title}`}>
+    <Link to={productPath} className={`lux-product-art accent-${product.accent} ${product.imageUrl && !imageFailed ? "has-image" : ""}`} aria-label={`View ${product.title}`}>
       {product.badge && <span className="lux-badge">{product.badge}</span>}
-      <span className="art-ring" /><Icon size={56} strokeWidth={1.45} /><span className="art-name">{product.category}</span>
+      {product.imageUrl && !imageFailed ? <img src={product.imageUrl} alt={product.title} onError={() => setImageFailed(true)} /> : <><span className="art-ring" /><Icon size={56} strokeWidth={1.45} /><span className="art-name">{product.category}</span></>}
     </Link>
     <div className="lux-product-body">
       <span className="lux-product-category">{product.category}</span>
-      <Link to="/catalog"><h3>{product.title}</h3></Link>
+      <Link to={productPath}><h3>{product.title}</h3></Link>
       <div className="lux-seller"><BadgeCheck size={14} /> {product.seller}</div>
       <div className="lux-rating"><Star size={14} fill="currentColor" /> <strong>{product.rating}</strong><span>({product.reviews})</span><i /><Clock3 size={13} /><span>{product.delivery}</span></div>
-      <div className="lux-price"><div><small>From</small><strong>${product.price.toFixed(2)}</strong>{product.oldPrice && <del>${product.oldPrice.toFixed(2)}</del>}</div><Link to="/catalog" aria-label="Open product"><ArrowRight size={18} /></Link></div>
+      <div className="lux-price"><div><small>From</small><strong>${product.price.toFixed(2)}</strong>{product.oldPrice && <del>${product.oldPrice.toFixed(2)}</del>}</div><Link to={productPath} aria-label="Open product"><ArrowRight size={18} /></Link></div>
     </div>
   </article>;
 }
 
 export function MarketplaceHomePage() {
   const { user } = useAuth();
+  const liveCatalogProducts = useMarketplaceProducts();
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [mobileMenu, setMobileMenu] = useState(false);
+  const [mobileCatalogOpen, setMobileCatalogOpen] = useState(false);
+  const [mobileCategory, setMobileCategory] = useState("Social media");
   const accountPath = user ? (STAFF_ROLES.includes(user.role) ? "/admin" : "/dashboard") : "/sign-in";
+  const displayProducts = useMemo<Product[]>(() => liveCatalogProducts.length ? liveCatalogProducts.map((product) => {
+    const visual = productVisual(product.category);
+    return { slug: product.slug, imageUrl: product.imageUrl, category: product.category, title: product.title, seller: product.seller, price: product.priceCents / 100, rating: product.rating ? product.rating.toFixed(2) : "New", reviews: String(product.reviews), delivery: product.delivery, badge: product.badge, icon: visual.icon, accent: visual.accent, tags: [product.title, product.category, product.seller] };
+  }) : products, [liveCatalogProducts]);
   const visibleProducts = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return products.filter(p => (activeCategory === "All" || p.category === activeCategory) && (!q || [p.title, p.seller, p.category, ...p.tags].some(v => v.toLowerCase().includes(q))));
-  }, [activeCategory, query]);
+    return displayProducts.filter(p => (activeCategory === "All" || p.category === activeCategory || categories.find(c => c.name === activeCategory)?.subcategories.includes(p.category)) && (!q || [p.title, p.seller, p.category, ...p.tags].some(v => v.toLowerCase().includes(q))));
+  }, [activeCategory, displayProducts, query]);
   function submitSearch(e: FormEvent) { e.preventDefault(); document.querySelector("#products")?.scrollIntoView({ behavior: "smooth" }); }
   function pickCategory(name: string) { setActiveCategory(name); document.querySelector("#products")?.scrollIntoView({ behavior: "smooth" }); }
 
@@ -87,7 +119,12 @@ export function MarketplaceHomePage() {
       <Link className="lux-logo" to="/" aria-label="HSello home"><span>H</span><div><strong>HSELLO</strong><small>DIGITAL MARKET</small></div></Link>
       <nav className={mobileMenu ? "open" : ""} aria-label="Main navigation">
         <button className="mobile-close" onClick={() => setMobileMenu(false)} aria-label="Close menu"><X /></button>
-        <a href="#categories" onClick={() => setMobileMenu(false)}>Categories <ChevronDown size={14} /></a>
+        <a className="desktop-categories-link" href="#categories">Categories <ChevronDown size={14} /></a>
+        <button className={`mobile-catalog-trigger ${mobileCatalogOpen ? "active" : ""}`} type="button" onClick={() => setMobileCatalogOpen((open) => !open)}>Categories <ChevronDown size={16} /></button>
+        {mobileCatalogOpen ? <div className="mobile-catalog-panel">
+          <div className="mobile-main-categories">{categories.map((category) => { const Icon = category.icon; return <button type="button" key={category.name} className={mobileCategory === category.name ? `active accent-${category.accent}` : `accent-${category.accent}`} onClick={() => setMobileCategory(category.name)}><span><Icon /></span>{category.name}<ChevronDown /></button>; })}</div>
+          <div className="mobile-subcategory-list"><header><strong>{mobileCategory}</strong><Link to="/catalog" onClick={() => setMobileMenu(false)}>View all</Link></header>{categories.find((item) => item.name === mobileCategory)?.subcategories.map((platform) => <details key={platform}><summary><span>{platform.slice(0,2).toUpperCase()}</span><strong>{platform}</strong><ChevronDown /></summary><div>{detailOptions(platform, mobileCategory).map((detail) => <Link key={detail} to={`/catalog?category=${encodeURIComponent(platformSlugs[platform] ?? platform.toLowerCase().replace(/[^a-z0-9]+/g,"-"))}&q=${encodeURIComponent(detail)}`} onClick={() => setMobileMenu(false)}>{detail}<ArrowRight /></Link>)}</div></details>)}</div>
+        </div> : null}
         <a href="#products" onClick={() => setMobileMenu(false)}>Products</a>
         <a href="#sellers" onClick={() => setMobileMenu(false)}>Top sellers</a>
         <a href="#journal" onClick={() => setMobileMenu(false)}>Blog</a>
@@ -132,7 +169,7 @@ export function MarketplaceHomePage() {
       {visibleProducts.length ? <div className="lux-product-grid">{visibleProducts.map(p => <ProductCard key={p.title} product={p} />)}</div> : <div className="lux-empty"><Search /><h3>No matching products</h3><p>Try another search or browse all categories.</p><button onClick={() => { setQuery(""); setActiveCategory("All"); }}>Reset filters</button></div>}
     </section>
 
-    <section className="lux-new-section"><div className="lux-section-head"><div><span>FRESH TO THE MARKET</span><h2>New arrivals</h2></div><Link to="/catalog">See what’s new <ArrowRight size={16} /></Link></div><div className="lux-new-grid">{products.slice().reverse().slice(0,4).map(p => <ProductCard key={`new-${p.title}`} product={{...p, badge: "Just in"}} />)}</div></section>
+    <section className="lux-new-section"><div className="lux-section-head"><div><span>FRESH TO THE MARKET</span><h2>New arrivals</h2></div><Link to="/catalog">See what’s new <ArrowRight size={16} /></Link></div><div className="lux-new-grid">{displayProducts.slice().reverse().slice(0,4).map(p => <ProductCard key={`new-${p.title}`} product={{...p, badge: "Just in"}} />)}</div></section>
 
     <section className="lux-sellers lux-section" id="sellers">
       <div className="lux-section-head"><div><span>THE BEST OF HSELLO</span><h2>Top sellers</h2></div><Link to="/catalog">Discover all stores <ArrowRight size={16} /></Link></div>

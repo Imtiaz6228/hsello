@@ -15,6 +15,7 @@ export function ProductPage() {
   const navigate = useNavigate();
   const { add } = useCart();
   const [added, setAdded] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
   const { product, loading } = useMarketplaceProduct(slug);
   const schema = useMemo(() => product ? ({
     "@context": "https://schema.org", "@type": "Product", name: product.title,
@@ -36,7 +37,7 @@ export function ProductPage() {
       <MarketHeader />
       <div className="breadcrumbs"><Link to="/">Home</Link><span>/</span><Link to={`/categories/${product.categorySlug}`}>{product.category}</Link><span>/</span><span>{product.title}</span></div>
       <section className="product-detail">
-        <div className="product-detail-art">{product.imageUrl ? <img src={product.imageUrl} alt="" /> : <b>{product.icon}</b>}<span>{product.badge}</span><small>ORIGINAL DIGITAL WORK</small></div>
+        <div className="product-detail-art">{product.imageUrl && !imageFailed ? <img src={product.imageUrl} alt={product.title} onError={() => setImageFailed(true)} /> : <b>{product.icon}</b>}<span>{product.badge}</span><small>ORIGINAL DIGITAL WORK</small></div>
         <div className="product-detail-copy">
           <span className="section-index">{product.category}</span>
           <h1>{product.title}</h1>

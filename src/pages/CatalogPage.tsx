@@ -1,6 +1,6 @@
 import { ChevronDown, Grid2X2, List, Search, SlidersHorizontal } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useCart } from "../commerce/CartContext";
 import { useMarketplaceCategories, useMarketplaceProducts } from "../commerce/useMarketplace";
 import { MarketFooter, MarketHeader } from "../components/MarketHeader";
@@ -32,8 +32,9 @@ export function CatalogPage() {
   const { t } = useLocale();
   const { add } = useCart();
   const navigate = useNavigate();
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("all");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [query, setQueryState] = useState(searchParams.get("q") ?? "");
+  const [category, setCategoryState] = useState(searchParams.get("category") ?? "all");
   const [expanded, setExpanded] = useState("instagram");
   const [categoryQuery, setCategoryQuery] = useState("");
   const [sort, setSort] = useState<SortMode>("popular");
@@ -68,6 +69,20 @@ export function CatalogPage() {
   function addToCart(product: CatalogProduct) {
     add(product);
     navigate("/cart");
+  }
+
+  function setQuery(value: string) {
+    setQueryState(value);
+    const next = new URLSearchParams(searchParams);
+    value ? next.set("q", value) : next.delete("q");
+    setSearchParams(next, { replace: true });
+  }
+
+  function setCategory(value: string) {
+    setCategoryState(value);
+    const next = new URLSearchParams(searchParams);
+    value !== "all" ? next.set("category", value) : next.delete("category");
+    setSearchParams(next, { replace: true });
   }
 
   const visibleParents = parentCategories.filter((item) => !categoryQuery.trim() || `${item.name} ${item.description}`.toLowerCase().includes(categoryQuery.toLowerCase()) || (childrenByParent.get(item.slug) ?? []).some((child) => `${child.name} ${child.description}`.toLowerCase().includes(categoryQuery.toLowerCase())));

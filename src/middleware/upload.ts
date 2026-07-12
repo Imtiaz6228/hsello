@@ -42,7 +42,10 @@ export const imageUpload = multer({
 });
 
 export function publicUploadUrl(fileName: string) {
-  return `${env.API_URL}/uploads/${encodeURIComponent(fileName)}`;
+  // Keep public media same-origin. Vite proxies this path in development and
+  // Vercel/Railway route it in production, so images do not break when the API
+  // hostname changes between environments.
+  return `/uploads/${encodeURIComponent(fileName)}`;
 }
 
 const allowedProductTypes = new Set([

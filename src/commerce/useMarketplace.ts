@@ -44,6 +44,18 @@ function badgeFor(product: ApiProduct) {
   return "New";
 }
 
+function normalizePublicMediaUrl(value?: string | null) {
+  if (!value) return null;
+  try {
+    const parsed = new URL(value, window.location.origin);
+    const uploadsIndex = parsed.pathname.indexOf("/uploads/");
+    if (uploadsIndex >= 0) return `${parsed.pathname.slice(uploadsIndex)}${parsed.search}`;
+    return parsed.href;
+  } catch {
+    return value;
+  }
+}
+
 function mapProduct(product: ApiProduct, index = 0): CatalogProduct {
   return {
     id: product.id,
@@ -66,7 +78,7 @@ function mapProduct(product: ApiProduct, index = 0): CatalogProduct {
     badge: badgeFor(product),
     type: product.type,
     icon: iconForSlug(product.category.slug, index),
-    imageUrl: product.coverImageUrl ?? null,
+    imageUrl: normalizePublicMediaUrl(product.coverImageUrl),
     stockCount: product.type === "SERVICE" ? 999 : Math.max(product._count?.inventoryItems ?? 0, product._count?.files ?? 0)
   };
 }

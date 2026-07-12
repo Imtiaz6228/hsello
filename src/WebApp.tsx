@@ -3,7 +3,7 @@ import { ProtectedRoute } from "./auth/ProtectedRoute";
 import { OperationsAdminPage } from "./pages/OperationsAdminPage";
 import { AdminEarningsPage } from "./pages/AdminEarningsPage";
 import { AccountDashboardPage } from "./pages/AccountDashboardPage";
-import { MarketplaceLandingPage } from "./pages/MarketplaceLandingPage";
+import { MarketplaceHomePage } from "./pages/MarketplaceHomePage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
@@ -29,7 +29,7 @@ import { SupportWidgetPro } from "./components/SupportWidgetPro";
 export function App() {
   return (
     <><HomepageContentBanner /><SupportWidgetPro /><Routes>
-      <Route path="/" element={<MarketplaceLandingPage />} />
+      <Route path="/" element={<MarketplaceHomePage />} />
       <Route path="/catalog" element={<CatalogPage />} />
       <Route path="/categories/:slug" element={<CategoryPage />} />
       <Route path="/products/:slug" element={<ProductPage />} />

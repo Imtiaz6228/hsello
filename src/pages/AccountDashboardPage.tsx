@@ -4,7 +4,8 @@ import {
   LogOut, MessageCircle, PackageCheck, RefreshCw, Settings, ShieldCheck,
   ShoppingBag, Star, Store, TicketCheck, TrendingUp, UserRound, Activity,
   Wallet, CreditCard, Bitcoin, DollarSign, PlusCircle, Gavel, MessageSquare,
-  LockKeyhole, Bell, Search, ChevronDown, Landmark, Smartphone
+  LockKeyhole, Bell, Search, ChevronDown, Landmark, Smartphone, ClipboardCopy,
+  UploadCloud, CheckCircle2, Clock3, ShieldAlert
 } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import { ApiError, apiRequest, STAFF_ROLES } from "../api/client";
@@ -760,7 +761,7 @@ export function AccountDashboardPage() {
   );
 }
 
-type Deposit = { id: string; amountCents: number; method: string; status: string; providerReference?: string; createdAt: string };
+type Deposit = { id: string; amountCents: number; method: string; status: string; reference?: string; depositAddress?: string; txHash?: string | null; screenshotUrl?: string | null; adminNotes?: string | null; expiresAt?: string; createdAt: string };
 type Withdrawal = { id: string; amountCents: number; blockchain: string; walletAddress: string; status: string; providerReference?: string | null; adminNotes?: string | null; processedAt?: string | null; createdAt: string };
 type WalletSummary = { balanceCents: number; availableBalanceCents: number; frozenSellerBalanceCents: number; pendingWithdrawalCents: number; withdrawals: Withdrawal[] };
 
@@ -777,8 +778,11 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }:
   const [frozenBalance, setFrozenBalance] = useState(0);
   const [pendingWithdrawalCents, setPendingWithdrawalCents] = useState(0);
   const [busy, setBusy] = useState(false);
-  const [depositMethod, setDepositMethod] = useState("CARD");
+  const [depositMethod, setDepositMethod] = useState("CRYPTO_TRC20");
   const [depositAmount, setDepositAmount] = useState("");
+  const [activeTopup, setActiveTopup] = useState<Deposit | null>(null);
+  const [proofTx, setProofTx] = useState("");
+  const [proofFile, setProofFile] = useState<File | null>(null);
   const [withdrawBlockchain, setWithdrawBlockchain] = useState("TRC20 USDT");
   const [withdrawAddress, setWithdrawAddress] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
@@ -812,15 +816,41 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }:
     }
     setBusy(true);
     try {
-      const data = await apiRequest<{ message: string }>("/api/wallet/deposit", {
+      const data = await apiRequest<{ message: string; topup: Deposit }>("/api/wallet/topups", {
         method: "POST",
         body: { amountCents: cents, method: depositMethod }
       });
       setMessage(data.message);
-      setDepositAmount("");
+      setActiveTopup(data.topup);
+      setProofTx("");
+      setProofFile(null);
       await refreshWallet();
     } catch (error) {
       setMessage(error instanceof ApiError ? error.message : "Deposit failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitProof() {
+    if (!activeTopup || !proofTx.trim() || !proofFile) {
+      setMessage("Add the transaction ID and payment screenshot before sending your proof.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const payload = new FormData();
+      payload.append("txHash", proofTx.trim());
+      payload.append("screenshot", proofFile);
+      const data = await apiRequest<{ message: string }>(`/api/wallet/topups/${activeTopup.id}/proof`, { method: "POST", body: payload });
+      setMessage(data.message);
+      setDepositAmount("");
+      setActiveTopup(null);
+      setProofTx("");
+      setProofFile(null);
+      await refreshWallet();
+    } catch (error) {
+      setMessage(error instanceof ApiError ? error.message : "Payment proof could not be submitted.");
     } finally {
       setBusy(false);
     }
@@ -858,12 +888,12 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }:
   }
 
   const methods = [
-    { value: "CARD", label: "Credit / Debit Card", icon: CreditCard },
-    { value: "CRYPTO", label: "Cryptocurrency", icon: Bitcoin },
-    { value: "PAYPAL", label: "PayPal", icon: DollarSign },
-    { value: "BANK_TRANSFER", label: "Bank Transfer", icon: Landmark },
-    { value: "EASYPAISA", label: "Easypaisa", icon: Smartphone },
-    { value: "JAZZCASH", label: "JazzCash", icon: Smartphone },
+    { value: "CRYPTO_TRC20", label: "USDT · TRC20", icon: Bitcoin, network: "Tron network" },
+    { value: "CRYPTO_BEP20", label: "USDT · BEP20", icon: Bitcoin, network: "BNB Smart Chain" },
+    { value: "CRYPTO_ERC20", label: "USDT · ERC20", icon: Bitcoin, network: "Ethereum network" },
+    { value: "BTC", label: "Bitcoin · BTC", icon: Bitcoin, network: "Bitcoin network" },
+    { value: "ETH", label: "Ethereum · ERC20", icon: DollarSign, network: "Ethereum network" },
+    { value: "SOL", label: "Solana · SOL", icon: Smartphone, network: "Solana network" }
   ];
   const chains = ["TRC20 USDT", "ERC20 USDT", "BEP20 USDT", "BTC", "ETH", "SOL", "TON", "Polygon USDT"];
 
@@ -872,7 +902,7 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }:
       <header className="tab-header">
         <span className="section-index">BUYER WALLET</span>
         <h1>Top up your balance</h1>
-        <p>Add funds with card, bank, local wallet, PayPal, or crypto and use the verified balance at checkout.</p>
+        <p>Send the exact USDT or crypto amount on the selected network, then submit a TXID and screenshot for admin approval.</p>
       </header>
 
       <div className="wallet-summary-grid">
@@ -899,10 +929,12 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }:
         </div> : null}
       </div>
 
+      {user.role !== "SELLER" ? <Link className="seller-application-cta" to="/seller/apply"><Store size={21} /><span><small>GROW WITH HSELLO</small><strong>Apply to become a seller</strong><b>Open application <ArrowRight size={15} /></b></span></Link> : null}
+
       <div className="wallet-action-grid">
         <div className="wallet-deposit-form">
-          <h2>Choose a top-up method</h2>
-          <p>Select a payment channel and enter the amount. A reference is created immediately so staff can verify the payment safely.</p>
+          <h2>Crypto top-up</h2>
+          <p>Choose one network only. We will show its payment address after you set the amount.</p>
           <div className="deposit-method-tabs">
             {methods.map((m) => {
               const Icon = m.icon;
@@ -923,7 +955,7 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }:
               <input
                 type="number"
                 min="1"
-                max="5000"
+                max="100000"
                 step="0.01"
                 placeholder="50.00"
                 value={depositAmount}
@@ -931,9 +963,10 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }:
               />
             </div>
             <button className="primary-button" disabled={busy} onClick={() => void submitDeposit()}>
-              <PlusCircle size={16} /> {busy ? "Submitting…" : "Deposit"}
+              <PlusCircle size={16} /> {busy ? "Creating…" : "Create payment"}
             </button>
           </div>
+          <div className="wallet-safety-note"><ShieldAlert size={16} /><span>Send only on the selected network. A payment sent on another chain cannot be credited automatically.</span></div>
         </div>
 
         {user.role === "SELLER" ? <div className="wallet-deposit-form withdrawal-form">
@@ -960,6 +993,13 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }:
           </button>
         </div> : null}
       </div>
+
+      {activeTopup ? <section className="topup-proof-card">
+        <header><div><span className="section-index">PAYMENT REQUEST</span><h2>Send exactly {formatMoney(activeTopup.amountCents)}</h2><p>{activeTopup.method.replaceAll("_", " ")} · request {activeTopup.reference}</p></div><span className="status-pill pending">AWAITING PAYMENT</span></header>
+        <div className="topup-address-box"><small>Send only to this address</small><code>{activeTopup.depositAddress}</code><button type="button" onClick={() => void navigator.clipboard?.writeText(activeTopup.depositAddress ?? "")}><ClipboardCopy size={15} /> Copy address</button></div>
+        <div className="topup-proof-grid"><label><span>Transaction ID / TXID *</span><input value={proofTx} onChange={(event) => setProofTx(event.target.value)} placeholder="Paste the transaction hash" /></label><label className="topup-upload"><UploadCloud size={21} /><span>{proofFile ? proofFile.name : "Upload payment screenshot *"}</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setProofFile(event.target.files?.[0] ?? null)} /></label></div>
+        <footer><small><Clock3 size={14} /> Proof is checked by admin before wallet balance is added.</small><button className="primary-button" disabled={busy || !proofTx.trim() || !proofFile} onClick={() => void submitProof()}><CheckCircle2 size={16} /> {busy ? "Sending…" : "Send proof for approval"}</button></footer>
+      </section> : null}
 
       {user.role === "SELLER" && withdrawals.length > 0 && (
         <div className="section-block">
@@ -992,10 +1032,11 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }:
             {deposits.map((deposit) => (
               <div className="compact-order" key={deposit.id}>
                 <div className="co-left">
-                  {deposit.method === "CRYPTO" ? <Bitcoin size={16} /> : deposit.method === "PAYPAL" ? <DollarSign size={16} /> : ["EASYPAISA", "JAZZCASH"].includes(deposit.method) ? <Smartphone size={16} /> : deposit.method === "BANK_TRANSFER" ? <Landmark size={16} /> : <CreditCard size={16} />}
+                  <Bitcoin size={16} />
                   <div>
                     <strong>{formatMoney(deposit.amountCents)}</strong>
-                    <small>{deposit.method.replaceAll("_", " ").toLowerCase().replace(/^\w/, (letter) => letter.toUpperCase())} · {deposit.providerReference}</small>
+                    <small>{deposit.method.replaceAll("_", " ")} · {deposit.reference}</small>
+                    {deposit.txHash ? <small>TXID: {deposit.txHash.slice(0, 18)}… {deposit.screenshotUrl ? "· proof attached" : ""}</small> : <button className="action-link" onClick={() => setActiveTopup(deposit)}>Continue payment proof</button>}
                   </div>
                 </div>
                 <div className="co-right">

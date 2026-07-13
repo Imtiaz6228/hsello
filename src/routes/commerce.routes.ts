@@ -172,7 +172,8 @@ commerceRouter.get("/orders/:id", asyncHandler(async (req, res) => {
       payment: true,
       items: {
         include: {
-          product: { select: { slug: true, type: true, coverImageUrl: true, afterSalesServiceHours: true, deliveryNote: true } },
+          product: { select: { name: true, slug: true, type: true, coverImageUrl: true, afterSalesServiceHours: true, deliveryNote: true } },
+          seller: { select: { firstName: true, lastName: true, username: true } },
           downloadGrants: { include: { productFile: true } },
           inventoryItems: { where: { deliveredAt: { not: null } }, select: { id: true, content: true, source: true, deliveredAt: true } }
         }

@@ -114,7 +114,10 @@ type Deposit = {
   amountCents: number;
   method: string;
   status: string;
-  providerReference?: string | null;
+  reference?: string | null;
+  depositAddress?: string | null;
+  txHash?: string | null;
+  screenshotUrl?: string | null;
   adminNotes?: string | null;
   createdAt: string;
   user: { firstName: string; lastName: string; email: string; username: string; balanceCents: number };
@@ -475,7 +478,7 @@ export function OperationsAdminPage() {
         {tab === "payments" && <OrdersTable orders={pendingOrders} busy={busy} approve={(order) => order.payment ? post(order.payment.id, `/api/admin/payments/${order.payment.id}/approve`) : Promise.resolve()} emptyLabel="No orders are awaiting admin approval." />}
 
         {tab === "deposits" && (
-          <section className="ops-table"><div className="ops-row ops-row-head"><span>Deposit</span><span>Buyer</span><span>Status</span><span>Actions</span></div>{deposits.map((deposit) => <div className="ops-row" key={deposit.id}><div><strong>{money(deposit.amountCents)}</strong><small>{deposit.method} · {deposit.providerReference ?? "No reference"}</small><small>{new Date(deposit.createdAt).toLocaleString()}</small></div><div><strong>{deposit.user.firstName} {deposit.user.lastName}</strong><small>{deposit.user.email}</small><small>Balance: {money(deposit.user.balanceCents)}</small></div><div><Status value={deposit.status} /><small>{deposit.adminNotes}</small></div><div className="row-actions"><button className="approve" disabled={busy === deposit.id || deposit.status !== "PENDING"} onClick={() => void act(deposit.id, `/api/admin/wallet-deposits/${deposit.id}/approve`, {})}><BadgeCheck size={14} /> Approve deposit</button><button className="danger" disabled={busy === deposit.id || deposit.status !== "PENDING"} onClick={() => void act(deposit.id, `/api/admin/wallet-deposits/${deposit.id}/reject`, { adminNotes: window.prompt("Reason for rejecting this deposit") || "Deposit proof could not be verified." })}><AlertTriangle size={14} /> Reject</button></div></div>)}</section>
+          <section className="ops-table topup-admin-table"><div className="ops-row ops-row-head"><span>Payment proof</span><span>Buyer</span><span>Status</span><span>Actions</span></div>{deposits.map((deposit) => <div className="ops-row" key={deposit.id}><div><strong>{money(deposit.amountCents)}</strong><small>{deposit.method.replaceAll("_", " ")} · {deposit.reference ?? "No reference"}</small><small>TXID: {deposit.txHash ?? "Proof not submitted"}</small><small>{new Date(deposit.createdAt).toLocaleString()}</small>{deposit.screenshotUrl ? <a className="deposit-proof-link" href={deposit.screenshotUrl} target="_blank" rel="noreferrer"><ImagePlus size={13} /> View screenshot proof</a> : null}</div><div><strong>{deposit.user.firstName} {deposit.user.lastName}</strong><small>{deposit.user.email}</small><small>Balance: {money(deposit.user.balanceCents)}</small></div><div><Status value={deposit.status} /><small>{deposit.adminNotes}</small></div><div className="row-actions"><button className="approve" disabled={busy === deposit.id || !["PENDING", "VERIFIED"].includes(deposit.status) || !deposit.txHash || !deposit.screenshotUrl} onClick={() => void act(deposit.id, `/api/admin/wallet-deposits/${deposit.id}/approve`, { adminNotes: "TXID and screenshot reviewed by admin." })}><BadgeCheck size={14} /> Approve & credit</button><button className="danger" disabled={busy === deposit.id || !["PENDING", "VERIFIED"].includes(deposit.status)} onClick={() => void act(deposit.id, `/api/admin/wallet-deposits/${deposit.id}/reject`, { adminNotes: window.prompt("Reason for rejecting this deposit") || "Deposit proof could not be verified." })}><AlertTriangle size={14} /> Reject</button></div></div>)}</section>
         )}
 
         {tab === "withdrawals" && (

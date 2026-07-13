@@ -1,5 +1,5 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Download, MessageCircle, Send, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Download, MessageCircle, Paperclip, Send, ShieldAlert, ShieldCheck } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { ApiError, apiRequest } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
@@ -18,11 +18,26 @@ type OrderDetail = {
   items: Array<{
     id: string;
     productName: string;
-    product: { slug: string; type: string; deliveryNote?: string | null };
+    product: { name: string; slug: string; type: string; coverImageUrl?: string | null; deliveryNote?: string | null };
+    seller: { firstName: string; lastName?: string | null; username?: string | null };
     downloadGrants: Array<{ id: string; downloadCount: number; maxDownloads: number; productFile: { displayName: string } }>;
     inventoryItems?: Array<{ id: string; content: string; deliveredAt?: string | null }>;
   }>;
 };
+
+function Countdown({ until }: { until?: string | null }) {
+  const [remaining, setRemaining] = useState(0);
+  useEffect(() => {
+    const update = () => setRemaining(Math.max(0, Math.ceil((new Date(until ?? 0).getTime() - Date.now()) / 1000)));
+    update();
+    const timer = window.setInterval(update, 1000);
+    return () => window.clearInterval(timer);
+  }, [until]);
+  const hours = Math.floor(remaining / 3600);
+  const minutes = Math.floor((remaining % 3600) / 60);
+  const seconds = remaining % 60;
+  return <strong>{remaining ? `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}` : "00:00:00"}</strong>;
+}
 
 export function OrderDeliveryPage() {
   const { user } = useAuth();
@@ -126,22 +141,29 @@ export function OrderDeliveryPage() {
       </section>
 
       {order ? (
-        <section className="order-delivery-summary">
+        <section className="order-delivery-summary order-conversation-summary">
           <header>
             <div>
               <span className={`status-pill ${order.status.toLowerCase()}`}>{order.status.replaceAll("_", " ")}</span>
-              <strong>{order.orderNumber}</strong>
-              <small>Dispute window: {order.disputeWindowHours ?? 12}h · {order.disputeDeadline ? `until ${new Date(order.disputeDeadline).toLocaleString()}` : "after payment"}</small>
+              <strong>#{order.orderNumber}</strong>
+              <small>Order record · protected after-sales channel</small>
             </div>
             {user?.role === "CUSTOMER" && order.canOpenDispute ? <button className="secondary-button" onClick={() => void openDispute()}><ShieldCheck size={14} /> Open dispute</button> : null}
           </header>
+          <div className="order-participant-strip">
+            <span>{user?.role === "CUSTOMER" ? order.items[0]?.seller.firstName ?? "Seller" : "Buyer"}</span>
+            <div><strong>{order.items[0]?.productName ?? "Digital order"}</strong><small>{order.items.length} product{order.items.length === 1 ? "" : "s"} · {order.items.map((item) => item.product.type.replaceAll("_", " ")).join(", ")}</small></div>
+            <span className="after-sales-label">After-sales</span>
+          </div>
+          <div className="order-safety-notice"><ShieldAlert size={17} /> Do not share contact details, wallet addresses, or arrange payment outside this marketplace. Off-platform transactions are not protected.</div>
           {order.disputes?.length ? (
             <div className="dispute-alert-card">
               {order.disputes.map((dispute) => (
                 <div key={dispute.id}>
-                  <strong>{dispute.subject}</strong>
+                  <div><strong>{dispute.subject}</strong>
                   <span className={`status-pill ${dispute.status.toLowerCase()}`}>{dispute.status.replaceAll("_", " ")}</span>
-                  {dispute.autoCloseAt ? <small>Waiting for {dispute.awaitingParty?.toLowerCase()} · auto-close {new Date(dispute.autoCloseAt).toLocaleString()}</small> : null}
+                  </div>
+                  {dispute.autoCloseAt ? <div className="dispute-countdown"><small>Awaiting {dispute.awaitingParty?.toLowerCase() ?? "response"}. Failure to reply within 24 hours loses the dispute.</small><Countdown until={dispute.autoCloseAt} /></div> : null}
                   {dispute.resolution ? <p>{dispute.resolution}</p> : null}
                   {user?.role === "CUSTOMER" ? <div className="quick-dispute-actions">
                     <button className="secondary-button" onClick={() => void closeDispute(dispute.id)}>Close dispute</button>
@@ -151,8 +173,9 @@ export function OrderDeliveryPage() {
               ))}
             </div>
           ) : null}
+          <div className="order-items-record"><strong>Purchased package & delivery record</strong><small>Order #{order.orderNumber} · dispute window: {order.disputeWindowHours ?? 12} hours</small></div>
           {order.items.map((item) => (
-            <article className="order-delivery-item" key={item.id}>
+            <article className="order-delivery-item order-record-item" key={item.id}>
               <div>
                 <strong>{item.productName}</strong>
                 {item.product.deliveryNote ? <small>{item.product.deliveryNote}</small> : null}
@@ -175,10 +198,11 @@ export function OrderDeliveryPage() {
         </section>
       ) : null}
 
-      <div className="order-chat">
+      <div className="order-chat order-chat-pro">
+        <header className="order-chat-heading"><div><span className="section-index">PRIVATE ORDER CHAT</span><h2>Buyer & seller workspace</h2><small>Messages update automatically. Attach screenshots when evidence is needed.</small></div><span className="chat-live-dot">Live</span></header>
         {error ? <div className="notice error">{error}</div> : null}
         {messages.length ? messages.map((message) => (
-          <article className={message.author.id === user?.id ? "own-message" : ""} key={message.id}>
+          <article className={`order-chat-bubble ${message.author.id === user?.id ? "own-message" : ""}`} key={message.id}>
             <span>{message.author.firstName[0]}</span>
             <div>
               <header><strong>{message.author.firstName}</strong><small>{message.author.role.replace("_", " ")} · {new Date(message.createdAt).toLocaleString()}</small></header>
@@ -188,10 +212,11 @@ export function OrderDeliveryPage() {
           </article>
         )) : <div className="no-tickets"><MessageCircle /><strong>No messages yet</strong><p>Start the order conversation below.</p></div>}
         <div ref={threadEndRef} />
+        <div className="chat-quick-replies">{["Thanks", "Verifying", "Need more information", "Resolved", "Refund requested"].map((reply) => <button key={reply} type="button" onClick={() => setBody(reply)}>{reply}</button>)}</div>
         <form onSubmit={send}>
           <textarea value={body} onChange={(event) => setBody(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} placeholder="Write a message about delivery…" rows={4} />
           <div className="chat-compose-actions">
-            <label className="upload-action">Attach screenshot<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setAttachment(event.target.files?.[0] ?? null)} /></label>
+            <label className="upload-action"><Paperclip size={16} /> Attach screenshot<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setAttachment(event.target.files?.[0] ?? null)} /></label>
             {attachment ? <small>{attachment.name}</small> : null}
             <button disabled={sending || !body.trim()}><Send /> {sending ? "Sending…" : "Send message"}</button>
           </div>

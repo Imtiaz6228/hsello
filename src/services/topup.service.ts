@@ -11,13 +11,17 @@ function generateReference() {
 }
 
 function getDepositAddress(method: TopupMethod): string {
-  if (method === TopupMethod.CRYPTO_TRC20 || method === TopupMethod.CRYPTO_ERC20 || method === TopupMethod.CRYPTO_BEP20) {
-    return env.ADMIN_WALLET_ADDRESS ?? env.CRYPTO_PAYMENT_ADDRESS ?? "TXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
-  }
-  if (method === TopupMethod.BTC) return env.ADMIN_WALLET_ADDRESS ?? "bc1qxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
-  if (method === TopupMethod.ETH) return env.ADMIN_WALLET_ADDRESS ?? "0xXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
-  if (method === TopupMethod.SOL) return env.ADMIN_WALLET_ADDRESS ?? "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
-  return env.ADMIN_WALLET_ADDRESS ?? "NEXUS-ADMIN-WALLET";
+  // Network-specific destinations are intentionally explicit: never reuse a
+  // generic crypto address label, because buyers must send on the exact chain.
+  const addresses: Partial<Record<TopupMethod, string>> = {
+    CRYPTO_TRC20: "TDffsBmuyrMsNEQXzzLYfzAwz7W6Jmvb1W",
+    CRYPTO_BEP20: "0x5fe0bc617b00812396560e00a47b68a4d19933df",
+    CRYPTO_ERC20: "0x5fe0bc617b00812396560e00a47b68a4d19933df",
+    BTC: "1CRoGe5BKjSTYBjxjPaS5NRCP8eyZ8cSpA",
+    SOL: "5K8sYDqmmMDeVMDcJjzmwdX2MGMwqCeNNnpDd82tXdf",
+    ETH: "0x5fe0bc617b00812396560e00a47b68a4d19933df"
+  };
+  return addresses[method] ?? env.ADMIN_WALLET_ADDRESS ?? "NEXUS-ADMIN-WALLET";
 }
 
 export async function createTopupRequest(userId: string, amountCents: number, method: TopupMethod) {
@@ -50,7 +54,7 @@ export async function createTopupRequest(userId: string, amountCents: number, me
 function getTopupInstructions(topup: any): string {
   const amount = `$${(topup.amountCents / 100).toFixed(2)}`;
   const methodLabel = topup.method.replace(/_/g, " ");
-  return `Send exactly ${amount} via ${methodLabel} to address: ${topup.depositAddress}. Use reference: ${topup.reference}. After sending, submit your TXID and screenshot proof. The deposit will be auto-verified via blockchain explorer or approved by admin.`;
+  return `Send exactly ${amount} via ${methodLabel} to the displayed address. Use reference: ${topup.reference}. After sending, submit your TXID and screenshot proof. Never send on another network. The deposit will be approved by admin after review.`;
 }
 
 export async function submitTopupProof(

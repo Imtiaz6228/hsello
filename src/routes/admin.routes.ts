@@ -21,6 +21,7 @@ import { autoResolveExpiredDisputes, markDisputeTurn } from "../services/dispute
 import { ensureDefaultMarketplaceCategories } from "../services/category.service.js";
 import { sendTicketUpdateEmail } from "../lib/email.js";
 import { imageUpload, privateUploadRoot, publicUploadUrl } from "../middleware/upload.js";
+import { approveTopup, getTopupRequests, rejectTopup } from "../services/topup.service.js";
 
 export const adminRouter = Router();
 
@@ -189,7 +190,7 @@ adminRouter.get("/overview", requireStaff, asyncHandler(async (_req, res) => {
     prisma.dispute.count({ where: { status: { in: [DisputeStatus.OPEN, DisputeStatus.UNDER_REVIEW, DisputeStatus.AWAITING_BUYER, DisputeStatus.AWAITING_SELLER] } } }),
     prisma.refund.count({ where: { status: RefundStatus.REQUESTED } }),
     prisma.payment.count({ where: { status: PaymentStatus.REQUIRES_ACTION } }),
-    prisma.walletDeposit.count({ where: { status: "PENDING" } }),
+    prisma.topupRequest.count({ where: { status: { in: ["PENDING", "VERIFIED"] } } }),
     (prisma as any).withdrawalRequest.count({ where: { status: "PENDING" } }),
     prisma.user.count(), prisma.order.count()
   ]);
@@ -336,44 +337,21 @@ adminRouter.post("/payments/:id/approve", requireAdmin, asyncHandler(async (req,
 }));
 
 adminRouter.get("/wallet-deposits", requireStaff, asyncHandler(async (_req, res) => {
-  const deposits = await prisma.walletDeposit.findMany({
-    orderBy: { createdAt: "desc" },
-    include: { user: { select: { id: true, firstName: true, lastName: true, email: true, username: true, balanceCents: true } } }
-  });
+  const deposits = await getTopupRequests();
   res.json({ deposits });
 }));
 
 adminRouter.patch("/wallet-deposits/:id/approve", requireAdmin, asyncHandler(async (req, res) => {
   const id = z.string().uuid().parse(req.params.id);
-  const deposit = await prisma.walletDeposit.findUnique({ where: { id } });
-  if (!deposit) throw new ApiError(404, "Deposit not found.", "DEPOSIT_NOT_FOUND");
-  if (deposit.status !== "PENDING") throw new ApiError(400, "Deposit is not pending.", "DEPOSIT_NOT_PENDING");
-
-  const [updated] = await prisma.$transaction([
-    prisma.walletDeposit.update({
-      where: { id },
-      data: { status: "COMPLETED", adminNotes: "Approved by admin." }
-    }),
-    prisma.user.update({
-      where: { id: deposit.userId },
-      data: { balanceCents: { increment: deposit.amountCents } }
-    })
-  ]);
-
+  const input = z.object({ adminNotes: z.string().trim().max(1000).optional() }).parse(req.body);
+  const updated = await approveTopup(id, req.auth!.id, input.adminNotes);
   res.json({ message: "Deposit approved and user balance updated.", deposit: updated });
 }));
 
 adminRouter.patch("/wallet-deposits/:id/reject", requireAdmin, asyncHandler(async (req, res) => {
   const id = z.string().uuid().parse(req.params.id);
   const input = z.object({ adminNotes: z.string().trim().max(1000).optional() }).parse(req.body);
-  const deposit = await prisma.walletDeposit.findUnique({ where: { id } });
-  if (!deposit) throw new ApiError(404, "Deposit not found.", "DEPOSIT_NOT_FOUND");
-  if (deposit.status !== "PENDING") throw new ApiError(400, "Deposit is not pending.", "DEPOSIT_NOT_PENDING");
-
-  const updated = await prisma.walletDeposit.update({
-    where: { id },
-    data: { status: "REJECTED", adminNotes: input.adminNotes ?? "Rejected by admin." }
-  });
+  const updated = await rejectTopup(id, input.adminNotes);
 
   res.json({ message: "Deposit rejected.", deposit: updated });
 }));

@@ -5,7 +5,9 @@ import {
   ShoppingBag, Star, Store, TicketCheck, TrendingUp, UserRound, Activity,
   Wallet, CreditCard, Bitcoin, DollarSign, PlusCircle, Gavel, MessageSquare,
   LockKeyhole, Bell, Search, ChevronDown, Landmark, Smartphone, ClipboardCopy,
-  UploadCloud, CheckCircle2, Clock3, ShieldAlert
+  UploadCloud, CheckCircle2, Clock3, ShieldAlert, Menu, X, Heart, Gift, Tag,
+  MapPin, SlidersHorizontal, Sparkles, Award, History, KeyRound, PackageOpen,
+  ListChecks, CircleDollarSign, Banknote, Percent, Bookmark, ReceiptText
 } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import { ApiError, apiRequest, mediaUrl, STAFF_ROLES } from "../api/client";
@@ -24,19 +26,62 @@ type Dispute = { id: string; status: string; subject: string; description: strin
 type SellerFinance = { availableBalanceCents: number; frozenBalanceCents: number; totalSellerEarningsCents: number; withdrawnCents: number; todayIncomeCents: number; todayOrderCount: number };
 type Ticket = { id: string; ticketNumber: string; category: string; status: string; subject: string; updatedAt: string; messages: Array<{ id: string; body: string; author: { firstName: string; role: string } }> };
 type Review = { id: string; rating: number; body: string; createdAt: string; product: { name: string; slug: string }; sellerResponse?: string };
-type Tab = "overview" | "orders" | "downloads" | "chats" | "disputes" | "tickets" | "reviews" | "seller" | "wallet" | "profile";
+type Tab = "overview" | "orders" | "active-orders" | "completed-orders" | "pending-orders" | "cancelled-orders" | "refunds" | "downloads" | "purchased-products" | "license-keys" | "activation-codes" | "delivery-history" | "wishlist" | "cart" | "favorites" | "chats" | "messages" | "disputes" | "tickets" | "notifications" | "reviews" | "wallet" | "transactions" | "coupons" | "gift-cards" | "rewards" | "cashback" | "profile" | "security" | "addresses" | "payment-methods" | "preferences" | "seller";
 
 const tabs: Array<{ id: Tab; label: string; icon: typeof Home; roles?: string[] }> = [
-  { id: "overview", label: "Overview", icon: Home },
-  { id: "wallet", label: "Top Up", icon: Wallet },
-  { id: "orders", label: "Orders", icon: ShoppingBag },
-  { id: "downloads", label: "Downloads", icon: Download },
-  { id: "chats", label: "Chats", icon: MessageSquare },
+  { id: "overview", label: "Dashboard", icon: Home },
+  { id: "orders", label: "My Orders", icon: ShoppingBag },
+  { id: "active-orders", label: "Active Orders", icon: Activity },
+  { id: "completed-orders", label: "Completed Orders", icon: CheckCircle2 },
+  { id: "pending-orders", label: "Pending Orders", icon: Clock3 },
+  { id: "cancelled-orders", label: "Cancelled Orders", icon: X },
+  { id: "refunds", label: "Refund Requests", icon: RefreshCw },
   { id: "disputes", label: "Disputes", icon: Gavel },
-  { id: "tickets", label: "Support", icon: Headphones },
+  { id: "purchased-products", label: "Purchased Products", icon: PackageOpen },
+  { id: "downloads", label: "Downloads", icon: Download },
+  { id: "license-keys", label: "License Keys", icon: KeyRound },
+  { id: "activation-codes", label: "Activation Codes", icon: ListChecks },
+  { id: "delivery-history", label: "Delivery History", icon: History },
+  { id: "wishlist", label: "Wishlist", icon: Heart },
+  { id: "cart", label: "Shopping Cart", icon: ShoppingBag },
+  { id: "favorites", label: "Favorites", icon: Bookmark },
+  { id: "messages", label: "Messages", icon: MessageSquare },
+  { id: "chats", label: "Seller Chat", icon: MessageCircle },
+  { id: "tickets", label: "Support Tickets", icon: Headphones },
+  { id: "notifications", label: "Notifications", icon: Bell },
+  { id: "wallet", label: "Balance & Top Up", icon: Wallet },
+  { id: "transactions", label: "Transactions", icon: ReceiptText },
+  { id: "coupons", label: "Coupons", icon: Tag },
+  { id: "gift-cards", label: "Gift Cards", icon: Gift },
+  { id: "rewards", label: "Rewards", icon: Award },
+  { id: "cashback", label: "Cashback", icon: Percent },
   { id: "reviews", label: "Reviews", icon: Star },
-  { id: "seller", label: "Seller Hub", icon: Store, roles: ["SELLER"] },
   { id: "profile", label: "Profile", icon: UserRound },
+  { id: "security", label: "Security", icon: ShieldCheck },
+  { id: "addresses", label: "Addresses", icon: MapPin },
+  { id: "payment-methods", label: "Payment Methods", icon: CreditCard },
+  { id: "preferences", label: "Preferences", icon: SlidersHorizontal },
+  { id: "seller", label: "Seller Hub", icon: Store, roles: ["SELLER"] },
+];
+
+const buyerMenuGroups: Array<{ label: string; items: Array<{ tab: Tab; label: string; icon: typeof Home }> }> = [
+  { label: "Dashboard", items: [{ tab: "overview", label: "Overview", icon: Home }] },
+  { label: "My Orders", items: [
+    { tab: "orders", label: "All orders", icon: ShoppingBag }, { tab: "active-orders", label: "Active orders", icon: Activity },
+    { tab: "completed-orders", label: "Completed", icon: CheckCircle2 }, { tab: "pending-orders", label: "Pending", icon: Clock3 },
+    { tab: "cancelled-orders", label: "Cancelled", icon: X }, { tab: "refunds", label: "Refund requests", icon: RefreshCw },
+    { tab: "disputes", label: "Disputes", icon: Gavel }
+  ] },
+  { label: "Digital Library", items: [
+    { tab: "purchased-products", label: "Purchased products", icon: PackageOpen }, { tab: "downloads", label: "Downloads", icon: Download },
+    { tab: "license-keys", label: "License keys", icon: KeyRound }, { tab: "activation-codes", label: "Activation codes", icon: ListChecks },
+    { tab: "delivery-history", label: "Delivery history", icon: History }
+  ] },
+  { label: "Shopping", items: [{ tab: "wishlist", label: "Wishlist", icon: Heart }, { tab: "cart", label: "Shopping cart", icon: ShoppingBag }, { tab: "favorites", label: "Favorites", icon: Bookmark }] },
+  { label: "Messages", items: [{ tab: "messages", label: "Messages", icon: MessageSquare }, { tab: "chats", label: "Seller chat", icon: MessageCircle }, { tab: "tickets", label: "Support tickets", icon: TicketCheck }, { tab: "notifications", label: "Notifications", icon: Bell }] },
+  { label: "Wallet", items: [{ tab: "wallet", label: "Balance & top up", icon: Wallet }, { tab: "transactions", label: "Transactions", icon: ReceiptText }, { tab: "coupons", label: "Coupons", icon: Tag }, { tab: "gift-cards", label: "Gift cards", icon: Gift }, { tab: "rewards", label: "Rewards", icon: Award }, { tab: "cashback", label: "Cashback", icon: Percent }] },
+  { label: "Account", items: [{ tab: "profile", label: "Profile", icon: UserRound }, { tab: "security", label: "Security", icon: ShieldCheck }, { tab: "addresses", label: "Addresses", icon: MapPin }, { tab: "payment-methods", label: "Payment methods", icon: CreditCard }, { tab: "preferences", label: "Preferences", icon: SlidersHorizontal }] },
+  { label: "Support", items: [{ tab: "reviews", label: "My reviews", icon: Star }, { tab: "tickets", label: "Help center", icon: Headphones }] }
 ];
 
 function roleDashboardRedirect(role: string) {
@@ -52,9 +97,13 @@ export function AccountDashboardPage() {
     const hash = window.location.hash.replace("#", "") as Tab;
     return tabs.some((item) => item.id === hash) ? hash : "overview";
   });
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ Dashboard: true, "My Orders": true, "Digital Library": true, Shopping: true, Messages: true, Wallet: true, Account: true, Support: true });
   function selectTab(next: Tab) {
     setTabState(next);
+    setDrawerOpen(false);
     window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${next}`);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
   useEffect(() => {
     const syncTab = () => {
@@ -83,6 +132,13 @@ export function AccountDashboardPage() {
   const downloads = useMemo(() => orders.flatMap((order) => order.items.flatMap((item) => item.downloadGrants.map((grant) => ({ order, item, grant })))), [orders]);
   const totalSpent = useMemo(() => orders.reduce((sum, o) => sum + o.totalCents, 0), [orders]);
   const activeOrders = useMemo(() => orders.filter((o) => !["COMPLETED", "CANCELLED", "REFUNDED"].includes(o.status)).length, [orders]);
+  const visibleOrders = useMemo(() => {
+    if (tab === "active-orders") return orders.filter((order) => !["COMPLETED", "CANCELLED", "REFUNDED"].includes(order.status));
+    if (tab === "completed-orders") return orders.filter((order) => ["COMPLETED", "DELIVERED"].includes(order.status));
+    if (tab === "pending-orders") return orders.filter((order) => ["PENDING", "PENDING_PAYMENT", "PAID", "PROCESSING"].includes(order.status));
+    if (tab === "cancelled-orders") return orders.filter((order) => ["CANCELLED", "REFUNDED"].includes(order.status));
+    return orders;
+  }, [orders, tab]);
 
   useEffect(() => {
     void Promise.all([
@@ -217,6 +273,21 @@ export function AccountDashboardPage() {
     }
   }
 
+  async function leaveReview(orderItemId: string) {
+    const rating = Number(window.prompt("Rating from 1 to 5:", "5"));
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) return setMessage("Choose a rating from 1 to 5.");
+    const body = window.prompt("Share your experience (at least 10 characters):");
+    if (!body || body.trim().length < 10) return;
+    try {
+      await apiRequest("/api/commerce/reviews", { method: "POST", body: { orderItemId, rating, body: body.trim(), mediaUrls: [] } });
+      setMessage("Review submitted. Thank you for helping other buyers.");
+      const data = await apiRequest<{ reviews: Review[] }>("/api/commerce/reviews");
+      setReviews(data.reviews);
+    } catch (error) {
+      setMessage(error instanceof ApiError ? error.message : "Could not submit your review.");
+    }
+  }
+
   if (!user) return null;
   const redirectPath = roleDashboardRedirect(user.role);
   if (redirectPath) return <Navigate to={redirectPath} replace />;
@@ -227,48 +298,42 @@ export function AccountDashboardPage() {
   }, 0) ?? 0;
   const pendingSellerOrders = sellerOrders?.filter((item: any) => ["PROCESSING", "PAID", "DISPUTED"].includes(item.order?.status)).length ?? 0;
 
-  const visibleTabs = tabs.filter((t) => !t.roles || t.roles.includes(user.role));
-
   return (
-    <main className="account-dashboard-page">
+    <main className="account-dashboard-page buyer-premium-dashboard">
       <Seo title="Account dashboard" description="Manage HSello orders, downloads, invoices, support, and seller activity." />
 
-      <nav className="dashboard-sidebar">
+      {drawerOpen ? <button className="buyer-drawer-backdrop" aria-label="Close buyer menu" onClick={() => setDrawerOpen(false)} /> : null}
+      <nav className={`dashboard-sidebar buyer-sidebar ${drawerOpen ? "open" : ""}`}>
         <Link className="brand-lockup" to="/">
           <span className="brand-glyph">H</span>
-          <span><strong>HSELLO</strong><small>ACCOUNT</small></span>
+          <span><strong>HSELLO</strong><small>BUYER CENTER</small></span>
         </Link>
+        <button className="buyer-sidebar-close" aria-label="Close buyer menu" onClick={() => setDrawerOpen(false)}><X /></button>
         <div className="sidebar-user">
           <span className="sidebar-avatar">{user.firstName[0]}{user.lastName[0]}</span>
           <div>
             <strong>{user.firstName} {user.lastName}</strong>
             <small>@{user.username}</small>
           </div>
-          <span className="role-pill-small"><ShieldCheck size={12} /> {user.role.replace("_", " ")}</span>
+          <span className="role-pill-small"><BadgeCheck size={12} /> Verified buyer</span>
         </div>
-        <div className="sidebar-nav">
-          {visibleTabs.map(({ id, label, icon: Icon }) => (
-            <button key={id} className={tab === id ? "active" : ""} onClick={() => selectTab(id)}>
-              <Icon size={18} /> {label}
-              {id === "orders" && activeOrders > 0 ? <span className="sidebar-badge">{activeOrders}</span> : null}
-              {id === "disputes" && disputes.filter((d) => !["CLOSED", "RESOLVED_BUYER", "RESOLVED_SELLER"].includes(d.status)).length > 0 ? <span className="sidebar-badge">{disputes.filter((d) => !["CLOSED", "RESOLVED_BUYER", "RESOLVED_SELLER"].includes(d.status)).length}</span> : null}
-              {id === "chats" && chats.length > 0 ? <span className="sidebar-badge">{chats.length}</span> : null}
-            </button>
-          ))}
+        <div className="sidebar-nav buyer-grouped-nav">
+          {buyerMenuGroups.map((group) => <section key={group.label}><button type="button" className="buyer-nav-group" onClick={() => setExpandedGroups({ ...expandedGroups, [group.label]: !expandedGroups[group.label] })}><span>{group.label}</span><ChevronDown className={expandedGroups[group.label] ? "rotated" : ""} /></button>{expandedGroups[group.label] ? <div>{group.items.map(({ tab: itemTab, label, icon: Icon }) => <button key={`${group.label}-${itemTab}`} className={tab === itemTab ? "active" : ""} onClick={() => selectTab(itemTab)}><Icon size={17} /><span>{label}</span>{itemTab === "active-orders" && activeOrders ? <b>{activeOrders}</b> : null}{itemTab === "chats" && chats.length ? <b>{chats.length}</b> : null}{itemTab === "notifications" && tickets.filter((ticket) => !["CLOSED", "RESOLVED"].includes(ticket.status)).length ? <b>{tickets.filter((ticket) => !["CLOSED", "RESOLVED"].includes(ticket.status)).length}</b> : null}</button>)}</div> : null}</section>)}
         </div>
         <div className="sidebar-footer">
-          {user.role === "SELLER" ? <Link to="/seller" className="secondary-button"><Store size={16} /> Seller studio</Link> : <Link to="/seller/apply" className="secondary-button"><Store size={16} /> Become a seller</Link>}
-          {STAFF_ROLES.includes(user.role) ? <Link to="/admin" className="secondary-button"><ShieldCheck size={16} /> Admin</Link> : null}
-          <Link to="/sign-out" className="danger-button"><LogOut size={16} /> Sign out</Link>
+          <Link to="/catalog" className="secondary-button"><Sparkles size={16} /> Explore marketplace</Link>
+          <Link to="/sign-out" className="danger-button"><LogOut size={16} /> Logout</Link>
         </div>
       </nav>
 
       <section className="dashboard-main">
         <div className="dashboard-command-bar">
+          <button className="buyer-mobile-menu" aria-label="Open buyer menu" onClick={() => setDrawerOpen(true)}><Menu /></button>
           <label><Search size={16} /><input aria-label="Search dashboard" placeholder="Search orders, products, disputes…" /></label>
           <div>
+            <span className="buyer-sync-pill"><i /> LIVE</span>
             <LocaleSwitcher />
-            <button className="command-icon" aria-label="Notifications"><Bell size={18} /><span /></button>
+            <button className="command-icon" aria-label="Notifications" onClick={() => selectTab("notifications")}><Bell size={18} /><span /></button>
             <Link className="account-switcher" to="/sign-out" title="Open sign-out page"><span>{user.firstName[0]}{user.lastName[0]}</span><b>{user.firstName}</b><LogOut size={15} /></Link>
           </div>
         </div>
@@ -276,19 +341,20 @@ export function AccountDashboardPage() {
 
         {tab === "overview" && (
           <div className="tab-content overview-tab">
-            <header className="tab-header">
-              <span className="section-index">DASHBOARD</span>
-              <h1>Welcome back, {user.firstName}.</h1>
-              <p>Orders, files, support, and seller tools — one place.</p>
-            </header>
-            <div className="metrics-grid">
+            <section className="buyer-welcome-hero">
+              <div><span className="buyer-live-badge"><i /> REAL-TIME SYNC</span><h1>Welcome back, {user.firstName}.</h1><p>Your orders, digital products, wallet and support are ready in one protected workspace.</p><div><b><Award /> Premium member</b><b><BadgeCheck /> {user.emailVerified ? "Verified account" : "Verification pending"}</b></div></div>
+              <aside><small>AVAILABLE BALANCE</small><strong>{formatMoney(walletBalance)}</strong><button type="button" onClick={() => selectTab("wallet")}><PlusCircle /> Add funds</button></aside>
+            </section>
+            <div className="metrics-grid buyer-metrics-grid">
               <div className="metric-card"><ShoppingBag size={22} /><span><strong>{orders.length}</strong><small>Total orders</small></span></div>
               <div className="metric-card"><Activity size={22} /><span><strong>{activeOrders}</strong><small>Active orders</small></span></div>
               <div className="metric-card"><Download size={22} /><span><strong>{downloads.length}</strong><small>Available files</small></span></div>
-              <div className="metric-card"><TrendingUp size={22} /><span><strong>{formatMoney(totalSpent)}</strong><small>Total spent</small></span></div>
               <div className="metric-card"><Wallet size={22} /><span><strong>{formatMoney(walletBalance)}</strong><small>Available balance</small></span></div>
+              <div className="metric-card"><TrendingUp size={22} /><span><strong>{formatMoney(totalSpent)}</strong><small>Total purchases</small></span></div>
+              <div className="metric-card"><Gift size={22} /><span><strong>0</strong><small>Active coupons</small></span></div>
+              <div className="metric-card"><Heart size={22} /><span><strong>0</strong><small>Wishlist items</small></span></div>
+              <div className="metric-card"><Award size={22} /><span><strong>0</strong><small>Reward points</small></span></div>
               <div className="metric-card"><TicketCheck size={22} /><span><strong>{tickets.filter((t) => t.status !== "CLOSED" && t.status !== "RESOLVED").length}</strong><small>Open tickets</small></span></div>
-              <div className="metric-card"><Headphones size={22} /><span><strong>Every day</strong><small>Support coverage</small></span></div>
             </div>
             <button type="button" className="buyer-topup-hero" onClick={() => selectTab("wallet")}>
               <span className="buyer-topup-icon"><Wallet /></span>
@@ -335,19 +401,21 @@ export function AccountDashboardPage() {
               <Link to="#chats" onClick={() => selectTab("chats")} className="action-card"><MessageSquare size={20} /><span><strong>Order chats</strong><small>{chats.length} conversations</small></span><ArrowRight size={16} /></Link>
               <Link to="#disputes" onClick={() => selectTab("disputes")} className="action-card"><Gavel size={20} /><span><strong>Disputes</strong><small>{disputes.length} cases</small></span><ArrowRight size={16} /></Link>
             </div>
+            <section className="buyer-discovery-strip"><header><div><span>DISCOVER MORE</span><h2>Continue shopping</h2></div><Link to="/catalog">Explore all products <ArrowRight /></Link></header><div><Link to="/catalog"><Sparkles /><span><strong>Recommended for you</strong><small>Curated digital products</small></span></Link><Link to="/catalog"><TrendingUp /><span><strong>Trending products</strong><small>Popular with buyers now</small></span></Link><Link to="/catalog"><Gift /><span><strong>New arrivals</strong><small>Fresh marketplace releases</small></span></Link></div></section>
           </div>
         )}
 
-        {tab === "orders" && (
+        {["orders", "active-orders", "completed-orders", "pending-orders", "cancelled-orders"].includes(tab) && (
           <div className="tab-content orders-tab">
             <header className="tab-header">
               <span className="section-index">ORDERS & DELIVERY</span>
-              <h1>Your purchases</h1>
+              <h1>{tabs.find((item) => item.id === tab)?.label}</h1>
               <p>Downloads, invoices, support, and refunds for every order.</p>
             </header>
-            {loading ? <div className="empty-state">Loading orders…</div> : orders.length ? (
+            <div className="buyer-order-filter-tabs"><button className={tab === "orders" ? "active" : ""} onClick={() => selectTab("orders")}>All <b>{orders.length}</b></button><button className={tab === "active-orders" ? "active" : ""} onClick={() => selectTab("active-orders")}>Active <b>{activeOrders}</b></button><button className={tab === "completed-orders" ? "active" : ""} onClick={() => selectTab("completed-orders")}>Completed</button><button className={tab === "pending-orders" ? "active" : ""} onClick={() => selectTab("pending-orders")}>Pending</button><button className={tab === "cancelled-orders" ? "active" : ""} onClick={() => selectTab("cancelled-orders")}>Cancelled</button></div>
+            {loading ? <div className="buyer-skeleton-list"><i /><i /><i /></div> : visibleOrders.length ? (
               <div className="orders-list">
-                {orders.map((order) => (
+                {visibleOrders.map((order) => (
                   <article className="order-card-full" key={order.id}>
                     <header>
                       <div>
@@ -396,6 +464,8 @@ export function AccountDashboardPage() {
                       <button disabled={!order.canOpenDispute} onClick={() => void openDispute(order)} className="action-link">
                         <ShieldCheck size={14} /> {order.disputes.length ? `Dispute ${order.disputes[0].status.toLowerCase().replaceAll("_", " ")}` : order.canOpenDispute ? "Open dispute" : `Dispute until ${order.disputeDeadline ? new Date(order.disputeDeadline).toLocaleString() : "after payment"}`}
                       </button>
+                      {order.items[0] ? <button onClick={() => void leaveReview(order.items[0].id)} className="action-link"><Star size={14} /> Leave review</button> : null}
+                      {order.items[0] ? <Link to={`/products/${order.items[0].product.slug}`} className="action-link"><RefreshCw size={14} /> Buy again</Link> : null}
                     </footer>
                   </article>
                 ))}
@@ -411,25 +481,27 @@ export function AccountDashboardPage() {
           </div>
         )}
 
-        {tab === "downloads" && (
+        {["downloads", "purchased-products", "license-keys", "activation-codes", "delivery-history"].includes(tab) && (
           <div className="tab-content downloads-tab">
             <header className="tab-header">
-              <span className="section-index">DOWNLOAD LIBRARY</span>
-              <h1>Your files</h1>
-              <p>Access purchased downloads with their remaining limits.</p>
+              <span className="section-index">DIGITAL LIBRARY</span>
+              <h1>{tabs.find((item) => item.id === tab)?.label}</h1>
+              <p>Your purchased products, protected delivery records and latest available files.</p>
             </header>
             {downloads.length ? (
-              <div className="downloads-grid">
-                {downloads.map(({ item, grant }) => (
+              <div className="downloads-grid buyer-library-grid">
+                {downloads.map(({ order, item, grant }) => (
                   <a href={`/api/commerce/downloads/${grant.id}`} className="download-card" key={grant.id}>
-                    <div className="dc-icon"><Download size={24} /></div>
+                    <div className="dc-icon">{item.product.coverImageUrl ? <img src={mediaUrl(item.product.coverImageUrl)} alt="" /> : <Download size={24} />}</div>
                     <div className="dc-info">
+                      <span className="buyer-library-badge">PURCHASED</span>
                       <strong>{item.productName}</strong>
                       <small>{grant.productFile.displayName} · v{grant.productFile.version}</small>
+                      <small>Purchased {new Date(order.createdAt).toLocaleDateString()}</small>
                       <span className="download-remaining">{grant.maxDownloads - grant.downloadCount} downloads remaining</span>
                       {grant.expiresAt ? <small className="download-expiry">Expires {new Date(grant.expiresAt).toLocaleDateString()}</small> : null}
                     </div>
-                    <ArrowRight size={16} />
+                    <span className="buyer-download-button"><Download size={15} /> Download</span>
                   </a>
                 ))}
               </div>
@@ -441,14 +513,15 @@ export function AccountDashboardPage() {
                 <Link to="/catalog" className="primary-button">Browse marketplace <ArrowRight size={16} /></Link>
               </div>
             )}
+            {["license-keys", "activation-codes", "delivery-history"].includes(tab) ? <section className="buyer-code-vault"><header><div><KeyRound /><span><h2>Protected delivery vault</h2><p>Activation codes and delivered inventory are tied to their original order.</p></span></div><ShieldCheck /></header>{orders.flatMap((order) => order.items.flatMap((item) => (item.inventoryItems ?? []).map((row) => ({ order, item, row })))).length ? orders.flatMap((order) => order.items.flatMap((item) => (item.inventoryItems ?? []).map((row) => ({ order, item, row })))).map(({ order, item, row }) => <article key={row.id}><div><small>{order.orderNumber}</small><strong>{item.productName}</strong></div><code>{row.content}</code><button type="button" onClick={() => void navigator.clipboard?.writeText(row.content)}><ClipboardCopy /> Copy</button></article>) : <div className="empty-state-large"><KeyRound /><h2>No activation codes</h2><p>License keys and delivered inventory will appear here after purchase.</p></div>}</section> : null}
           </div>
         )}
 
-        {tab === "chats" && (
+        {["chats", "messages"].includes(tab) && (
           <div className="tab-content chats-tab">
             <header className="tab-header">
               <span className="section-index">ORDER CHATS</span>
-              <h1>Buyer / seller conversations</h1>
+              <h1>{tab === "messages" ? "Messages" : "Seller conversations"}</h1>
               <p>Every post-order chat appears here. Open the workspace to send messages or screenshots.</p>
             </header>
             {chats.length ? (
@@ -470,6 +543,13 @@ export function AccountDashboardPage() {
             ) : (
               <div className="empty-state-large"><MessageSquare size={48} /><h2>No chats yet</h2><p>Open an order and message the seller to start a conversation.</p></div>
             )}
+          </div>
+        )}
+
+        {tab === "refunds" && (
+          <div className="tab-content refunds-tab">
+            <header className="tab-header"><span className="section-index">REFUND CENTER</span><h1>Refund requests</h1><p>Track refund progress, status, amount and the related order history.</p></header>
+            {orders.filter((order) => order.refunds.length).length ? <div className="buyer-refund-list">{orders.filter((order) => order.refunds.length).map((order) => <article key={order.id}><span><RefreshCw /></span><div><small>{order.orderNumber}</small><h3>{order.items.map((item) => item.productName).join(", ")}</h3><p>Requested amount · {formatMoney(order.totalCents)}</p><div className="buyer-refund-timeline"><i className="done" /><b>Submitted</b><i className="active" /><b>Under review</b><i /><b>Resolution</b></div></div><strong className={`status-pill ${order.refunds[0].status.toLowerCase()}`}>{order.refunds[0].status.replaceAll("_", " ")}</strong><Link to={`/orders/${order.id}`}>View order <ArrowRight /></Link></article>)}</div> : <div className="empty-state-large"><RefreshCw size={48} /><h2>No refund requests</h2><p>Request a refund from an eligible order and its progress will appear here.</p><button className="primary-button" onClick={() => selectTab("orders")}>View orders <ArrowRight /></button></div>}
           </div>
         )}
 
@@ -551,6 +631,31 @@ export function AccountDashboardPage() {
                 <p>Support requests, refund inquiries, and technical help will appear here.</p>
               </div>
             )}
+          </div>
+        )}
+
+        {tab === "notifications" && (
+          <div className="tab-content buyer-notification-center">
+            <header className="tab-header"><span className="section-index">NOTIFICATION CENTER</span><h1>Your notifications</h1><p>Order, message, refund and support updates grouped by recency.</p></header>
+            <div className="buyer-notification-toolbar"><button>All updates</button><button>Orders</button><button>Messages</button><button type="button">Mark all as read</button></div>
+            <section><h2>Today</h2>{activeOrders ? <article><span className="blue"><ShoppingBag /></span><div><strong>{activeOrders} active order{activeOrders === 1 ? "" : "s"}</strong><p>Track delivery progress or open the protected order conversation.</p><small>Live order update</small></div><i /></article> : null}{chats.length ? <article><span className="purple"><MessageSquare /></span><div><strong>{chats.length} seller conversation{chats.length === 1 ? "" : "s"}</strong><p>Your order-linked messages are available in Seller Chat.</p><small>Messages</small></div><i /></article> : null}{tickets.filter((ticket) => !["CLOSED", "RESOLVED"].includes(ticket.status)).length ? <article><span className="amber"><TicketCheck /></span><div><strong>Support ticket update</strong><p>You have an open support request awaiting progress.</p><small>Support</small></div><i /></article> : null}<article><span className="green"><ShieldCheck /></span><div><strong>Your buyer account is protected</strong><p>Wallet, order delivery and dispute records are secured.</p><small>System update</small></div></article></section>
+          </div>
+        )}
+
+        {["wishlist", "favorites", "cart"].includes(tab) && (
+          <div className="tab-content buyer-shopping-center">
+            <header className="tab-header"><span className="section-index">SHOPPING</span><h1>{tabs.find((item) => item.id === tab)?.label}</h1><p>Keep your next digital purchase organized and easy to reach.</p></header>
+            {tab === "cart" ? <section className="buyer-cart-bridge"><span><ShoppingBag /></span><div><small>SECURE CHECKOUT</small><h2>Continue to your shopping cart</h2><p>Review products, quantities, pricing and the final order total in the existing protected checkout flow.</p></div><Link to="/cart">Open cart <ArrowRight /></Link></section> : <div className="empty-state-large"><Heart size={48} /><h2>Your {tab === "wishlist" ? "wishlist" : "favorites"} is empty</h2><p>Save products while browsing and they will be organized here.</p><Link to="/catalog" className="primary-button">Discover products <Sparkles /></Link></div>}
+            <section className="buyer-discovery-strip"><header><div><span>MARKETPLACE</span><h2>Products worth exploring</h2></div><Link to="/catalog">View catalog <ArrowRight /></Link></header><div><Link to="/catalog"><TrendingUp /><span><strong>Best sellers</strong><small>Trusted by active buyers</small></span></Link><Link to="/catalog"><Sparkles /><span><strong>New arrivals</strong><small>Recently published</small></span></Link><Link to="/catalog"><Gift /><span><strong>Featured picks</strong><small>Marketplace highlights</small></span></Link></div></section>
+          </div>
+        )}
+
+        {["coupons", "gift-cards", "rewards", "cashback"].includes(tab) && (
+          <div className="tab-content buyer-rewards-center">
+            <header className="tab-header"><span className="section-index">COUPONS & REWARDS</span><h1>{tabs.find((item) => item.id === tab)?.label}</h1><p>View marketplace-issued benefits, expiration status and redemption availability.</p></header>
+            <section className="buyer-reward-hero"><span><Award /></span><div><small>MEMBER BENEFITS</small><h2>Your rewards wallet</h2><p>No reward balance is currently issued to this account.</p></div><strong>0 points</strong></section>
+            <div className="buyer-benefit-grid"><article><Tag /><span><small>Active coupons</small><strong>0</strong></span></article><article><Gift /><span><small>Gift cards</small><strong>0</strong></span></article><article><Percent /><span><small>Cashback</small><strong>{formatMoney(0)}</strong></span></article><article><Award /><span><small>Reward points</small><strong>0</strong></span></article></div>
+            <div className="empty-state-large"><Gift size={48} /><h2>No {tabs.find((item) => item.id === tab)?.label.toLowerCase()} yet</h2><p>Eligible marketplace-issued benefits will appear here with their expiry and redemption terms.</p><Link to="/catalog" className="primary-button">Continue shopping <ArrowRight /></Link></div>
           </div>
         )}
 
@@ -736,18 +841,18 @@ export function AccountDashboardPage() {
           </div>
         )}
 
-        {tab === "wallet" && (
-          <WalletTabContent user={user} setMessage={setMessage} initialBalance={walletBalance} onBalanceChange={setWalletBalance} />
+        {["wallet", "transactions"].includes(tab) && (
+          <WalletTabContent mode={tab === "transactions" ? "transactions" : "wallet"} user={user} setMessage={setMessage} initialBalance={walletBalance} onBalanceChange={setWalletBalance} />
         )}
 
-        {tab === "profile" && (
+        {["profile", "security", "addresses", "payment-methods", "preferences"].includes(tab) && (
           <div className="tab-content profile-tab">
             <header className="tab-header">
-              <span className="section-index">PROFILE</span>
-              <h1>Account details</h1>
-              <p>Your identity, role, and contact information.</p>
+              <span className="section-index">ACCOUNT CENTER</span>
+              <h1>{tabs.find((item) => item.id === tab)?.label}</h1>
+              <p>Your identity, security, payment and preference controls.</p>
             </header>
-            <div className="profile-card">
+            {tab === "profile" ? <div className="profile-card buyer-profile-card">
               <div className="profile-avatar-large">{user.firstName[0]}{user.lastName[0]}</div>
               <div className="profile-details">
                 <div className="profile-row"><label>Full name</label><span>{user.firstName} {user.lastName}</span></div>
@@ -759,10 +864,15 @@ export function AccountDashboardPage() {
                 <div className="profile-row"><label>Role</label><span className="role-pill"><ShieldCheck size={12} /> {user.role.replace("_", " ")}</span></div>
                 <div className="profile-row"><label>Member since</label><span>{new Date(user.createdAt).toLocaleDateString()}</span></div>
               </div>
-            </div>
+            </div> : null}
+            {tab === "security" ? <div className="buyer-security-grid"><article><span><BadgeCheck /></span><div><small>IDENTITY</small><h3>Email verification</h3><p>{user.emailVerified ? "Your email address is verified." : "Verify your email to strengthen account recovery."}</p></div><b className={`status-pill ${user.emailVerified ? "completed" : "pending"}`}>{user.emailVerified ? "VERIFIED" : "PENDING"}</b></article><article><span><LockKeyhole /></span><div><small>PASSWORD</small><h3>Password protection</h3><p>Your password and reset flow remain protected by the existing authentication system.</p></div><Link to="/forgot-password">Manage <ArrowRight /></Link></article><article><span><Smartphone /></span><div><small>SESSIONS</small><h3>Trusted session</h3><p>This device uses secure, refreshable account sessions.</p></div><b className="status-pill completed">ACTIVE</b></article><article><span><ShieldCheck /></span><div><small>PRIVACY</small><h3>Buyer protection</h3><p>Orders, delivery records and disputes are retained for account protection.</p></div><Link to="/privacy">Review <ArrowRight /></Link></article></div> : null}
+            {tab === "addresses" ? <div className="buyer-account-empty"><MapPin /><h2>Saved addresses</h2><p>Digital orders do not require a shipping address. Your country and city remain available in Profile.</p><button onClick={() => selectTab("profile")}>View profile <ArrowRight /></button></div> : null}
+            {tab === "payment-methods" ? <div className="buyer-payment-methods"><article><span><Wallet /></span><div><small>PRIMARY PAYMENT</small><h3>Marketplace wallet</h3><p>Available balance: {formatMoney(walletBalance)}</p></div><button onClick={() => selectTab("wallet")}>Top up <ArrowRight /></button></article><article><span><Bitcoin /></span><div><small>SUPPORTED TOP-UP</small><h3>Crypto networks</h3><p>USDT TRC20, BEP20, ERC20, Bitcoin, Ethereum and Solana.</p></div><button onClick={() => selectTab("wallet")}>Choose network <ArrowRight /></button></article></div> : null}
+            {tab === "preferences" ? <div className="buyer-preference-list"><article><div><Bell /><span><strong>Order updates</strong><small>Keep delivery and payment progress visible.</small></span></div><b>Enabled</b></article><article><div><MessageSquare /><span><strong>Seller messages</strong><small>Show alerts for protected order conversations.</small></span></div><b>Enabled</b></article><article><div><Sparkles /><span><strong>Marketplace recommendations</strong><small>Display useful discovery sections in your dashboard.</small></span></div><b>Enabled</b></article><article><div><SlidersHorizontal /><span><strong>Responsive display</strong><small>Comfortable spacing automatically follows your device.</small></span></div><b>Automatic</b></article></div> : null}
           </div>
         )}
       </section>
+      <nav className="buyer-mobile-bottom-nav"><button className={tab === "overview" ? "active" : ""} onClick={() => selectTab("overview")}><Home /><span>Home</span></button><button className={["orders", "active-orders", "completed-orders", "pending-orders", "cancelled-orders"].includes(tab) ? "active" : ""} onClick={() => selectTab("orders")}><ShoppingBag /><span>Orders</span></button><button className="buyer-mobile-fab" onClick={() => selectTab("wallet")} aria-label="Top up wallet"><PlusCircle /></button><button className={["downloads", "purchased-products", "license-keys", "activation-codes", "delivery-history"].includes(tab) ? "active" : ""} onClick={() => selectTab("purchased-products")}><PackageOpen /><span>Library</span></button><button className={["messages", "chats"].includes(tab) ? "active" : ""} onClick={() => selectTab("messages")}><MessageSquare /><span>Messages</span></button></nav>
     </main>
   );
 }
@@ -771,11 +881,12 @@ type Deposit = { id: string; amountCents: number; method: string; status: string
 type Withdrawal = { id: string; amountCents: number; blockchain: string; walletAddress: string; status: string; providerReference?: string | null; adminNotes?: string | null; processedAt?: string | null; createdAt: string };
 type WalletSummary = { balanceCents: number; availableBalanceCents: number; frozenSellerBalanceCents: number; pendingWithdrawalCents: number; withdrawals: Withdrawal[] };
 
-function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }: {
+function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, mode = "wallet" }: {
   user: NonNullable<ReturnType<typeof useAuth>["user"]>;
   setMessage: (m: string) => void;
   initialBalance: number;
   onBalanceChange: (balanceCents: number) => void;
+  mode?: "wallet" | "transactions";
 }) {
   const { formatMoney } = useLocale();
   const [deposits, setDeposits] = useState<Deposit[]>([]);
@@ -912,8 +1023,8 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }:
     <div className="tab-content wallet-tab">
       <header className="tab-header">
         <span className="section-index">BUYER WALLET</span>
-        <h1>Top up your balance</h1>
-        <p>Send the exact USDT or crypto amount on the selected network, then submit a TXID and screenshot for admin approval.</p>
+        <h1>{mode === "transactions" ? "Wallet transactions" : "Top up your balance"}</h1>
+        <p>{mode === "transactions" ? "Review top-ups, payment history and approval status in one protected ledger." : "Send the exact USDT or crypto amount on the selected network, then submit a TXID and screenshot for admin approval."}</p>
       </header>
 
       <div className="topup-progress" aria-label="Top-up steps">

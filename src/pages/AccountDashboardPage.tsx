@@ -153,9 +153,11 @@ export function AccountDashboardPage() {
   useEffect(() => {
     if (!user) return;
     setWalletBalance(user.balanceCents ?? 0);
-    void apiRequest<{ balanceCents: number; availableBalanceCents?: number }>("/api/wallet/balance")
-      .then((data) => setWalletBalance(data.availableBalanceCents ?? data.balanceCents))
-      .catch(() => undefined);
+    const refreshBalance = () => apiRequest<{ balanceCents: number; availableBalanceCents?: number }>("/api/wallet/balance")
+      .then((data) => setWalletBalance(data.availableBalanceCents ?? data.balanceCents)).catch(() => undefined);
+    void refreshBalance();
+    const interval = window.setInterval(() => void refreshBalance(), 12000);
+    return () => window.clearInterval(interval);
   }, [user?.id, user?.balanceCents]);
 
   useEffect(() => {
@@ -878,6 +880,7 @@ export function AccountDashboardPage() {
 }
 
 type Deposit = { id: string; amountCents: number; method: string; status: string; reference?: string; depositAddress?: string; txHash?: string | null; screenshotUrl?: string | null; adminNotes?: string | null; expiresAt?: string; createdAt: string };
+type TopupMethodConfig = { method: string; label: string; network: string; asset: string; address: string };
 type Withdrawal = { id: string; amountCents: number; blockchain: string; walletAddress: string; status: string; providerReference?: string | null; adminNotes?: string | null; processedAt?: string | null; createdAt: string };
 type WalletSummary = { balanceCents: number; availableBalanceCents: number; frozenSellerBalanceCents: number; pendingWithdrawalCents: number; withdrawals: Withdrawal[] };
 
@@ -890,6 +893,7 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, m
 }) {
   const { formatMoney } = useLocale();
   const [deposits, setDeposits] = useState<Deposit[]>([]);
+  const [topupMethods, setTopupMethods] = useState<TopupMethodConfig[]>([]);
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [balance, setBalance] = useState(initialBalance ?? user.balanceCents ?? 0);
   const [frozenBalance, setFrozenBalance] = useState(0);
@@ -914,9 +918,10 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, m
   }, [activeTopup]);
 
   async function refreshWallet() {
-    const [summary, depositHistory] = await Promise.all([
+    const [summary, depositHistory, methodData] = await Promise.all([
       apiRequest<WalletSummary>("/api/wallet/balance"),
-      apiRequest<{ deposits: Deposit[] }>("/api/wallet/deposits")
+      apiRequest<{ deposits: Deposit[] }>("/api/wallet/deposits"),
+      apiRequest<{ methods: TopupMethodConfig[] }>("/api/wallet/topup-methods").catch(() => ({ methods: [] }))
     ]);
     setBalance(summary.availableBalanceCents ?? summary.balanceCents);
     setFrozenBalance(summary.frozenSellerBalanceCents ?? 0);
@@ -924,10 +929,13 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, m
     setWithdrawals(summary.withdrawals ?? []);
     onBalanceChange(summary.availableBalanceCents ?? summary.balanceCents);
     setDeposits(depositHistory.deposits);
+    if (methodData.methods.length) setTopupMethods(methodData.methods);
   }
 
   useEffect(() => {
     void refreshWallet().catch(() => undefined);
+    const interval = window.setInterval(() => void refreshWallet().catch(() => undefined), 12000);
+    return () => window.clearInterval(interval);
   }, [onBalanceChange]);
 
   async function submitDeposit() {
@@ -1010,13 +1018,14 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, m
   }
 
   const methods = [
-    { value: "CRYPTO_TRC20", label: "USDT · TRC20", icon: Bitcoin, network: "Tron network" },
-    { value: "CRYPTO_BEP20", label: "USDT · BEP20", icon: Bitcoin, network: "BNB Smart Chain" },
-    { value: "CRYPTO_ERC20", label: "USDT · ERC20", icon: Bitcoin, network: "Ethereum network" },
-    { value: "BTC", label: "Bitcoin · BTC", icon: Bitcoin, network: "Bitcoin network" },
-    { value: "ETH", label: "Ethereum · ERC20", icon: DollarSign, network: "Ethereum network" },
-    { value: "SOL", label: "Solana · SOL", icon: Smartphone, network: "Solana network" }
-  ];
+    { value: "CRYPTO_TRC20", label: "USDT · TRC20", icon: Bitcoin, network: "Tron network", address: "TDffsBmuyrMsNEQXzzLYfzAwz7W6Jmvb1W" },
+    { value: "CRYPTO_BEP20", label: "USDT · BEP20", icon: Bitcoin, network: "BNB Smart Chain", address: "0x5fe0bc617b00812396560e00a47b68a4d19933df" },
+    { value: "CRYPTO_ERC20", label: "USDT · ERC20", icon: Bitcoin, network: "Ethereum network", address: "0x5fe0bc617b00812396560e00a47b68a4d19933df" },
+    { value: "BTC", label: "Bitcoin · BTC", icon: Bitcoin, network: "Bitcoin network", address: "1CRoGe5BKjSTYBjxjPaS5NRCP8eyZ8cSpA" },
+    { value: "ETH", label: "Ethereum · ERC20", icon: DollarSign, network: "Ethereum network", address: "0x5fe0bc617b00812396560e00a47b68a4d19933df" },
+    { value: "SOL", label: "Solana · SOL", icon: Smartphone, network: "Solana network", address: "5K8sYDqmmMDeVMDcJjzmwdX2MGMwqCeNNnpDd82tXdf" }
+  ].map((method) => ({ ...method, ...(topupMethods.find((item) => item.method === method.value) ?? {}) }));
+  const selectedMethod = methods.find((method) => method.value === depositMethod) ?? methods[0];
   const chains = ["TRC20 USDT", "ERC20 USDT", "BEP20 USDT", "BTC", "ETH", "SOL", "TON", "Polygon USDT"];
 
   return (
@@ -1078,6 +1087,11 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, m
               );
             })}
           </div>
+          <div className="topup-network-address">
+            <span><Bitcoin /><small>SELECTED PAYMENT ADDRESS</small><strong>{selectedMethod.label}</strong><b>{selectedMethod.network}</b></span>
+            <code>{selectedMethod.address}</code>
+            <button type="button" onClick={() => void navigator.clipboard?.writeText(selectedMethod.address)}><ClipboardCopy /> Copy address</button>
+          </div>
           <div className="deposit-input-row">
             <div className="field">
               <span>Amount (USD)</span>
@@ -1127,7 +1141,7 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, m
         <header><div><span className="section-index">PAYMENT REQUEST</span><h2>Send exactly {formatMoney(activeTopup.amountCents)}</h2><p>{activeTopup.method.replaceAll("_", " ")} · request {activeTopup.reference}</p></div><span className="status-pill pending">AWAITING PAYMENT</span></header>
         <div className="topup-address-box"><small>Send only to this address</small><code>{activeTopup.depositAddress}</code><button type="button" onClick={() => void navigator.clipboard?.writeText(activeTopup.depositAddress ?? "")}><ClipboardCopy size={15} /> Copy address</button></div>
         <div className="topup-proof-grid"><label><span>Transaction ID / TXID *</span><input value={proofTx} onChange={(event) => setProofTx(event.target.value)} placeholder="Paste the transaction hash" /></label><label className="topup-upload"><UploadCloud size={21} /><span>{proofFile ? proofFile.name : "Upload payment screenshot *"}</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setProofFile(event.target.files?.[0] ?? null)} /></label></div>
-        <footer><small><Clock3 size={14} /> Proof is checked by admin before wallet balance is added.</small><button className="primary-button" disabled={busy || !proofTx.trim() || !proofFile} onClick={() => void submitProof()}><CheckCircle2 size={16} /> {busy ? "Sending…" : "Send proof for approval"}</button></footer>
+        <footer><small><Clock3 size={14} /> Admin will approve or reject this proof. Approved funds are added to available balance automatically.</small><button className="primary-button" disabled={busy || !proofTx.trim() || !proofFile} onClick={() => void submitProof()}><CheckCircle2 size={16} /> {busy ? "Confirming…" : "Confirm payment & submit proof"}</button></footer>
       </section> : null}
 
       {user.role === "SELLER" && withdrawals.length > 0 && (

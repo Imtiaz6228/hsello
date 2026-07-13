@@ -7,7 +7,7 @@ import { ApiError, asyncHandler } from "../middleware/error-handler.js";
 import { createWalletCheckout } from "../services/payment.service.js";
 import { createWithdrawalRequest, getWalletSummary, releaseAvailableSellerEarnings } from "../services/finance.service.js";
 import { imageUpload, publicUploadUrl } from "../middleware/upload.js";
-import { createTopupRequest, getTopupRequests, submitTopupProof } from "../services/topup.service.js";
+import { createTopupRequest, getTopupMethods, getTopupRequests, submitTopupProof } from "../services/topup.service.js";
 
 export const walletRouter = Router();
 
@@ -21,6 +21,10 @@ walletRouter.get("/balance", asyncHandler(async (req, res) => {
 walletRouter.get("/deposits", asyncHandler(async (req, res) => {
   const deposits = await getTopupRequests(req.auth!.id);
   res.json({ deposits });
+}));
+
+walletRouter.get("/topup-methods", asyncHandler(async (_req, res) => {
+  res.json({ methods: getTopupMethods() });
 }));
 
 

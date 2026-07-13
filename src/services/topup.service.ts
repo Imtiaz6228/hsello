@@ -6,6 +6,15 @@ import { cacheGet, cacheSet } from "../lib/redis.js";
 
 const TOPUP_EXPIRY_HOURS = 24;
 
+const topupAddressBook: Partial<Record<TopupMethod, { label: string; network: string; asset: string; address: string }>> = {
+  CRYPTO_TRC20: { label: "USDT · TRC20", network: "Tron (TRC20)", asset: "USDT", address: "TDffsBmuyrMsNEQXzzLYfzAwz7W6Jmvb1W" },
+  CRYPTO_BEP20: { label: "USDT · BEP20", network: "BNB Smart Chain (BEP20)", asset: "USDT", address: "0x5fe0bc617b00812396560e00a47b68a4d19933df" },
+  CRYPTO_ERC20: { label: "USDT · ERC20", network: "Ethereum (ERC20)", asset: "USDT", address: "0x5fe0bc617b00812396560e00a47b68a4d19933df" },
+  BTC: { label: "Bitcoin", network: "Bitcoin", asset: "BTC", address: "1CRoGe5BKjSTYBjxjPaS5NRCP8eyZ8cSpA" },
+  ETH: { label: "Ethereum", network: "Ethereum", asset: "ETH", address: "0x5fe0bc617b00812396560e00a47b68a4d19933df" },
+  SOL: { label: "Solana", network: "Solana", asset: "SOL", address: "5K8sYDqmmMDeVMDcJjzmwdX2MGMwqCeNNnpDd82tXdf" }
+};
+
 function generateReference() {
   return `NEXUS-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
 }
@@ -13,15 +22,11 @@ function generateReference() {
 function getDepositAddress(method: TopupMethod): string {
   // Network-specific destinations are intentionally explicit: never reuse a
   // generic crypto address label, because buyers must send on the exact chain.
-  const addresses: Partial<Record<TopupMethod, string>> = {
-    CRYPTO_TRC20: "TDffsBmuyrMsNEQXzzLYfzAwz7W6Jmvb1W",
-    CRYPTO_BEP20: "0x5fe0bc617b00812396560e00a47b68a4d19933df",
-    CRYPTO_ERC20: "0x5fe0bc617b00812396560e00a47b68a4d19933df",
-    BTC: "1CRoGe5BKjSTYBjxjPaS5NRCP8eyZ8cSpA",
-    SOL: "5K8sYDqmmMDeVMDcJjzmwdX2MGMwqCeNNnpDd82tXdf",
-    ETH: "0x5fe0bc617b00812396560e00a47b68a4d19933df"
-  };
-  return addresses[method] ?? env.ADMIN_WALLET_ADDRESS ?? "NEXUS-ADMIN-WALLET";
+  return topupAddressBook[method]?.address ?? env.ADMIN_WALLET_ADDRESS ?? "NEXUS-ADMIN-WALLET";
+}
+
+export function getTopupMethods() {
+  return Object.entries(topupAddressBook).map(([method, details]) => ({ method: method as TopupMethod, ...details! }));
 }
 
 export async function createTopupRequest(userId: string, amountCents: number, method: TopupMethod) {

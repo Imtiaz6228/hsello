@@ -59,7 +59,7 @@ MAX_PRODUCT_FILE_BYTES=104857600
 
 Railway injects its own `PORT`; you do not need to create that variable. Before every release, `prisma migrate deploy` applies committed migrations to PostgreSQL. A failed migration stops the release before the new API starts.
 
-For persistent profile images, attach a Railway volume to the app service at `/app/uploads`. Without a volume, uploads are erased by a future deployment. PostgreSQL data is stored separately by the PostgreSQL service.
+Public images (product covers, store logo/banner, profile photos, chat attachments, and top-up proof screenshots) are saved to PostgreSQL and cached at `/app/uploads`, so a stateless redeploy no longer breaks newly uploaded media. A Railway volume at `/app/uploads` is still recommended for faster cache hits, but PostgreSQL is the durable source of truth.
 
 Mount a second private volume at `/app/private-uploads` for seller delivery files. That directory is never exposed as static content; files are released only through validated download grants.
 

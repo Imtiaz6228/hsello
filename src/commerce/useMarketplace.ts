@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { apiRequest } from "../api/client";
+import { apiRequest, mediaUrl } from "../api/client";
 import { catalogCategories, type CatalogCategory, type CatalogProduct } from "../data/catalog";
 
 type ApiCategory = {
@@ -46,14 +46,7 @@ function badgeFor(product: ApiProduct) {
 
 function normalizePublicMediaUrl(value?: string | null) {
   if (!value) return null;
-  try {
-    const parsed = new URL(value, window.location.origin);
-    const uploadsIndex = parsed.pathname.indexOf("/uploads/");
-    if (uploadsIndex >= 0) return `${parsed.pathname.slice(uploadsIndex)}${parsed.search}`;
-    return parsed.href;
-  } catch {
-    return value;
-  }
+  return mediaUrl(value);
 }
 
 function mapProduct(product: ApiProduct, index = 0): CatalogProduct {

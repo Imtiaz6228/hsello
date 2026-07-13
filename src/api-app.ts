@@ -79,6 +79,30 @@ app.use("/uploads", express.static(uploadRoot, {
   maxAge: "7d"
 }));
 
+app.get("/uploads/:fileName", asyncHandler(async (req, res) => {
+  const requestedFileName = Array.isArray(req.params.fileName) ? req.params.fileName[0] : req.params.fileName;
+  const fileName = path.basename(requestedFileName);
+  if (!fileName || fileName !== requestedFileName) {
+    res.status(400).json({ message: "Invalid media path.", code: "MEDIA_PATH_INVALID" });
+    return;
+  }
+
+  const upload = await prisma.publicUpload.findUnique({
+    where: { fileName },
+    select: { mimeType: true, data: true, sizeBytes: true, createdAt: true }
+  });
+  if (!upload) {
+    res.status(404).json({ message: "This media file is no longer available. Upload a replacement image.", code: "MEDIA_NOT_FOUND" });
+    return;
+  }
+
+  res.setHeader("Content-Type", upload.mimeType);
+  res.setHeader("Content-Length", String(upload.sizeBytes));
+  res.setHeader("Cache-Control", "public, max-age=604800, immutable");
+  res.setHeader("Last-Modified", upload.createdAt.toUTCString());
+  res.send(Buffer.from(upload.data));
+}));
+
 app.get("/health", (_req, res) => {
   res.json({
     status: "ok",

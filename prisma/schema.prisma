@@ -760,6 +760,17 @@ model HomepageSection {
   @@index([isVisible, sortOrder])
 }
 
+model PublicUpload {
+  id        String   @id @default(uuid())
+  fileName  String   @unique
+  mimeType  String
+  sizeBytes Int
+  data      Bytes
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 // ===== NEXUS Marketplace models =====
 
 model TopupRequest {

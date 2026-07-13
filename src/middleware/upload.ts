@@ -1,7 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import multer from "multer";
+import type { RequestHandler } from "express";
 import { env } from "../config/env.js";
+import { prisma } from "../lib/prisma.js";
 
 export const uploadRoot = path.isAbsolute(env.UPLOAD_DIR)
   ? env.UPLOAD_DIR
@@ -25,7 +27,7 @@ const storage = multer.diskStorage({
   }
 });
 
-export const imageUpload = multer({
+const diskImageUpload = multer({
   storage,
   limits: {
     fileSize: env.MAX_UPLOAD_BYTES,
@@ -40,6 +42,53 @@ export const imageUpload = multer({
     callback(null, true);
   }
 });
+
+async function persistPublicImage(file: Express.Multer.File) {
+  const data = await fs.promises.readFile(file.path);
+  await prisma.publicUpload.upsert({
+    where: { fileName: file.filename },
+    create: {
+      fileName: file.filename,
+      mimeType: file.mimetype,
+      sizeBytes: file.size,
+      data
+    },
+    update: {
+      mimeType: file.mimetype,
+      sizeBytes: file.size,
+      data
+    }
+  });
+}
+
+/**
+ * Public images are written to the local upload cache and PostgreSQL before
+ * the route handler runs. This keeps product images, store branding, profile
+ * photos, chat attachments, and top-up proofs available after a redeploy.
+ */
+export const imageUpload = {
+  single(fieldName: string): RequestHandler {
+    const parse = diskImageUpload.single(fieldName);
+    return (req, res, next) => {
+      parse(req, res, (error) => {
+        if (error) {
+          next(error);
+          return;
+        }
+        if (!req.file) {
+          next();
+          return;
+        }
+        void persistPublicImage(req.file)
+          .then(() => next())
+          .catch(async (persistError) => {
+            await fs.promises.unlink(req.file!.path).catch(() => undefined);
+            next(persistError);
+          });
+      });
+    };
+  }
+};
 
 export function publicUploadUrl(fileName: string) {
   return `${env.API_URL.replace(/\/+$/, "")}/uploads/${encodeURIComponent(fileName)}`;

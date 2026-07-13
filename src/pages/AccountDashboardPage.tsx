@@ -7,7 +7,7 @@ import {
   LockKeyhole, Bell, Search, ChevronDown, Landmark, Smartphone, ClipboardCopy,
   UploadCloud, CheckCircle2, Clock3, ShieldAlert, Menu, X, Heart, Gift, Tag,
   MapPin, SlidersHorizontal, Sparkles, Award, History, KeyRound, PackageOpen,
-  ListChecks, CircleDollarSign, Banknote, Percent, Bookmark, ReceiptText
+  ListChecks, CircleDollarSign, Banknote, Percent, Bookmark, ReceiptText, ImageIcon
 } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import { ApiError, apiRequest, mediaUrl, STAFF_ROLES } from "../api/client";
@@ -27,6 +27,15 @@ type SellerFinance = { availableBalanceCents: number; frozenBalanceCents: number
 type Ticket = { id: string; ticketNumber: string; category: string; status: string; subject: string; updatedAt: string; messages: Array<{ id: string; body: string; author: { firstName: string; role: string } }> };
 type Review = { id: string; rating: number; body: string; createdAt: string; product: { name: string; slug: string }; sellerResponse?: string };
 type Tab = "overview" | "orders" | "active-orders" | "completed-orders" | "pending-orders" | "cancelled-orders" | "refunds" | "downloads" | "purchased-products" | "license-keys" | "activation-codes" | "delivery-history" | "wishlist" | "cart" | "favorites" | "chats" | "messages" | "disputes" | "tickets" | "notifications" | "reviews" | "wallet" | "transactions" | "coupons" | "gift-cards" | "rewards" | "cashback" | "profile" | "security" | "addresses" | "payment-methods" | "preferences" | "seller";
+
+function BuyerMedia({ src, alt, className, fallback }: { src?: string | null; alt: string; className?: string; fallback?: React.ReactNode }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [src]);
+
+  return src && !failed
+    ? <img src={mediaUrl(src)} alt={alt} className={className} loading="lazy" onError={() => setFailed(true)} />
+    : <span className={`${className ?? ""} buyer-media-fallback`} role="img" aria-label={`${alt} image unavailable`}>{fallback ?? <ImageIcon size={22} />}</span>;
+}
 
 const tabs: Array<{ id: Tab; label: string; icon: typeof Home; roles?: string[] }> = [
   { id: "overview", label: "Dashboard", icon: Home },
@@ -431,7 +440,7 @@ export function AccountDashboardPage() {
                       {order.items.map((item) => (
                         <div className="order-item-row" key={item.id}>
                           <div className="oi-info">
-                            {item.product.coverImageUrl ? <img src={mediaUrl(item.product.coverImageUrl)} alt="" className="oi-thumb" /> : <PackageCheck size={20} />}
+                            <BuyerMedia src={item.product.coverImageUrl} alt={item.productName} className="oi-thumb" fallback={<PackageCheck size={22} />} />
                             <div>
                               <Link to={`/products/${item.product.slug}`}>{item.productName}</Link>
                               <small>{item.product.type === "SERVICE" ? "Service delivery" : `${item.downloadGrants.length} file${item.downloadGrants.length === 1 ? "" : "s"}`}</small>
@@ -494,7 +503,7 @@ export function AccountDashboardPage() {
               <div className="downloads-grid buyer-library-grid">
                 {downloads.map(({ order, item, grant }) => (
                   <a href={`/api/commerce/downloads/${grant.id}`} className="download-card" key={grant.id}>
-                    <div className="dc-icon">{item.product.coverImageUrl ? <img src={mediaUrl(item.product.coverImageUrl)} alt="" /> : <Download size={24} />}</div>
+                    <div className="dc-icon"><BuyerMedia src={item.product.coverImageUrl} alt={item.productName} fallback={<Download size={26} />} /></div>
                     <div className="dc-info">
                       <span className="buyer-library-badge">PURCHASED</span>
                       <strong>{item.productName}</strong>
@@ -907,6 +916,7 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, m
   const [withdrawBlockchain, setWithdrawBlockchain] = useState("TRC20 USDT");
   const [withdrawAddress, setWithdrawAddress] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [topupFeedback, setTopupFeedback] = useState<{ kind: "success" | "error" | "info"; text: string } | null>(null);
 
   useEffect(() => {
     setBalance(initialBalance ?? user.balanceCents ?? 0);
@@ -941,7 +951,9 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, m
   async function submitDeposit() {
     const cents = Math.round(parseFloat(depositAmount) * 100);
     if (!cents || cents < 100 || cents > 500000) {
-      setMessage("Enter an amount between $1.00 and $5,000.00.");
+      const text = "Enter an amount between $1.00 and $5,000.00.";
+      setTopupFeedback({ kind: "error", text });
+      setMessage(text);
       return;
     }
     setBusy(true);
@@ -951,12 +963,17 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, m
         body: { amountCents: cents, method: depositMethod }
       });
       setMessage(data.message);
+      setTopupFeedback({ kind: "success", text: "Payment request created. Send the exact amount, then add your TXID and screenshot below." });
       setActiveTopup(data.topup);
       setProofTx("");
       setProofFile(null);
       await refreshWallet();
     } catch (error) {
-      setMessage(error instanceof ApiError ? error.message : "Deposit failed.");
+      const text = error instanceof ApiError
+        ? error.message
+        : "We could not create the payment request. Your balance was not charged. Please try again.";
+      setTopupFeedback({ kind: "error", text });
+      setMessage(text);
     } finally {
       setBusy(false);
     }
@@ -964,7 +981,9 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, m
 
   async function submitProof() {
     if (!activeTopup || !proofTx.trim() || !proofFile) {
-      setMessage("Add the transaction ID and payment screenshot before sending your proof.");
+      const text = "Add the transaction ID and payment screenshot before sending your proof.";
+      setTopupFeedback({ kind: "error", text });
+      setMessage(text);
       return;
     }
     setBusy(true);
@@ -974,13 +993,18 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, m
       payload.append("screenshot", proofFile);
       const data = await apiRequest<{ message: string }>(`/api/wallet/topups/${activeTopup.id}/proof`, { method: "POST", body: payload });
       setMessage(data.message);
+      setTopupFeedback({ kind: "success", text: data.message });
       setDepositAmount("");
       setActiveTopup(null);
       setProofTx("");
       setProofFile(null);
       await refreshWallet();
     } catch (error) {
-      setMessage(error instanceof ApiError ? error.message : "Payment proof could not be submitted.");
+      const text = error instanceof ApiError
+        ? error.message
+        : "We could not submit the proof. The payment request is still saved; please retry without sending another payment.";
+      setTopupFeedback({ kind: "error", text });
+      setMessage(text);
     } finally {
       setBusy(false);
     }
@@ -1043,6 +1067,12 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, m
         <span className={proofFile && proofTx ? "active" : ""}><b>4</b>Upload proof</span>
       </div>
 
+      {topupFeedback ? <div className={`wallet-inline-notice ${topupFeedback.kind}`} role={topupFeedback.kind === "error" ? "alert" : "status"}>
+        {topupFeedback.kind === "error" ? <ShieldAlert /> : topupFeedback.kind === "success" ? <CheckCircle2 /> : <Clock3 />}
+        <span>{topupFeedback.text}</span>
+        <button type="button" aria-label="Dismiss message" onClick={() => setTopupFeedback(null)}><X /></button>
+      </div> : null}
+
       <div className="wallet-summary-grid">
         <div className="wallet-balance-banner">
           <Wallet size={32} />
@@ -1072,13 +1102,14 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, m
       <div className="wallet-action-grid">
         <div className="wallet-deposit-form">
           <h2>Crypto top-up</h2>
-          <p>Choose one network only. We will show its payment address after you set the amount.</p>
+          <p>Choose one network only. The verified destination address is shown immediately below.</p>
           <div className="deposit-method-tabs">
             {methods.map((m) => {
               const Icon = m.icon;
               return (
                 <button
                   key={m.value}
+                  type="button"
                   className={depositMethod === m.value ? "active" : ""}
                   onClick={() => setDepositMethod(m.value)}
                 >
@@ -1105,7 +1136,7 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, m
                 onChange={(e) => setDepositAmount(e.target.value)}
               />
             </div>
-            <button className="primary-button" disabled={busy} onClick={() => void submitDeposit()}>
+            <button type="button" className="primary-button" disabled={busy} onClick={() => void submitDeposit()}>
               <PlusCircle size={16} /> {busy ? "Creating…" : "Create payment"}
             </button>
           </div>
@@ -1140,8 +1171,24 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, m
       {activeTopup ? <section className="topup-proof-card" id="topup-payment-request">
         <header><div><span className="section-index">PAYMENT REQUEST</span><h2>Send exactly {formatMoney(activeTopup.amountCents)}</h2><p>{activeTopup.method.replaceAll("_", " ")} · request {activeTopup.reference}</p></div><span className="status-pill pending">AWAITING PAYMENT</span></header>
         <div className="topup-address-box"><small>Send only to this address</small><code>{activeTopup.depositAddress}</code><button type="button" onClick={() => void navigator.clipboard?.writeText(activeTopup.depositAddress ?? "")}><ClipboardCopy size={15} /> Copy address</button></div>
-        <div className="topup-proof-grid"><label><span>Transaction ID / TXID *</span><input value={proofTx} onChange={(event) => setProofTx(event.target.value)} placeholder="Paste the transaction hash" /></label><label className="topup-upload"><UploadCloud size={21} /><span>{proofFile ? proofFile.name : "Upload payment screenshot *"}</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setProofFile(event.target.files?.[0] ?? null)} /></label></div>
-        <footer><small><Clock3 size={14} /> Admin will approve or reject this proof. Approved funds are added to available balance automatically.</small><button className="primary-button" disabled={busy || !proofTx.trim() || !proofFile} onClick={() => void submitProof()}><CheckCircle2 size={16} /> {busy ? "Confirming…" : "Confirm payment & submit proof"}</button></footer>
+        <div className="topup-proof-grid"><label><span>Transaction ID / TXID *</span><input value={proofTx} minLength={6} onChange={(event) => setProofTx(event.target.value)} placeholder="Paste the transaction hash" /></label><label className="topup-upload"><UploadCloud size={24} /><span>{proofFile ? proofFile.name : "Upload payment screenshot *"}</span><small>JPEG, PNG or WebP · maximum 8 MB</small><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => {
+          const file = event.target.files?.[0] ?? null;
+          if (file && !["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+            setProofFile(null);
+            setTopupFeedback({ kind: "error", text: "Use a JPEG, PNG, or WebP screenshot." });
+            event.currentTarget.value = "";
+            return;
+          }
+          if (file && file.size > 8 * 1024 * 1024) {
+            setProofFile(null);
+            setTopupFeedback({ kind: "error", text: "The screenshot is larger than 8 MB. Choose a smaller image." });
+            event.currentTarget.value = "";
+            return;
+          }
+          setProofFile(file);
+          if (file) setTopupFeedback({ kind: "info", text: "Screenshot attached. Confirm the TXID, then submit the proof for admin review." });
+        }} /></label></div>
+        <footer><small><Clock3 size={17} /> Admin will approve or reject this proof. Approved funds are added to available balance automatically.</small><button type="button" className="primary-button" disabled={busy || proofTx.trim().length < 6 || !proofFile} onClick={() => void submitProof()}><CheckCircle2 size={18} /> {busy ? "Confirming…" : "Confirm payment & submit proof"}</button></footer>
       </section> : null}
 
       {user.role === "SELLER" && withdrawals.length > 0 && (

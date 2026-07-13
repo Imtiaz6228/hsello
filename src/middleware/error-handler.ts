@@ -71,12 +71,22 @@ export function errorHandler(
     return;
   }
 
-  if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-    res.status(409).json({
-      message: "An account with that unique value already exists.",
-      code: "UNIQUE_CONSTRAINT"
-    });
-    return;
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    if (error.code === "P2002") {
+      res.status(409).json({
+        message: "That transaction or unique value has already been submitted.",
+        code: "UNIQUE_CONSTRAINT"
+      });
+      return;
+    }
+
+    if (error.code === "P2021" || error.code === "P2022") {
+      res.status(503).json({
+        message: "The wallet database update is not installed yet. Deploy the latest server migration, then try again.",
+        code: "DATABASE_MIGRATION_REQUIRED"
+      });
+      return;
+    }
   }
 
   if (error instanceof Error && (

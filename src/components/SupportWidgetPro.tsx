@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MessageCircle, X, Send, Mic, Paperclip, Sparkles, UserRoundCheck } from "lucide-react";
+import { MessageCircle, X, Send, Sparkles, UserRoundCheck, ShieldCheck } from "lucide-react";
 import { apiRequest } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 
@@ -17,16 +17,27 @@ export function SupportWidgetPro() {
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [recording, setRecording] = useState(false);
   const [humanMode, setHumanMode] = useState(false);
   const [handoffMessage, setHandoffMessage] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (!open || !user || sessionId) return;
+    void apiRequest<{ sessions: Array<{ id: string; status: string; messages: Message[] }> }>("/api/nexus/chat/sessions")
+      .then((data) => {
+        const latest = data.sessions[0];
+        if (!latest) return;
+        setSessionId(latest.id);
+        setHumanMode(latest.status === "HUMAN");
+        setMessages(latest.messages);
+      })
+      .catch(() => undefined);
+  }, [open, sessionId, user]);
 
   useEffect(() => {
     if (!open || !humanMode || !sessionId) return;
@@ -44,7 +55,7 @@ export function SupportWidgetPro() {
     if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
     typingTimerRef.current = setTimeout(() => {
       if (sessionId) {
-        void apiRequest("/api/nexus/live/typing", { method: "POST", body: { isTyping } }).catch(() => undefined);
+        void apiRequest("/api/nexus/live/typing", { method: "POST", body: { sessionId, isTyping } }).catch(() => undefined);
       }
     }, 300);
   }, [sessionId]);
@@ -54,8 +65,22 @@ export function SupportWidgetPro() {
     const userMsg: Message = { id: Date.now().toString(), role: "user", body: text };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
-    setTyping(!humanMode);
+    setTyping(!humanMode && Boolean(user));
     debouncedTyping(true);
+
+    if (!user) {
+      const normalized = text.toLowerCase();
+      const reply = normalized.includes("sell")
+        ? "Create an account, verify your email, then submit a seller application. Approved sellers can publish products from Seller Studio."
+        : normalized.includes("protect") || normalized.includes("refund")
+          ? "Payments, delivery records, order chat, dispute windows, and admin review protect marketplace purchases. Sign in for help with a specific order."
+          : "Browse the catalog, review the seller and delivery terms, add a product to cart, then sign in to complete protected checkout.";
+      window.setTimeout(() => {
+        setMessages((prev) => [...prev, { id: `${Date.now()}-guest`, role: "assistant", body: reply, quickActions: ["How buying works", "How to sell", "Buyer protection"] }]);
+        setTyping(false);
+      }, 350);
+      return;
+    }
 
     try {
       if (humanMode && sessionId) {
@@ -85,43 +110,16 @@ export function SupportWidgetPro() {
 
   const requestHuman = useCallback(async () => {
     if (!user) { setHandoffMessage("Sign in to start a secure chat with an administrator."); return; }
-    if (!sessionId) { await sendMessage("I would like to chat with an administrator."); setHandoffMessage("Your support conversation is ready. Tap Chat with admin once more."); return; }
     try {
-      await apiRequest(`/api/nexus/chat/${sessionId}/human`, { method: "POST" });
+      const result = await apiRequest<{ sessionId: string; message: string }>("/api/nexus/chat/human", { method: "POST", body: { sessionId: sessionId ?? undefined } });
+      setSessionId(result.sessionId);
       setHumanMode(true);
       setHandoffMessage("An administrator has been notified. Messages will appear here in real time.");
     } catch { setHandoffMessage("Admin handoff could not start. Please try again."); }
-  }, [sendMessage, sessionId, user]);
+  }, [sessionId, user]);
 
   const handleQuickAction = useCallback((action: string) => {
     void sendMessage(action);
-  }, [sendMessage]);
-
-  useEffect(() => {
-    if (!open) return;
-    const handlePaste = async (e: ClipboardEvent) => {
-      const items = e.clipboardData?.items;
-      if (!items) return;
-      for (const item of items) {
-        if (item.type.startsWith("image/")) {
-          const file = item.getAsFile();
-          if (file) {
-            void sendMessage("I pasted a screenshot for analysis.");
-          }
-        }
-      }
-    };
-    window.addEventListener("paste", handlePaste);
-    return () => window.removeEventListener("paste", handlePaste);
-  }, [open, sendMessage]);
-
-  const startRecording = useCallback(() => {
-    setRecording(true);
-  }, []);
-
-  const stopRecording = useCallback(async () => {
-    setRecording(false);
-    void sendMessage("🎤 Voice message transcribed: I need help with my order.");
   }, [sendMessage]);
 
   if (!open) {
@@ -187,7 +185,7 @@ export function SupportWidgetPro() {
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "12px", maxHeight: "400px" }}>
-        <button className="admin-handoff-button" onClick={() => void requestHuman()}><UserRoundCheck size={16} /> {humanMode ? "Admin chat active" : "Chat with admin"}</button>
+        <button className="admin-handoff-button" onClick={() => void requestHuman()} disabled={humanMode}><UserRoundCheck size={16} /> {humanMode ? "Admin chat active" : "Chat with admin"}</button>
         {handoffMessage ? <div className="admin-handoff-note">{handoffMessage}</div> : null}
         {messages.length === 0 && (
           <div style={{ textAlign: "center", color: "#71717a", fontSize: "13px", padding: "20px" }}>
@@ -253,31 +251,7 @@ export function SupportWidgetPro() {
       </div>
 
       <div style={{ padding: "12px", background: "#18181b", borderTop: "1px solid #27272a", display: "flex", gap: "8px", alignItems: "center" }}>
-        <input
-          type="file"
-          ref={fileInputRef}
-          style={{ display: "none" }}
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) void sendMessage(`Attached: ${file.name}`);
-          }}
-        />
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          style={{ background: "none", border: "none", color: "#71717a", cursor: "pointer", padding: "4px" }}
-          title="Attach file"
-        >
-          <Paperclip size={18} />
-        </button>
-        <button
-          onMouseDown={startRecording}
-          onMouseUp={stopRecording}
-          onMouseLeave={stopRecording}
-          style={{ background: "none", border: "none", color: recording ? "#ef4444" : "#71717a", cursor: "pointer", padding: "4px" }}
-          title="Hold to record voice"
-        >
-          <Mic size={18} />
-        </button>
+        <ShieldCheck size={17} color="#34d399" aria-hidden="true" />
         <input
           value={input}
           onChange={(e) => {

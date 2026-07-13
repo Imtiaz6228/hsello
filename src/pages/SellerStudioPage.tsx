@@ -2,7 +2,7 @@ import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react
 import {
   ArrowLeft, BadgeCheck, BarChart3, Boxes, CheckCircle2, FileUp, ImagePlus,
   LayoutDashboard, LogOut, PackagePlus, Palette, Send, ShoppingBag, Store,
-  Upload, WalletCards
+  Upload, WalletCards, MessageSquare, ArrowRight
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ApiError, apiRequest } from "../api/client";
@@ -52,6 +52,7 @@ type SellerOrder = {
   totalCents: number;
   quantity: number;
   order: {
+    id: string;
     orderNumber: string;
     status: string;
     createdAt: string;
@@ -60,12 +61,13 @@ type SellerOrder = {
   };
 };
 
-type Tab = "overview" | "products" | "orders" | "storefront";
+type Tab = "overview" | "products" | "orders" | "messages" | "storefront";
 
 const sellerTabs: Array<{ id: Tab; label: string; icon: typeof Store }> = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "products", label: "Products", icon: Boxes },
   { id: "orders", label: "Orders", icon: ShoppingBag },
+  { id: "messages", label: "Messages", icon: MessageSquare },
   { id: "storefront", label: "Store branding", icon: Palette }
 ];
 
@@ -164,6 +166,15 @@ export function SellerStudioPage() {
     setTabState(next);
     window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${next}`);
   }
+
+  useEffect(() => {
+    const syncTab = () => {
+      const hash = window.location.hash.replace("#", "");
+      if (validTab(hash)) setTabState(hash);
+    };
+    window.addEventListener("hashchange", syncTab);
+    return () => window.removeEventListener("hashchange", syncTab);
+  }, []);
 
   const load = useCallback(async () => {
     const [productsData, categoriesData, profileData, ordersData] = await Promise.all([
@@ -425,7 +436,9 @@ export function SellerStudioPage() {
           }) : <div className="dashboard-empty"><FileUp /><h2>No products yet</h2><p>Create your first listing with a product image and the full admin-managed category path.</p><button className="primary-button" onClick={() => setOpen(true)}>Create product</button></div>}
         </section> : null}
 
-        {tab === "orders" ? <section className="seller-orders-grid">{orders.length ? orders.map((item) => <article key={item.id}><header><span>{item.productName.slice(0, 2).toUpperCase()}</span><div><strong>{item.productName}</strong><small>{item.order.orderNumber} · {new Date(item.order.createdAt).toLocaleDateString()}</small></div><b>{item.order.status.replaceAll("_", " ")}</b></header><div><span><small>Buyer</small><strong>{item.order.buyer.firstName} {item.order.buyer.lastName}</strong></span><span><small>Quantity</small><strong>{item.quantity}</strong></span><span><small>Total</small><strong>{formatMoney(item.totalCents)}</strong></span><span><small>Payment</small><strong>{item.order.payment?.status ?? "Pending"}</strong></span></div></article>) : <div className="dashboard-empty"><ShoppingBag /><h2>No seller orders yet</h2><p>Approved products and completed purchases will appear here.</p></div>}</section> : null}
+        {tab === "orders" ? <section className="seller-orders-grid">{orders.length ? orders.map((item) => <article key={item.id}><header><span>{item.productName.slice(0, 2).toUpperCase()}</span><div><strong>{item.productName}</strong><small>{item.order.orderNumber} · {new Date(item.order.createdAt).toLocaleDateString()}</small></div><b>{item.order.status.replaceAll("_", " ")}</b></header><div><span><small>Buyer</small><strong>{item.order.buyer.firstName} {item.order.buyer.lastName}</strong></span><span><small>Quantity</small><strong>{item.quantity}</strong></span><span><small>Total</small><strong>{formatMoney(item.totalCents)}</strong></span><span><small>Payment</small><strong>{item.order.payment?.status ?? "Pending"}</strong></span></div><footer><Link to={`/orders/${item.order.id}`}><MessageSquare size={15} /> Open buyer chat <ArrowRight size={14} /></Link></footer></article>) : <div className="dashboard-empty"><ShoppingBag /><h2>No seller orders yet</h2><p>Approved products and completed purchases will appear here.</p></div>}</section> : null}
+
+        {tab === "messages" ? <section className="seller-message-center"><header><div><span className="section-index">ORDER INBOX</span><h2>Buyer conversations</h2><p>Chats are tied to real orders, keeping delivery and dispute history protected.</p></div><span>{orders.length} conversations</span></header>{orders.length ? <div>{orders.map((item) => <Link to={`/orders/${item.order.id}`} key={item.id}><span>{item.order.buyer.firstName[0]}{item.order.buyer.lastName[0]}</span><div><strong>{item.order.buyer.firstName} {item.order.buyer.lastName}</strong><small>{item.productName} · {item.order.orderNumber}</small></div><b className={`status-pill ${item.order.status.toLowerCase()}`}>{item.order.status.replaceAll("_", " ")}</b><ArrowRight /></Link>)}</div> : <div className="dashboard-empty"><MessageSquare /><h2>No conversations yet</h2><p>Buyer chats become available as soon as you receive an order.</p></div>}</section> : null}
 
         {tab === "storefront" ? <section className="seller-branding-layout">
           <article className="seller-brand-preview" style={profile?.bannerUrl ? { backgroundImage: `linear-gradient(135deg, rgba(19,27,52,.78), rgba(87,62,211,.55)), url(${profile.bannerUrl})` } : undefined}><span>{profile?.logoUrl ? <img src={profile.logoUrl} alt="Store logo" /> : (profile?.storeName ?? "Store").slice(0, 2).toUpperCase()}</span><div><small>PUBLIC STOREFRONT</small><h2>{profile?.storeName}</h2><p>{profile?.about}</p><b>{profile?.isVerified ? "✓ Verified seller" : "Seller"}</b></div></article>

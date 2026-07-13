@@ -30,6 +30,27 @@ nexusRouter.get("/chat/sessions", asyncHandler(async (req, res) => {
   res.json({ sessions });
 }));
 
+nexusRouter.post("/chat/human", asyncHandler(async (req, res) => {
+  const input = z.object({
+    sessionId: z.string().uuid().optional(),
+    message: z.string().trim().min(1).max(4000).default("I would like to chat with an administrator.")
+  }).parse(req.body);
+  let session = input.sessionId
+    ? await prisma.chatSession.findFirst({ where: { id: input.sessionId, userId: req.auth!.id } })
+    : null;
+  if (!session) {
+    session = await prisma.chatSession.create({
+      data: { userId: req.auth!.id, subject: input.message.slice(0, 80), status: "HUMAN" }
+    });
+    await prisma.chatMessage.create({
+      data: { sessionId: session.id, authorId: req.auth!.id, role: "user", body: input.message }
+    });
+  } else {
+    await prisma.chatSession.update({ where: { id: session.id }, data: { status: "HUMAN", resolved: false } });
+  }
+  res.json({ sessionId: session.id, message: "An administrator has been notified." });
+}));
+
 nexusRouter.post("/chat/:id/human", asyncHandler(async (req, res) => {
   const id = String(req.params.id);
   const session = await prisma.chatSession.findFirst({ where: { id, userId: req.auth!.id } });

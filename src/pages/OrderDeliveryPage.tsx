@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Download, MessageCircle, Send, ShieldCheck } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { ApiError, apiRequest } from "../api/client";
@@ -32,8 +32,10 @@ export function OrderDeliveryPage() {
   const [body, setBody] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
   const [error, setError] = useState("");
+  const [sending, setSending] = useState(false);
+  const threadEndRef = useRef<HTMLDivElement>(null);
 
-  const load = async () => {
+  const load = useCallback(async (silent = false) => {
     try {
       const [orderData, messageData] = await Promise.all([
         apiRequest<{ order: OrderDetail }>(`/api/commerce/orders/${id}`),
@@ -41,17 +43,23 @@ export function OrderDeliveryPage() {
       ]);
       setOrder(orderData.order);
       setMessages(messageData.messages);
-      setError("");
+      if (!silent) setError("");
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : "Could not load the order.");
     }
-  };
+  }, [id]);
 
-  useEffect(() => { void load(); }, [id]);
+  useEffect(() => {
+    void load();
+    const timer = window.setInterval(() => void load(true), 5000);
+    return () => window.clearInterval(timer);
+  }, [load]);
+  useEffect(() => { threadEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages.length]);
 
   async function send(event: FormEvent) {
     event.preventDefault();
     if (!body.trim()) return;
+    setSending(true);
     try {
       const payload = new FormData();
       payload.append("body", body);
@@ -62,6 +70,8 @@ export function OrderDeliveryPage() {
       await load();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : "Message could not be sent.");
+    } finally {
+      setSending(false);
     }
   }
 
@@ -168,7 +178,7 @@ export function OrderDeliveryPage() {
       <div className="order-chat">
         {error ? <div className="notice error">{error}</div> : null}
         {messages.length ? messages.map((message) => (
-          <article key={message.id}>
+          <article className={message.author.id === user?.id ? "own-message" : ""} key={message.id}>
             <span>{message.author.firstName[0]}</span>
             <div>
               <header><strong>{message.author.firstName}</strong><small>{message.author.role.replace("_", " ")} · {new Date(message.createdAt).toLocaleString()}</small></header>
@@ -177,12 +187,13 @@ export function OrderDeliveryPage() {
             </div>
           </article>
         )) : <div className="no-tickets"><MessageCircle /><strong>No messages yet</strong><p>Start the order conversation below.</p></div>}
+        <div ref={threadEndRef} />
         <form onSubmit={send}>
-          <textarea value={body} onChange={(event) => setBody(event.target.value)} placeholder="Write a message about delivery…" rows={4} />
+          <textarea value={body} onChange={(event) => setBody(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} placeholder="Write a message about delivery…" rows={4} />
           <div className="chat-compose-actions">
             <label className="upload-action">Attach screenshot<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setAttachment(event.target.files?.[0] ?? null)} /></label>
             {attachment ? <small>{attachment.name}</small> : null}
-            <button><Send /> Send message</button>
+            <button disabled={sending || !body.trim()}><Send /> {sending ? "Sending…" : "Send message"}</button>
           </div>
         </form>
       </div>

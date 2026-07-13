@@ -26,6 +26,7 @@ import {
   WalletCards,
   Landmark,
   MessageSquare,
+  Send,
   type LucideIcon
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -159,6 +160,14 @@ const nav: NavItem[] = [
   { id: "homepage", label: "Homepage", icon: LayoutTemplate }
 ];
 
+const adminPathTabs: Record<string, Tab> = {
+  "/admin/seller-applications": "sellers",
+  "/admin/approvals": "products",
+  "/admin/live": "chats",
+  "/admin/kb/editor": "tickets",
+  "/admin/earnings": "overview"
+};
+
 function money(cents = 0) {
   return `$${(cents / 100).toFixed(2)}`;
 }
@@ -199,7 +208,7 @@ export function OperationsAdminPage() {
   const { user } = useAuth();
   const [tab, setTabState] = useState<Tab>(() => {
     const hash = window.location.hash.replace("#", "") as Tab;
-    return nav.some((item) => item.id === hash) ? hash : "overview";
+    return nav.some((item) => item.id === hash) ? hash : adminPathTabs[window.location.pathname] ?? "overview";
   });
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
@@ -219,6 +228,8 @@ export function OperationsAdminPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [homepageSections, setHomepageSections] = useState<HomepageSection[]>([]);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
+  const [activeChatId, setActiveChatId] = useState("");
+  const [chatReply, setChatReply] = useState("");
   const [categoryForm, setCategoryForm] = useState({ name: "", slug: "", description: "", parentId: "", sortOrder: 1000 });
   const [categoryCreating, setCategoryCreating] = useState(false);
   const [productCreatorOpen, setProductCreatorOpen] = useState(false);
@@ -234,6 +245,15 @@ export function OperationsAdminPage() {
     setTabState(next);
     window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${next}`);
   }
+
+  useEffect(() => {
+    const syncTab = () => {
+      const hash = window.location.hash.replace("#", "") as Tab;
+      if (nav.some((item) => item.id === hash)) setTabState(hash);
+    };
+    window.addEventListener("hashchange", syncTab);
+    return () => window.removeEventListener("hashchange", syncTab);
+  }, []);
 
   const load = useCallback(async () => {
     setMessage("");
@@ -281,6 +301,20 @@ export function OperationsAdminPage() {
       setMessage(error instanceof ApiError ? error.message : "Could not load this workspace.");
     }
   }, [tab]);
+
+  useEffect(() => {
+    if (tab === "chats" && chatSessions.length && !chatSessions.some((session) => session.id === activeChatId)) {
+      setActiveChatId(chatSessions[0].id);
+    }
+  }, [activeChatId, chatSessions, tab]);
+
+  async function sendAdminChat(event: FormEvent) {
+    event.preventDefault();
+    if (!activeChatId || !chatReply.trim()) return;
+    const text = chatReply.trim();
+    setChatReply("");
+    await post(activeChatId, `/api/nexus/admin/chats/${activeChatId}/reply`, { body: text });
+  }
 
   useEffect(() => {
     void load();
@@ -451,7 +485,7 @@ export function OperationsAdminPage() {
         {tab === "refunds" && <SimpleRows rows={refunds.map((refund) => ({ id: refund.id, title: `${refund.order.orderNumber} · ${money(refund.amountCents)}`, meta: `${refund.requestedBy.email} · ${refund.reason}`, status: refund.status, actions: <><button disabled={busy === refund.id} onClick={() => void act(refund.id, `/api/admin/refunds/${refund.id}`, { status: "COMPLETED" })}>Complete refund</button><button disabled={busy === refund.id} onClick={() => void act(refund.id, `/api/admin/refunds/${refund.id}`, { status: "REJECTED", adminNotes: window.prompt("Reason") || "Rejected by admin." })}>Reject</button></> }))} />}
         {tab === "disputes" && <SimpleRows rows={disputes.map((dispute) => ({ id: dispute.id, title: `${dispute.order.orderNumber} · ${dispute.subject}`, meta: `${dispute.openedBy.email} · ${dispute.description}${dispute.autoCloseAt ? ` · waiting for ${dispute.awaitingParty} until ${new Date(dispute.autoCloseAt).toLocaleString()}` : ""}`, status: dispute.status, actions: <><button className="approve" disabled={busy === dispute.id} onClick={() => void act(dispute.id, `/api/admin/disputes/${dispute.id}`, { status: "RESOLVED_BUYER", resolution: window.prompt("Buyer-favor resolution") || "Admin favored buyer." })}>Favor buyer</button><button disabled={busy === dispute.id} onClick={() => void act(dispute.id, `/api/admin/disputes/${dispute.id}`, { status: "RESOLVED_SELLER", resolution: window.prompt("Seller-favor resolution") || "Admin favored seller." })}>Favor seller</button><button disabled={busy === dispute.id} onClick={() => void post(dispute.id, `/api/admin/disputes/${dispute.id}/message`, { body: window.prompt("Admin message") || "Admin is reviewing this dispute." })}>Message</button><button className="danger" disabled={busy === dispute.id} onClick={() => void act(dispute.id, `/api/admin/disputes/${dispute.id}`, { status: "CLOSED", resolution: window.prompt("Resolution note") || "Closed by admin." })}>Close</button></> }))} />}
         {tab === "tickets" && <SimpleRows rows={tickets.map((ticket) => ({ id: ticket.id, title: `${ticket.ticketNumber} · ${ticket.subject}`, meta: `${ticket.creator.email} · ${ticket.category}`, status: ticket.status, actions: <><button disabled={busy === ticket.id} onClick={() => void post(ticket.id, `/api/admin/tickets/${ticket.id}/reply`, { body: window.prompt("Reply") || "Admin reviewed this ticket.", status: "PENDING", isInternal: false })}>Reply</button></> }))} />}
-        {tab === "chats" && <section className="admin-chat-inbox">{chatSessions.length ? chatSessions.map((session) => <article key={session.id}><header><div className="chat-user-avatar">{session.user.firstName[0]}{session.user.lastName[0]}</div><div><strong>{session.user.firstName} {session.user.lastName}</strong><small>{session.user.email} · {session.status.toLowerCase()}</small></div><Status value={session.status} /></header><div className="admin-chat-thread">{session.messages.slice(-6).map((entry) => <div className={`admin-chat-message ${entry.role}`} key={entry.id}><small>{entry.role === "admin" ? "Admin" : entry.role === "assistant" ? "AI assistant" : session.user.firstName}</small><p>{entry.body}</p></div>)}</div><footer><button disabled={busy === session.id} onClick={() => void post(session.id, `/api/nexus/admin/chats/${session.id}/reply`, { body: window.prompt("Reply to this user") || "An administrator has joined the conversation." })}><MessageSquare size={14} /> Reply as admin</button><time>{new Date(session.updatedAt).toLocaleString()}</time></footer></article>) : <EmptyState label="No support conversations yet." />}</section>}
+        {tab === "chats" && <section className="admin-chat-console">{chatSessions.length ? <><aside className="admin-chat-list">{chatSessions.map((session) => <button key={session.id} className={activeChatId === session.id ? "active" : ""} onClick={() => setActiveChatId(session.id)}><span className="chat-user-avatar">{session.user.firstName[0]}{session.user.lastName[0]}</span><span><strong>{session.user.firstName} {session.user.lastName}</strong><small>{session.messages[session.messages.length - 1]?.body ?? "No messages"}</small></span><Status value={session.status} /></button>)}</aside>{chatSessions.filter((session) => session.id === activeChatId).map((session) => <article className="admin-chat-focus" key={session.id}><header><div className="chat-user-avatar">{session.user.firstName[0]}{session.user.lastName[0]}</div><div><strong>{session.user.firstName} {session.user.lastName}</strong><small>{session.user.email} · {session.user.role.toLowerCase()}</small></div><Status value={session.status} /></header><div className="admin-chat-thread">{session.messages.map((entry) => <div className={`admin-chat-message ${entry.role}`} key={entry.id}><small>{entry.role === "admin" ? "Admin" : entry.role === "assistant" ? "AI assistant" : session.user.firstName}</small><p>{entry.body}</p></div>)}</div><form className="admin-chat-composer" onSubmit={sendAdminChat}><textarea value={chatReply} onChange={(event) => setChatReply(event.target.value)} placeholder={`Reply to ${session.user.firstName}…`} rows={3} /><button disabled={busy === session.id || !chatReply.trim()}><Send size={15} /> {busy === session.id ? "Sending…" : "Send reply"}</button></form></article>)}</> : <EmptyState label="No support conversations yet." />}</section>}
         {tab === "categories" && <section className="admin-category-workspace">
           {canManageCatalog ? <form className="admin-category-creator" onSubmit={createCategory}>
             <header><span><FolderPlus /></span><div><h2>Create category or subcategory</h2><p>New entries instantly flow into homepage browsing and the seller product form.</p></div></header>

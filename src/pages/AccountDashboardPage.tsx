@@ -55,6 +55,14 @@ export function AccountDashboardPage() {
     setTabState(next);
     window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${next}`);
   }
+  useEffect(() => {
+    const syncTab = () => {
+      const hash = window.location.hash.replace("#", "") as Tab;
+      if (tabs.some((item) => item.id === hash)) setTabState(hash);
+    };
+    window.addEventListener("hashchange", syncTab);
+    return () => window.removeEventListener("hashchange", syncTab);
+  }, []);
   const [orders, setOrders] = useState<Order[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [chats, setChats] = useState<Chat[]>([]);

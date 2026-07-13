@@ -105,6 +105,15 @@ function apiUrl(path: string) {
   return `${activeApiBaseUrl}${path}`;
 }
 
+export function mediaUrl(value?: string | null) {
+  if (!value) return "";
+  if (/^https?:\/\//i.test(value) || value.startsWith("data:") || value.startsWith("blob:")) return value;
+  if (value.startsWith("/uploads/")) {
+    return import.meta.env.DEV && !useRemoteApi ? value : `${remoteApiUrl}${value}`;
+  }
+  return value;
+}
+
 function networkErrorMessage() {
   return import.meta.env.DEV
     ? "Cannot reach the local authentication service. Start the API server with npm run dev:api and keep the Vite proxy on /api."

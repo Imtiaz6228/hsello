@@ -8,7 +8,7 @@ import {
   UploadCloud, CheckCircle2, Clock3, ShieldAlert
 } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
-import { ApiError, apiRequest, STAFF_ROLES } from "../api/client";
+import { ApiError, apiRequest, mediaUrl, STAFF_ROLES } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { Seo } from "../components/Seo";
 import { EarningsChart } from "../components/EarningsChart";
@@ -28,6 +28,7 @@ type Tab = "overview" | "orders" | "downloads" | "chats" | "disputes" | "tickets
 
 const tabs: Array<{ id: Tab; label: string; icon: typeof Home; roles?: string[] }> = [
   { id: "overview", label: "Overview", icon: Home },
+  { id: "wallet", label: "Top Up", icon: Wallet },
   { id: "orders", label: "Orders", icon: ShoppingBag },
   { id: "downloads", label: "Downloads", icon: Download },
   { id: "chats", label: "Chats", icon: MessageSquare },
@@ -35,7 +36,6 @@ const tabs: Array<{ id: Tab; label: string; icon: typeof Home; roles?: string[] 
   { id: "tickets", label: "Support", icon: Headphones },
   { id: "reviews", label: "Reviews", icon: Star },
   { id: "seller", label: "Seller Hub", icon: Store, roles: ["SELLER"] },
-  { id: "wallet", label: "Wallet", icon: Wallet },
   { id: "profile", label: "Profile", icon: UserRound },
 ];
 
@@ -290,6 +290,11 @@ export function AccountDashboardPage() {
               <div className="metric-card"><TicketCheck size={22} /><span><strong>{tickets.filter((t) => t.status !== "CLOSED" && t.status !== "RESOLVED").length}</strong><small>Open tickets</small></span></div>
               <div className="metric-card"><Headphones size={22} /><span><strong>Every day</strong><small>Support coverage</small></span></div>
             </div>
+            <button type="button" className="buyer-topup-hero" onClick={() => selectTab("wallet")}>
+              <span className="buyer-topup-icon"><Wallet /></span>
+              <span><small>BUYER BALANCE</small><strong>Top up your wallet securely</strong><b>{formatMoney(walletBalance)} available · USDT and crypto supported</b></span>
+              <i>Top up now <ArrowRight /></i>
+            </button>
             {orders.length > 0 && (
               <div className="recent-section">
                 <div className="section-heading-row"><h2>Recent orders</h2><Link to="#orders" onClick={() => selectTab("orders")}>View all <ArrowRight size={16} /></Link></div>
@@ -323,6 +328,7 @@ export function AccountDashboardPage() {
               </div>
             )}
             <div className="quick-actions">
+              <Link to="#wallet" onClick={() => selectTab("wallet")} className="action-card action-card-topup"><Wallet size={20} /><span><strong>Top up balance</strong><small>Fund purchases with crypto</small></span><ArrowRight size={16} /></Link>
               <Link to="/catalog" className="action-card"><PackageCheck size={20} /><span><strong>Browse marketplace</strong><small>Discover new products</small></span><ArrowRight size={16} /></Link>
               <Link to="/support" className="action-card"><Headphones size={20} /><span><strong>Get help</strong><small>Support center & tickets</small></span><ArrowRight size={16} /></Link>
               <Link to="#orders" onClick={() => selectTab("orders")} className="action-card"><ShoppingBag size={20} /><span><strong>My orders</strong><small>{orders.length} orders</small></span><ArrowRight size={16} /></Link>
@@ -355,7 +361,7 @@ export function AccountDashboardPage() {
                       {order.items.map((item) => (
                         <div className="order-item-row" key={item.id}>
                           <div className="oi-info">
-                            {item.product.coverImageUrl ? <img src={item.product.coverImageUrl} alt="" className="oi-thumb" /> : <PackageCheck size={20} />}
+                            {item.product.coverImageUrl ? <img src={mediaUrl(item.product.coverImageUrl)} alt="" className="oi-thumb" /> : <PackageCheck size={20} />}
                             <div>
                               <Link to={`/products/${item.product.slug}`}>{item.productName}</Link>
                               <small>{item.product.type === "SERVICE" ? "Service delivery" : `${item.downloadGrants.length} file${item.downloadGrants.length === 1 ? "" : "s"}`}</small>
@@ -791,6 +797,11 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }:
     setBalance(initialBalance ?? user.balanceCents ?? 0);
   }, [initialBalance, user.balanceCents]);
 
+  useEffect(() => {
+    if (!activeTopup) return;
+    window.requestAnimationFrame(() => document.getElementById("topup-payment-request")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }, [activeTopup]);
+
   async function refreshWallet() {
     const [summary, depositHistory] = await Promise.all([
       apiRequest<WalletSummary>("/api/wallet/balance"),
@@ -905,6 +916,13 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }:
         <p>Send the exact USDT or crypto amount on the selected network, then submit a TXID and screenshot for admin approval.</p>
       </header>
 
+      <div className="topup-progress" aria-label="Top-up steps">
+        <span className="active"><b>1</b>Choose network</span>
+        <span className={depositAmount ? "active" : ""}><b>2</b>Enter amount</span>
+        <span className={activeTopup ? "active" : ""}><b>3</b>Send payment</span>
+        <span className={proofFile && proofTx ? "active" : ""}><b>4</b>Upload proof</span>
+      </div>
+
       <div className="wallet-summary-grid">
         <div className="wallet-balance-banner">
           <Wallet size={32} />
@@ -994,7 +1012,7 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange }:
         </div> : null}
       </div>
 
-      {activeTopup ? <section className="topup-proof-card">
+      {activeTopup ? <section className="topup-proof-card" id="topup-payment-request">
         <header><div><span className="section-index">PAYMENT REQUEST</span><h2>Send exactly {formatMoney(activeTopup.amountCents)}</h2><p>{activeTopup.method.replaceAll("_", " ")} · request {activeTopup.reference}</p></div><span className="status-pill pending">AWAITING PAYMENT</span></header>
         <div className="topup-address-box"><small>Send only to this address</small><code>{activeTopup.depositAddress}</code><button type="button" onClick={() => void navigator.clipboard?.writeText(activeTopup.depositAddress ?? "")}><ClipboardCopy size={15} /> Copy address</button></div>
         <div className="topup-proof-grid"><label><span>Transaction ID / TXID *</span><input value={proofTx} onChange={(event) => setProofTx(event.target.value)} placeholder="Paste the transaction hash" /></label><label className="topup-upload"><UploadCloud size={21} /><span>{proofFile ? proofFile.name : "Upload payment screenshot *"}</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setProofFile(event.target.files?.[0] ?? null)} /></label></div>

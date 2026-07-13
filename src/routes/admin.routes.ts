@@ -183,7 +183,22 @@ adminRouter.patch(
 );
 
 adminRouter.get("/overview", requireStaff, asyncHandler(async (_req, res) => {
-  const [pendingSellers, pendingProducts, openTickets, openDisputes, refundRequests, awaitingPayments, pendingDeposits, pendingWithdrawals, users, orders] = await Promise.all([
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  const startOfWeek = new Date(startOfToday);
+  startOfWeek.setDate(startOfWeek.getDate() - 6);
+
+  const [
+    pendingSellers, pendingProducts, openTickets, openDisputes, refundRequests,
+    awaitingPayments, pendingDeposits, pendingWithdrawals, users, orders,
+    lifetimeRevenue, todayRevenue, monthlyRevenue, annualRevenue, commission,
+    frozenBalance, verifiedUsers, suspendedUsers, totalSellers, activeSellers,
+    totalBuyers, totalProducts, approvedProducts, rejectedProducts,
+    completedOrders, pendingOrders, cancelledOrders, ordersToday, ordersThisMonth,
+    recentPaidOrders, publicStorage
+  ] = await Promise.all([
     prisma.sellerApplication.count({ where: { status: SellerApplicationStatus.PENDING } }),
     prisma.product.count({ where: { status: ProductStatus.PENDING } }),
     prisma.ticket.count({ where: { status: { in: [TicketStatus.OPEN, TicketStatus.PENDING] } } }),
@@ -192,9 +207,104 @@ adminRouter.get("/overview", requireStaff, asyncHandler(async (_req, res) => {
     prisma.payment.count({ where: { status: PaymentStatus.REQUIRES_ACTION } }),
     prisma.topupRequest.count({ where: { status: { in: ["PENDING", "VERIFIED"] } } }),
     (prisma as any).withdrawalRequest.count({ where: { status: "PENDING" } }),
-    prisma.user.count(), prisma.order.count()
+    prisma.user.count(),
+    prisma.order.count(),
+    prisma.payment.aggregate({ where: { status: PaymentStatus.PAID }, _sum: { amountCents: true } }),
+    prisma.payment.aggregate({ where: { status: PaymentStatus.PAID, approvedAt: { gte: startOfToday } }, _sum: { amountCents: true } }),
+    prisma.payment.aggregate({ where: { status: PaymentStatus.PAID, approvedAt: { gte: startOfMonth } }, _sum: { amountCents: true } }),
+    prisma.payment.aggregate({ where: { status: PaymentStatus.PAID, approvedAt: { gte: startOfYear } }, _sum: { amountCents: true } }),
+    prisma.sellerEarning.aggregate({ _sum: { platformFeeCents: true } }),
+    prisma.sellerEarning.aggregate({ where: { status: "FROZEN" }, _sum: { netCents: true } }),
+    prisma.user.count({ where: { emailVerifiedAt: { not: null } } }),
+    prisma.user.count({ where: { isSuspended: true } }),
+    prisma.user.count({ where: { role: Role.SELLER } }),
+    prisma.user.count({ where: { role: Role.SELLER, isSuspended: false } }),
+    prisma.user.count({ where: { role: Role.CUSTOMER } }),
+    prisma.product.count(),
+    prisma.product.count({ where: { status: ProductStatus.APPROVED } }),
+    prisma.product.count({ where: { status: ProductStatus.REJECTED } }),
+    prisma.order.count({ where: { status: { in: ["DELIVERED", "COMPLETED"] } } }),
+    prisma.order.count({ where: { status: { in: ["AWAITING_PAYMENT", "PAID", "PROCESSING"] } } }),
+    prisma.order.count({ where: { status: "CANCELLED" } }),
+    prisma.order.count({ where: { createdAt: { gte: startOfToday } } }),
+    prisma.order.count({ where: { createdAt: { gte: startOfMonth } } }),
+    prisma.payment.findMany({
+      where: { status: PaymentStatus.PAID, approvedAt: { gte: startOfWeek } },
+      select: { amountCents: true, approvedAt: true },
+      orderBy: { approvedAt: "asc" }
+    }),
+    prisma.publicUpload.aggregate({ _sum: { sizeBytes: true } })
   ]);
-  res.json({ overview: { pendingSellers, pendingProducts, openTickets, openDisputes, refundRequests, awaitingPayments, pendingDeposits, pendingWithdrawals, users, orders } });
+
+  const revenueSeries = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(startOfWeek);
+    date.setDate(date.getDate() + index);
+    const dayKey = date.toISOString().slice(0, 10);
+    return {
+      label: date.toLocaleDateString("en-US", { weekday: "short" }),
+      value: recentPaidOrders.reduce((sum, payment) => payment.approvedAt?.toISOString().slice(0, 10) === dayKey ? sum + payment.amountCents : sum, 0)
+    };
+  });
+
+  const totalRevenueCents = lifetimeRevenue._sum.amountCents ?? 0;
+  const marketplaceCommissionCents = commission._sum.platformFeeCents ?? 0;
+  res.json({ overview: {
+    pendingSellers, pendingProducts, openTickets, openDisputes, refundRequests,
+    awaitingPayments, pendingDeposits, pendingWithdrawals, users, orders,
+    totalRevenueCents,
+    todayRevenueCents: todayRevenue._sum.amountCents ?? 0,
+    monthlyRevenueCents: monthlyRevenue._sum.amountCents ?? 0,
+    annualRevenueCents: annualRevenue._sum.amountCents ?? 0,
+    marketplaceCommissionCents,
+    netProfitCents: marketplaceCommissionCents,
+    frozenBalanceCents: frozenBalance._sum.netCents ?? 0,
+    verifiedUsers, suspendedUsers, totalSellers, activeSellers,
+    totalBuyers, totalProducts, approvedProducts, rejectedProducts,
+    completedOrders, pendingOrders, cancelledOrders, ordersToday, ordersThisMonth,
+    publicStorageBytes: publicStorage._sum.sizeBytes ?? 0,
+    conversionRate: users ? Number(((orders / users) * 100).toFixed(1)) : 0,
+    revenueSeries
+  } });
+}));
+
+adminRouter.get("/search", requireStaff, asyncHandler(async (req, res) => {
+  const { q } = z.object({ q: z.string().trim().min(2).max(80) }).parse(req.query);
+  const contains = { contains: q, mode: "insensitive" as const };
+  const [users, products, orders, tickets, categories] = await Promise.all([
+    prisma.user.findMany({
+      where: { OR: [{ firstName: contains }, { lastName: contains }, { email: contains }, { username: contains }] },
+      take: 5,
+      select: { id: true, firstName: true, lastName: true, email: true, role: true }
+    }),
+    prisma.product.findMany({
+      where: { OR: [{ name: contains }, { slug: contains }, { shortDescription: contains }] },
+      take: 5,
+      select: { id: true, name: true, status: true, seller: { select: { username: true } } }
+    }),
+    prisma.order.findMany({
+      where: { OR: [{ orderNumber: contains }, { invoiceNumber: contains }, { buyerEmail: contains }, { buyerName: contains }] },
+      take: 5,
+      select: { id: true, orderNumber: true, buyerEmail: true, status: true }
+    }),
+    prisma.ticket.findMany({
+      where: { OR: [{ ticketNumber: contains }, { subject: contains }] },
+      take: 5,
+      select: { id: true, ticketNumber: true, subject: true, status: true }
+    }),
+    prisma.category.findMany({
+      where: { OR: [{ name: contains }, { slug: contains }, { description: contains }] },
+      take: 5,
+      select: { id: true, name: true, slug: true, isActive: true }
+    })
+  ]);
+
+  res.json({ results: [
+    ...users.map((entry) => ({ id: entry.id, type: "User", label: `${entry.firstName} ${entry.lastName}`, meta: `${entry.email} · ${entry.role.replaceAll("_", " ")}`, tab: "users" })),
+    ...products.map((entry) => ({ id: entry.id, type: "Product", label: entry.name, meta: `${entry.status} · @${entry.seller.username}`, tab: "products" })),
+    ...orders.map((entry) => ({ id: entry.id, type: "Order", label: entry.orderNumber, meta: `${entry.buyerEmail} · ${entry.status}`, tab: "orders" })),
+    ...tickets.map((entry) => ({ id: entry.id, type: "Ticket", label: `${entry.ticketNumber} · ${entry.subject}`, meta: entry.status, tab: "tickets" })),
+    ...categories.map((entry) => ({ id: entry.id, type: "Category", label: entry.name, meta: `/${entry.slug} · ${entry.isActive ? "Visible" : "Hidden"}`, tab: "categories" }))
+  ].slice(0, 16) });
 }));
 
 adminRouter.patch("/users/:id/suspension", requireAdmin, asyncHandler(async (req, res) => {

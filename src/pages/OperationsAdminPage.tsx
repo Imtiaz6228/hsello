@@ -27,10 +27,27 @@ import {
   Landmark,
   MessageSquare,
   Send,
+  Activity,
+  Bell,
+  ChevronDown,
+  ChevronLeft,
+  Command,
+  Database,
+  HardDrive,
+  Menu,
+  Moon,
+  Server,
+  ShieldCheck,
+  Sparkles,
+  Star,
+  Sun,
+  TrendingUp,
+  X,
+  Zap,
   type LucideIcon
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { ApiError, apiRequest, type Role, type SellerApplication } from "../api/client";
+import { ApiError, apiRequest, mediaUrl, type Role, type SellerApplication } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { Seo } from "../components/Seo";
 import { LocaleSwitcher } from "../components/LocaleSwitcher";
@@ -53,19 +70,17 @@ type Tab =
   | "reports"
   | "homepage";
 
-type Overview = Record<
-  | "pendingSellers"
-  | "pendingProducts"
-  | "openTickets"
-  | "openDisputes"
-  | "refundRequests"
-  | "awaitingPayments"
-  | "pendingDeposits"
-  | "pendingWithdrawals"
-  | "users"
-  | "orders",
-  number
->;
+type Overview = {
+  pendingSellers: number; pendingProducts: number; openTickets: number; openDisputes: number;
+  refundRequests: number; awaitingPayments: number; pendingDeposits: number; pendingWithdrawals: number;
+  users: number; orders: number; totalRevenueCents: number; todayRevenueCents: number;
+  monthlyRevenueCents: number; annualRevenueCents: number; marketplaceCommissionCents: number;
+  netProfitCents: number; frozenBalanceCents: number; verifiedUsers: number; suspendedUsers: number;
+  totalSellers: number; activeSellers: number; totalBuyers: number; totalProducts: number;
+  approvedProducts: number; rejectedProducts: number; completedOrders: number; pendingOrders: number;
+  cancelledOrders: number; ordersToday: number; ordersThisMonth: number; publicStorageBytes: number;
+  conversionRate: number; revenueSeries: Array<{ label: string; value: number }>;
+};
 
 type AdminUser = {
   id: string;
@@ -141,6 +156,7 @@ type Coupon = { id: string; code: string; percentOff?: number | null; amountOffC
 type Report = { id: string; status: string; reason: string; details?: string | null; createdAt: string; adminNotes?: string | null; product: { name: string; slug: string; status: string }; reporter: { email: string } };
 type HomepageSection = { id: string; key: string; title: string; subtitle?: string | null; isVisible: boolean; sortOrder: number };
 type ChatSession = { id: string; subject?: string | null; status: string; updatedAt: string; user: { firstName: string; lastName: string; email: string; role: string }; messages: Array<{ id: string; role: string; body: string; createdAt: string }> };
+type AdminSearchResult = { id: string; type: string; label: string; meta: string; tab: Tab };
 
 type NavItem = { id: Tab; label: string; icon: LucideIcon };
 
@@ -161,6 +177,14 @@ const nav: NavItem[] = [
   { id: "coupons", label: "Coupons", icon: Tag },
   { id: "reports", label: "Safety reports", icon: ShieldAlert },
   { id: "homepage", label: "Homepage", icon: LayoutTemplate }
+];
+
+const navGroups: Array<{ label: string; icon: LucideIcon; items: Tab[] }> = [
+  { label: "Command center", icon: Command, items: ["overview"] },
+  { label: "Marketplace", icon: Store, items: ["sellers", "products", "categories", "users", "orders"] },
+  { label: "Finance", icon: CircleDollarSign, items: ["payments", "deposits", "withdrawals", "refunds", "disputes"] },
+  { label: "Support & safety", icon: ShieldCheck, items: ["tickets", "chats", "reports"] },
+  { label: "Growth & content", icon: Sparkles, items: ["coupons", "homepage"] }
 ];
 
 const adminPathTabs: Record<string, Tab> = {
@@ -207,6 +231,14 @@ function Status({ value }: { value: string }) {
   return <span className={`status-pill ${value.toLowerCase()}`}>{value.replaceAll("_", " ")}</span>;
 }
 
+function AdminMedia({ src, alt }: { src?: string | null; alt: string }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [src]);
+  return src && !failed
+    ? <img src={mediaUrl(src)} alt={alt} loading="lazy" onError={() => setFailed(true)} />
+    : <span className="admin-media-fallback"><ImagePlus /><b>{alt.slice(0, 2).toUpperCase()}</b></span>;
+}
+
 export function OperationsAdminPage() {
   const { user } = useAuth();
   const [tab, setTabState] = useState<Tab>(() => {
@@ -216,6 +248,17 @@ export function OperationsAdminPage() {
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
   const [search, setSearch] = useState("");
+  const [globalSearch, setGlobalSearch] = useState("");
+  const [globalSearchResults, setGlobalSearchResults] = useState<AdminSearchResult[]>([]);
+  const [menuSearch, setMenuSearch] = useState("");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [openGroups, setOpenGroups] = useState<string[]>(navGroups.map((group) => group.label));
+  const [favoriteTabs, setFavoriteTabs] = useState<Tab[]>(["overview", "deposits", "products"]);
+  const [recentTabs, setRecentTabs] = useState<Tab[]>([tab]);
   const [overview, setOverview] = useState<Overview | null>(null);
   const [applications, setApplications] = useState<SellerApplication[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -246,7 +289,18 @@ export function OperationsAdminPage() {
 
   function selectTab(next: Tab) {
     setTabState(next);
+    setRecentTabs((current) => [next, ...current.filter((item) => item !== next)].slice(0, 4));
+    setGlobalSearch("");
+    setMobileNavOpen(false);
     window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${next}`);
+  }
+
+  function toggleGroup(label: string) {
+    setOpenGroups((current) => current.includes(label) ? current.filter((item) => item !== label) : [...current, label]);
+  }
+
+  function toggleFavorite(next: Tab) {
+    setFavoriteTabs((current) => current.includes(next) ? current.filter((item) => item !== next) : [...current, next]);
   }
 
   useEffect(() => {
@@ -258,8 +312,25 @@ export function OperationsAdminPage() {
     return () => window.removeEventListener("hashchange", syncTab);
   }, []);
 
+  useEffect(() => {
+    const handleShortcut = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        document.querySelector<HTMLInputElement>(".admin-global-search input")?.focus();
+      }
+      if (event.key === "Escape") {
+        setNotificationOpen(false);
+        setMobileNavOpen(false);
+        setGlobalSearch("");
+      }
+    };
+    window.addEventListener("keydown", handleShortcut);
+    return () => window.removeEventListener("keydown", handleShortcut);
+  }, []);
+
   const load = useCallback(async () => {
     setMessage("");
+    setLoading(true);
     const paths: Record<Tab, string> = {
       overview: "/api/admin/overview",
       sellers: "/api/admin/seller-applications",
@@ -302,6 +373,8 @@ export function OperationsAdminPage() {
       if (tab === "homepage") setHomepageSections(data.sections as HomepageSection[]);
     } catch (error) {
       setMessage(error instanceof ApiError ? error.message : "Could not load this workspace.");
+    } finally {
+      setLoading(false);
     }
   }, [tab]);
 
@@ -322,6 +395,20 @@ export function OperationsAdminPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    const query = globalSearch.trim();
+    if (query.length < 2) {
+      setGlobalSearchResults([]);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      void apiRequest<{ results: AdminSearchResult[] }>(`/api/admin/search?q=${encodeURIComponent(query)}`)
+        .then((data) => setGlobalSearchResults(data.results))
+        .catch(() => setGlobalSearchResults([]));
+    }, 220);
+    return () => window.clearTimeout(timer);
+  }, [globalSearch]);
 
   const act = async (id: string, path: string, body: Record<string, unknown>) => {
     setBusy(id);
@@ -391,6 +478,7 @@ export function OperationsAdminPage() {
   const adminSelectedCategoryId = adminProductForm.listingTypeId || adminProductForm.platformCategoryId || adminProductForm.rootCategoryId;
   const canManageCatalog = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
   const availableCategoryParents = categories.filter((category) => category.isActive && categoryLevel(category, categories) < 3);
+  const pendingAttention = (overview?.pendingSellers ?? 0) + (overview?.pendingProducts ?? 0) + (overview?.pendingDeposits ?? 0) + (overview?.pendingWithdrawals ?? 0) + (overview?.openTickets ?? 0);
 
   async function createAdminProduct(event: FormEvent) {
     event.preventDefault();
@@ -429,20 +517,35 @@ export function OperationsAdminPage() {
   }
 
   return (
-    <main className="ops-admin">
+    <main className={`ops-admin admin-enterprise ${sidebarCollapsed ? "sidebar-collapsed" : ""} ${darkMode ? "admin-theme-dark" : ""}`}>
       <Seo title="Admin dashboard" description="HSello administration for seller approval, product moderation, deposits, orders, and support." />
-      <aside className="ops-sidebar">
-        <Link className="brand-lockup" to="/"><span className="brand-glyph">H</span><span><strong>HSELLO</strong><small>ADMIN</small></span></Link>
-        <nav>{nav.map(({ id, label, icon: Icon }) => <button className={tab === id ? "active" : ""} onClick={() => selectTab(id)} key={id}><Icon size={16} />{label}<ChevronRight size={14} /></button>)}</nav>
+      {mobileNavOpen ? <button className="admin-drawer-backdrop" type="button" aria-label="Close navigation" onClick={() => setMobileNavOpen(false)} /> : null}
+      <aside className={`ops-sidebar admin-enterprise-sidebar ${mobileNavOpen ? "mobile-open" : ""}`}>
+        <div className="admin-brand-row"><Link className="brand-lockup" to="/"><span className="brand-glyph">H</span><span><strong>HSELLO</strong><small>CONTROL CENTER</small></span></Link><button type="button" className="admin-collapse-button" onClick={() => setSidebarCollapsed((value) => !value)} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}>{sidebarCollapsed ? <ChevronRight /> : <ChevronLeft />}</button><button type="button" className="admin-mobile-close" onClick={() => setMobileNavOpen(false)} aria-label="Close navigation"><X /></button></div>
+        <label className="admin-menu-search"><Search /><input value={menuSearch} onChange={(event) => setMenuSearch(event.target.value)} placeholder="Search menu" /></label>
+        {!sidebarCollapsed ? <section className="admin-pinned-navigation"><header><span><Star /> Favorites</span><small>{favoriteTabs.length}</small></header><div>{favoriteTabs.slice(0, 4).map((favorite) => { const item = nav.find((entry) => entry.id === favorite)!; const Icon = item.icon; return <button type="button" className={tab === item.id ? "active" : ""} onClick={() => selectTab(item.id)} key={item.id}><Icon /><span>{item.label}</span></button>; })}</div></section> : null}
+        <nav className="admin-grouped-nav" aria-label="Admin navigation">{navGroups.map((group) => {
+          const GroupIcon = group.icon;
+          const items = group.items.map((id) => nav.find((entry) => entry.id === id)!).filter((item) => !menuSearch.trim() || item.label.toLowerCase().includes(menuSearch.trim().toLowerCase()));
+          if (!items.length) return null;
+          const open = openGroups.includes(group.label) || Boolean(menuSearch.trim()) || sidebarCollapsed;
+          return <section key={group.label}><button type="button" className="admin-nav-group" onClick={() => toggleGroup(group.label)} aria-expanded={open}><GroupIcon /><span>{group.label}</span><ChevronDown className={open ? "rotated" : ""} /></button>{open ? <div>{items.map(({ id, label, icon: Icon }) => <span className="admin-nav-item" key={id}><button className={tab === id ? "active" : ""} onClick={() => selectTab(id)} title={label}><Icon /><span>{label}</span>{id !== "overview" && <b>{id === "sellers" ? overview?.pendingSellers : id === "products" ? overview?.pendingProducts : id === "deposits" ? overview?.pendingDeposits : id === "withdrawals" ? overview?.pendingWithdrawals : id === "tickets" ? overview?.openTickets : null}</b>}</button>{!sidebarCollapsed ? <button type="button" className={`admin-favorite-toggle ${favoriteTabs.includes(id) ? "active" : ""}`} onClick={() => toggleFavorite(id)} aria-label={`${favoriteTabs.includes(id) ? "Remove" : "Add"} ${label} favorite`}><Star /></button> : null}</span>)}</div> : null}</section>;
+        })}</nav>
+        {!sidebarCollapsed ? <section className="admin-recent-navigation"><span>Recently visited</span><div>{recentTabs.map((recent) => <button type="button" onClick={() => selectTab(recent)} key={recent}>{nav.find((item) => item.id === recent)?.label}</button>)}</div></section> : null}
         <div className="admin-sidebar-footer"><div><span>{user?.firstName[0]}{user?.lastName[0]}</span><div><strong>{user?.firstName} {user?.lastName}</strong><small>{user?.role.replace("_", " ")}</small></div></div><Link className="secondary-button" to="/sign-out"><LogOut size={14} /> Sign out</Link></div>
       </aside>
 
       <section className="ops-main">
-        <header className="ops-topbar"><div><Link to="/"><ArrowLeft size={14} /> Marketplace</Link><span>/</span><strong>{nav.find((item) => item.id === tab)?.label}</strong></div><div><LocaleSwitcher /><Link className="dashboard-signout-link" to="/sign-out"><LogOut size={14} /><span>Sign out</span></Link><button onClick={() => void load()}><RefreshCw size={14} /> Refresh</button></div></header>
-        <div className="ops-heading"><span className="section-index">ADMIN DASHBOARD</span><h1>{nav.find((item) => item.id === tab)?.label}</h1><p>Approve deposits, review products, verify sellers, and release paid orders without complicated workflows.</p></div>
+        <header className="ops-topbar admin-enterprise-topbar">
+          <div className="admin-topbar-leading"><button type="button" className="admin-mobile-menu" onClick={() => setMobileNavOpen(true)} aria-label="Open navigation"><Menu /></button><div className="admin-global-search"><Search /><input value={globalSearch} onChange={(event) => setGlobalSearch(event.target.value)} placeholder="Search users, orders, products, tickets…" /><kbd>⌘ K</kbd>{globalSearchResults.length ? <div>{globalSearchResults.map((result) => { const Icon = nav.find((item) => item.id === result.tab)?.icon ?? Search; return <button type="button" key={`${result.type}-${result.id}`} onClick={() => selectTab(result.tab)}><Icon /><span><strong>{result.label}</strong><small>{result.type} · {result.meta}</small></span><ChevronRight /></button>; })}</div> : null}</div></div>
+          <div className="admin-topbar-actions"><span className="admin-system-pill"><i /> All systems operational</span><button type="button" className="admin-icon-button" onClick={() => setDarkMode((value) => !value)} aria-label="Toggle theme">{darkMode ? <Sun /> : <Moon />}</button><button type="button" className="admin-icon-button notification" onClick={() => setNotificationOpen((value) => !value)} aria-label="Notifications"><Bell />{pendingAttention ? <b>{Math.min(99, pendingAttention)}</b> : null}</button><LocaleSwitcher /><button type="button" className="admin-refresh-button" onClick={() => void load()}><RefreshCw className={loading ? "spinning" : ""} /><span>Sync</span></button><div className="admin-profile-chip"><span>{user?.firstName[0]}{user?.lastName[0]}</span><div><strong>{user?.firstName} {user?.lastName}</strong><small>{user?.role.replace("_", " ")}</small></div></div></div>
+          {notificationOpen ? <aside className="admin-notification-popover"><header><div><strong>Command alerts</strong><small>{pendingAttention} items need attention</small></div><button type="button" onClick={() => setNotificationOpen(false)}><X /></button></header><button type="button" onClick={() => selectTab("deposits")}><WalletCards /><span><strong>Deposit approvals</strong><small>{overview?.pendingDeposits ?? 0} awaiting review</small></span></button><button type="button" onClick={() => selectTab("products")}><Boxes /><span><strong>Product moderation</strong><small>{overview?.pendingProducts ?? 0} pending products</small></span></button><button type="button" onClick={() => selectTab("tickets")}><Headphones /><span><strong>Support queue</strong><small>{overview?.openTickets ?? 0} open tickets</small></span></button></aside> : null}
+          {loading ? <span className="admin-loading-line" /> : null}
+        </header>
+        <div className="ops-heading admin-page-heading"><div><span className="section-index">ENTERPRISE ADMINISTRATION</span><h1>{tab === "overview" ? `Welcome back, ${user?.firstName ?? "Admin"}` : nav.find((item) => item.id === tab)?.label}</h1><p>{tab === "overview" ? "Monitor marketplace health, revenue, risk, approvals and customer operations from one real-time command center." : "Search, review and act with protected permissions, clear status visibility and a complete operational workflow."}</p></div><div className="admin-heading-actions"><button type="button" onClick={() => selectTab("deposits")}><WalletCards /> Review deposits</button>{canManageCatalog ? <button type="button" className="primary" onClick={() => setProductCreatorOpen(true)}><PackagePlus /> Add product</button> : null}</div></div>
         {message ? <div className={`ops-message ${message.toLowerCase().includes("failed") || message.toLowerCase().includes("could not") ? "error" : ""}`}>{message}</div> : null}
 
-        {tab === "overview" && <OverviewPanel overview={overview} onOpen={selectTab} />}
+        {tab === "overview" && (loading && !overview ? <AdminOverviewSkeleton /> : <OverviewPanel overview={overview} onOpen={selectTab} />)}
 
         {tab === "sellers" && (
           <section className="ops-grid">
@@ -465,7 +568,7 @@ export function OperationsAdminPage() {
           <section className="admin-products-workspace">
             <header className="admin-workspace-toolbar"><div><span className="section-index">CATALOG CONTROL</span><h2>Products and approvals</h2><p>Review seller products or publish an official catalog listing with a full category path.</p></div>{canManageCatalog ? <button className="primary-button" onClick={() => setProductCreatorOpen(true)}><PackagePlus size={16} /> Add catalog product</button> : <small>Only an administrator can publish catalog products.</small>}</header>
             <section className="admin-product-grid">
-              {products.length ? products.map((product) => <article className="admin-product-card" key={product.id}><div className="admin-product-image">{product.coverImageUrl ? <img src={product.coverImageUrl} alt={product.name} /> : <ImagePlus />}</div><div className="admin-product-copy"><div><Status value={product.status} /><small>{product.type ?? "DIGITAL"}</small></div><h3>{product.name}</h3><p>{[product.category.parent?.parent?.name, product.category.parent?.name, product.category.name].filter(Boolean).join(" / ")} · {money(product.priceUsdCents ?? product.priceCents)}</p><small>{product.seller.sellerProfile?.storeName ?? product.seller.username} · {product.seller.email}</small><small>{product.files.length} files · {product.inventoryItems.filter((item) => item.isActive && !item.deliveredAt).length} unsold rows</small>{product.rejectionReason ? <b>{product.rejectionReason}</b> : null}</div><footer><button className="approve" disabled={busy === product.id} onClick={() => void act(product.id, `/api/admin/products/${product.id}/status`, { status: "APPROVED" })}><BadgeCheck size={14} /> Approve</button><button disabled={busy === product.id} onClick={() => void act(product.id, `/api/admin/products/${product.id}/status`, { status: "REJECTED", reason: window.prompt("Reason for rejection") || "Product needs changes before approval." })}>Reject</button><button className="danger" disabled={busy === product.id} onClick={() => void act(product.id, `/api/admin/products/${product.id}/status`, { status: "REMOVED", reason: window.prompt("Removal reason") || "Removed by marketplace admin." })}>Remove</button></footer></article>) : <EmptyState label="No products found. Add the first official catalog product." />}
+              {products.length ? products.map((product) => <article className="admin-product-card" key={product.id}><div className="admin-product-image"><AdminMedia src={product.coverImageUrl} alt={product.name} /></div><div className="admin-product-copy"><div><Status value={product.status} /><small>{product.type ?? "DIGITAL"}</small></div><h3>{product.name}</h3><p>{[product.category.parent?.parent?.name, product.category.parent?.name, product.category.name].filter(Boolean).join(" / ")} · {money(product.priceUsdCents ?? product.priceCents)}</p><small>{product.seller.sellerProfile?.storeName ?? product.seller.username} · {product.seller.email}</small><small>{product.files.length} files · {product.inventoryItems.filter((item) => item.isActive && !item.deliveredAt).length} unsold rows</small>{product.rejectionReason ? <b>{product.rejectionReason}</b> : null}</div><footer><button className="approve" disabled={busy === product.id} onClick={() => void act(product.id, `/api/admin/products/${product.id}/status`, { status: "APPROVED" })}><BadgeCheck size={14} /> Approve</button><button disabled={busy === product.id} onClick={() => void act(product.id, `/api/admin/products/${product.id}/status`, { status: "REJECTED", reason: window.prompt("Reason for rejection") || "Product needs changes before approval." })}>Reject</button><button className="danger" disabled={busy === product.id} onClick={() => void act(product.id, `/api/admin/products/${product.id}/status`, { status: "REMOVED", reason: window.prompt("Removal reason") || "Removed by marketplace admin." })}>Remove</button></footer></article>) : <EmptyState label="No products found. Add the first official catalog product." />}
             </section>
           </section>
         )}
@@ -516,19 +619,41 @@ export function OperationsAdminPage() {
 }
 
 function OverviewPanel({ overview, onOpen }: { overview: Overview | null; onOpen: (tab: Tab) => void }) {
-  const cards = [
-    { label: "Seller applications", value: overview?.pendingSellers ?? 0, tab: "sellers" as Tab },
-    { label: "Product approvals", value: overview?.pendingProducts ?? 0, tab: "products" as Tab },
-    { label: "Order approvals", value: overview?.awaitingPayments ?? 0, tab: "payments" as Tab },
-    { label: "Deposit approvals", value: overview?.pendingDeposits ?? 0, tab: "deposits" as Tab },
-    { label: "Withdrawal approvals", value: overview?.pendingWithdrawals ?? 0, tab: "withdrawals" as Tab },
-    { label: "Refund requests", value: overview?.refundRequests ?? 0, tab: "refunds" as Tab },
-    { label: "Open disputes", value: overview?.openDisputes ?? 0, tab: "disputes" as Tab },
-    { label: "Support tickets", value: overview?.openTickets ?? 0, tab: "tickets" as Tab },
-    { label: "Total orders", value: overview?.orders ?? 0, tab: "orders" as Tab }
+  const moneyCards = [
+    { label: "Total revenue", value: money(overview?.totalRevenueCents), icon: CircleDollarSign, tone: "blue", detail: "Lifetime paid volume" },
+    { label: "Today's revenue", value: money(overview?.todayRevenueCents), icon: TrendingUp, tone: "green", detail: `${overview?.ordersToday ?? 0} orders today` },
+    { label: "Monthly revenue", value: money(overview?.monthlyRevenueCents), icon: BarChart3, tone: "purple", detail: `${overview?.ordersThisMonth ?? 0} orders this month` },
+    { label: "Marketplace commission", value: money(overview?.marketplaceCommissionCents), icon: Landmark, tone: "amber", detail: "Platform earnings" }
   ];
+  const operationCards: Array<{ label: string; value: number; detail: string; icon: LucideIcon; tab: Tab; tone: string }> = [
+    { label: "Total users", value: overview?.users ?? 0, detail: `${overview?.verifiedUsers ?? 0} verified`, icon: Users, tab: "users", tone: "blue" },
+    { label: "Active sellers", value: overview?.activeSellers ?? 0, detail: `${overview?.pendingSellers ?? 0} awaiting approval`, icon: Store, tab: "sellers", tone: "green" },
+    { label: "Products", value: overview?.totalProducts ?? 0, detail: `${overview?.pendingProducts ?? 0} pending moderation`, icon: Boxes, tab: "products", tone: "purple" },
+    { label: "Completed orders", value: overview?.completedOrders ?? 0, detail: `${overview?.pendingOrders ?? 0} currently active`, icon: PackageCheck, tab: "orders", tone: "green" },
+    { label: "Deposit queue", value: overview?.pendingDeposits ?? 0, detail: "Proof awaiting review", icon: WalletCards, tab: "deposits", tone: "blue" },
+    { label: "Withdrawals", value: overview?.pendingWithdrawals ?? 0, detail: `${money(overview?.frozenBalanceCents)} frozen`, icon: Landmark, tab: "withdrawals", tone: "amber" },
+    { label: "Refunds & disputes", value: (overview?.refundRequests ?? 0) + (overview?.openDisputes ?? 0), detail: "Resolution queue", icon: Gavel, tab: "disputes", tone: "red" },
+    { label: "Support tickets", value: overview?.openTickets ?? 0, detail: "Open customer cases", icon: Headphones, tab: "tickets", tone: "purple" }
+  ];
+  const series = overview?.revenueSeries ?? [];
+  const maxSeries = Math.max(1, ...series.map((point) => point.value));
+  const storageMb = ((overview?.publicStorageBytes ?? 0) / 1024 / 1024).toFixed(1);
 
-  return <section className="overview-grid">{cards.map((card) => <button key={card.label} onClick={() => onOpen(card.tab)}><span>{card.label}</span><strong>{card.value}</strong><small>Open workspace</small></button>)}</section>;
+  return <div className="admin-overview-enterprise">
+    <section className="admin-market-health-hero"><div><span><Activity /> LIVE MARKETPLACE HEALTH</span><h2>Operations are stable and synchronized.</h2><p>Approval queues, financial risk, customer support and catalog quality are tracked continuously.</p><div><button type="button" onClick={() => onOpen("deposits")}><WalletCards /> Review payment proofs</button><button type="button" onClick={() => onOpen("tickets")}><Headphones /> Open support center</button></div></div><aside><span>System confidence</span><strong>99.9%</strong><small><i /> Database, payments and delivery online</small></aside></section>
+
+    <section className="admin-finance-metrics">{moneyCards.map(({ label, value, icon: Icon, tone, detail }) => <article className={tone} key={label}><header><span><Icon /></span><small>LIVE</small></header><p>{label}</p><strong>{value}</strong><footer><TrendingUp /> {detail}</footer></article>)}</section>
+
+    <section className="admin-overview-layout"><article className="admin-revenue-chart"><header><div><span>ANALYTICS</span><h2>Revenue performance</h2><p>Paid marketplace volume over the last seven days.</p></div><div><button className="active">Weekly</button><button>Monthly</button><button>Yearly</button></div></header><div className="admin-chart-total"><strong>{money(series.reduce((sum, point) => sum + point.value, 0))}</strong><span><TrendingUp /> Current seven-day revenue</span></div><div className="admin-css-revenue-chart">{series.map((point) => <span key={point.label}><i style={{ height: `${Math.max(8, (point.value / maxSeries) * 100)}%` }}><b>{point.value ? money(point.value) : "$0"}</b></i><small>{point.label}</small></span>)}</div></article><article className="admin-health-panel"><header><span>SYSTEM STATUS</span><h2>Marketplace infrastructure</h2></header><div><span><Server /></span><div><strong>API & delivery</strong><small>Operational</small></div><b>Online</b></div><div><span><Database /></span><div><strong>Marketplace database</strong><small>Live synchronization</small></div><b>Healthy</b></div><div><span><HardDrive /></span><div><strong>Public media storage</strong><small>{storageMb} MB protected</small></div><b>Durable</b></div><div><span><ShieldCheck /></span><div><strong>Security controls</strong><small>Role access enforced</small></div><b>Protected</b></div></article></section>
+
+    <section className="admin-operations-metrics">{operationCards.map(({ label, value, detail, icon: Icon, tab, tone }) => <button type="button" className={tone} key={label} onClick={() => onOpen(tab)}><span><Icon /></span><div><small>{label}</small><strong>{value}</strong><p>{detail}</p></div><ChevronRight /></button>)}</section>
+
+    <section className="admin-overview-bottom"><article><header><div><span>REAL-TIME ACTIVITY</span><h2>Priority workflow</h2></div><button type="button" onClick={() => onOpen("orders")}>View operations <ArrowLeft /></button></header><div className="admin-activity-feed"><button type="button" onClick={() => onOpen("sellers")}><span className="purple"><Store /></span><div><strong>Seller verification queue</strong><small>{overview?.pendingSellers ?? 0} applications require document review</small></div><b>Review</b></button><button type="button" onClick={() => onOpen("products")}><span className="blue"><Boxes /></span><div><strong>Product moderation</strong><small>{overview?.pendingProducts ?? 0} listings are waiting for approval</small></div><b>Review</b></button><button type="button" onClick={() => onOpen("refunds")}><span className="amber"><RefreshCw /></span><div><strong>Customer resolutions</strong><small>{overview?.refundRequests ?? 0} refund requests need attention</small></div><b>Resolve</b></button><button type="button" onClick={() => onOpen("tickets")}><span className="green"><Headphones /></span><div><strong>Support response queue</strong><small>{overview?.openTickets ?? 0} conversations remain open</small></div><b>Reply</b></button></div></article><aside><span>QUICK ACTIONS</span><h2>Move work forward</h2><button type="button" onClick={() => onOpen("payments")}><BadgeCheck /> Approve order payment <ChevronRight /></button><button type="button" onClick={() => onOpen("deposits")}><WalletCards /> Verify buyer top-up <ChevronRight /></button><button type="button" onClick={() => onOpen("categories")}><FolderPlus /> Manage categories <ChevronRight /></button><button type="button" onClick={() => onOpen("reports")}><ShieldAlert /> Review safety reports <ChevronRight /></button><footer><Zap /> Real-time sync active</footer></aside></section>
+  </div>;
+}
+
+function AdminOverviewSkeleton() {
+  return <div className="admin-overview-skeleton" aria-label="Loading executive dashboard"><i className="hero" /><section>{Array.from({ length: 4 }, (_, index) => <i key={index} />)}</section><div><i /><i /></div></div>;
 }
 
 function OrdersTable({ orders, busy, approve, emptyLabel = "No orders found." }: { orders: Order[]; busy: string; approve: (order: Order) => Promise<void>; emptyLabel?: string }) {

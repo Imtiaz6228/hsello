@@ -12,6 +12,7 @@ import "./seller-premium-views.css";
 import "./seller-premium-responsive.css";
 import "./seller-complete.css";
 import "./buyer-premium.css";
+import "./admin-enterprise.css";
 import { LocaleProvider } from "./i18n/LocaleContext";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

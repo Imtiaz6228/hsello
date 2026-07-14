@@ -1,7 +1,7 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Download, MessageCircle, Paperclip, Send, ShieldAlert, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Download, FileArchive, FileSpreadsheet, MessageCircle, Paperclip, Send, ShieldAlert, ShieldCheck } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
-import { ApiError, apiRequest } from "../api/client";
+import { ApiError, apiDownloadUrl, apiRequest } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { MarketHeader } from "../components/MarketHeader";
 import { Seo } from "../components/Seo";
@@ -79,10 +79,13 @@ export function OrderDeliveryPage() {
       const payload = new FormData();
       payload.append("body", body);
       if (attachment) payload.append("attachment", attachment);
-      await apiRequest(`/api/commerce/orders/${id}/messages`, { method: "POST", body: payload });
+      const result = await apiRequest<{ message: Message }>(`/api/commerce/orders/${id}/messages`, {
+        method: "POST",
+        body: attachment ? payload : { body: body.trim() }
+      });
+      setMessages((current) => current.some((message) => message.id === result.message.id) ? current : [...current, result.message]);
       setBody("");
       setAttachment(null);
-      await load();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : "Message could not be sent.");
     } finally {
@@ -182,15 +185,19 @@ export function OrderDeliveryPage() {
               </div>
               {item.downloadGrants.length ? (
                 <>
-                  <a className="action-link" href={`/api/commerce/order-items/${item.id}/download.zip`}><Download size={14} /> Download all as ZIP</a>
+                  <a className="action-link" href={apiDownloadUrl(`/api/commerce/order-items/${item.id}/download.zip`)}><Download size={14} /> Download all as ZIP</a>
                   {item.downloadGrants.map((grant) => (
-                    <a key={grant.id} className="action-link" href={`/api/commerce/downloads/${grant.id}`}><Download size={14} /> {grant.productFile.displayName} <small>({grant.maxDownloads - grant.downloadCount} left)</small></a>
+                    <a key={grant.id} className="action-link" href={apiDownloadUrl(`/api/commerce/downloads/${grant.id}`)}><Download size={14} /> {grant.productFile.displayName} <small>({grant.maxDownloads - grant.downloadCount} left)</small></a>
                   ))}
                 </>
               ) : null}
               {item.inventoryItems?.length ? (
-                <div className="digital-delivery-rows">
-                  {item.inventoryItems.map((row) => <code key={row.id}>{row.content}</code>)}
+                <div className="delivery-file-panel">
+                  <div><FileArchive /><span><strong>{item.inventoryItems.length} delivered account{item.inventoryItems.length === 1 ? "" : "s"}</strong><small>Protected delivery package · details are kept out of the open page</small></span></div>
+                  <div className="delivery-file-actions">
+                    <a className="action-link" href={apiDownloadUrl(`/api/commerce/order-items/${item.id}/delivery?format=zip`)}><FileArchive size={14} /> Download ZIP</a>
+                    <a className="action-link" href={apiDownloadUrl(`/api/commerce/order-items/${item.id}/delivery?format=csv`)}><FileSpreadsheet size={14} /> Download CSV</a>
+                  </div>
                 </div>
               ) : null}
             </article>
@@ -202,7 +209,7 @@ export function OrderDeliveryPage() {
         <header className="order-chat-heading"><div><span className="section-index">PRIVATE ORDER CHAT</span><h2>Buyer & seller workspace</h2><small>Messages update automatically. Attach screenshots when evidence is needed.</small></div><span className="chat-live-dot">Live</span></header>
         {error ? <div className="notice error">{error}</div> : null}
         {messages.length ? messages.map((message) => (
-          <article className={`order-chat-bubble ${message.author.id === user?.id ? "own-message" : ""}`} key={message.id}>
+          <article className={`order-chat-bubble ${message.author.role === "SELLER" ? "seller-message" : "buyer-message"} ${message.author.id === user?.id ? "own-message" : ""}`} key={message.id}>
             <span>{message.author.firstName[0]}</span>
             <div>
               <header><strong>{message.author.firstName}</strong><small>{message.author.role.replace("_", " ")} · {new Date(message.createdAt).toLocaleString()}</small></header>
@@ -218,7 +225,7 @@ export function OrderDeliveryPage() {
           <div className="chat-compose-actions">
             <label className="upload-action"><Paperclip size={16} /> Attach screenshot<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setAttachment(event.target.files?.[0] ?? null)} /></label>
             {attachment ? <small>{attachment.name}</small> : null}
-            <button disabled={sending || !body.trim()}><Send /> {sending ? "Sending…" : "Send message"}</button>
+            <button className="chat-send-button" disabled={sending || !body.trim()}><Send size={15} /> {sending ? "Sending…" : "Send"}</button>
           </div>
         </form>
       </div>

@@ -105,6 +105,15 @@ function apiUrl(path: string) {
   return `${activeApiBaseUrl}${path}`;
 }
 
+/**
+ * Builds a direct URL for browser-managed downloads. These links cannot use
+ * fetch's API fallback, so they must follow the backend selected by the API
+ * client instead of always pointing at the frontend origin.
+ */
+export function apiDownloadUrl(path: string) {
+  return apiUrl(path);
+}
+
 export function mediaUrl(value?: string | null) {
   if (!value) return "";
   if (/^https?:\/\//i.test(value) || value.startsWith("data:") || value.startsWith("blob:")) return value;

@@ -1,14 +1,14 @@
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft, ArrowDownRight, ArrowRight, ArrowUpRight, BadgeCheck, BarChart3,
-  Bell, Boxes, CheckCircle2, ChevronDown, CircleDollarSign, Clock3, CreditCard, Download,
-  FileText, FileUp, FolderKanban, Gift, Grid3X3, ImageIcon, ImagePlus, KeyRound, LayoutDashboard, Layers3, LifeBuoy, LockKeyhole, LogOut,
+  Bell, Boxes, CheckCircle2, ChevronDown, CircleDollarSign, Clock3, Copy, CreditCard, Download,
+  Eye, FileText, FileUp, FolderKanban, Gift, Grid3X3, ImageIcon, ImagePlus, KeyRound, LayoutDashboard, Layers3, LifeBuoy, LockKeyhole, LogOut,
   Megaphone, Menu, MessageSquare, MoreHorizontal, PackageCheck, PackagePlus, Palette,
   RefreshCw, Search, Send, Settings, ShieldCheck, ShoppingBag, SlidersHorizontal,
   Sparkles, Store, Tag, TicketCheck, TrendingUp, Upload, Users, WalletCards, X
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { ApiError, apiRequest, mediaUrl } from "../api/client";
+import { ApiError, apiDownloadUrl, apiRequest, mediaUrl } from "../api/client";
 import { Seo } from "../components/Seo";
 import { LocaleSwitcher } from "../components/LocaleSwitcher";
 import { useLocale } from "../i18n/LocaleContext";
@@ -54,6 +54,7 @@ type SellerOrder = {
   productName: string;
   totalCents: number;
   quantity: number;
+  inventoryItems?: Array<{ id: string; content: string; source: string; deliveredAt?: string | null }>;
   order: {
     id: string;
     orderNumber: string;
@@ -64,7 +65,7 @@ type SellerOrder = {
   };
 };
 
-type Tab = "overview" | "products" | "product-groups" | "categories" | "inventory" | "drafts" | "orders" | "processing" | "delivered" | "refunds" | "disputes" | "finance" | "transactions" | "frozen" | "earnings" | "withdrawals" | "messages" | "tickets" | "notifications" | "coupons" | "promotions" | "sponsored" | "featured" | "analytics" | "revenue" | "visitors" | "conversion" | "storefront" | "payments" | "security" | "api" | "preferences" | "support";
+type Tab = "overview" | "products" | "product-groups" | "categories" | "inventory" | "downloads" | "drafts" | "orders" | "processing" | "delivered" | "refunds" | "disputes" | "finance" | "transactions" | "frozen" | "earnings" | "withdrawals" | "messages" | "tickets" | "notifications" | "coupons" | "promotions" | "sponsored" | "featured" | "analytics" | "revenue" | "visitors" | "conversion" | "storefront" | "payments" | "security" | "api" | "preferences" | "support";
 
 const sellerTabs: Array<{ id: Tab; label: string; icon: typeof Store }> = [
   { id: "overview", label: "Dashboard", icon: LayoutDashboard },
@@ -72,6 +73,7 @@ const sellerTabs: Array<{ id: Tab; label: string; icon: typeof Store }> = [
   { id: "product-groups", label: "Product groups", icon: FolderKanban },
   { id: "categories", label: "Categories", icon: Grid3X3 },
   { id: "inventory", label: "Inventory", icon: Layers3 },
+  { id: "downloads", label: "Uploaded files", icon: Download },
   { id: "drafts", label: "Drafts & review", icon: FileText },
   { id: "orders", label: "Orders", icon: ShoppingBag },
   { id: "processing", label: "Processing orders", icon: Clock3 },
@@ -109,6 +111,7 @@ const sellerMenuGroups: Array<{ label: string; items: Array<{ label: string; tab
     { label: "Product groups", tab: "product-groups", icon: FolderKanban },
     { label: "Categories", tab: "categories", icon: Grid3X3 },
     { label: "Inventory & variants", tab: "inventory", icon: Layers3 },
+    { label: "Uploaded files", tab: "downloads", icon: Download },
     { label: "Drafts & review", tab: "drafts", icon: FileText }
   ] },
   { label: "Orders", items: [
@@ -258,6 +261,7 @@ export function SellerStudioPage() {
   const [withdrawalForm, setWithdrawalForm] = useState({ amount: "", blockchain: "USDT TRC20", walletAddress: "" });
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ Products: true, Orders: true, Finance: true, Messages: true, Marketing: true, Analytics: true, Settings: true, Support: true, Workspace: true });
   const [mediaUploading, setMediaUploading] = useState("");
+  const [deliveryOrder, setDeliveryOrder] = useState<SellerOrder | null>(null);
 
   const rootCategories = useMemo(() => categories.filter((category) => !category.parentId), [categories]);
   const platformCategories = useMemo(
@@ -296,6 +300,7 @@ export function SellerStudioPage() {
     if (tab === "disputes") return item.order.status === "DISPUTED";
     return true;
   });
+  const uploadedFiles = products.flatMap((product) => product.files.map((file) => ({ product, file })));
 
   function showMessage(text: string, type: "success" | "error" | "info" = "info") {
     setMessage(text);
@@ -654,7 +659,12 @@ export function SellerStudioPage() {
           }) : <div className="dashboard-empty"><FileUp /><h2>{products.length ? "No matching products" : "No products yet"}</h2><p>{products.length ? "Try another search or status filter." : "Create your first listing with a product image and the full admin-managed category path."}</p>{!products.length ? <button className="primary-button" onClick={() => setOpen(true)}>Create product</button> : null}</div>}
         </section> : null}
 
-        {["orders", "processing", "delivered", "refunds", "disputes"].includes(tab) ? <section className="seller-orders-shell"><header className="seller-table-toolbar"><div><h2>{sellerTabs.find((item) => item.id === tab)?.label}</h2><p>Track payment, delivery, refunds and buyer communication</p></div><div><label><Search /><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Order, buyer or product" /></label><button className="secondary"><SlidersHorizontal /> Filters</button><button className="secondary"><Download /> Export</button></div></header><div className="seller-order-tabs"><button className={tab === "orders" ? "active" : ""} onClick={() => selectTab("orders")}>All <b>{orders.length}</b></button><button className={tab === "processing" ? "active" : ""} onClick={() => selectTab("processing")}>Processing <b>{pendingOrders}</b></button><button className={tab === "delivered" ? "active" : ""} onClick={() => selectTab("delivered")}>Delivered <b>{deliveredOrders}</b></button><button className={tab === "refunds" ? "active" : ""} onClick={() => selectTab("refunds")}>Refunds <b>{orders.filter((item) => item.order.status.includes("REFUND")).length}</b></button><button className={tab === "disputes" ? "active" : ""} onClick={() => selectTab("disputes")}>Disputes <b>{orders.filter((item) => item.order.status === "DISPUTED").length}</b></button></div><section className="seller-orders-grid">{filteredOrders.length ? filteredOrders.map((item) => <article key={item.id}><header><span>{item.productName.slice(0, 2).toUpperCase()}</span><div><strong>{item.productName}</strong><small>{item.order.orderNumber} · {new Date(item.order.createdAt).toLocaleDateString()}</small></div><b>{item.order.status.replaceAll("_", " ")}</b></header><div><span><small>Buyer</small><strong>{item.order.buyer.firstName} {item.order.buyer.lastName}</strong></span><span><small>Quantity</small><strong>{item.quantity}</strong></span><span><small>Total</small><strong>{formatMoney(item.totalCents)}</strong></span><span><small>Payment</small><strong>{item.order.payment?.status ?? "Pending"}</strong></span></div><footer><Link to={`/orders/${item.order.id}`}><MessageSquare size={15} /> Open order & buyer chat <ArrowRight size={14} /></Link></footer></article>) : <div className="dashboard-empty"><ShoppingBag /><h2>No {tab === "orders" ? "seller orders" : tab} found</h2><p>This status is clear right now.</p></div>}</section></section> : null}
+        {tab === "downloads" ? <section className="seller-uploaded-library">
+          <header className="seller-table-toolbar"><div><h2>Uploaded product files</h2><p>Download and verify the files currently attached to your products.</p></div><div><button onClick={() => selectTab("products")}><Upload /> Upload another file</button></div></header>
+          {uploadedFiles.length ? <div className="seller-uploaded-grid">{uploadedFiles.map(({ product, file }) => <article key={file.id}><span><FileText /></span><div><small>{product.name}</small><strong>{file.displayName}</strong><p>Version {file.version} · {(file.sizeBytes / 1024 / 1024).toFixed(2)} MB</p></div><a href={apiDownloadUrl(`/api/seller/files/${file.id}/download`)}><Download /> Download</a></article>)}</div> : <div className="dashboard-empty"><Download /><h2>No uploaded files</h2><p>Add a delivery file to one of your products and it will appear here.</p><button className="primary-button" onClick={() => selectTab("products")}>Open products</button></div>}
+        </section> : null}
+
+        {["orders", "processing", "delivered", "refunds", "disputes"].includes(tab) ? <section className="seller-orders-shell"><header className="seller-table-toolbar"><div><h2>{sellerTabs.find((item) => item.id === tab)?.label}</h2><p>Track payment, delivery, refunds and buyer communication</p></div><div><label><Search /><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Order, buyer or product" /></label><button className="secondary"><SlidersHorizontal /> Filters</button><button className="secondary"><Download /> Export</button></div></header><div className="seller-order-tabs"><button className={tab === "orders" ? "active" : ""} onClick={() => selectTab("orders")}>All <b>{orders.length}</b></button><button className={tab === "processing" ? "active" : ""} onClick={() => selectTab("processing")}>Processing <b>{pendingOrders}</b></button><button className={tab === "delivered" ? "active" : ""} onClick={() => selectTab("delivered")}>Delivered <b>{deliveredOrders}</b></button><button className={tab === "refunds" ? "active" : ""} onClick={() => selectTab("refunds")}>Refunds <b>{orders.filter((item) => item.order.status.includes("REFUND")).length}</b></button><button className={tab === "disputes" ? "active" : ""} onClick={() => selectTab("disputes")}>Disputes <b>{orders.filter((item) => item.order.status === "DISPUTED").length}</b></button></div><section className="seller-orders-grid">{filteredOrders.length ? filteredOrders.map((item) => <article key={item.id}><header><span>{item.productName.slice(0, 2).toUpperCase()}</span><div><strong>{item.productName}</strong><small>{item.order.orderNumber} · {new Date(item.order.createdAt).toLocaleDateString()}</small></div><b>{item.order.status.replaceAll("_", " ")}</b></header><div><span><small>Buyer</small><strong>{item.order.buyer.firstName} {item.order.buyer.lastName}</strong></span><span><small>Quantity</small><strong>{item.quantity}</strong></span><span><small>Total</small><strong>{formatMoney(item.totalCents)}</strong></span><span><small>Payment</small><strong>{item.order.payment?.status ?? "Pending"}</strong></span></div><footer>{item.inventoryItems?.length ? <button type="button" onClick={() => setDeliveryOrder(item)}><Eye size={15} /> View delivery <b>{item.inventoryItems.length}</b></button> : null}<Link to={`/orders/${item.order.id}`}><MessageSquare size={15} /> Buyer chat <ArrowRight size={14} /></Link></footer></article>) : <div className="dashboard-empty"><ShoppingBag /><h2>No {tab === "orders" ? "seller orders" : tab} found</h2><p>This status is clear right now.</p></div>}</section></section> : null}
 
         {["finance", "transactions", "frozen", "earnings"].includes(tab) ? <>
           <section className="seller-finance-grid">
@@ -701,6 +711,8 @@ export function SellerStudioPage() {
       </section>
 
       <nav className="seller-mobile-bottom-nav"><button className={tab === "overview" ? "active" : ""} onClick={() => selectTab("overview")}><LayoutDashboard /><span>Home</span></button><button className={tab === "products" ? "active" : ""} onClick={() => selectTab("products")}><Boxes /><span>Products</span></button><button className="seller-mobile-fab" onClick={() => setOpen(true)} aria-label="Publish product"><PackagePlus /></button><button className={tab === "orders" ? "active" : ""} onClick={() => selectTab("orders")}><ShoppingBag /><span>Orders</span></button><button className={tab === "finance" ? "active" : ""} onClick={() => selectTab("finance")}><WalletCards /><span>Finance</span></button></nav>
+
+      {deliveryOrder ? <div className="modal-backdrop seller-delivery-backdrop" role="dialog" aria-modal="true" aria-label="Delivered accounts"><section className="seller-delivery-modal"><header><div><small>DELIVERY DETAILS</small><h2>{deliveryOrder.productName}</h2><p>Order #{deliveryOrder.order.orderNumber} · {deliveryOrder.order.buyer.firstName} {deliveryOrder.order.buyer.lastName}</p></div><button type="button" onClick={() => setDeliveryOrder(null)} aria-label="Close"><X /></button></header><div className="seller-delivery-toolbar"><span><PackageCheck /> {deliveryOrder.inventoryItems?.length ?? 0} account{deliveryOrder.inventoryItems?.length === 1 ? "" : "s"} delivered</span><button type="button" onClick={() => void navigator.clipboard?.writeText((deliveryOrder.inventoryItems ?? []).map((row) => row.content).join("\n"))}><Copy /> Copy all</button></div><div className="seller-delivery-list">{deliveryOrder.inventoryItems?.map((row, index) => <article key={row.id}><b>{String(index + 1).padStart(2, "0")}</b><code>{row.content}</code><button type="button" onClick={() => void navigator.clipboard?.writeText(row.content)} aria-label={`Copy delivered account ${index + 1}`}><Copy /></button></article>)}</div><footer><a href={apiDownloadUrl(`/api/commerce/order-items/${deliveryOrder.id}/delivery?format=txt`)}><FileText /> TXT file</a><a href={apiDownloadUrl(`/api/commerce/order-items/${deliveryOrder.id}/delivery?format=csv`)}><Download /> CSV file</a><a className="primary" href={apiDownloadUrl(`/api/commerce/order-items/${deliveryOrder.id}/delivery?format=zip`)}><Download /> Download ZIP</a></footer></section></div> : null}
 
       {open ? <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Create product"><form className="seller-product-form seller-pro-product-form" onSubmit={create}><button type="button" className="modal-close" onClick={() => setOpen(false)} aria-label="Close">×</button><span className="section-index">NEW PRODUCT</span><h2>Create a smooth, buyer-friendly listing.</h2><p className="modal-helper">Follow the path from market category to platform and then listing type.</p>
         <div className="seller-flow-steps"><span className={form.rootCategoryId ? "done" : "active"}><b>1</b>Main category</span><span className={form.platformCategoryId ? "done" : form.rootCategoryId ? "active" : ""}><b>2</b>Platform</span><span className={form.listingTypeId || !listingTypes.length ? "done" : form.platformCategoryId ? "active" : ""}><b>3</b>Listing type</span></div>

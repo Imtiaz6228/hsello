@@ -242,6 +242,55 @@ commerceRouter.get("/order-items/:id/download.zip", asyncHandler(async (req, res
   res.send(zip);
 }));
 
+commerceRouter.get("/order-items/:id/delivery", asyncHandler(async (req, res) => {
+  const id = z.string().uuid().parse(req.params.id);
+  const format = z.enum(["txt", "csv", "zip"]).default("txt").parse(req.query.format);
+  const orderItem = await prisma.orderItem.findFirst({
+    where: {
+      id,
+      order: { paidAt: { not: null } },
+      OR: [
+        { order: { buyerId: req.auth!.id } },
+        { sellerId: req.auth!.id }
+      ]
+    },
+    include: {
+      order: { select: { orderNumber: true } },
+      inventoryItems: { orderBy: { createdAt: "asc" }, select: { content: true } }
+    }
+  });
+  if (!orderItem || !orderItem.inventoryItems.length) {
+    throw new ApiError(404, "No delivered accounts are available for this order item.", "DELIVERY_NOT_FOUND");
+  }
+
+  const baseName = `${orderItem.productName}-${orderItem.order.orderNumber}`
+    .replace(/[^a-z0-9-]+/gi, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 90) || "hsello-delivery";
+  const text = orderItem.inventoryItems.map((item) => item.content).join("\n");
+  const csv = ["item,delivered_account", ...orderItem.inventoryItems.map((item, index) => {
+    const escaped = item.content.replaceAll('"', '""');
+    return `${index + 1},"${escaped}"`;
+  })].join("\r\n");
+
+  if (format === "zip") {
+    const zip = await createZipBuffer([
+      { name: `${baseName}.txt`, content: text },
+      { name: `${baseName}.csv`, content: csv },
+      { name: "README.txt", content: "Your protected HSello delivery. Keep these account details private and contact the seller through the order chat if assistance is required." }
+    ]);
+    res.setHeader("content-type", "application/zip");
+    res.setHeader("content-disposition", `attachment; filename="${baseName}.zip"`);
+    res.send(zip);
+    return;
+  }
+
+  const body = format === "csv" ? csv : text;
+  res.setHeader("content-type", format === "csv" ? "text/csv; charset=utf-8" : "text/plain; charset=utf-8");
+  res.setHeader("content-disposition", `attachment; filename="${baseName}.${format}"`);
+  res.send(body);
+}));
+
 commerceRouter.post("/orders/:id/refunds", requireRole(Role.CUSTOMER), asyncHandler(async (req, res) => {
   const orderId = z.string().uuid().parse(req.params.id);
   const input = z.object({ reason: z.string().trim().min(20).max(2000), amountCents: z.number().int().positive().optional() }).parse(req.body);

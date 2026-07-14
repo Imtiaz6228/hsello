@@ -3,7 +3,8 @@ import path from "node:path";
 
 type ZipInput = {
   name: string;
-  storagePath: string;
+  storagePath?: string;
+  content?: Buffer | string;
 };
 
 const crcTable = new Uint32Array(256);
@@ -58,7 +59,9 @@ export async function createZipBuffer(files: ZipInput[]) {
 
   for (let index = 0; index < files.length; index += 1) {
     const file = files[index];
-    const content = await fs.readFile(path.resolve(file.storagePath));
+    const content = file.content !== undefined
+      ? Buffer.isBuffer(file.content) ? file.content : Buffer.from(file.content, "utf8")
+      : await fs.readFile(path.resolve(file.storagePath!));
     const name = Buffer.from(safeZipName(file.name, index), "utf8");
     const { dosTime, dosDate } = dosDateTime();
     const crc = crc32(content);

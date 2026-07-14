@@ -10,7 +10,7 @@ import {
   ListChecks, CircleDollarSign, Banknote, Percent, Bookmark, ReceiptText, ImageIcon
 } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
-import { ApiError, apiRequest, mediaUrl, STAFF_ROLES } from "../api/client";
+import { ApiError, apiDownloadUrl, apiRequest, mediaUrl, STAFF_ROLES } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { Seo } from "../components/Seo";
 import { EarningsChart } from "../components/EarningsChart";
@@ -451,23 +451,19 @@ export function AccountDashboardPage() {
                               <Link to={`/orders/${order.id}`} className="action-link"><MessageCircle size={14} /> Delivery chat</Link>
                             ) : (
                               <>
-                                {item.downloadGrants.length ? <a href={`/api/commerce/order-items/${item.id}/download.zip`} className="action-link"><Download size={14} /> Download ZIP</a> : null}
+                                {item.downloadGrants.length ? <a href={apiDownloadUrl(`/api/commerce/order-items/${item.id}/download.zip`)} className="action-link"><Download size={14} /> Download ZIP</a> : null}
                                 {item.downloadGrants.map((grant) => (
-                                  <a key={grant.id} href={`/api/commerce/downloads/${grant.id}`} className="action-link"><Download size={14} /> {grant.productFile.displayName} <small>({grant.maxDownloads - grant.downloadCount} left)</small></a>
+                                  <a key={grant.id} href={apiDownloadUrl(`/api/commerce/downloads/${grant.id}`)} className="action-link"><Download size={14} /> {grant.productFile.displayName} <small>({grant.maxDownloads - grant.downloadCount} left)</small></a>
                                 ))}
                               </>
                             )}
                           </div>
-                          {item.inventoryItems?.length ? (
-                            <div className="digital-delivery-rows">
-                              {item.inventoryItems.map((row) => <code key={row.id}>{row.content}</code>)}
-                            </div>
-                          ) : null}
+                          {item.inventoryItems?.length ? <div className="delivery-file-panel"><div><PackageOpen /><span><strong>{item.inventoryItems.length} delivered account{item.inventoryItems.length === 1 ? "" : "s"}</strong><small>Saved as protected files instead of exposing credentials on screen</small></span></div><div className="delivery-file-actions"><a className="action-link" href={apiDownloadUrl(`/api/commerce/order-items/${item.id}/delivery?format=zip`)}><Download size={14} /> Download ZIP</a><a className="action-link" href={apiDownloadUrl(`/api/commerce/order-items/${item.id}/delivery?format=csv`)}><FileText size={14} /> Download CSV</a></div></div> : null}
                         </div>
                       ))}
                     </div>
                     <footer>
-                      <a href={`/api/commerce/orders/${order.id}/invoice`} className="action-link"><FileText size={14} /> Invoice {order.invoiceNumber}</a>
+                      <a href={apiDownloadUrl(`/api/commerce/orders/${order.id}/invoice`)} className="action-link"><FileText size={14} /> Invoice {order.invoiceNumber}</a>
                       <Link to={`/orders/${order.id}`} className="action-link"><MessageCircle size={14} /> Order chat</Link>
                       <button disabled={Boolean(order.refunds.length)} onClick={() => void requestRefund(order)} className="action-link">
                         <RefreshCw size={14} /> {order.refunds.length ? `Refund ${order.refunds[0].status.toLowerCase()}` : "Request refund"}
@@ -502,7 +498,7 @@ export function AccountDashboardPage() {
             {downloads.length ? (
               <div className="downloads-grid buyer-library-grid">
                 {downloads.map(({ order, item, grant }) => (
-                  <a href={`/api/commerce/downloads/${grant.id}`} className="download-card" key={grant.id}>
+                  <a href={apiDownloadUrl(`/api/commerce/downloads/${grant.id}`)} className="download-card" key={grant.id}>
                     <div className="dc-icon"><BuyerMedia src={item.product.coverImageUrl} alt={item.productName} fallback={<Download size={26} />} /></div>
                     <div className="dc-info">
                       <span className="buyer-library-badge">PURCHASED</span>
@@ -524,7 +520,7 @@ export function AccountDashboardPage() {
                 <Link to="/catalog" className="primary-button">Browse marketplace <ArrowRight size={16} /></Link>
               </div>
             )}
-            {["license-keys", "activation-codes", "delivery-history"].includes(tab) ? <section className="buyer-code-vault"><header><div><KeyRound /><span><h2>Protected delivery vault</h2><p>Activation codes and delivered inventory are tied to their original order.</p></span></div><ShieldCheck /></header>{orders.flatMap((order) => order.items.flatMap((item) => (item.inventoryItems ?? []).map((row) => ({ order, item, row })))).length ? orders.flatMap((order) => order.items.flatMap((item) => (item.inventoryItems ?? []).map((row) => ({ order, item, row })))).map(({ order, item, row }) => <article key={row.id}><div><small>{order.orderNumber}</small><strong>{item.productName}</strong></div><code>{row.content}</code><button type="button" onClick={() => void navigator.clipboard?.writeText(row.content)}><ClipboardCopy /> Copy</button></article>) : <div className="empty-state-large"><KeyRound /><h2>No activation codes</h2><p>License keys and delivered inventory will appear here after purchase.</p></div>}</section> : null}
+            {["license-keys", "activation-codes", "delivery-history"].includes(tab) ? <section className="buyer-code-vault"><header><div><KeyRound /><span><h2>Protected delivery vault</h2><p>Activation codes and delivered inventory are tied to their original order.</p></span></div><ShieldCheck /></header>{orders.flatMap((order) => order.items.filter((item) => item.inventoryItems?.length).map((item) => ({ order, item }))).length ? orders.flatMap((order) => order.items.filter((item) => item.inventoryItems?.length).map((item) => ({ order, item }))).map(({ order, item }) => <article key={item.id}><div><small>{order.orderNumber}</small><strong>{item.productName}</strong><p>{item.inventoryItems?.length} delivered account{item.inventoryItems?.length === 1 ? "" : "s"}</p></div><span className="protected-delivery-badge"><ShieldCheck /> Protected file</span><div className="vault-download-actions"><a href={apiDownloadUrl(`/api/commerce/order-items/${item.id}/delivery?format=txt`)}><FileText /> TXT</a><a href={apiDownloadUrl(`/api/commerce/order-items/${item.id}/delivery?format=csv`)}><Download /> CSV</a><a href={apiDownloadUrl(`/api/commerce/order-items/${item.id}/delivery?format=zip`)}><PackageOpen /> ZIP</a></div></article>) : <div className="empty-state-large"><KeyRound /><h2>No activation codes</h2><p>License keys and delivered inventory will appear here after purchase.</p></div>}</section> : null}
           </div>
         )}
 

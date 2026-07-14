@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import path from "node:path";
 import { Router, type Request } from "express";
 import { DisputeStatus, ProductStatus, ProductType, Role, SellerApplicationStatus } from "@prisma/client";
 import { z } from "zod";
@@ -364,6 +365,16 @@ sellerRouter.post("/products/:id/files", requireSeller, productFileUpload.single
   res.status(201).json({ file });
 }));
 
+sellerRouter.get("/files/:id/download", requireSeller, asyncHandler(async (req, res) => {
+  const id = z.string().uuid().parse(req.params.id);
+  const file = await prisma.productFile.findFirst({
+    where: { id, product: { sellerId: req.auth!.id } },
+    select: { storagePath: true, displayName: true }
+  });
+  if (!file) throw new ApiError(404, "Uploaded product file not found.", "PRODUCT_FILE_NOT_FOUND");
+  res.download(path.resolve(file.storagePath), file.displayName);
+}));
+
 sellerRouter.post("/products/:id/inventory/manual", requireSeller, asyncHandler(async (req, res) => {
   const id = z.string().uuid().parse(req.params.id);
   const { inventoryLines } = z.object({ inventoryLines: z.string().trim().min(1).max(500_000) }).parse(req.body);
@@ -399,7 +410,7 @@ sellerRouter.get("/orders", requireSeller, asyncHandler(async (req, res) => {
       order: { include: { payment: true, buyer: { select: { firstName: true, lastName: true, email: true } }, messages: { orderBy: { createdAt: "desc" }, take: 1 }, disputes: { orderBy: { createdAt: "desc" }, take: 1 } } },
       product: true,
       sellerEarning: true,
-      inventoryItems: { select: { id: true, deliveredAt: true } }
+      inventoryItems: { select: { id: true, content: true, source: true, deliveredAt: true } }
     }
   });
   res.json({ items });

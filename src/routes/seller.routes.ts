@@ -8,7 +8,7 @@ import { requireAuth, requireVerifiedUser } from "../middleware/auth.js";
 import { ApiError, asyncHandler } from "../middleware/error-handler.js";
 import { imageUpload, productFileUpload, publicUploadUrl, sellerDocumentUpload } from "../middleware/upload.js";
 import { sendTicketUpdateEmail } from "../lib/email.js";
-import { activeDisputeWhere, autoResolveExpiredDisputes } from "../services/dispute.service.js";
+import { activeDisputeWhere, autoResolveExpiredDisputes, markDisputeTurn } from "../services/dispute.service.js";
 import { getSellerFinanceSummary } from "../services/finance.service.js";
 import { ensureDefaultMarketplaceCategories } from "../services/category.service.js";
 import { randomToken, sha256 } from "../lib/crypto.js";
@@ -410,7 +410,7 @@ sellerRouter.get("/orders", requireSeller, asyncHandler(async (req, res) => {
       order: { include: { payment: true, buyer: { select: { firstName: true, lastName: true, email: true } }, messages: { orderBy: { createdAt: "desc" }, take: 1 }, disputes: { orderBy: { createdAt: "desc" }, take: 1 } } },
       product: true,
       sellerEarning: true,
-      inventoryItems: { select: { id: true, content: true, source: true, deliveredAt: true } }
+      inventoryItems: { where: { isActive: true }, select: { id: true, content: true, source: true, deliveredAt: true } }
     }
   });
   res.json({ items });
@@ -436,8 +436,65 @@ sellerRouter.post("/orders/:id/refund", requireSeller, asyncHandler(async (req, 
   const order = await prisma.order.findFirst({ where: { id: orderId, items: { some: { sellerId: req.auth!.id } }, paidAt: { not: null } }, include: { items: { where: { sellerId: req.auth!.id } } } });
   if (!order) throw new ApiError(404, "Paid seller order not found.", "ORDER_NOT_FOUND");
   const sellerTotal = order.items.reduce((sum, item) => sum + item.totalCents, 0);
-  const refund = await prisma.refund.create({ data: { orderId, requestedById: req.auth!.id, amountCents: Math.min(input.amountCents ?? sellerTotal, sellerTotal), reason: `Seller refund request: ${input.reason}` } });
+  const amountCents = Math.min(input.amountCents ?? sellerTotal, sellerTotal);
+  const refund = await prisma.refund.create({ data: { orderId, requestedById: req.auth!.id, amountCents, reason: `Seller refund request: ${input.reason}` } });
+  await prisma.orderMessage.create({
+    data: {
+      orderId,
+      authorId: req.auth!.id,
+      body: `Seller submitted a refund for $${(amountCents / 100).toFixed(2)}. Reason: ${input.reason}`
+    }
+  });
+  await markDisputeTurn(orderId, { id: req.auth!.id, role: req.auth!.role as Role }, order.buyerId, [req.auth!.id]);
   res.status(201).json({ refund, message: "Refund request sent to admin for approval." });
+}));
+
+sellerRouter.post("/orders/:orderId/items/:itemId/replace", requireSeller, asyncHandler(async (req, res) => {
+  const orderId = z.string().uuid().parse(req.params.orderId);
+  const itemId = z.string().uuid().parse(req.params.itemId);
+  const input = z.object({ quantity: z.number().int().min(1).max(100).optional(), note: z.string().trim().max(1000).optional() }).parse(req.body);
+  const orderItem = await prisma.orderItem.findFirst({
+    where: { id: itemId, orderId, sellerId: req.auth!.id, order: { paidAt: { not: null } } },
+    include: {
+      order: { include: { disputes: { where: activeDisputeWhere(), orderBy: { updatedAt: "desc" } } } },
+      product: { select: { name: true } },
+      inventoryItems: { where: { isActive: true, deliveredAt: { not: null } }, orderBy: { deliveredAt: "asc" }, select: { id: true } }
+    }
+  });
+  if (!orderItem) throw new ApiError(404, "Paid seller order item not found.", "ORDER_ITEM_NOT_FOUND");
+  const dispute = orderItem.order.disputes.find((entry) => !entry.orderItemId || entry.orderItemId === orderItem.id);
+  if (!dispute) throw new ApiError(409, "Replacement is available only while this item has an open dispute.", "ACTIVE_DISPUTE_REQUIRED");
+  if (!orderItem.inventoryItems.length) throw new ApiError(409, "This product has no delivered account inventory to replace.", "REPLACEMENT_NOT_SUPPORTED");
+
+  const replacementCount = Math.min(input.quantity ?? orderItem.quantity, orderItem.inventoryItems.length);
+  const result = await prisma.$transaction(async (tx) => {
+    const replacements = await tx.productInventoryItem.findMany({
+      where: { productId: orderItem.productId, isActive: true, orderItemId: null },
+      orderBy: { createdAt: "asc" },
+      take: replacementCount,
+      select: { id: true }
+    });
+    if (replacements.length < replacementCount) {
+      throw new ApiError(409, `Only ${replacements.length} replacement item${replacements.length === 1 ? " is" : "s are"} available.`, "REPLACEMENT_OUT_OF_STOCK");
+    }
+    const retiredIds = orderItem.inventoryItems.slice(0, replacementCount).map((item) => item.id);
+    await tx.productInventoryItem.updateMany({ where: { id: { in: retiredIds } }, data: { isActive: false } });
+    await tx.productInventoryItem.updateMany({
+      where: { id: { in: replacements.map((item) => item.id) } },
+      data: { orderItemId: orderItem.id, deliveredAt: new Date() }
+    });
+    const message = await tx.orderMessage.create({
+      data: {
+        orderId,
+        authorId: req.auth!.id,
+        body: `Seller replaced ${replacementCount} item${replacementCount === 1 ? "" : "s"} for ${orderItem.productName}.${input.note ? ` Note: ${input.note}` : ""}`
+      },
+      include: { author: { select: { id: true, firstName: true, role: true } } }
+    });
+    return { replacementCount, message };
+  });
+  await markDisputeTurn(orderId, { id: req.auth!.id, role: req.auth!.role as Role }, orderItem.order.buyerId, [req.auth!.id]);
+  res.status(201).json({ replacementCount: result.replacementCount, chatMessage: result.message, message: `${result.replacementCount} replacement item${result.replacementCount === 1 ? "" : "s"} delivered to the buyer.` });
 }));
 
 sellerRouter.post("/reviews/:id/respond", requireSeller, asyncHandler(async (req, res) => {

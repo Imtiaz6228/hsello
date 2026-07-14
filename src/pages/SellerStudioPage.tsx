@@ -66,6 +66,7 @@ type SellerOrder = {
 };
 
 type Tab = "overview" | "products" | "product-groups" | "categories" | "inventory" | "downloads" | "drafts" | "orders" | "processing" | "delivered" | "refunds" | "disputes" | "finance" | "transactions" | "frozen" | "earnings" | "withdrawals" | "messages" | "tickets" | "notifications" | "coupons" | "promotions" | "sponsored" | "featured" | "analytics" | "revenue" | "visitors" | "conversion" | "storefront" | "payments" | "security" | "api" | "preferences" | "support";
+type AnalyticsPeriod = "7d" | "30d" | "year";
 
 const sellerTabs: Array<{ id: Tab; label: string; icon: typeof Store }> = [
   { id: "overview", label: "Dashboard", icon: LayoutDashboard },
@@ -262,6 +263,7 @@ export function SellerStudioPage() {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ Products: true, Orders: true, Finance: true, Messages: true, Marketing: true, Analytics: true, Settings: true, Support: true, Workspace: true });
   const [mediaUploading, setMediaUploading] = useState("");
   const [deliveryOrder, setDeliveryOrder] = useState<SellerOrder | null>(null);
+  const [analyticsPeriod, setAnalyticsPeriod] = useState<AnalyticsPeriod>("7d");
 
   const rootCategories = useMemo(() => categories.filter((category) => !category.parentId), [categories]);
   const platformCategories = useMemo(
@@ -301,6 +303,45 @@ export function SellerStudioPage() {
     return true;
   });
   const uploadedFiles = products.flatMap((product) => product.files.map((file) => ({ product, file })));
+  const revenueChart = useMemo(() => {
+    const dayMs = 24 * 60 * 60 * 1000;
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let start = new Date(today);
+    let bucketCount = 7;
+    let bucketDays = 1;
+    let labels: string[] = [];
+    if (analyticsPeriod === "7d") {
+      start = new Date(today.getTime() - 6 * dayMs);
+      labels = Array.from({ length: 7 }, (_, index) => new Date(start.getTime() + index * dayMs).toLocaleDateString(undefined, { weekday: "short" }));
+    } else if (analyticsPeriod === "30d") {
+      start = new Date(today.getTime() - 29 * dayMs);
+      bucketCount = 10;
+      bucketDays = 3;
+      labels = Array.from({ length: bucketCount }, (_, index) => new Date(start.getTime() + index * bucketDays * dayMs).toLocaleDateString(undefined, { month: "short", day: "numeric" }));
+    } else {
+      start = new Date(today.getFullYear(), today.getMonth() - 11, 1);
+      bucketCount = 12;
+      labels = Array.from({ length: 12 }, (_, index) => new Date(start.getFullYear(), start.getMonth() + index, 1).toLocaleDateString(undefined, { month: "short" }));
+    }
+    const values = Array.from({ length: bucketCount }, () => 0);
+    const periodOrders = orders.filter((item) => {
+      const created = new Date(item.order.createdAt);
+      if (created < start) return false;
+      const index = analyticsPeriod === "year"
+        ? (created.getFullYear() - start.getFullYear()) * 12 + created.getMonth() - start.getMonth()
+        : Math.floor((created.getTime() - start.getTime()) / (bucketDays * dayMs));
+      if (index >= 0 && index < values.length) values[index] += item.totalCents;
+      return index >= 0 && index < values.length;
+    });
+    const maximum = Math.max(1, ...values);
+    return {
+      labels,
+      heights: values.map((value) => value ? Math.max(8, Math.round((value / maximum) * 100)) : 3),
+      revenue: periodOrders.reduce((sum, item) => sum + item.totalCents, 0),
+      orders: periodOrders.length
+    };
+  }, [analyticsPeriod, orders]);
 
   function showMessage(text: string, type: "success" | "error" | "info" = "info") {
     setMessage(text);
@@ -624,17 +665,17 @@ export function SellerStudioPage() {
             <span className="seller-balance-orb"><Sparkles /></span>
           </section>
           <section className="seller-metric-grid seller-metric-grid-premium">
-            <article><span><TrendingUp /></span><div><small>Today’s revenue</small><strong>{formatMoney(finance?.todayIncomeCents ?? 0)}</strong><p className="positive"><ArrowUpRight /> Live earnings</p></div></article>
-            <article><span><WalletCards /></span><div><small>Lifetime earnings</small><strong>{formatMoney(finance?.totalSellerEarningsCents ?? grossSales)}</strong><p className="positive"><ArrowUpRight /> All-time total</p></div></article>
-            <article><span><ShoppingBag /></span><div><small>Pending orders</small><strong>{pendingOrders}</strong><p><Clock3 /> Requires attention</p></div></article>
-            <article><span><PackageCheck /></span><div><small>Completed orders</small><strong>{deliveredOrders}</strong><p className="positive"><ArrowUpRight /> Successful delivery</p></div></article>
-            <article><span><Boxes /></span><div><small>Published products</small><strong>{liveProducts}</strong><p>{pendingProducts} awaiting review</p></div></article>
-            <article><span><Users /></span><div><small>Unique buyers</small><strong>{uniqueBuyers}</strong><p>Across {orders.length} orders</p></div></article>
-            <article><span><BadgeCheck /></span><div><small>Average rating</small><strong>{Number(profile?.averageRating ?? 0).toFixed(1)}</strong><p className="positive">Verified feedback</p></div></article>
-            <article><span><LockKeyhole /></span><div><small>Frozen balance</small><strong>{formatMoney(finance?.frozenBalanceCents ?? 0)}</strong><p>Releases automatically</p></div></article>
+            <button type="button" className="seller-metric-action" onClick={() => selectTab("revenue")}><span><TrendingUp /></span><div><small>Today’s revenue</small><strong>{formatMoney(finance?.todayIncomeCents ?? 0)}</strong><p className="positive"><ArrowUpRight /> Live earnings</p></div></button>
+            <button type="button" className="seller-metric-action" onClick={() => selectTab("earnings")}><span><WalletCards /></span><div><small>Lifetime earnings</small><strong>{formatMoney(finance?.totalSellerEarningsCents ?? grossSales)}</strong><p className="positive"><ArrowUpRight /> All-time total</p></div></button>
+            <button type="button" className="seller-metric-action" onClick={() => selectTab("processing")}><span><ShoppingBag /></span><div><small>Pending orders</small><strong>{pendingOrders}</strong><p><Clock3 /> Requires attention</p></div></button>
+            <button type="button" className="seller-metric-action" onClick={() => selectTab("delivered")}><span><PackageCheck /></span><div><small>Completed orders</small><strong>{deliveredOrders}</strong><p className="positive"><ArrowUpRight /> Successful delivery</p></div></button>
+            <button type="button" className="seller-metric-action" onClick={() => selectTab("products")}><span><Boxes /></span><div><small>Published products</small><strong>{liveProducts}</strong><p>{pendingProducts} awaiting review</p></div></button>
+            <button type="button" className="seller-metric-action" onClick={() => selectTab("orders")}><span><Users /></span><div><small>Unique buyers</small><strong>{uniqueBuyers}</strong><p>Across {orders.length} orders</p></div></button>
+            <button type="button" className="seller-metric-action" onClick={() => selectTab("analytics")}><span><BadgeCheck /></span><div><small>Average rating</small><strong>{Number(profile?.averageRating ?? 0).toFixed(1)}</strong><p className="positive">Verified feedback</p></div></button>
+            <button type="button" className="seller-metric-action" onClick={() => selectTab("frozen")}><span><LockKeyhole /></span><div><small>Frozen balance</small><strong>{formatMoney(finance?.frozenBalanceCents ?? 0)}</strong><p>Releases automatically</p></div></button>
           </section>
           <section className="seller-performance-grid">
-            <article className="seller-chart-card"><header><div><span>Performance</span><h2>Revenue overview</h2></div><div><button className="active">7 days</button><button>30 days</button><button>Year</button></div></header><div className="seller-chart-summary"><span><i className="blue" /> Revenue <strong>{formatMoney(grossSales)}</strong></span><span><i className="green" /> Orders <strong>{orders.length}</strong></span></div><div className="seller-css-chart">{[28,42,35,61,49,72,83,68,92,78,96,88].map((height, index) => <span key={index} style={{ height: `${height}%` }}><i /></span>)}</div><footer><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></footer></article>
+            <article className="seller-chart-card"><header><div><span>Performance</span><h2>Revenue overview</h2></div><div><button type="button" className={analyticsPeriod === "7d" ? "active" : ""} aria-pressed={analyticsPeriod === "7d"} onClick={() => setAnalyticsPeriod("7d")}>7 days</button><button type="button" className={analyticsPeriod === "30d" ? "active" : ""} aria-pressed={analyticsPeriod === "30d"} onClick={() => setAnalyticsPeriod("30d")}>30 days</button><button type="button" className={analyticsPeriod === "year" ? "active" : ""} aria-pressed={analyticsPeriod === "year"} onClick={() => setAnalyticsPeriod("year")}>Year</button></div></header><div className="seller-chart-summary"><span><i className="blue" /> Revenue <strong>{formatMoney(revenueChart.revenue)}</strong></span><span><i className="green" /> Orders <strong>{revenueChart.orders}</strong></span></div><div className="seller-css-chart">{revenueChart.heights.map((height, index) => <span key={`${analyticsPeriod}-${index}`} title={`${revenueChart.labels[index]}: ${height}%`} style={{ height: `${height}%` }}><i /></span>)}</div><footer>{revenueChart.labels.map((label) => <span key={label}>{label}</span>)}</footer></article>
             <article className="seller-quick-panel"><header><div><span>Shortcuts</span><h2>Quick actions</h2></div><MoreHorizontal /></header><button onClick={() => setOpen(true)}><span><PackagePlus /></span><div><strong>Publish a product</strong><small>Create a polished new listing</small></div><ArrowRight /></button><button onClick={() => selectTab("orders")}><span><ShoppingBag /></span><div><strong>Manage orders</strong><small>{pendingOrders} orders need attention</small></div><ArrowRight /></button><button onClick={() => selectTab("withdrawals")}><span><CircleDollarSign /></span><div><strong>Withdraw balance</strong><small>{formatMoney(finance?.availableBalanceCents ?? 0)} available</small></div><ArrowRight /></button><button onClick={() => selectTab("storefront")}><span><Palette /></span><div><strong>Polish storefront</strong><small>Logo, banner and policy</small></div><ArrowRight /></button></article>
           </section>
           <section className="seller-recent-card"><header><div><span>Latest activity</span><h2>Recent orders</h2></div><button onClick={() => selectTab("orders")}>View all <ArrowRight /></button></header>{orders.slice(0, 4).length ? <div>{orders.slice(0, 4).map((item) => <article key={item.id}><span className="seller-order-avatar">{item.order.buyer.firstName[0]}{item.order.buyer.lastName[0]}</span><div><strong>{item.productName}</strong><small>{item.order.orderNumber} · {item.order.buyer.firstName} {item.order.buyer.lastName}</small></div><b>{formatMoney(item.totalCents)}</b><span className={`status-pill ${item.order.status.toLowerCase()}`}>{item.order.status.replaceAll("_", " ")}</span><Link to={`/orders/${item.order.id}`} aria-label="Open order"><ArrowRight /></Link></article>)}</div> : <div className="dashboard-empty compact"><ShoppingBag /><h2>No orders yet</h2><p>Your newest orders will appear here.</p></div>}</section>

@@ -1,23 +1,39 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Download, FileArchive, FileSpreadsheet, MessageCircle, Paperclip, Send, ShieldAlert, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Download, FileArchive, FileSpreadsheet, MessageCircle, Paperclip, RefreshCw, Repeat2, Send, ShieldAlert, ShieldCheck } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { ApiError, apiDownloadUrl, apiRequest } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { MarketHeader } from "../components/MarketHeader";
 import { Seo } from "../components/Seo";
+import { useLocale } from "../i18n/LocaleContext";
 
 type Message = { id: string; body: string; attachmentUrl?: string | null; attachmentName?: string | null; createdAt: string; author: { id?: string; firstName: string; role: string } };
 type OrderDetail = {
   id: string;
   orderNumber: string;
   status: string;
+  buyerName: string;
+  buyerEmail: string;
+  subtotalCents: number;
+  discountCents: number;
+  totalCents: number;
+  currency: string;
+  createdAt: string;
+  paidAt?: string | null;
+  buyer: { firstName: string; lastName: string; email: string };
+  payment?: { method: string; status: string; amountCents: number } | null;
   canOpenDispute?: boolean;
   disputeDeadline?: string;
   disputeWindowHours?: number;
   disputes: Array<{ id: string; status: string; subject: string; refundDemanded?: boolean; awaitingParty?: string | null; autoCloseAt?: string | null; resolution?: string | null }>;
   items: Array<{
     id: string;
+    productId: string;
+    sellerId: string;
     productName: string;
+    quantity: number;
+    unitPriceCents: number;
+    totalCents: number;
     product: { name: string; slug: string; type: string; coverImageUrl?: string | null; deliveryNote?: string | null };
     seller: { firstName: string; lastName?: string | null; username?: string | null };
     downloadGrants: Array<{ id: string; downloadCount: number; maxDownloads: number; productFile: { displayName: string } }>;
@@ -41,13 +57,16 @@ function Countdown({ until }: { until?: string | null }) {
 
 export function OrderDeliveryPage() {
   const { user } = useAuth();
+  const { formatMoney } = useLocale();
   const { id } = useParams();
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [body, setBody] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [sending, setSending] = useState(false);
+  const [actionBusy, setActionBusy] = useState("");
   const threadEndRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async (silent = false) => {
@@ -132,6 +151,51 @@ export function OrderDeliveryPage() {
     }
   }
 
+  async function sellerRefund() {
+    if (!order) return;
+    const reason = window.prompt("Refund reason (10+ characters):", "Refund offered to resolve the open dispute.");
+    if (!reason || reason.trim().length < 10) return;
+    if (!window.confirm(`Submit a refund for your items in order ${order.orderNumber}?`)) return;
+    setActionBusy("refund");
+    setError("");
+    setSuccess("");
+    try {
+      await apiRequest(`/api/seller/orders/${order.id}/refund`, { method: "POST", body: { reason: reason.trim() } });
+      await load();
+      setSuccess("Refund submitted and recorded in the dispute chat.");
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : "The refund could not be submitted.");
+    } finally {
+      setActionBusy("");
+    }
+  }
+
+  async function replaceOrderItem(item: OrderDetail["items"][number]) {
+    if (!order) return;
+    const requested = window.prompt(`How many ${item.productName} item(s) should be replaced?`, String(item.quantity));
+    if (requested === null) return;
+    const quantity = Number(requested);
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > item.quantity) {
+      setError(`Enter a whole number from 1 to ${item.quantity}.`);
+      return;
+    }
+    const note = window.prompt("Optional note for the buyer:", "Replacement delivered to resolve the dispute.") ?? "";
+    setActionBusy(`replace:${item.id}`);
+    setError("");
+    setSuccess("");
+    try {
+      await apiRequest(`/api/seller/orders/${order.id}/items/${item.id}/replace`, { method: "POST", body: { quantity, note } });
+      await load();
+      setSuccess(`${quantity} replacement item${quantity === 1 ? "" : "s"} delivered and recorded in chat.`);
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : "Replacement delivery failed.");
+    } finally {
+      setActionBusy("");
+    }
+  }
+
+  const activeDispute = order?.disputes?.find((dispute) => ["OPEN", "UNDER_REVIEW", "AWAITING_BUYER", "AWAITING_SELLER"].includes(dispute.status));
+
   return (
     <main className="commerce-page order-workspace">
       <Seo title="Order delivery workspace" description="Protected buyer and seller messages for a HSello order." />
@@ -176,6 +240,32 @@ export function OrderDeliveryPage() {
               ))}
             </div>
           ) : null}
+          {user?.role === "SELLER" && activeDispute ? <div className="seller-dispute-tools">
+            <div><strong>Seller resolution tools</strong><small>Available because this dispute is open. Every action is added to the protected chat record.</small></div>
+            <button type="button" className="refund-action" disabled={Boolean(actionBusy)} onClick={() => void sellerRefund()}><RefreshCw size={15} /> {actionBusy === "refund" ? "Submitting…" : "Refund"}</button>
+            {order.items.filter((item) => item.sellerId === user.id).map((item) => <button type="button" key={item.id} className="replace-action" disabled={Boolean(actionBusy)} onClick={() => void replaceOrderItem(item)}><Repeat2 size={15} /> {actionBusy === `replace:${item.id}` ? "Replacing…" : `Replace ${item.productName}`}</button>)}
+          </div> : null}
+          <section className="order-detail-panel">
+            <header><div><strong>Complete order information</strong><small>Buyer, payment, product and quantity details for this protected transaction.</small></div><span className={`status-pill ${order.status.toLowerCase()}`}>{order.status.replaceAll("_", " ")}</span></header>
+            <dl className="order-detail-grid">
+              <div><dt>Buyer</dt><dd>{order.buyer?.firstName} {order.buyer?.lastName}</dd></div>
+              <div><dt>Buyer email</dt><dd>{order.buyer?.email ?? order.buyerEmail}</dd></div>
+              <div><dt>Order ID</dt><dd>{order.id}</dd></div>
+              <div><dt>Order number</dt><dd>{order.orderNumber}</dd></div>
+              <div><dt>Quantity bought</dt><dd>{order.items.reduce((total, item) => total + item.quantity, 0)}</dd></div>
+              <div><dt>Order amount</dt><dd>{formatMoney(order.totalCents)}</dd></div>
+              <div><dt>Payment</dt><dd>{order.payment ? `${order.payment.method.replaceAll("_", " ")} · ${order.payment.status.replaceAll("_", " ")}` : "Not recorded"}</dd></div>
+              <div><dt>Order time</dt><dd>{new Date(order.createdAt).toLocaleString()}</dd></div>
+            </dl>
+            <div className="order-product-details">{order.items.map((item) => <article key={item.id}>
+              <div><small>Product</small><strong>{item.productName}</strong></div>
+              <div><small>Product ID</small><strong>{item.productId}</strong></div>
+              <div><small>Order item ID</small><strong>{item.id}</strong></div>
+              <div><small>Quantity</small><strong>{item.quantity}</strong></div>
+              <div><small>Unit price</small><strong>{formatMoney(item.unitPriceCents)}</strong></div>
+              <div><small>Item total</small><strong>{formatMoney(item.totalCents)}</strong></div>
+            </article>)}</div>
+          </section>
           <div className="order-items-record"><strong>Purchased package & delivery record</strong><small>Order #{order.orderNumber} · dispute window: {order.disputeWindowHours ?? 12} hours</small></div>
           {order.items.map((item) => (
             <article className="order-delivery-item order-record-item" key={item.id}>
@@ -208,6 +298,7 @@ export function OrderDeliveryPage() {
       <div className="order-chat order-chat-pro">
         <header className="order-chat-heading"><div><span className="section-index">PRIVATE ORDER CHAT</span><h2>Buyer & seller workspace</h2><small>Messages update automatically. Attach screenshots when evidence is needed.</small></div><span className="chat-live-dot">Live</span></header>
         {error ? <div className="notice error">{error}</div> : null}
+        {success ? <div className="notice success">{success}</div> : null}
         {messages.length ? messages.map((message) => (
           <article className={`order-chat-bubble ${message.author.role === "SELLER" ? "seller-message" : "buyer-message"} ${message.author.id === user?.id ? "own-message" : ""}`} key={message.id}>
             <span>{message.author.firstName[0]}</span>

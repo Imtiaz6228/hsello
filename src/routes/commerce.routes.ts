@@ -164,7 +164,7 @@ commerceRouter.get("/orders", asyncHandler(async (req, res) => {
         include: {
           product: { select: { slug: true, type: true, coverImageUrl: true, afterSalesServiceHours: true } },
           downloadGrants: { include: { productFile: true } },
-          inventoryItems: { where: { deliveredAt: { not: null } }, select: { id: true, content: true, source: true, deliveredAt: true } }
+          inventoryItems: { where: { isActive: true, deliveredAt: { not: null } }, select: { id: true, content: true, source: true, deliveredAt: true } }
         }
       },
       refunds: { orderBy: { createdAt: "desc" }, take: 1 },
@@ -187,7 +187,7 @@ commerceRouter.get("/orders/:id", asyncHandler(async (req, res) => {
           product: { select: { name: true, slug: true, type: true, coverImageUrl: true, afterSalesServiceHours: true, deliveryNote: true } },
           seller: { select: { firstName: true, lastName: true, username: true } },
           downloadGrants: { include: { productFile: true } },
-          inventoryItems: { where: { deliveredAt: { not: null } }, select: { id: true, content: true, source: true, deliveredAt: true } }
+          inventoryItems: { where: { isActive: true, deliveredAt: { not: null } }, select: { id: true, content: true, source: true, deliveredAt: true } }
         }
       },
       refunds: { orderBy: { createdAt: "desc" }, take: 3 },
@@ -270,7 +270,7 @@ commerceRouter.get("/order-items/:id/delivery", asyncHandler(async (req, res) =>
     },
     include: {
       order: { select: { orderNumber: true } },
-      inventoryItems: { orderBy: { createdAt: "asc" }, select: { content: true } }
+      inventoryItems: { where: { isActive: true, deliveredAt: { not: null } }, orderBy: { createdAt: "asc" }, select: { content: true } }
     }
   });
   if (!orderItem || !orderItem.inventoryItems.length) {

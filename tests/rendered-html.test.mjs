@@ -15,7 +15,9 @@ test("renders development preview metadata", async () => {
     }),
     {
       ASSETS: {
-        fetch: async () => new Response("Not found", { status: 404 }),
+        fetch: async (request) => new URL(request.url).pathname === "/index.html"
+          ? new Response('<!doctype html><meta name="codex-preview" content="development">', { status: 200, headers: { "content-type": "text/html; charset=utf-8" } })
+          : new Response("Not found", { status: 404 }),
       },
     },
     {

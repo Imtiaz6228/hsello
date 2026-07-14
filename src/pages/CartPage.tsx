@@ -1,9 +1,19 @@
-import { ArrowRight, Minus, Plus, ShieldCheck, ShoppingBag, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowRight, ImageIcon, Minus, Plus, ShieldCheck, ShoppingBag, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { mediaUrl } from "../api/client";
 import { useCart } from "../commerce/CartContext";
 import { MarketFooter, MarketHeader } from "../components/MarketHeader";
 import { Seo } from "../components/Seo";
 import { useLocale } from "../i18n/LocaleContext";
+
+function CartProductImage({ src, alt, icon }: { src?: string | null; alt: string; icon: string }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [src]);
+  return src && !failed
+    ? <img src={mediaUrl(src)} alt={alt} loading="lazy" onError={() => setFailed(true)} />
+    : <span aria-label={`${alt} image unavailable`}>{icon || <ImageIcon />}</span>;
+}
 
 export function CartPage() {
   const { formatMoney } = useLocale();
@@ -20,7 +30,7 @@ export function CartPage() {
           <div className="cart-items">
             {items.map(({ product, quantity }) => (
               <article key={product.id}>
-                <div className="cart-thumb">{product.icon}</div>
+                <div className="cart-thumb"><CartProductImage src={product.imageUrl} alt={product.title} icon={product.icon} /></div>
                 <div><span>{product.category}</span><Link to={`/products/${product.slug}`}>{product.title}</Link><small>{product.delivery} · {product.seller}</small></div>
                 <div className="quantity-control"><button onClick={() => setQuantity(product.id, quantity - 1)}><Minus /></button><span>{quantity}</span><button onClick={() => setQuantity(product.id, quantity + 1)}><Plus /></button></div>
                 <strong>{formatMoney(product.priceCents * quantity)}</strong>

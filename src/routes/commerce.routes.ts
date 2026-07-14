@@ -54,6 +54,18 @@ function withDisputeWindow<T extends OrderForDisputeWindow>(order: T) {
   return { ...order, ...getDisputeWindow(order) };
 }
 
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character] ?? character);
+}
+
+function formatInvoiceMoney(cents: number, currency: string) {
+  try {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(cents / 100);
+  } catch {
+    return `${currency} ${(cents / 100).toFixed(2)}`;
+  }
+}
+
 commerceRouter.get("/payment-methods", (_req, res) => res.json({ methods: availablePaymentMethods() }));
 
 commerceRouter.post("/crypto/webhook", asyncHandler(async (req, res) => {
@@ -189,10 +201,12 @@ commerceRouter.get("/orders/:id", asyncHandler(async (req, res) => {
 commerceRouter.get("/orders/:id/invoice", asyncHandler(async (req, res) => {
   const id = z.string().uuid().parse(req.params.id);
   const order = await prisma.order.findFirst({ where: { id, buyerId: req.auth!.id }, include: { items: true, payment: true } });
-  if (!order) throw new ApiError(404, "Order not found.", "ORDER_NOT_FOUND");
+  if (!order) throw new ApiError(404, "Invoice not found.", "INVOICE_NOT_FOUND");
+  const rows = order.items.map((item) => `<tr><td>${escapeHtml(item.productName)}</td><td>${item.quantity}</td><td>${formatInvoiceMoney(item.unitPriceCents, order.currency)}</td><td>${formatInvoiceMoney(item.totalCents, order.currency)}</td></tr>`).join("");
+  const invoice = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Invoice ${escapeHtml(order.invoiceNumber)}</title><style>body{margin:0;padding:32px;color:#172033;background:#f4f7fb;font:15px/1.55 Inter,Arial,sans-serif}.invoice{max-width:820px;margin:auto;padding:38px;border-radius:24px;background:#fff;box-shadow:0 22px 60px rgba(15,23,42,.1)}header{display:flex;justify-content:space-between;gap:24px;padding-bottom:24px;border-bottom:2px solid #eef1f5}h1{margin:0;font-size:38px}header b{color:#5b47d3;font-size:22px}.meta{margin:24px 0;display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.meta div{padding:14px;border-radius:12px;background:#f7f8fc}.meta small{display:block;color:#718096}table{width:100%;border-collapse:collapse}th,td{padding:13px 10px;border-bottom:1px solid #e9edf3;text-align:left}th{color:#64748b;font-size:12px}.totals{width:min(340px,100%);margin:24px 0 0 auto}.totals div{padding:8px;display:flex;justify-content:space-between}.totals .grand{margin-top:8px;padding-top:14px;border-top:2px solid #e5e9f0;font-size:20px;font-weight:800}footer{margin-top:34px;color:#64748b;font-size:12px}@media print{body{padding:0;background:#fff}.invoice{max-width:none;padding:20px;box-shadow:none}}@media(max-width:600px){body{padding:12px}.invoice{padding:22px 16px}header{flex-direction:column}.meta{grid-template-columns:1fr}table{font-size:12px}}</style></head><body><main class="invoice"><header><div><small>HSELLO DIGITAL EXCHANGE</small><h1>Invoice</h1></div><b>${escapeHtml(order.invoiceNumber)}</b></header><section class="meta"><div><small>Billed to</small><strong>${escapeHtml(order.buyerName)}</strong><br>${escapeHtml(order.buyerEmail)}</div><div><small>Order</small><strong>${escapeHtml(order.orderNumber)}</strong><br>${new Date(order.createdAt).toLocaleString("en-US")}</div><div><small>Payment status</small><strong>${escapeHtml(order.payment?.status?.replaceAll("_", " ") ?? order.status.replaceAll("_", " "))}</strong></div><div><small>Payment method</small><strong>${escapeHtml(order.payment?.method?.replaceAll("_", " ") ?? "Not recorded")}</strong></div></section><table><thead><tr><th>Product</th><th>Qty</th><th>Unit price</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table><section class="totals"><div><span>Subtotal</span><strong>${formatInvoiceMoney(order.subtotalCents, order.currency)}</strong></div><div><span>Discount</span><strong>-${formatInvoiceMoney(order.discountCents, order.currency)}</strong></div><div class="grand"><span>Total</span><strong>${formatInvoiceMoney(order.totalCents, order.currency)}</strong></div></section><footer>This invoice is linked to your protected HSello order. Use your order workspace for delivery support, seller chat, refunds, or disputes.</footer></main></body></html>`;
   res.setHeader("content-type", "text/html; charset=utf-8");
-  res.setHeader("content-disposition", `attachment; filename="${order.invoiceNumber}.html"`);
-  res.send(`<!doctype html><html><head><meta charset="utf-8"><title>${order.invoiceNumber}</title><style>body{font:14px Arial;max-width:760px;margin:40px auto;color:#17202a}table{width:100%;border-collapse:collapse}td,th{padding:10px;border-bottom:1px solid #ddd;text-align:left}.total{text-align:right;font-size:20px}</style></head><body><h1>HSello invoice</h1><p><strong>${order.invoiceNumber}</strong><br>Order ${order.orderNumber}<br>${order.createdAt.toISOString().slice(0,10)}</p><p>Bill to: ${order.buyerName} &lt;${order.buyerEmail}&gt;</p><table><tr><th>Item</th><th>Qty</th><th>Total</th></tr>${order.items.map((item) => `<tr><td>${item.productName}</td><td>${item.quantity}</td><td>$${(item.totalCents/100).toFixed(2)}</td></tr>`).join("")}</table><p class="total">Total: <strong>$${(order.totalCents/100).toFixed(2)} ${order.currency}</strong></p></body></html>`);
+  res.setHeader("content-disposition", `inline; filename="${order.invoiceNumber.replace(/[^a-z0-9-]+/gi, "-") || "hsello-invoice"}.html"`);
+  res.send(invoice);
 }));
 
 commerceRouter.get("/downloads/:grantId", asyncHandler(async (req, res) => {

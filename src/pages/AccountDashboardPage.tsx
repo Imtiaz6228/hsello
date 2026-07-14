@@ -139,6 +139,9 @@ export function AccountDashboardPage() {
   const [walletBalance, setWalletBalance] = useState(user?.balanceCents ?? 0);
 
   const downloads = useMemo(() => orders.flatMap((order) => order.items.flatMap((item) => item.downloadGrants.map((grant) => ({ order, item, grant })))), [orders]);
+  const purchasedItems = useMemo(() => orders.flatMap((order) => order.items.map((item) => ({ order, item }))), [orders]);
+  const deliveredItems = useMemo(() => purchasedItems.filter(({ item }) => Boolean(item.inventoryItems?.length)), [purchasedItems]);
+  const availableFileCount = downloads.length + deliveredItems.length;
   const totalSpent = useMemo(() => orders.reduce((sum, o) => sum + o.totalCents, 0), [orders]);
   const activeOrders = useMemo(() => orders.filter((o) => !["COMPLETED", "CANCELLED", "REFUNDED"].includes(o.status)).length, [orders]);
   const visibleOrders = useMemo(() => {
@@ -357,15 +360,15 @@ export function AccountDashboardPage() {
               <aside><small>AVAILABLE BALANCE</small><strong>{formatMoney(walletBalance)}</strong><button type="button" onClick={() => selectTab("wallet")}><PlusCircle /> Add funds</button></aside>
             </section>
             <div className="metrics-grid buyer-metrics-grid">
-              <div className="metric-card"><ShoppingBag size={22} /><span><strong>{orders.length}</strong><small>Total orders</small></span></div>
-              <div className="metric-card"><Activity size={22} /><span><strong>{activeOrders}</strong><small>Active orders</small></span></div>
-              <div className="metric-card"><Download size={22} /><span><strong>{downloads.length}</strong><small>Available files</small></span></div>
-              <div className="metric-card"><Wallet size={22} /><span><strong>{formatMoney(walletBalance)}</strong><small>Available balance</small></span></div>
-              <div className="metric-card"><TrendingUp size={22} /><span><strong>{formatMoney(totalSpent)}</strong><small>Total purchases</small></span></div>
-              <div className="metric-card"><Gift size={22} /><span><strong>0</strong><small>Active coupons</small></span></div>
-              <div className="metric-card"><Heart size={22} /><span><strong>0</strong><small>Wishlist items</small></span></div>
-              <div className="metric-card"><Award size={22} /><span><strong>0</strong><small>Reward points</small></span></div>
-              <div className="metric-card"><TicketCheck size={22} /><span><strong>{tickets.filter((t) => t.status !== "CLOSED" && t.status !== "RESOLVED").length}</strong><small>Open tickets</small></span></div>
+              <button type="button" className="metric-card dashboard-metric-link" onClick={() => selectTab("orders")}><ShoppingBag size={22} /><span><strong>{orders.length}</strong><small>Total orders</small></span><ArrowRight /></button>
+              <button type="button" className="metric-card dashboard-metric-link" onClick={() => selectTab("active-orders")}><Activity size={22} /><span><strong>{activeOrders}</strong><small>Active orders</small></span><ArrowRight /></button>
+              <button type="button" className="metric-card dashboard-metric-link" onClick={() => selectTab("downloads")}><Download size={22} /><span><strong>{availableFileCount}</strong><small>Available files</small></span><ArrowRight /></button>
+              <button type="button" className="metric-card dashboard-metric-link" onClick={() => selectTab("wallet")}><Wallet size={22} /><span><strong>{formatMoney(walletBalance)}</strong><small>Available balance</small></span><ArrowRight /></button>
+              <button type="button" className="metric-card dashboard-metric-link" onClick={() => selectTab("purchased-products")}><TrendingUp size={22} /><span><strong>{formatMoney(totalSpent)}</strong><small>Total purchases</small></span><ArrowRight /></button>
+              <button type="button" className="metric-card dashboard-metric-link" onClick={() => selectTab("coupons")}><Gift size={22} /><span><strong>0</strong><small>Active coupons</small></span><ArrowRight /></button>
+              <button type="button" className="metric-card dashboard-metric-link" onClick={() => selectTab("wishlist")}><Heart size={22} /><span><strong>0</strong><small>Wishlist items</small></span><ArrowRight /></button>
+              <button type="button" className="metric-card dashboard-metric-link" onClick={() => selectTab("rewards")}><Award size={22} /><span><strong>0</strong><small>Reward points</small></span><ArrowRight /></button>
+              <button type="button" className="metric-card dashboard-metric-link" onClick={() => selectTab("tickets")}><TicketCheck size={22} /><span><strong>{tickets.filter((t) => t.status !== "CLOSED" && t.status !== "RESOLVED").length}</strong><small>Open tickets</small></span><ArrowRight /></button>
             </div>
             <button type="button" className="buyer-topup-hero" onClick={() => selectTab("wallet")}>
               <span className="buyer-topup-icon"><Wallet /></span>
@@ -377,7 +380,7 @@ export function AccountDashboardPage() {
                 <div className="section-heading-row"><h2>Recent orders</h2><Link to="#orders" onClick={() => selectTab("orders")}>View all <ArrowRight size={16} /></Link></div>
                 <div className="compact-orders">
                   {orders.slice(0, 3).map((order) => (
-                    <div className="compact-order" key={order.id}>
+                    <Link className="compact-order" to={`/orders/${order.id}`} key={order.id}>
                       <div className="co-left">
                         <span className={`status-dot ${order.status.toLowerCase()}`} />
                         <div>
@@ -389,7 +392,7 @@ export function AccountDashboardPage() {
                         <span>{formatMoney(order.totalCents)}</span>
                         <small>{new Date(order.createdAt).toLocaleDateString()}</small>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </div>
@@ -463,7 +466,7 @@ export function AccountDashboardPage() {
                       ))}
                     </div>
                     <footer>
-                      <a href={apiDownloadUrl(`/api/commerce/orders/${order.id}/invoice`)} className="action-link"><FileText size={14} /> Invoice {order.invoiceNumber}</a>
+                      <a href={apiDownloadUrl(`/api/commerce/orders/${order.id}/invoice`)} className="action-link" target="_blank" rel="noreferrer"><FileText size={14} /> Invoice {order.invoiceNumber}</a>
                       <Link to={`/orders/${order.id}`} className="action-link"><MessageCircle size={14} /> Order chat</Link>
                       <button disabled={Boolean(order.refunds.length)} onClick={() => void requestRefund(order)} className="action-link">
                         <RefreshCw size={14} /> {order.refunds.length ? `Refund ${order.refunds[0].status.toLowerCase()}` : "Request refund"}
@@ -495,7 +498,35 @@ export function AccountDashboardPage() {
               <h1>{tabs.find((item) => item.id === tab)?.label}</h1>
               <p>Your purchased products, protected delivery records and latest available files.</p>
             </header>
-            {downloads.length ? (
+
+            {tab === "purchased-products" && (purchasedItems.length ? (
+              <div className="downloads-grid buyer-library-grid buyer-purchased-grid">
+                {purchasedItems.map(({ order, item }) => (
+                  <article className="download-card purchased-product-card" key={`${order.id}-${item.id}`}>
+                    <Link className="dc-icon" to={`/products/${item.product.slug}`} aria-label={`Open ${item.productName}`}><BuyerMedia src={item.product.coverImageUrl} alt={item.productName} fallback={<PackageOpen size={26} />} /></Link>
+                    <div className="dc-info">
+                      <span className="buyer-library-badge">PURCHASED</span>
+                      <Link className="purchased-product-title" to={`/products/${item.product.slug}`}>{item.productName}</Link>
+                      <small>Order {order.orderNumber} · {new Date(order.createdAt).toLocaleDateString()}</small>
+                      <small>{item.inventoryItems?.length ? `${item.inventoryItems.length} protected account delivery` : item.downloadGrants.length ? `${item.downloadGrants.length} downloadable file${item.downloadGrants.length === 1 ? "" : "s"}` : "Order delivery available"}</small>
+                    </div>
+                    <div className="purchased-product-actions">
+                      <Link to={`/orders/${order.id}`}><MessageCircle /> Open order</Link>
+                      {item.inventoryItems?.length ? <a href={apiDownloadUrl(`/api/commerce/order-items/${item.id}/delivery?format=zip`)}><Download /> Download ZIP</a> : item.downloadGrants.length ? <a href={apiDownloadUrl(`/api/commerce/order-items/${item.id}/download.zip`)}><Download /> Download files</a> : null}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state-large">
+                <PackageOpen size={48} />
+                <h2>No purchased products yet</h2>
+                <p>Your paid products will appear here with their order and delivery actions.</p>
+                <Link to="/catalog" className="primary-button">Browse marketplace <ArrowRight size={16} /></Link>
+              </div>
+            ))}
+
+            {tab === "downloads" && ((downloads.length || deliveredItems.length) ? (
               <div className="downloads-grid buyer-library-grid">
                 {downloads.map(({ order, item, grant }) => (
                   <a href={apiDownloadUrl(`/api/commerce/downloads/${grant.id}`)} className="download-card" key={grant.id}>
@@ -511,6 +542,22 @@ export function AccountDashboardPage() {
                     <span className="buyer-download-button"><Download size={15} /> Download</span>
                   </a>
                 ))}
+                {deliveredItems.map(({ order, item }) => (
+                  <article className="download-card protected-download-card" key={`delivery-${item.id}`}>
+                    <div className="dc-icon"><BuyerMedia src={item.product.coverImageUrl} alt={item.productName} fallback={<ShieldCheck size={26} />} /></div>
+                    <div className="dc-info">
+                      <span className="buyer-library-badge protected">PROTECTED DELIVERY</span>
+                      <strong>{item.productName}</strong>
+                      <small>{item.inventoryItems?.length} delivered account{item.inventoryItems?.length === 1 ? "" : "s"} · Order {order.orderNumber}</small>
+                      <small>Choose the file format you need.</small>
+                    </div>
+                    <div className="protected-download-actions">
+                      <a href={apiDownloadUrl(`/api/commerce/order-items/${item.id}/delivery?format=txt`)}><FileText /> TXT</a>
+                      <a href={apiDownloadUrl(`/api/commerce/order-items/${item.id}/delivery?format=csv`)}><Download /> CSV</a>
+                      <a className="primary" href={apiDownloadUrl(`/api/commerce/order-items/${item.id}/delivery?format=zip`)}><PackageOpen /> ZIP</a>
+                    </div>
+                  </article>
+                ))}
               </div>
             ) : (
               <div className="empty-state-large">
@@ -519,8 +566,9 @@ export function AccountDashboardPage() {
                 <p>Purchased downloads and their latest updates will appear here.</p>
                 <Link to="/catalog" className="primary-button">Browse marketplace <ArrowRight size={16} /></Link>
               </div>
-            )}
-            {["license-keys", "activation-codes", "delivery-history"].includes(tab) ? <section className="buyer-code-vault"><header><div><KeyRound /><span><h2>Protected delivery vault</h2><p>Activation codes and delivered inventory are tied to their original order.</p></span></div><ShieldCheck /></header>{orders.flatMap((order) => order.items.filter((item) => item.inventoryItems?.length).map((item) => ({ order, item }))).length ? orders.flatMap((order) => order.items.filter((item) => item.inventoryItems?.length).map((item) => ({ order, item }))).map(({ order, item }) => <article key={item.id}><div><small>{order.orderNumber}</small><strong>{item.productName}</strong><p>{item.inventoryItems?.length} delivered account{item.inventoryItems?.length === 1 ? "" : "s"}</p></div><span className="protected-delivery-badge"><ShieldCheck /> Protected file</span><div className="vault-download-actions"><a href={apiDownloadUrl(`/api/commerce/order-items/${item.id}/delivery?format=txt`)}><FileText /> TXT</a><a href={apiDownloadUrl(`/api/commerce/order-items/${item.id}/delivery?format=csv`)}><Download /> CSV</a><a href={apiDownloadUrl(`/api/commerce/order-items/${item.id}/delivery?format=zip`)}><PackageOpen /> ZIP</a></div></article>) : <div className="empty-state-large"><KeyRound /><h2>No activation codes</h2><p>License keys and delivered inventory will appear here after purchase.</p></div>}</section> : null}
+            ))}
+
+            {["license-keys", "activation-codes", "delivery-history"].includes(tab) ? <section className="buyer-code-vault"><header><div><KeyRound /><span><h2>Protected delivery vault</h2><p>Activation codes and delivered inventory are tied to their original order.</p></span></div><ShieldCheck /></header>{deliveredItems.length ? deliveredItems.map(({ order, item }) => <article key={item.id}><div><small>{order.orderNumber}</small><strong>{item.productName}</strong><p>{item.inventoryItems?.length} delivered account{item.inventoryItems?.length === 1 ? "" : "s"}</p></div><span className="protected-delivery-badge"><ShieldCheck /> Protected file</span><div className="vault-download-actions"><a href={apiDownloadUrl(`/api/commerce/order-items/${item.id}/delivery?format=txt`)}><FileText /> TXT</a><a href={apiDownloadUrl(`/api/commerce/order-items/${item.id}/delivery?format=csv`)}><Download /> CSV</a><a href={apiDownloadUrl(`/api/commerce/order-items/${item.id}/delivery?format=zip`)}><PackageOpen /> ZIP</a></div></article>) : <div className="empty-state-large"><KeyRound /><h2>No activation codes</h2><p>License keys and delivered inventory will appear here after purchase.</p></div>}</section> : null}
           </div>
         )}
 

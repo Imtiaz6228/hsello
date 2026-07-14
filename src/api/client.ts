@@ -67,20 +67,12 @@ function normalizeApiBaseUrl(value: string | undefined) {
 }
 
 const configuredApiUrl = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL as string | undefined);
-const productionFallbackApiUrl = "https://hsello-production.up.railway.app";
-const remoteApiUrl = configuredApiUrl || (import.meta.env.DEV ? "" : productionFallbackApiUrl);
+const remoteApiUrl = configuredApiUrl;
 const useRemoteApi = (import.meta.env.VITE_USE_REMOTE_API as string | undefined)?.trim() === "true";
 const DEFAULT_API_BASE_URL = useRemoteApi ? remoteApiUrl : "";
 let activeApiBaseUrl = DEFAULT_API_BASE_URL;
 const csrfExemptUnsafePaths = new Set([
-  "/api/auth/register",
-  "/api/auth/login",
-  "/api/auth/refresh",
-  "/api/auth/logout",
-  "/api/auth/verify-email",
-  "/api/auth/resend-verification",
-  "/api/auth/forgot-password",
-  "/api/auth/reset-password"
+  "/api/commerce/crypto/webhook"
 ]);
 
 let csrfToken: string | null = null;
@@ -118,7 +110,7 @@ export function mediaUrl(value?: string | null) {
   if (!value) return "";
   if (/^https?:\/\//i.test(value) || value.startsWith("data:") || value.startsWith("blob:")) return value;
   if (value.startsWith("/uploads/")) {
-    return import.meta.env.DEV && !useRemoteApi ? value : `${remoteApiUrl}${value}`;
+    return remoteApiUrl ? `${remoteApiUrl}${value}` : value;
   }
   return value;
 }
@@ -126,7 +118,7 @@ export function mediaUrl(value?: string | null) {
 function networkErrorMessage() {
   return import.meta.env.DEV
     ? "Cannot reach the local authentication service. Start the API server with npm run dev:api and keep the Vite proxy on /api."
-    : "Cannot reach the authentication service. The app tried both the Vercel API proxy and the Railway API.";
+    : "Cannot reach the application service. Check the configured API origin and try again.";
 }
 
 async function request(path: string, init: RequestInit) {
@@ -175,14 +167,14 @@ async function readJson(response: Response) {
     throw new ApiError(
       import.meta.env.DEV
         ? "The local authentication API is not responding with JSON. Make sure npm run dev:api is running on port 4000."
-        : "The authentication API is not configured for this deployment. Check the Vercel /api rewrite and Railway public URL, then redeploy.",
+        : "The application API is not configured for this deployment. Check the API origin and proxy settings, then redeploy.",
       response.status,
       "API_MISCONFIGURED"
     );
   }
 }
 
-export async function getCsrfToken() {
+async function getCsrfToken() {
   if (csrfToken) {
     return csrfToken;
   }

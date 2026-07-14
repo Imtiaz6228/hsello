@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { ProductStatus } from "@prisma/client";
+import { Prisma, ProductStatus } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { asyncHandler } from "../middleware/error-handler.js";
-import { ensureDefaultMarketplaceCategories } from "../services/category.service.js";
+import { searchLimiter } from "../middleware/rate-limit.js";
 
 export const marketplaceRouter = Router();
 
@@ -30,7 +30,6 @@ async function categoryAndDescendantIds(slug: string) {
 }
 
 marketplaceRouter.get("/categories", asyncHandler(async (_req, res) => {
-  await ensureDefaultMarketplaceCategories();
   const categories = await prisma.category.findMany({
     where: { isActive: true },
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
@@ -42,17 +41,18 @@ marketplaceRouter.get("/categories", asyncHandler(async (_req, res) => {
   res.json({ categories });
 }));
 
-marketplaceRouter.get("/products", asyncHandler(async (req, res) => {
+marketplaceRouter.get("/products", searchLimiter, asyncHandler(async (req, res) => {
   const query = z.object({
     q: z.string().trim().max(100).optional(),
     category: z.string().trim().max(100).optional(),
     seller: z.string().trim().max(100).optional(),
     take: z.coerce.number().int().min(1).max(96).default(24),
     sort: z.enum(["popular", "price_asc", "price_desc", "newest"]).default("popular"),
-    stock: z.enum(["all", "in_stock"]).default("all")
+    stock: z.enum(["all", "in_stock"]).default("all"),
+    cursor: z.string().uuid().optional()
   }).parse(req.query);
 
-  const filters: any[] = [];
+  const filters: Prisma.ProductWhereInput[] = [];
   if (query.category) {
     const categoryIds = await categoryAndDescendantIds(query.category);
     if (categoryIds.length) filters.push({ categoryId: { in: categoryIds } });
@@ -92,7 +92,8 @@ marketplaceRouter.get("/products", asyncHandler(async (req, res) => {
         : { isSuspended: false, sellerProfile: { isSuspended: false, isVerified: true } },
       ...(filters.length ? { AND: filters } : {})
     },
-    take: query.take,
+    take: query.take + 1,
+    ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
     orderBy,
     include: {
       category: { include: { parent: { include: { parent: true } } } },
@@ -100,7 +101,9 @@ marketplaceRouter.get("/products", asyncHandler(async (req, res) => {
       _count: { select: { files: { where: { isActive: true } }, inventoryItems: { where: { isActive: true, orderItemId: null } } } }
     }
   });
-  res.json({ products });
+  const hasNextPage = products.length > query.take;
+  const page = hasNextPage ? products.slice(0, query.take) : products;
+  res.json({ products: page, hasNextPage, nextCursor: hasNextPage ? page.at(-1)?.id : null });
 }));
 
 marketplaceRouter.get("/products/:slug", asyncHandler(async (req, res) => {
@@ -123,6 +126,7 @@ marketplaceRouter.get("/products/:slug", asyncHandler(async (req, res) => {
 
 marketplaceRouter.get("/stores/:slug", asyncHandler(async (req, res) => {
   const slug = z.string().min(1).max(160).parse(req.params.slug);
+  const query = z.object({ take: z.coerce.number().int().min(1).max(48).default(24), cursor: z.string().uuid().optional() }).parse(req.query);
   const store = await prisma.sellerProfile.findFirst({
     where: { slug, isVerified: true, isSuspended: false, user: { isSuspended: false } },
     include: {
@@ -133,9 +137,13 @@ marketplaceRouter.get("/stores/:slug", asyncHandler(async (req, res) => {
   const products = await prisma.product.findMany({
     where: { sellerId: store.userId, status: ProductStatus.APPROVED },
     include: { category: { include: { parent: { include: { parent: true } } } }, _count: { select: { files: { where: { isActive: true } }, inventoryItems: { where: { isActive: true, orderItemId: null } } } } },
-    orderBy: { publishedAt: "desc" }
+    orderBy: [{ publishedAt: "desc" }, { id: "desc" }],
+    take: query.take + 1,
+    ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {})
   });
-  res.json({ store, products });
+  const hasNextPage = products.length > query.take;
+  const page = hasNextPage ? products.slice(0, query.take) : products;
+  res.json({ store, products: page, hasNextPage, nextCursor: hasNextPage ? page.at(-1)?.id : null });
 }));
 
 marketplaceRouter.get("/homepage", asyncHandler(async (_req, res) => {

@@ -1,13 +1,14 @@
 import { Router } from "express";
-import { Role, TopupMethod } from "@prisma/client";
+import { TopupMethod } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
-import { requireAuth, requireRole, requireVerifiedUser } from "../middleware/auth.js";
+import { requireAuth, requireVerifiedUser } from "../middleware/auth.js";
 import { ApiError, asyncHandler } from "../middleware/error-handler.js";
 import { createWalletCheckout } from "../services/payment.service.js";
 import { createWithdrawalRequest, getWalletSummary, releaseAvailableSellerEarnings } from "../services/finance.service.js";
-import { imageUpload, publicUploadUrl } from "../middleware/upload.js";
+import { deleteUploadedAsset, imageUpload, publicUploadUrl } from "../middleware/upload.js";
 import { createTopupRequest, getTopupMethods, getTopupRequests, submitTopupProof } from "../services/topup.service.js";
+import { paymentLimiter, uploadLimiter } from "../middleware/rate-limit.js";
 
 export const walletRouter = Router();
 
@@ -30,14 +31,14 @@ walletRouter.get("/topup-methods", asyncHandler(async (_req, res) => {
 
 walletRouter.get("/withdrawals", asyncHandler(async (req, res) => {
   await releaseAvailableSellerEarnings(req.auth!.id);
-  const withdrawals = await (prisma as any).withdrawalRequest.findMany({
+  const withdrawals = await prisma.withdrawalRequest.findMany({
     where: { userId: req.auth!.id },
     orderBy: { createdAt: "desc" }
   });
   res.json({ withdrawals });
 }));
 
-walletRouter.post("/withdrawals", asyncHandler(async (req, res) => {
+walletRouter.post("/withdrawals", paymentLimiter, asyncHandler(async (req, res) => {
   const input = z.object({
     amountCents: z.number().int().min(500).max(100_000_000),
     blockchain: z.string().trim().min(2).max(80),
@@ -60,7 +61,7 @@ const cryptoTopupSchema = z.object({
   ])
 });
 
-walletRouter.post("/topups", asyncHandler(async (req, res) => {
+walletRouter.post("/topups", paymentLimiter, asyncHandler(async (req, res) => {
   const input = cryptoTopupSchema.parse(req.body);
   const result = await createTopupRequest(req.auth!.id, input.amountCents, input.method);
   res.status(201).json({
@@ -69,21 +70,17 @@ walletRouter.post("/topups", asyncHandler(async (req, res) => {
   });
 }));
 
-walletRouter.post("/topups/:id/proof", imageUpload.single("screenshot"), asyncHandler(async (req, res) => {
-  const id = z.string().uuid().parse(req.params.id);
-  const input = z.object({ txHash: z.string().trim().min(6).max(300) }).parse(req.body);
-  if (!req.file) throw new ApiError(400, "Upload a payment screenshot as proof.", "TOPUP_SCREENSHOT_REQUIRED");
-  const result = await submitTopupProof(
-    req.auth!.id,
-    id,
-    input.txHash,
-    req.file.path,
-    publicUploadUrl(req.file.filename)
-  );
-  res.status(201).json({
-    message: result.autoVerified ? "Transaction found. It is ready for final approval." : "Payment proof submitted. An administrator will review it before your balance is credited.",
-    ...result
-  });
+walletRouter.post("/topups/:id/proof", uploadLimiter, imageUpload.single("screenshot"), asyncHandler(async (req, res) => {
+  try {
+    const id = z.string().uuid().parse(req.params.id);
+    const input = z.object({ txHash: z.string().trim().min(6).max(300) }).parse(req.body);
+    if (!req.file) throw new ApiError(400, "Upload a payment screenshot as proof.", "TOPUP_SCREENSHOT_REQUIRED");
+    const result = await submitTopupProof(req.auth!.id, id, input.txHash, req.file.path, publicUploadUrl(req.file.filename));
+    res.status(201).json({ message: "Payment proof submitted. An administrator will review it before your balance is credited.", ...result });
+  } catch (error) {
+    await deleteUploadedAsset(req.file);
+    throw error;
+  }
 }));
 
 // Purchase with wallet balance
@@ -92,7 +89,7 @@ const walletItemsSchema = z.array(z.object({
   quantity: z.number().int().min(1).max(20).default(1)
 })).min(1).max(30);
 
-walletRouter.post("/purchase-cart", asyncHandler(async (req, res) => {
+walletRouter.post("/purchase-cart", paymentLimiter, asyncHandler(async (req, res) => {
   const input = z.object({ items: walletItemsSchema }).parse(req.body);
   const result = await createWalletCheckout(req.auth!.id, input.items);
   res.status(201).json({
@@ -101,7 +98,7 @@ walletRouter.post("/purchase-cart", asyncHandler(async (req, res) => {
   });
 }));
 
-walletRouter.post("/purchase", asyncHandler(async (req, res) => {
+walletRouter.post("/purchase", paymentLimiter, asyncHandler(async (req, res) => {
   const input = z.object({
     productId: z.string().uuid(),
     quantity: z.number().int().min(1).max(20).default(1)

@@ -2,7 +2,7 @@ import { ArrowRight, Grid2X2, List, Search, SlidersHorizontal } from "lucide-rea
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useMemo, useState } from "react";
 import { useCart } from "../commerce/CartContext";
-import { useMarketplaceCategories, useMarketplaceCategory, useMarketplaceProducts } from "../commerce/useMarketplace";
+import { useMarketplaceCategories, useMarketplaceProducts } from "../commerce/useMarketplace";
 import { MarketFooter, MarketHeader } from "../components/MarketHeader";
 import { MarketplaceProductCard } from "../components/MarketplaceProductCard";
 import { Seo } from "../components/Seo";
@@ -32,9 +32,11 @@ export function CategoryPage() {
     navigate("/cart");
   }
 
-  const products = useMarketplaceProducts();
-  const categories = useMarketplaceCategories();
-  const { category, loading } = useMarketplaceCategory(slug);
+  const productState = useMarketplaceProducts(slug ? `category=${encodeURIComponent(slug)}` : "");
+  const categoryState = useMarketplaceCategories();
+  const { products } = productState;
+  const { categories, loading } = categoryState;
+  const category = categories.find((item) => item.slug === slug);
   const children = useMemo(() => categories.filter((item) => item.parentSlug === slug), [categories, slug]);
   const siblings = useMemo(() => categories.filter((item) => !item.parentSlug && item.slug !== slug).slice(0, 8), [categories, slug]);
 
@@ -50,6 +52,7 @@ export function CategoryPage() {
   }, [categories, products, slug, sort, subFilter]);
 
   if (loading) return <main className="commerce-page"><MarketHeader /><p className="empty-state">Loading category…</p></main>;
+  if (categoryState.error) return <main className="commerce-page"><MarketHeader /><div className="status-panel error" role="alert"><strong>Category unavailable</strong><span>{categoryState.error}</span><button type="button" onClick={categoryState.retry}>Try again</button></div><MarketFooter /></main>;
   if (!category || !slug) return <Navigate to="/catalog" replace />;
 
   return (
@@ -64,6 +67,8 @@ export function CategoryPage() {
       </section>
       {children.length ? <section className="subcategory-strip"><button className={subFilter === "all" ? "active" : ""} onClick={() => setSubFilter("all")}>All</button>{children.map((child) => <button key={child.slug} className={subFilter === child.slug ? "active" : ""} onClick={() => setSubFilter(child.slug)}>{child.name}</button>)}</section> : null}
       <section className="category-product-shell">
+        {productState.error ? <div className="status-panel error" role="alert"><strong>Products could not be loaded.</strong><span>{productState.error}</span><button type="button" onClick={productState.retry}>Try again</button></div> : null}
+        {productState.loading ? <div className="product-skeleton-grid" aria-label="Loading products" aria-busy="true">{Array.from({ length: 6 }, (_, index) => <span key={index} />)}</div> : null}
         <div className="market-filter-bar">
           <div><strong>{filteredProducts.length}</strong><span>products</span></div>
           <div className="filter-controls">
@@ -72,8 +77,9 @@ export function CategoryPage() {
             <button className={view === "grid" ? "active" : ""} onClick={() => setView("grid")} aria-label="Grid view"><Grid2X2 /></button>
           </div>
         </div>
-        <div className={`market-product-scroll ${view === "grid" ? "grid" : ""}`}>{filteredProducts.map((product) => <MarketplaceProductCard key={product.id} product={product} onBuy={addToCart} layout={view} />)}</div>
-        {!filteredProducts.length ? <div className="no-results"><Search /><strong>No products yet</strong><span>Try another subcategory or return to all categories.</span></div> : null}
+        <div className={`market-product-scroll ${view === "grid" ? "grid" : ""}`}>{!productState.loading ? filteredProducts.map((product) => <MarketplaceProductCard key={product.id} product={product} onBuy={addToCart} layout={view} />) : null}</div>
+        {!productState.loading && !productState.error && !filteredProducts.length ? <div className="no-results"><Search /><strong>No products yet</strong><span>Try another subcategory or return to all categories.</span></div> : null}
+        {productState.hasNextPage ? <button className="load-more-button" type="button" disabled={productState.loadingMore} onClick={() => void productState.loadMore()}>{productState.loadingMore ? "Loading more…" : "Load more products"}</button> : null}
       </section>
       <section className="internal-links"><strong>Keep exploring</strong>{siblings.map((item) => <Link to={`/categories/${item.slug}`} key={item.slug}>{item.name}<ArrowRight /></Link>)}</section>
       <MarketFooter />

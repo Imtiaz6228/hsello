@@ -206,7 +206,7 @@ adminRouter.get("/overview", requireStaff, asyncHandler(async (_req, res) => {
     prisma.refund.count({ where: { status: RefundStatus.REQUESTED } }),
     prisma.payment.count({ where: { status: PaymentStatus.REQUIRES_ACTION } }),
     prisma.topupRequest.count({ where: { status: { in: ["PENDING", "VERIFIED"] } } }),
-    (prisma as any).withdrawalRequest.count({ where: { status: "PENDING" } }),
+    prisma.withdrawalRequest.count({ where: { status: "PENDING" } }),
     prisma.user.count(),
     prisma.order.count(),
     prisma.payment.aggregate({ where: { status: PaymentStatus.PAID }, _sum: { amountCents: true } }),
@@ -335,7 +335,7 @@ adminRouter.patch("/sellers/:userId/suspension", requireAdmin, asyncHandler(asyn
 adminRouter.get("/products", requireStaff, asyncHandler(async (req, res) => {
   const status = z.nativeEnum(ProductStatus).optional().parse(req.query.status);
   const products = await prisma.product.findMany({
-    where: status ? { status } : undefined, orderBy: { createdAt: "desc" },
+    where: status ? { status } : undefined, orderBy: { createdAt: "desc" }, take: 200,
     include: { category: { include: { parent: { include: { parent: true } } } }, seller: { select: { id: true, email: true, username: true, sellerProfile: true } }, files: true, inventoryItems: { select: { id: true, deliveredAt: true, isActive: true } } }
   });
   res.json({ products });
@@ -453,23 +453,24 @@ adminRouter.get("/wallet-deposits", requireStaff, asyncHandler(async (_req, res)
 
 adminRouter.patch("/wallet-deposits/:id/approve", requireAdmin, asyncHandler(async (req, res) => {
   const id = z.string().uuid().parse(req.params.id);
-  const input = z.object({ adminNotes: z.string().trim().max(1000).optional() }).parse(req.body);
-  const updated = await approveTopup(id, req.auth!.id, input.adminNotes);
+  const input = z.object({ adminNotes: z.string().trim().min(5).max(1000) }).parse(req.body);
+  const updated = await approveTopup(id, input.adminNotes, { actorId: req.auth!.id, ipAddress: req.ip, userAgent: req.get("user-agent"), requestId: req.get("x-request-id") });
   res.json({ message: "Deposit approved and user balance updated.", deposit: updated });
 }));
 
 adminRouter.patch("/wallet-deposits/:id/reject", requireAdmin, asyncHandler(async (req, res) => {
   const id = z.string().uuid().parse(req.params.id);
-  const input = z.object({ adminNotes: z.string().trim().max(1000).optional() }).parse(req.body);
-  const updated = await rejectTopup(id, input.adminNotes);
+  const input = z.object({ adminNotes: z.string().trim().min(5).max(1000) }).parse(req.body);
+  const updated = await rejectTopup(id, input.adminNotes, { actorId: req.auth!.id, ipAddress: req.ip, userAgent: req.get("user-agent"), requestId: req.get("x-request-id") });
 
   res.json({ message: "Deposit rejected.", deposit: updated });
 }));
 
 adminRouter.get("/withdrawals", requireStaff, asyncHandler(async (_req, res) => {
   await releaseAvailableSellerEarnings();
-  const withdrawals = await (prisma as any).withdrawalRequest.findMany({
+  const withdrawals = await prisma.withdrawalRequest.findMany({
     orderBy: { createdAt: "desc" },
+    take: 200,
     include: { user: { select: { id: true, firstName: true, lastName: true, email: true, username: true, balanceCents: true, role: true } } }
   });
   res.json({ withdrawals });
@@ -478,13 +479,13 @@ adminRouter.get("/withdrawals", requireStaff, asyncHandler(async (_req, res) => 
 adminRouter.patch("/withdrawals/:id/:action", requireAdmin, asyncHandler(async (req, res) => {
   const id = z.string().uuid().parse(req.params.id);
   const action = z.enum(["approve", "reject"]).parse(req.params.action);
-  const input = z.object({ adminNotes: z.string().trim().max(1000).optional() }).parse(req.body);
-  const withdrawal = await reviewWithdrawalRequest(id, action, input.adminNotes);
+  const input = z.object({ adminNotes: z.string().trim().min(5).max(1000) }).parse(req.body);
+  const withdrawal = await reviewWithdrawalRequest(id, action, input.adminNotes, { actorId: req.auth!.id, ipAddress: req.ip, userAgent: req.get("user-agent"), requestId: req.get("x-request-id") });
   res.json({ message: action === "approve" ? "Withdrawal approved and marked successful." : "Withdrawal rejected and balance returned.", withdrawal });
 }));
 
 adminRouter.get("/refunds", requireStaff, asyncHandler(async (_req, res) => {
-  const refunds = await prisma.refund.findMany({ orderBy: { createdAt: "desc" }, include: { order: { include: { payment: true } }, requestedBy: { select: { email: true, firstName: true, lastName: true } } } });
+  const refunds = await prisma.refund.findMany({ orderBy: { createdAt: "desc" }, take: 200, include: { order: { include: { payment: true } }, requestedBy: { select: { email: true, firstName: true, lastName: true } } } });
   res.json({ refunds });
 }));
 
@@ -492,7 +493,7 @@ adminRouter.patch("/refunds/:id", requireAdmin, asyncHandler(async (req, res) =>
   const id = z.string().uuid().parse(req.params.id);
   const input = z.object({ status: z.nativeEnum(RefundStatus), adminNotes: z.string().trim().max(2000).optional(), providerReference: z.string().trim().max(300).optional() }).parse(req.body);
   if (input.status === RefundStatus.COMPLETED) {
-    const refund = await issueRefund(id);
+    const refund = await issueRefund(id, { actorId: req.auth!.id, ipAddress: req.ip, userAgent: req.get("user-agent"), requestId: req.get("x-request-id") });
     res.json({ refund });
     return;
   }
@@ -505,6 +506,7 @@ adminRouter.get("/disputes", requireStaff, asyncHandler(async (_req, res) => {
   await autoResolveExpiredDisputes();
   const disputes = await prisma.dispute.findMany({
     orderBy: { updatedAt: "desc" },
+    take: 200,
     include: {
       order: { include: { buyer: { select: { firstName: true, lastName: true, email: true } }, items: { include: { product: { select: { name: true, slug: true } }, seller: { select: { firstName: true, lastName: true, email: true } } } } } },
       orderItem: { include: { product: { select: { name: true, slug: true } }, seller: { select: { firstName: true, lastName: true, email: true } } } },
@@ -534,7 +536,7 @@ adminRouter.post("/disputes/:id/message", requireStaff, asyncHandler(async (req,
 }));
 
 adminRouter.get("/tickets", requireStaff, asyncHandler(async (_req, res) => {
-  const tickets = await prisma.ticket.findMany({ orderBy: { updatedAt: "desc" }, include: { creator: { select: { firstName: true, lastName: true, email: true } }, messages: { orderBy: { createdAt: "asc" }, include: { author: { select: { firstName: true, role: true } } } } } });
+  const tickets = await prisma.ticket.findMany({ orderBy: { updatedAt: "desc" }, take: 200, include: { creator: { select: { firstName: true, lastName: true, email: true } }, messages: { orderBy: { createdAt: "asc" }, take: 100, include: { author: { select: { firstName: true, role: true } } } } } });
   res.json({ tickets });
 }));
 
@@ -551,7 +553,7 @@ adminRouter.post("/tickets/:id/reply", requireStaff, asyncHandler(async (req, re
 
 adminRouter.get("/categories", requireStaff, asyncHandler(async (_req, res) => {
   await ensureDefaultMarketplaceCategories();
-  const categories = await prisma.category.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] });
+  const categories = await prisma.category.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }], take: 500 });
   res.json({ categories });
 }));
 
@@ -588,7 +590,7 @@ adminRouter.patch("/categories/:id", requireAdmin, asyncHandler(async (req, res)
 }));
 
 adminRouter.get("/coupons", requireStaff, asyncHandler(async (_req, res) => {
-  const coupons = await prisma.coupon.findMany({ orderBy: { createdAt: "desc" } });
+  const coupons = await prisma.coupon.findMany({ orderBy: { createdAt: "desc" }, take: 200 });
   res.json({ coupons });
 }));
 
@@ -599,7 +601,7 @@ adminRouter.post("/coupons", requireAdmin, asyncHandler(async (req, res) => {
 }));
 
 adminRouter.get("/homepage", requireStaff, asyncHandler(async (_req, res) => {
-  const sections = await prisma.homepageSection.findMany({ orderBy: { sortOrder: "asc" } });
+  const sections = await prisma.homepageSection.findMany({ orderBy: { sortOrder: "asc" }, take: 100 });
   res.json({ sections });
 }));
 
@@ -611,7 +613,7 @@ adminRouter.put("/homepage/:key", requireAdmin, asyncHandler(async (req, res) =>
 }));
 
 adminRouter.get("/reports", requireStaff, asyncHandler(async (_req, res) => {
-  const reports = await prisma.productReport.findMany({ orderBy: { createdAt: "desc" }, include: { product: { select: { name: true, slug: true, status: true } }, reporter: { select: { email: true } } } });
+  const reports = await prisma.productReport.findMany({ orderBy: { createdAt: "desc" }, take: 200, include: { product: { select: { name: true, slug: true, status: true } }, reporter: { select: { email: true } } } });
   res.json({ reports });
 }));
 
@@ -646,7 +648,7 @@ function csvCell(value: unknown) {
 }
 
 adminRouter.get("/export/orders.csv", requireAdmin, asyncHandler(async (_req, res) => {
-  const orders = await prisma.order.findMany({ orderBy: { createdAt: "desc" }, include: { payment: true } });
+  const orders = await prisma.order.findMany({ orderBy: { createdAt: "desc" }, take: 10_000, include: { payment: true } });
   const rows = [
     ["order_number", "invoice_number", "date", "buyer_email", "status", "payment_method", "subtotal", "discount", "total", "currency"],
     ...orders.map((order) => [order.orderNumber, order.invoiceNumber, order.createdAt.toISOString(), order.buyerEmail, order.status, order.payment?.method, (order.subtotalCents / 100).toFixed(2), (order.discountCents / 100).toFixed(2), (order.totalCents / 100).toFixed(2), order.currency])

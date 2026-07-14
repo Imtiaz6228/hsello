@@ -19,7 +19,6 @@ const envSchema = z.object({
   APP_URL: z.string().url(),
   API_URL: z.string().url(),
   CORS_ORIGIN: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
-  COOKIE_DOMAIN: z.preprocess(emptyToUndefined, z.string().optional()),
   JWT_SECRET: z.string().min(32),
   CSRF_SECRET: z.string().min(32),
   ACCESS_TOKEN_MINUTES: z.coerce.number().int().positive().default(15),
@@ -51,26 +50,16 @@ const envSchema = z.object({
   CRYPTO_PAYMENT_TIMEOUT_MINUTES: z.coerce.number().int().min(5).max(240).default(30),
   CRYPTO_WEBHOOK_SECRET: z.preprocess(emptyToUndefined, z.string().optional()),
   REDIS_URL: z.preprocess(emptyToUndefined, z.string().optional()),
-  CRON_SECRET: z.preprocess(emptyToUndefined, z.string().optional()),
   ADMIN_WALLET_ADDRESS: z.preprocess(emptyToUndefined, z.string().optional()),
-  ADMIN_WALLET_LABEL: z.string().default("main"),
+  TOPUP_TRC20_ADDRESS: z.preprocess(emptyToUndefined, z.string().min(20).optional()),
+  TOPUP_BEP20_ADDRESS: z.preprocess(emptyToUndefined, z.string().min(20).optional()),
+  TOPUP_ERC20_ADDRESS: z.preprocess(emptyToUndefined, z.string().min(20).optional()),
+  TOPUP_BTC_ADDRESS: z.preprocess(emptyToUndefined, z.string().min(20).optional()),
+  TOPUP_ETH_ADDRESS: z.preprocess(emptyToUndefined, z.string().min(20).optional()),
+  TOPUP_SOL_ADDRESS: z.preprocess(emptyToUndefined, z.string().min(20).optional()),
   COMMISSION_SALE_PERCENT: z.coerce.number().int().min(0).max(50).default(10),
   COMMISSION_WITHDRAW_PERCENT: z.coerce.number().int().min(0).max(20).default(3),
   FROZEN_HOLD_HOURS: z.coerce.number().int().min(1).max(720).default(72),
-  DOWNLOAD_LINK_EXPIRY_DAYS: z.coerce.number().int().min(1).max(30).default(7),
-  TRONGRID_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
-  ETHERSCAN_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
-  BSCSCAN_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
-  OPENAI_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
-  DEEPL_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
-  NOWPAYMENTS_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
-  NOWPAYMENTS_IPN_SECRET: z.preprocess(emptyToUndefined, z.string().optional()),
-  R2_ACCOUNT_ID: z.preprocess(emptyToUndefined, z.string().optional()),
-  R2_ACCESS_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
-  R2_SECRET_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
-  R2_BUCKET: z.preprocess(emptyToUndefined, z.string().optional()),
-  R2_PUBLIC_URL: z.preprocess(emptyToUndefined, z.string().optional()),
-  RESEND_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
   ADMIN_EMAIL: z.preprocess(emptyToUndefined, z.string().email().optional()),
   ADMIN_PASSWORD: z.preprocess(emptyToUndefined, z.string().optional())
 });
@@ -87,6 +76,15 @@ if (!parsed.success) {
 
 if (parsed.data.TURNSTILE_REQUIRED && !parsed.data.TURNSTILE_SECRET_KEY) {
   throw new Error("TURNSTILE_SECRET_KEY is required when TURNSTILE_REQUIRED=true");
+}
+
+if (parsed.data.NODE_ENV === "production") {
+  for (const [name, value] of [["APP_URL", parsed.data.APP_URL], ["API_URL", parsed.data.API_URL]] as const) {
+    if (new URL(value).protocol !== "https:") throw new Error(`${name} must use HTTPS in production`);
+  }
+  if (parsed.data.CRYPTO_WEBHOOK_SECRET && parsed.data.CRYPTO_WEBHOOK_SECRET.length < 32) {
+    throw new Error("CRYPTO_WEBHOOK_SECRET must contain at least 32 characters in production");
+  }
 }
 
 export const env = parsed.data;

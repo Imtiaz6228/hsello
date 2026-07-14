@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, Copy, Download, FileText, LoaderCircle, MessageCircle, Timer } from "lucide-react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { ApiError, apiRequest } from "../api/client";
@@ -43,12 +43,12 @@ export function OrderConfirmationPage() {
   const [message, setMessage] = useState(routeState?.instructions ?? (isCrypto ? "Send the exact payment before the timer expires. Delivery unlocks automatically once the payment is detected." : "Your order is recorded and waiting for payment approval."));
   const [cryptoPayment, setCryptoPayment] = useState<CryptoPayment | undefined>(routeState?.cryptoPayment);
   const [checking, setChecking] = useState(false);
-  const [tick, setTick] = useState(Date.now());
+  const [tick, setTick] = useState(() => new Date().getTime());
 
-  const secondsLeft = useMemo(() => {
+  const secondsLeft = (() => {
     if (!cryptoPayment?.expiresAt) return 0;
     return Math.max(0, Math.floor((new Date(cryptoPayment.expiresAt).getTime() - tick) / 1000));
-  }, [cryptoPayment?.expiresAt, tick]);
+  })();
 
   useEffect(() => {
     if (!orderId || !provider || isCrypto) return;
@@ -81,13 +81,7 @@ export function OrderConfirmationPage() {
     return () => window.clearInterval(timer);
   }, [isCrypto, state]);
 
-  useEffect(() => {
-    if (!orderId || !isCrypto || state !== "pending") return;
-    const timer = window.setInterval(() => { void checkCrypto(false); }, 15_000);
-    return () => window.clearInterval(timer);
-  }, [isCrypto, orderId, state]);
-
-  async function checkCrypto(showLoading = true) {
+  const checkCrypto = useCallback(async (showLoading = true) => {
     if (!orderId) return;
     if (showLoading) setChecking(true);
     try {
@@ -110,7 +104,13 @@ export function OrderConfirmationPage() {
     } finally {
       if (showLoading) setChecking(false);
     }
-  }
+  }, [clear, orderId]);
+
+  useEffect(() => {
+    if (!orderId || !isCrypto || state !== "pending") return;
+    const timer = window.setInterval(() => { void checkCrypto(false); }, 15_000);
+    return () => window.clearInterval(timer);
+  }, [checkCrypto, isCrypto, orderId, state]);
 
   return (
     <main className="commerce-page confirmation-page"><Seo title="Order confirmation" description="Payment and digital delivery status for your HSello order." /><MarketHeader />

@@ -30,14 +30,13 @@ export function MarketplaceProductCard({ product, onBuy, layout = "grid" }: Prop
             <Link className="market-product-category" to={`/categories/${product.categorySlug}`}>{product.category}</Link>
             <Link to={`/products/${product.slug}`}><h2>{product.title}</h2></Link>
           </div>
-          <button className="heart-button" type="button" aria-label="Save product">♡</button>
         </div>
         <p>{product.description}</p>
         <div className="market-product-meta">
           <span><Clock3 /> {product.afterSalesServiceHours ?? 12} hours</span>
           <span><PackageCheck /> {stockLabel}</span>
           <span><Star fill="currentColor" /> {product.rating || "New"} <small>({product.reviews})</small></span>
-          <span><Zap /> Auto</span>
+          <span><Zap /> {product.type === "DOWNLOAD" ? "Protected download" : "Order delivery"}</span>
         </div>
         <footer>
           <div>

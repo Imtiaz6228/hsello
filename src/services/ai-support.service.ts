@@ -1,30 +1,30 @@
-import { env } from "../config/env.js";
 import { prisma } from "../lib/prisma.js";
+import { env } from "../config/env.js";
 
 const KB_ARTICLES = [
   {
     title: "How does escrow protection work?",
     slug: "escrow-protection",
     category: "escrow",
-    content: "NEXUS uses escrow protection for every purchase. When a buyer pays, the funds are split: 10% commission goes to the admin wallet immediately, and 90% is frozen for 72 hours. During this period, the buyer can open a dispute if there's an issue. After 72 hours, the frozen funds are automatically released to the seller's balance. Download links are signed and valid for 7 days.",
+    content: `HSello records every confirmed payment and delivery. A ${env.COMMISSION_SALE_PERCENT}% platform commission is recorded and the seller's net earnings remain frozen for ${env.FROZEN_HOLD_HOURS} hours. Buyers can use the listing-specific after-sales window to raise an issue. Uncontested earnings become available after the hold.`,
   },
   {
     title: "How do I receive my digital delivery?",
     slug: "digital-delivery",
     category: "delivery",
-    content: "After purchase, download links are generated and signed for 7 days of access. You can download your files from the order page or from your dashboard's Downloads tab. Each download link has a maximum number of downloads (usually 5) and expires after 7 days.",
+    content: "After confirmed payment, protected download grants appear on the order page and in the dashboard. The product listing defines each grant's expiry and download limit. If a valid grant fails, open an order-linked support ticket.",
   },
   {
     title: "How do I deposit funds?",
     slug: "deposit-funds",
     category: "deposit",
-    content: "To deposit funds, go to your Wallet, click Add Funds, choose a payment method (CRYPTO TRC20/ERC20/BEP20/BTC/ETH/SOL, BANK, PAYPAL, or STRIPE), enter the amount, and send the exact amount to the provided address. Then submit your TXID and screenshot proof. Your deposit will be auto-verified via blockchain explorers or approved by admin.",
+    content: "To add wallet funds, open Wallet, choose one of the configured crypto networks, and create a payment request. Send the exact amount to the displayed address, then submit the transaction ID and screenshot. Staff reviews the proof before crediting the balance.",
   },
   {
     title: "How do withdrawals work?",
     slug: "withdrawal-process",
     category: "withdrawal",
-    content: "Sellers can withdraw their available balance. When you request a withdrawal, 3% commission is deducted and sent to the admin wallet. For example, if you withdraw $90, the commission is $2.70 and your net payout is $87.30. Withdrawals are processed after admin approval.",
+    content: `Sellers can withdraw available—not frozen—earnings. A ${env.COMMISSION_WITHDRAW_PERCENT}% withdrawal fee is shown before submission. Staff verifies the destination and records approval or rejection; rejected requests return the reserved amount.`,
   },
   {
     title: "How do I become a seller?",
@@ -55,7 +55,7 @@ export async function seedKbArticles() {
   }
 }
 
-export async function searchKb(query: string) {
+async function searchKb(query: string) {
   const q = query.trim().toLowerCase();
   if (!q) return [];
 
@@ -75,7 +75,7 @@ export async function searchKb(query: string) {
   return articles;
 }
 
-const ORDER_REGEX = /\b(HS-[A-Z0-9]+|TK-[A-Z0-9]+|NEXUS-[A-Z0-9]+)\b/gi;
+const ORDER_REGEX = /\b(HS-[A-Z0-9]+|TK-[A-Z0-9]+)\b/gi;
 const TX_REGEX = /\b(0x[a-fA-F0-9]{64}|[a-fA-F0-9]{64})\b/g;
 
 export async function generateAiReply(message: string, userId?: string) {
@@ -144,64 +144,7 @@ export async function generateAiReply(message: string, userId?: string) {
   }
 
   // Quick actions
-  const quickActions = ["Regenerate download links", "Re-verify deposit", "Confirm withdrawal address"];
+  const quickActions = ["Where are my downloads?", "How are deposits reviewed?", "How do withdrawals work?"];
 
   return { reply, quickActions, kbResults, context };
-}
-
-export async function executeQuickAction(action: string, userId: string) {
-  switch (action.toLowerCase()) {
-    case "regenerate":
-    case "regenerate download links": {
-      const orders = await prisma.order.findMany({
-        where: { buyerId: userId, paidAt: { not: null }, status: { notIn: ["CANCELLED", "REFUNDED"] } },
-        include: { items: { include: { downloadGrants: true } } },
-        take: 5,
-        orderBy: { createdAt: "desc" },
-      });
-      return { message: `Found ${orders.length} recent orders. Download links are available in your dashboard Downloads tab. They are valid for 7 days.` };
-    }
-    case "re-verify":
-    case "re-verify deposit": {
-      const topups = await prisma.topupRequest.findMany({
-        where: { userId, status: "PENDING" },
-        take: 5,
-      });
-      return { message: `You have ${topups.length} pending deposit(s). They will be auto-verified or approved by admin shortly.` };
-    }
-    case "confirm":
-    case "confirm withdrawal address": {
-      const withdrawals = await (prisma as any).withdrawalRequest.findMany({
-        where: { userId, status: "PENDING" },
-        take: 5,
-      });
-      return { message: `You have ${withdrawals.length} pending withdrawal(s). Admin will review and process them.` };
-    }
-    default:
-      return { message: "Action not recognized." };
-  }
-}
-
-export async function transcribeVoice(audioPath: string): Promise<string> {
-  if (!env.OPENAI_API_KEY) {
-    return "[Voice transcription unavailable - OPENAI_API_KEY not configured]";
-  }
-  try {
-    // Mock Whisper transcription
-    return "This is a mock transcription. Configure OPENAI_API_KEY for real Whisper transcription.";
-  } catch {
-    return "[Voice transcription failed]";
-  }
-}
-
-export async function ocrScreenshot(imagePath: string): Promise<string> {
-  if (!env.OPENAI_API_KEY) {
-    return "[OCR unavailable - OPENAI_API_KEY not configured]";
-  }
-  try {
-    // Mock GPT-4 Vision OCR
-    return "This is a mock OCR result. Configure OPENAI_API_KEY for real GPT-4 Vision OCR.";
-  } catch {
-    return "[OCR failed]";
-  }
 }

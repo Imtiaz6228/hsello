@@ -5,6 +5,7 @@ import { ApiError, apiDownloadUrl, apiRequest } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { MarketHeader } from "../components/MarketHeader";
 import { Seo } from "../components/Seo";
+import { useActionPrompt } from "../components/ActionPrompt";
 
 type Message = { id: string; body: string; attachmentUrl?: string | null; attachmentName?: string | null; createdAt: string; author: { id?: string; firstName: string; role: string } };
 type OrderDetail = {
@@ -40,6 +41,7 @@ function Countdown({ until }: { until?: string | null }) {
 }
 
 export function OrderDeliveryPage() {
+  const { requestText, confirmAction } = useActionPrompt();
   const { user } = useAuth();
   const { id } = useParams();
   const [order, setOrder] = useState<OrderDetail | null>(null);
@@ -94,12 +96,12 @@ export function OrderDeliveryPage() {
   }
 
   async function openDispute() {
-    const subject = window.prompt("Dispute subject (5+ characters):");
+    const subject = await requestText({ title: "Open a dispute", label: "Short subject", confirmLabel: "Continue", minLength: 5, multiline: false, tone: "danger" });
     if (!subject || subject.trim().length < 5) return;
-    const description = window.prompt("Describe the issue (20+ characters):");
+    const description = await requestText({ title: "Describe the dispute", label: "What happened?", confirmLabel: "Continue", minLength: 20, tone: "danger" });
     if (!description || description.trim().length < 20) return;
     try {
-      const demandRefund = window.confirm("Also demand a refund with this dispute?");
+      const demandRefund = await confirmAction({ title: "Request a refund too?", description: "The dispute can include a refund demand for admin review.", confirmLabel: "Include refund", tone: "danger" });
       await apiRequest(`/api/commerce/orders/${id}/disputes`, { method: "POST", body: { subject, description, demandRefund } });
       await load();
       setError("Dispute opened. Admin support can now review this order workspace.");
@@ -110,7 +112,9 @@ export function OrderDeliveryPage() {
 
 
   async function closeDispute(disputeId: string) {
-    const resolution = window.prompt("Optional closing note:") ?? "Closed by buyer.";
+    const closingNote = await requestText({ title: "Close dispute", label: "Closing note (optional)", confirmLabel: "Close dispute", required: false, tone: "danger" });
+    if (closingNote === null) return;
+    const resolution = closingNote || "Closed by buyer.";
     try {
       await apiRequest(`/api/commerce/disputes/${disputeId}/close`, { method: "POST", body: { resolution } });
       await load();
@@ -121,7 +125,8 @@ export function OrderDeliveryPage() {
   }
 
   async function demandRefund(disputeId: string) {
-    const reason = window.prompt("Refund reason:") ?? "Refund demanded from dispute chat.";
+    const reason = await requestText({ title: "Demand a refund", label: "Reason", confirmLabel: "Send demand", minLength: 10, tone: "danger" });
+    if (!reason) return;
     if (reason.trim().length < 10) return;
     try {
       await apiRequest(`/api/commerce/disputes/${disputeId}/refund`, { method: "POST", body: { reason } });
@@ -232,3 +237,4 @@ export function OrderDeliveryPage() {
     </main>
   );
 }
+import "../buyer-premium.css";

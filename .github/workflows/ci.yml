@@ -47,6 +47,18 @@ jobs:
       - name: Validate Prisma schema
         run: npm run prisma:validate
 
+      - name: Lint source
+        run: npm run lint
+
+      - name: Run tests
+        run: npm test
+
+      - name: Detect unused files and dependencies
+        run: npm run deadcode
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Apply PostgreSQL migrations
         run: npm run prisma:migrate
 

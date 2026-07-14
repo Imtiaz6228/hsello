@@ -61,6 +61,7 @@ export type EarningsReport = {
   breakdown: BreakdownRow[];
   topProducts: TopProductRow[];
   summary: AdminSummary | SellerSummary;
+  settings: { saleCommissionPercent: number; withdrawalCommissionPercent: number; frozenHoldHours: number };
 };
 
 function startOfDay(date: Date): Date {
@@ -93,7 +94,7 @@ function formatLabel(date: Date, granularity: Granularity): string {
   return `${monthNames[date.getMonth()]} ${String(date.getFullYear()).slice(2)}`;
 }
 
-export function getDateRanges(from: Date, to: Date, granularity: Granularity): DateRange[] {
+function getDateRanges(from: Date, to: Date, granularity: Granularity): DateRange[] {
   const ranges: DateRange[] = [];
   let current = new Date(from);
   const end = new Date(to);
@@ -139,7 +140,7 @@ export class EarningsAnalyticsService {
     const topProducts = await this.getTopProducts(from, to);
     const summary = await this.getAdminSummary(from, to);
 
-    return { ranges, breakdown, topProducts, summary };
+    return { ranges, breakdown, topProducts, summary, settings: { saleCommissionPercent: env.COMMISSION_SALE_PERCENT, withdrawalCommissionPercent: env.COMMISSION_WITHDRAW_PERCENT, frozenHoldHours: env.FROZEN_HOLD_HOURS } };
   }
 
   async getSellerReport(sellerId: string, from: Date, to: Date, granularity: Granularity): Promise<EarningsReport> {
@@ -152,7 +153,7 @@ export class EarningsAnalyticsService {
     const topProducts = await this.getSellerTopProducts(sellerId, from, to);
     const summary = await this.getSellerSummary(sellerId, from, to);
 
-    return { ranges, breakdown, topProducts, summary };
+    return { ranges, breakdown, topProducts, summary, settings: { saleCommissionPercent: env.COMMISSION_SALE_PERCENT, withdrawalCommissionPercent: env.COMMISSION_WITHDRAW_PERCENT, frozenHoldHours: env.FROZEN_HOLD_HOURS } };
   }
 
   private async getBreakdownRow(range: DateRange): Promise<BreakdownRow> {
@@ -170,7 +171,7 @@ export class EarningsAnalyticsService {
         _sum: { amountCents: true },
         _count: true,
       }),
-      (prisma as any).withdrawalRequest.aggregate({
+      prisma.withdrawalRequest.aggregate({
         where: { status: "APPROVED", createdAt: { gte: range.start, lte: range.end } },
         _sum: { amountCents: true },
         _count: true,
@@ -202,12 +203,12 @@ export class EarningsAnalyticsService {
       prisma.orderItem.count({
         where: { sellerId, order: { paidAt: { gte: range.start, lte: range.end } } },
       }),
-      (prisma as any).sellerEarning.aggregate({
+      prisma.sellerEarning.aggregate({
         where: { sellerId, createdAt: { gte: range.start, lte: range.end } },
         _sum: { grossCents: true, platformFeeCents: true, netCents: true },
         _count: true,
       }),
-      (prisma as any).withdrawalRequest.aggregate({
+      prisma.withdrawalRequest.aggregate({
         where: { userId: sellerId, status: "APPROVED", createdAt: { gte: range.start, lte: range.end } },
         _sum: { amountCents: true },
         _count: true,
@@ -318,7 +319,7 @@ export class EarningsAnalyticsService {
         where: { type: "COMMISSION_WITHDRAW", createdAt: { gte: from, lte: to } },
         _sum: { amountCents: true },
       }),
-      (prisma as any).withdrawalRequest.aggregate({
+      prisma.withdrawalRequest.aggregate({
         where: { status: "APPROVED", createdAt: { gte: from, lte: to } },
         _sum: { amountCents: true },
         _count: true,
@@ -345,23 +346,23 @@ export class EarningsAnalyticsService {
       prisma.orderItem.count({
         where: { sellerId, order: { paidAt: { gte: from, lte: to }, status: { notIn: ["CANCELLED", "AWAITING_PAYMENT"] } } },
       }),
-      (prisma as any).sellerEarning.aggregate({
+      prisma.sellerEarning.aggregate({
         where: { sellerId, createdAt: { gte: from, lte: to } },
         _sum: { grossCents: true, platformFeeCents: true, netCents: true },
       }),
-      (prisma as any).sellerEarning.aggregate({
+      prisma.sellerEarning.aggregate({
         where: { sellerId, status: "AVAILABLE" },
         _sum: { netCents: true },
       }),
-      (prisma as any).sellerEarning.aggregate({
+      prisma.sellerEarning.aggregate({
         where: { sellerId, status: "FROZEN" },
         _sum: { netCents: true },
       }),
-      (prisma as any).withdrawalRequest.aggregate({
+      prisma.withdrawalRequest.aggregate({
         where: { userId: sellerId, status: "PENDING" },
         _sum: { amountCents: true },
       }),
-      (prisma as any).withdrawalRequest.aggregate({
+      prisma.withdrawalRequest.aggregate({
         where: { userId: sellerId, status: "APPROVED", createdAt: { gte: from, lte: to } },
         _sum: { amountCents: true },
       }),
@@ -385,5 +386,3 @@ export class EarningsAnalyticsService {
     };
   }
 }
-
-export const earningsAnalyticsService = new EarningsAnalyticsService();

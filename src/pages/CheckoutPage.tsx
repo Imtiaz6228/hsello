@@ -28,10 +28,8 @@ export function CheckoutPage() {
   const { user, setUser } = useAuth();
   const { items, subtotalCents, clear } = useCart();
   const navigate = useNavigate();
-  const [methods, setMethods] = useState<Method[]>([
-    { id: "CRYPTO", label: "Crypto checkout", available: true, kind: "crypto" },
-    { id: "MANUAL", label: "Manual staff approval", available: true, kind: "manual" }
-  ]);
+  const [methods, setMethods] = useState<Method[]>([]);
+  const [methodsLoading, setMethodsLoading] = useState(true);
   const [balanceCents, setBalanceCents] = useState(user?.balanceCents ?? 0);
   const [method, setMethod] = useState<MethodId>("CRYPTO");
   const [busy, setBusy] = useState(false);
@@ -50,7 +48,8 @@ export function CheckoutPage() {
   useEffect(() => {
     void apiRequest<{ methods: Method[] }>("/api/commerce/payment-methods")
       .then((data) => setMethods(data.methods))
-      .catch(() => undefined);
+      .catch((caught) => setError(caught instanceof ApiError ? caught.message : "Payment methods could not be loaded."))
+      .finally(() => setMethodsLoading(false));
     void apiRequest<{ balanceCents: number }>("/api/wallet/balance")
       .then((data) => setBalanceCents(data.balanceCents))
       .catch(() => undefined);
@@ -107,18 +106,20 @@ export function CheckoutPage() {
             {paymentMethods.map((item) => { const Icon = icons[item.id]; return (
               <label className={`${method === item.id ? "selected" : ""} ${!item.available ? "disabled" : ""}`} key={item.id}>
                 <input type="radio" name="payment" value={item.id} checked={method === item.id} onChange={() => setMethod(item.id)} disabled={!item.available} />
-                <span><Icon /></span><div><strong>{item.label}</strong><small>{item.kind === "hosted" ? "Secure hosted payment" : item.kind === "wallet" ? "Instant delivery from approved deposit balance" : item.kind === "crypto" ? "Time-limited wallet address and automatic delivery after detection" : "Staff verifies payment before delivery"}</small></div>{method === item.id ? <Check /> : null}
+                <span><Icon /></span><div><strong>{item.label}</strong><small>{item.kind === "hosted" ? "Secure hosted payment" : item.kind === "wallet" ? "Instant delivery from approved balance" : item.kind === "crypto" ? "Time-limited invoice; confirmation is required before delivery" : "Staff verifies payment before delivery"}</small></div>{method === item.id ? <Check /> : null}
               </label>
             ); })}
           </div>
-          <div className="checkout-approval-note"><ShieldCheck size={16} /> Crypto checkout creates a timed invoice with address, network, amount, and payment detection. Wallet payments deliver instantly from approved deposit balance.</div>
+          {methodsLoading ? <div className="checkout-approval-note" aria-live="polite"><span className="inline-spinner" /> Loading available payment methods…</div> : null}
+          {!methodsLoading && !paymentMethods.some((item) => item.available) ? <div className="notice error" role="alert">No payment method is currently available. Your cart has not been changed.</div> : null}
+          <div className="checkout-approval-note"><ShieldCheck size={16} /> Crypto checkout creates a timed invoice with an exact address, network, and amount. Delivery unlocks only after confirmed payment or staff approval.</div>
           {error ? <div className="notice error">{error}</div> : null}
         </section>
         <aside className="checkout-summary">
           <span className="section-index">ORDER SUMMARY</span>
           {items.map(({ product, quantity }) => <div className="checkout-line" key={product.id}><span>{product.icon}</span><div><strong>{product.title}</strong><small>Qty {quantity} · {product.delivery}</small></div><b>{formatMoney(product.priceCents * quantity)}</b></div>)}
           <div className="checkout-totals"><p><span>Subtotal</span><b>{formatMoney(subtotalCents)}</b></p><p><span>Delivery</span><b>{formatMoney(0)}</b></p><p><span>Available balance</span><b>{formatMoney(balanceCents)}</b></p><p><span>Total</span><b>{formatMoney(subtotalCents)}</b></p></div>
-          <button className="pay-button" type="submit" disabled={busy || !selectedMethod?.available}><LockKeyhole /> {busy ? "Creating secure order…" : selectedMethod?.id === "WALLET" ? `Pay with wallet · ${formatMoney(subtotalCents)}` : `Pay ${formatMoney(subtotalCents)}`}</button>
+          <button className="pay-button" type="submit" disabled={busy || methodsLoading || !selectedMethod?.available}><LockKeyhole /> {busy ? "Creating secure order…" : methodsLoading ? "Loading methods…" : selectedMethod?.id === "WALLET" ? `Pay with wallet · ${formatMoney(subtotalCents)}` : `Pay ${formatMoney(subtotalCents)}`}</button>
           <p className="secure-note"><ShieldCheck /> Payment confirmation required · ZIP/download delivery unlocks after confirmation</p>
         </aside>
       </form>

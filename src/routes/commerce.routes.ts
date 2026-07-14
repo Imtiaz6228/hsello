@@ -1,15 +1,15 @@
-import path from "node:path";
 import { Router } from "express";
-import { DisputeStatus, PaymentMethod, ProductType, TicketCategory, Role } from "@prisma/client";
+import { DisputeStatus, PaymentMethod, Prisma, RefundStatus, Role, TicketCategory } from "@prisma/client";
 import { z } from "zod";
-import { sha256 } from "../lib/crypto.js";
+import { safeEqual, sha256 } from "../lib/crypto.js";
 import { env } from "../config/env.js";
-import { createZipBuffer } from "../lib/zip.js";
+import { streamZip } from "../lib/zip.js";
 import { sendTicketUpdateEmail } from "../lib/email.js";
 import { prisma } from "../lib/prisma.js";
-import { requireAuth, requireRole, requireVerifiedUser } from "../middleware/auth.js";
+import { requireAuth, requireVerifiedUser } from "../middleware/auth.js";
 import { ApiError, asyncHandler } from "../middleware/error-handler.js";
-import { imageUpload, publicUploadUrl } from "../middleware/upload.js";
+import { paymentLimiter, uploadLimiter } from "../middleware/rate-limit.js";
+import { deleteUploadedAsset, imageUpload, publicUploadUrl, resolvePrivateUploadPath } from "../middleware/upload.js";
 import { activeDisputeWhere, autoResolveExpiredDisputes, markDisputeTurn, responseDeadline } from "../services/dispute.service.js";
 import { availablePaymentMethods, checkCryptoPayment, confirmCryptoWebhook, confirmHostedPayment, createCheckout, getPaymentStatusForBuyer } from "../services/payment.service.js";
 
@@ -66,11 +66,29 @@ function formatInvoiceMoney(cents: number, currency: string) {
   }
 }
 
+async function createBuyerRefundRequest(input: { orderId: string; buyerId: string; reason: string; amountCents?: number }) {
+  return prisma.$transaction(async (tx) => {
+    const order = await tx.order.findFirst({
+      where: { id: input.orderId, buyerId: input.buyerId, paidAt: { not: null } },
+      include: { refunds: { where: { status: { in: [RefundStatus.REQUESTED, RefundStatus.APPROVED, RefundStatus.PROCESSING, RefundStatus.COMPLETED] } } } }
+    });
+    if (!order) throw new ApiError(400, "Only your paid orders can be refunded.", "REFUND_NOT_ALLOWED");
+    if (order.refunds.some((refund) => refund.status !== RefundStatus.COMPLETED && refund.status !== RefundStatus.REJECTED)) {
+      throw new ApiError(409, "This order already has an active refund request.", "REFUND_ALREADY_OPEN");
+    }
+    const completedCents = order.refunds.filter((refund) => refund.status === RefundStatus.COMPLETED).reduce((sum, refund) => sum + refund.amountCents, 0);
+    const remainingCents = order.totalCents - completedCents;
+    const amountCents = Math.min(input.amountCents ?? remainingCents, remainingCents);
+    if (amountCents <= 0) throw new ApiError(409, "This order has already been fully refunded.", "REFUND_ALREADY_COMPLETED");
+    return tx.refund.create({ data: { orderId: order.id, requestedById: input.buyerId, reason: input.reason, amountCents } });
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+}
+
 commerceRouter.get("/payment-methods", (_req, res) => res.json({ methods: availablePaymentMethods() }));
 
-commerceRouter.post("/crypto/webhook", asyncHandler(async (req, res) => {
-  const providedSecret = req.get("x-hsello-crypto-secret") || z.string().optional().parse(req.body?.secret);
-  if (!env.CRYPTO_WEBHOOK_SECRET || providedSecret !== env.CRYPTO_WEBHOOK_SECRET) {
+commerceRouter.post("/crypto/webhook", paymentLimiter, asyncHandler(async (req, res) => {
+  const providedSecret = req.get("x-hsello-crypto-secret");
+  if (!env.CRYPTO_WEBHOOK_SECRET || !providedSecret || !safeEqual(providedSecret, env.CRYPTO_WEBHOOK_SECRET)) {
     throw new ApiError(401, "Crypto webhook authentication failed.", "CRYPTO_WEBHOOK_UNAUTHORIZED");
   }
   const input = z.object({
@@ -79,7 +97,9 @@ commerceRouter.post("/crypto/webhook", asyncHandler(async (req, res) => {
     txHash: z.string().trim().max(200).optional(),
     amount: z.string().trim().max(80).optional(),
     asset: z.string().trim().max(40).optional(),
-    network: z.string().trim().max(80).optional()
+    network: z.string().trim().max(80).optional(),
+    address: z.string().trim().max(300).optional(),
+    confirmations: z.coerce.number().int().min(0).max(100000).optional()
   }).refine((value) => value.orderId || value.providerReference, "Provide orderId or providerReference.").parse(req.body);
   const order = await confirmCryptoWebhook(input);
   res.json({ order });
@@ -95,22 +115,26 @@ commerceRouter.get("/download/token/:token", asyncHandler(async (req, res) => {
   if (!grant || grant.revokedAt || grant.expiresAt <= new Date() || grant.downloadCount >= grant.maxDownloads) {
     throw new ApiError(410, "This download link is expired or has reached its limit.", "DOWNLOAD_UNAVAILABLE");
   }
-  await prisma.$transaction([
-    prisma.downloadGrant.update({ where: { id: grant.id }, data: { downloadCount: { increment: 1 } } }),
-    prisma.downloadEvent.create({ data: { downloadGrantId: grant.id, ipAddress: req.ip, userAgent: req.get("user-agent") } })
-  ]);
-  res.download(path.resolve(grant.productFile.storagePath), grant.productFile.displayName);
+  await prisma.$transaction(async (tx) => {
+    const claimed = await tx.downloadGrant.updateMany({
+      where: { id: grant.id, revokedAt: null, expiresAt: { gt: new Date() }, downloadCount: { lt: grant.maxDownloads } },
+      data: { downloadCount: { increment: 1 } }
+    });
+    if (claimed.count !== 1) throw new ApiError(410, "This download is expired or has reached its limit.", "DOWNLOAD_UNAVAILABLE");
+    await tx.downloadEvent.create({ data: { downloadGrantId: grant.id, ipAddress: req.ip, userAgent: req.get("user-agent") } });
+  });
+  res.download(resolvePrivateUploadPath(grant.productFile.storagePath), grant.productFile.displayName);
 }));
 
 commerceRouter.use(requireAuth, requireVerifiedUser);
 
-commerceRouter.post("/checkout", asyncHandler(async (req, res) => {
+commerceRouter.post("/checkout", paymentLimiter, asyncHandler(async (req, res) => {
   const input = checkoutSchema.parse(req.body);
   const result = await createCheckout(req.auth!.id, input.items, input.method, input.couponCode);
   res.status(201).json(result);
 }));
 
-commerceRouter.post("/checkout/:orderId/confirm", asyncHandler(async (req, res) => {
+commerceRouter.post("/checkout/:orderId/confirm", paymentLimiter, asyncHandler(async (req, res) => {
   const orderId = z.string().uuid().parse(req.params.orderId);
   const order = await confirmHostedPayment(orderId, req.auth!.id);
   res.json({ order });
@@ -122,7 +146,7 @@ commerceRouter.get("/checkout/:orderId/status", asyncHandler(async (req, res) =>
   res.json(status);
 }));
 
-commerceRouter.post("/checkout/:orderId/check-crypto", asyncHandler(async (req, res) => {
+commerceRouter.post("/checkout/:orderId/check-crypto", paymentLimiter, asyncHandler(async (req, res) => {
   const orderId = z.string().uuid().parse(req.params.orderId);
   const status = await checkCryptoPayment(orderId, req.auth!.id);
   res.json(status);
@@ -133,6 +157,7 @@ commerceRouter.get("/disputes", asyncHandler(async (req, res) => {
   const disputes = await prisma.dispute.findMany({
     where: { OR: [{ openedById: req.auth!.id }, { order: { buyerId: req.auth!.id } }] },
     orderBy: { updatedAt: "desc" },
+    take: 100,
     include: {
       order: { include: { items: { include: { product: { select: { name: true, slug: true, coverImageUrl: true } } } } } },
       orderItem: { include: { product: { select: { name: true, slug: true, coverImageUrl: true } } } },
@@ -146,6 +171,7 @@ commerceRouter.get("/chats", asyncHandler(async (req, res) => {
   const orders = await prisma.order.findMany({
     where: { buyerId: req.auth!.id, messages: { some: {} } },
     orderBy: { updatedAt: "desc" },
+    take: 100,
     include: {
       items: { take: 3, include: { product: { select: { slug: true, coverImageUrl: true } } } },
       messages: { orderBy: { createdAt: "desc" }, take: 1, include: { author: { select: { firstName: true, role: true } } } },
@@ -158,6 +184,7 @@ commerceRouter.get("/chats", asyncHandler(async (req, res) => {
 commerceRouter.get("/orders", asyncHandler(async (req, res) => {
   const orders = await prisma.order.findMany({
     where: { buyerId: req.auth!.id }, orderBy: { createdAt: "desc" },
+    take: 100,
     include: {
       payment: true,
       items: {
@@ -217,11 +244,15 @@ commerceRouter.get("/downloads/:grantId", asyncHandler(async (req, res) => {
   if (!grant || grant.revokedAt || grant.expiresAt <= new Date() || grant.downloadCount >= grant.maxDownloads) {
     throw new ApiError(410, "This download is expired or has reached its limit.", "DOWNLOAD_UNAVAILABLE");
   }
-  await prisma.$transaction([
-    prisma.downloadGrant.update({ where: { id }, data: { downloadCount: { increment: 1 } } }),
-    prisma.downloadEvent.create({ data: { downloadGrantId: id, ipAddress: req.ip, userAgent: req.get("user-agent") } })
-  ]);
-  res.download(path.resolve(grant.productFile.storagePath), grant.productFile.displayName);
+  await prisma.$transaction(async (tx) => {
+    const claimed = await tx.downloadGrant.updateMany({
+      where: { id, revokedAt: null, expiresAt: { gt: new Date() }, downloadCount: { lt: grant.maxDownloads } },
+      data: { downloadCount: { increment: 1 } }
+    });
+    if (claimed.count !== 1) throw new ApiError(410, "This download is expired or has reached its limit.", "DOWNLOAD_UNAVAILABLE");
+    await tx.downloadEvent.create({ data: { downloadGrantId: id, ipAddress: req.ip, userAgent: req.get("user-agent") } });
+  });
+  res.download(resolvePrivateUploadPath(grant.productFile.storagePath), grant.productFile.displayName);
 }));
 
 commerceRouter.get("/order-items/:id/download.zip", asyncHandler(async (req, res) => {
@@ -241,19 +272,23 @@ commerceRouter.get("/order-items/:id/download.zip", asyncHandler(async (req, res
     throw new ApiError(410, "No downloadable files are available for this order item.", "DOWNLOAD_UNAVAILABLE");
   }
 
-  const zip = await createZipBuffer(grants.map((grant) => ({
-    name: grant.productFile.displayName,
-    storagePath: grant.productFile.storagePath
-  })));
-
-  await prisma.$transaction(grants.flatMap((grant) => [
-    prisma.downloadGrant.update({ where: { id: grant.id }, data: { downloadCount: { increment: 1 } } }),
-    prisma.downloadEvent.create({ data: { downloadGrantId: grant.id, ipAddress: req.ip, userAgent: req.get("user-agent") } })
-  ]));
+  await prisma.$transaction(async (tx) => {
+    for (const grant of grants) {
+      const claimed = await tx.downloadGrant.updateMany({
+        where: { id: grant.id, revokedAt: null, expiresAt: { gt: new Date() }, downloadCount: { lt: grant.maxDownloads } },
+        data: { downloadCount: { increment: 1 } }
+      });
+      if (claimed.count !== 1) throw new ApiError(410, "A download reached its limit while the archive was being prepared.", "DOWNLOAD_UNAVAILABLE");
+      await tx.downloadEvent.create({ data: { downloadGrantId: grant.id, ipAddress: req.ip, userAgent: req.get("user-agent") } });
+    }
+  });
 
   res.setHeader("content-type", "application/zip");
   res.setHeader("content-disposition", `attachment; filename="${orderItem.productName.replace(/[^a-z0-9-]+/gi, "-").slice(0, 80) || "hsello-download"}.zip"`);
-  res.send(zip);
+  await streamZip(res, grants.map((grant) => ({
+    name: grant.productFile.displayName,
+    storagePath: resolvePrivateUploadPath(grant.productFile.storagePath)
+  })));
 }));
 
 commerceRouter.get("/order-items/:id/delivery", asyncHandler(async (req, res) => {
@@ -288,14 +323,13 @@ commerceRouter.get("/order-items/:id/delivery", asyncHandler(async (req, res) =>
   })].join("\r\n");
 
   if (format === "zip") {
-    const zip = await createZipBuffer([
+    res.setHeader("content-type", "application/zip");
+    res.setHeader("content-disposition", `attachment; filename="${baseName}.zip"`);
+    await streamZip(res, [
       { name: `${baseName}.txt`, content: text },
       { name: `${baseName}.csv`, content: csv },
       { name: "README.txt", content: "Your protected HSello delivery. Keep these account details private and contact the seller through the order chat if assistance is required." }
     ]);
-    res.setHeader("content-type", "application/zip");
-    res.setHeader("content-disposition", `attachment; filename="${baseName}.zip"`);
-    res.send(zip);
     return;
   }
 
@@ -305,16 +339,14 @@ commerceRouter.get("/order-items/:id/delivery", asyncHandler(async (req, res) =>
   res.send(body);
 }));
 
-commerceRouter.post("/orders/:id/refunds", requireRole(Role.CUSTOMER), asyncHandler(async (req, res) => {
+commerceRouter.post("/orders/:id/refunds", asyncHandler(async (req, res) => {
   const orderId = z.string().uuid().parse(req.params.id);
   const input = z.object({ reason: z.string().trim().min(20).max(2000), amountCents: z.number().int().positive().optional() }).parse(req.body);
-  const order = await prisma.order.findFirst({ where: { id: orderId, buyerId: req.auth!.id } });
-  if (!order || !order.paidAt) throw new ApiError(400, "Only paid orders can be refunded.", "REFUND_NOT_ALLOWED");
-  const refund = await prisma.refund.create({ data: { orderId, requestedById: req.auth!.id, reason: input.reason, amountCents: Math.min(input.amountCents ?? order.totalCents, order.totalCents) } });
+  const refund = await createBuyerRefundRequest({ orderId, buyerId: req.auth!.id, ...input });
   res.status(201).json({ refund });
 }));
 
-commerceRouter.post("/orders/:id/disputes", requireRole(Role.CUSTOMER), asyncHandler(async (req, res) => {
+commerceRouter.post("/orders/:id/disputes", asyncHandler(async (req, res) => {
   const orderId = z.string().uuid().parse(req.params.id);
   const input = z.object({ subject: z.string().trim().min(5).max(140), description: z.string().trim().min(20).max(4000), orderItemId: z.string().uuid().optional(), demandRefund: z.boolean().default(false) }).parse(req.body);
   const order = await prisma.order.findFirst({
@@ -349,12 +381,15 @@ commerceRouter.post("/orders/:id/disputes", requireRole(Role.CUSTOMER), asyncHan
   });
   await prisma.order.update({ where: { id: orderId }, data: { status: "DISPUTED" } });
   if (input.demandRefund) {
-    await prisma.refund.create({ data: { orderId, requestedById: req.auth!.id, reason: `Refund demanded through dispute: ${input.description}`, amountCents: order.totalCents } }).catch(() => undefined);
+    await createBuyerRefundRequest({ orderId, buyerId: req.auth!.id, reason: `Refund demanded through dispute: ${input.description}`, amountCents: order.totalCents }).catch((error) => {
+      if (error instanceof ApiError && ["REFUND_ALREADY_OPEN", "REFUND_ALREADY_COMPLETED"].includes(error.code)) return undefined;
+      throw error;
+    });
   }
   res.status(201).json({ dispute });
 }));
 
-commerceRouter.post("/disputes/:id/close", requireRole(Role.CUSTOMER), asyncHandler(async (req, res) => {
+commerceRouter.post("/disputes/:id/close", asyncHandler(async (req, res) => {
   const id = z.string().uuid().parse(req.params.id);
   const input = z.object({ resolution: z.string().trim().max(1000).optional() }).parse(req.body);
   const dispute = await prisma.dispute.findFirst({ where: { id, OR: [{ openedById: req.auth!.id }, { order: { buyerId: req.auth!.id } }] }, include: { order: true } });
@@ -363,12 +398,12 @@ commerceRouter.post("/disputes/:id/close", requireRole(Role.CUSTOMER), asyncHand
   res.json({ dispute: updated });
 }));
 
-commerceRouter.post("/disputes/:id/refund", requireRole(Role.CUSTOMER), asyncHandler(async (req, res) => {
+commerceRouter.post("/disputes/:id/refund", asyncHandler(async (req, res) => {
   const id = z.string().uuid().parse(req.params.id);
   const input = z.object({ reason: z.string().trim().min(10).max(2000).optional(), amountCents: z.number().int().positive().optional() }).parse(req.body);
   const dispute = await prisma.dispute.findFirst({ where: { id, OR: [{ openedById: req.auth!.id }, { order: { buyerId: req.auth!.id } }] }, include: { order: true } });
   if (!dispute?.order.paidAt) throw new ApiError(400, "Only paid disputed orders can request a refund.", "REFUND_NOT_ALLOWED");
-  const refund = await prisma.refund.create({ data: { orderId: dispute.orderId, requestedById: req.auth!.id, reason: input.reason ?? `Refund demanded for dispute ${dispute.subject}`, amountCents: Math.min(input.amountCents ?? dispute.order.totalCents, dispute.order.totalCents) } });
+  const refund = await createBuyerRefundRequest({ orderId: dispute.orderId, buyerId: req.auth!.id, reason: input.reason ?? `Refund demanded for dispute ${dispute.subject}`, amountCents: input.amountCents });
   const updated = await prisma.dispute.update({ where: { id }, data: { refundDemanded: true, status: DisputeStatus.UNDER_REVIEW, awaitingParty: null, autoCloseAt: null } });
   res.status(201).json({ refund, dispute: updated });
 }));
@@ -377,36 +412,34 @@ commerceRouter.get("/orders/:id/messages", asyncHandler(async (req, res) => {
   const orderId = z.string().uuid().parse(req.params.id);
   const order = await prisma.order.findFirst({ where: { id: orderId, OR: [{ buyerId: req.auth!.id }, { items: { some: { sellerId: req.auth!.id } } }] } });
   if (!order) throw new ApiError(404, "Order not found.", "ORDER_NOT_FOUND");
-  const messages = await prisma.orderMessage.findMany({ where: { orderId }, orderBy: { createdAt: "asc" }, include: { author: { select: { id: true, firstName: true, role: true } } } });
-  res.json({ messages });
+  const messages = await prisma.orderMessage.findMany({ where: { orderId }, orderBy: { createdAt: "desc" }, take: 500, include: { author: { select: { id: true, firstName: true, role: true } } } });
+  res.json({ messages: messages.reverse() });
 }));
 
-commerceRouter.post("/orders/:id/messages", imageUpload.single("attachment"), asyncHandler(async (req, res) => {
-  const orderId = z.string().uuid().parse(req.params.id);
-  const { body } = z.object({ body: z.string().trim().min(1).max(4000) }).parse(req.body);
-  const order = await prisma.order.findFirst({
-    where: { id: orderId, OR: [{ buyerId: req.auth!.id }, { items: { some: { sellerId: req.auth!.id } } }] },
-    include: { items: { select: { sellerId: true } } }
-  });
-  if (!order) throw new ApiError(404, "Order not found.", "ORDER_NOT_FOUND");
-  const message = await prisma.orderMessage.create({
-    data: {
-      orderId,
-      authorId: req.auth!.id,
-      body,
-      attachmentUrl: req.file ? publicUploadUrl(req.file.filename) : undefined,
-      attachmentName: req.file?.originalname,
-      attachmentMimeType: req.file?.mimetype
-    },
-    include: { author: { select: { id: true, firstName: true, role: true } } }
-  });
-  await markDisputeTurn(orderId, { id: req.auth!.id, role: req.auth!.role as Role }, order.buyerId, [...new Set(order.items.map((item) => String(item.sellerId)))]);
-  res.status(201).json({ message });
+commerceRouter.post("/orders/:id/messages", uploadLimiter, imageUpload.single("attachment"), asyncHandler(async (req, res) => {
+  try {
+    const orderId = z.string().uuid().parse(req.params.id);
+    const { body } = z.object({ body: z.string().trim().min(1).max(4000) }).parse(req.body);
+    const order = await prisma.order.findFirst({
+      where: { id: orderId, OR: [{ buyerId: req.auth!.id }, { items: { some: { sellerId: req.auth!.id } } }] },
+      include: { items: { select: { sellerId: true } } }
+    });
+    if (!order) throw new ApiError(404, "Order not found.", "ORDER_NOT_FOUND");
+    const message = await prisma.orderMessage.create({
+      data: { orderId, authorId: req.auth!.id, body, attachmentUrl: req.file ? publicUploadUrl(req.file.filename) : undefined, attachmentName: req.file?.originalname, attachmentMimeType: req.file?.mimetype },
+      include: { author: { select: { id: true, firstName: true, role: true } } }
+    });
+    await markDisputeTurn(orderId, { id: req.auth!.id, role: req.auth!.role as Role }, order.buyerId, [...new Set(order.items.map((item) => String(item.sellerId)))]);
+    res.status(201).json({ message });
+  } catch (error) {
+    await deleteUploadedAsset(req.file);
+    throw error;
+  }
 }));
 
 commerceRouter.get("/tickets", asyncHandler(async (req, res) => {
-  const tickets = await prisma.ticket.findMany({ where: { creatorId: req.auth!.id }, orderBy: { updatedAt: "desc" }, include: { messages: { orderBy: { createdAt: "asc" }, include: { author: { select: { firstName: true, role: true } } } } } });
-  res.json({ tickets });
+  const tickets = await prisma.ticket.findMany({ where: { creatorId: req.auth!.id }, orderBy: { updatedAt: "desc" }, take: 100, include: { messages: { orderBy: { createdAt: "desc" }, take: 500, include: { author: { select: { firstName: true, role: true } } } } } });
+  res.json({ tickets: tickets.map((ticket) => ({ ...ticket, messages: ticket.messages.reverse() })) });
 }));
 
 commerceRouter.post("/tickets", asyncHandler(async (req, res) => {

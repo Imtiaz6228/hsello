@@ -4,6 +4,7 @@ import path from "node:path";
 import helmet from "helmet";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import compression from "compression";
 import { env, isProduction } from "./config/env.js";
 import { issueCsrfToken } from "./lib/cookies.js";
 import { uploadRoot } from "./middleware/upload.js";
@@ -17,7 +18,7 @@ import { adminRouter } from "./routes/admin.routes.js";
 import { marketplaceRouter } from "./routes/marketplace.routes.js";
 import { commerceRouter } from "./routes/commerce.routes.js";
 import { walletRouter } from "./routes/wallet.routes.js";
-import { nexusRouter } from "./routes/nexus.routes.js";
+import { supportAssistantRouter } from "./routes/assistant.routes.js";
 import { prisma } from "./lib/prisma.js";
 
 function normalizeOrigin(value: string) {
@@ -52,8 +53,39 @@ export const app = express();
 app.set("trust proxy", isProduction ? 1 : 0);
 app.disable("x-powered-by");
 
+app.use((req, res, next) => {
+  const requestId = req.get("x-request-id")?.slice(0, 100) || crypto.randomUUID();
+  res.setHeader("x-request-id", requestId);
+  const startedAt = performance.now();
+  res.once("finish", () => {
+    if (req.path === "/health" || req.path === "/api/health") return;
+    console.info(JSON.stringify({ level: "info", event: "http_request", requestId, method: req.method, path: req.path, status: res.statusCode, durationMs: Math.round(performance.now() - startedAt) }));
+  });
+  if (isProduction && req.get("x-forwarded-proto") && req.get("x-forwarded-proto") !== "https") {
+    res.redirect(308, `${new URL(env.API_URL).origin}${req.originalUrl}`);
+    return;
+  }
+  next();
+});
+
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" }
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginEmbedderPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "https://challenges.cloudflare.com"],
+      styleSrcElem: ["'self'"],
+      styleSrcAttr: ["'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "blob:", "https:"],
+      connectSrc: ["'self'", env.API_URL],
+      frameSrc: ["https://challenges.cloudflare.com"],
+      fontSrc: ["'self'", "data:"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"]
+    }
+  }
 }));
 
 app.use(cors({
@@ -71,6 +103,7 @@ app.use(cors({
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: false, limit: "1mb" }));
 app.use(cookieParser());
+app.use(compression());
 app.use(generalLimiter);
 
 app.use("/uploads", express.static(uploadRoot, {
@@ -110,9 +143,14 @@ app.get("/health", (_req, res) => {
   });
 });
 
-app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", environment: env.NODE_ENV });
-});
+app.get("/api/health", asyncHandler(async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: "ready", database: "connected", environment: env.NODE_ENV });
+  } catch {
+    res.status(503).json({ status: "unavailable", database: "disconnected", environment: env.NODE_ENV });
+  }
+}));
 
 function sendRequestToken(_req: express.Request, res: express.Response) {
   res.json({
@@ -124,7 +162,7 @@ app.get("/api/csrf", sendRequestToken);
 app.get("/api/session/bootstrap", sendRequestToken);
 
 app.get("/robots.txt", (_req, res) => {
-  res.type("text/plain").send(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /dashboard\nDisallow: /checkout\nSitemap: ${env.APP_URL}/sitemap.xml\n`);
+  res.type("text/plain").send(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /dashboard\nDisallow: /checkout\nDisallow: /orders\nDisallow: /seller\nDisallow: /support\nDisallow: /sign-in\nDisallow: /register\nDisallow: /forgot-password\nDisallow: /reset-password\nDisallow: /verify-email\nDisallow: /verify-required\nSitemap: ${env.APP_URL}/sitemap.xml\n`);
 });
 
 app.get("/sitemap.xml", asyncHandler(async (_req, res) => {
@@ -136,6 +174,7 @@ app.get("/sitemap.xml", asyncHandler(async (_req, res) => {
   const urls = [
     { path: "/", updatedAt: new Date() }, { path: "/catalog", updatedAt: new Date() },
     { path: "/blog", updatedAt: new Date() },
+    ...["/terms", "/privacy", "/refund-policy", "/seller-policy", "/buyer-protection", "/prohibited-products", "/copyright", "/contact", "/about"].map((path) => ({ path, updatedAt: new Date("2026-07-14T00:00:00.000Z") })),
     ...products.map((item) => ({ path: `/products/${item.slug}`, updatedAt: item.updatedAt })),
     ...categories.map((item) => ({ path: `/categories/${item.slug}`, updatedAt: item.updatedAt })),
     ...stores.map((item) => ({ path: `/stores/${item.slug}`, updatedAt: item.updatedAt }))
@@ -151,7 +190,7 @@ app.use("/api/commerce", commerceRouter);
 app.use("/api/wallet", walletRouter);
 app.use("/api/seller", sellerRouter);
 app.use("/api/admin", adminRouter);
-app.use("/api/nexus", nexusRouter);
+app.use("/api/assistant", supportAssistantRouter);
 
 // Railway builds both targets from this one root and can serve the SPA and API
 // on the same origin. That is the most reliable option for cookie-based auth.
@@ -161,7 +200,11 @@ const frontendIndex = path.join(frontendRoot, "index.html");
 if (isProduction && fs.existsSync(frontendIndex)) {
   app.use(express.static(frontendRoot, {
     index: false,
-    maxAge: "1h"
+    extensions: ["html"],
+    maxAge: "1h",
+    setHeaders(res, filePath) {
+      if (filePath.includes(`${path.sep}assets${path.sep}`)) res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    }
   }));
 
   app.get("*", (req, res, next) => {

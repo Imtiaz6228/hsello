@@ -32,16 +32,6 @@ export function getPasswordIssues(password: string, context: string[] = []) {
   return issues;
 }
 
-export function assertStrongPassword(password: string, context: string[] = []) {
-  const issues = getPasswordIssues(password, context);
-
-  if (issues.length > 0) {
-    return issues;
-  }
-
-  return [];
-}
-
 export function hashPassword(password: string) {
   return argon2.hash(password, {
     type: argon2.argon2id,

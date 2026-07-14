@@ -12,7 +12,6 @@ import { ApiError, apiDownloadUrl, apiRequest, mediaUrl } from "../api/client";
 import { Seo } from "../components/Seo";
 import { LocaleSwitcher } from "../components/LocaleSwitcher";
 import { useLocale } from "../i18n/LocaleContext";
-import { useActionPrompt } from "../components/ActionPrompt";
 
 type Category = {
   id: string;
@@ -235,7 +234,6 @@ function categoryLabel(category?: Product["category"]) {
 }
 
 export function SellerStudioPage() {
-  const { requestText } = useActionPrompt();
   const { formatMoney } = useLocale();
   const [tab, setTabState] = useState<Tab>(() => {
     const hash = window.location.hash.replace("#", "");
@@ -501,7 +499,7 @@ export function SellerStudioPage() {
   }
 
   async function addInventoryRows(productId: string) {
-    const inventoryLines = await requestText({ title: "Add inventory rows", label: "One digital delivery item per line", description: "Rows are allocated once and hidden from other buyers after delivery.", confirmLabel: "Add inventory", minLength: 1 });
+    const inventoryLines = window.prompt("Paste one digital item, code, or license per line:");
     if (!inventoryLines?.trim()) return;
     try {
       const result = await apiRequest<{ count: number }>(`/api/seller/products/${productId}/inventory/manual`, {
@@ -583,7 +581,7 @@ export function SellerStudioPage() {
   }
 
   async function replyToTicket(ticketId: string) {
-    const body = await requestText({ title: "Reply to support ticket", label: "Your reply", confirmLabel: "Send reply", minLength: 1 });
+    const body = window.prompt("Write your reply to this support ticket:");
     if (!body?.trim()) return;
     try {
       await apiRequest(`/api/seller/tickets/${ticketId}/reply`, { method: "POST", body: { body: body.trim() } });
@@ -726,7 +724,3 @@ export function SellerStudioPage() {
     </main>
   );
 }
-import "../seller-premium.css";
-import "../seller-premium-views.css";
-import "../seller-premium-responsive.css";
-import "../seller-complete.css";

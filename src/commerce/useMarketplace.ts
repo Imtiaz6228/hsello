@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiRequest, mediaUrl } from "../api/client";
 import { catalogCategories, type CatalogCategory, type CatalogProduct } from "../data/catalog";
 
@@ -23,8 +23,6 @@ type ApiProduct = {
   priceCnyCents?: number;
   priceRubCents?: number;
   afterSalesServiceHours?: number;
-  downloadLimit?: number;
-  buyersGetUpdates?: boolean;
   averageRating: number | string;
   reviewCount: number;
   salesCount: number;
@@ -33,7 +31,6 @@ type ApiProduct = {
   category: { name: string; slug: string; parent?: { name: string; slug: string; parent?: { name: string; slug: string } | null } | null };
   seller: { sellerProfile?: { storeName: string; slug: string } | null };
   _count?: { inventoryItems?: number; files?: number };
-  reviews?: Array<{ id: string; rating: number; body: string; createdAt: string; sellerResponse?: string | null; buyer: { firstName: string } }>;
 };
 
 function iconForSlug(slug: string, index = 0) {
@@ -78,16 +75,6 @@ function mapProduct(product: ApiProduct, index = 0): CatalogProduct {
     icon: iconForSlug(product.category.slug, index),
     imageUrl: normalizePublicMediaUrl(product.coverImageUrl),
     stockCount: product.type === "SERVICE" ? 999 : Math.max(product._count?.inventoryItems ?? 0, product._count?.files ?? 0)
-    ,downloadLimit: product.downloadLimit,
-    buyersGetUpdates: product.buyersGetUpdates,
-    verifiedReviews: product.reviews?.map((review) => ({
-      id: review.id,
-      rating: review.rating,
-      body: review.body,
-      createdAt: review.createdAt,
-      buyerName: review.buyer.firstName,
-      sellerResponse: review.sellerResponse
-    }))
   };
 }
 
@@ -109,79 +96,37 @@ function mapCategories(categories: ApiCategory[]): CatalogCategory[] {
   }).sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.name.localeCompare(b.name));
 }
 
-function readableError(error: unknown, fallback: string) {
-  return error instanceof Error && error.message ? error.message : fallback;
-}
-
-export function useMarketplaceProducts(queryString = "") {
+export function useMarketplaceProducts() {
   const [products, setProducts] = useState<CatalogProduct[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string>();
-  const [reloadKey, setReloadKey] = useState(0);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [hasNextPage, setHasNextPage] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
   useEffect(() => {
-    let active = true;
-    setLoading(true);
-    setError(undefined);
-    const suffix = queryString ? `&${queryString}` : "";
-    void apiRequest<{ products: ApiProduct[]; hasNextPage: boolean; nextCursor?: string | null }>(`/api/marketplace/products?take=24${suffix}`)
-      .then((data) => { if (active) { setProducts(data.products.map(mapProduct)); setHasNextPage(data.hasNextPage); setNextCursor(data.nextCursor ?? null); } })
-      .catch((requestError) => { if (active) { setProducts([]); setError(readableError(requestError, "Products could not be loaded.")); } })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [queryString, reloadKey]);
-  async function loadMore() {
-    if (!nextCursor || loadingMore) return;
-    setLoadingMore(true);
-    try {
-      const suffix = queryString ? `&${queryString}` : "";
-      const data = await apiRequest<{ products: ApiProduct[]; hasNextPage: boolean; nextCursor?: string | null }>(`/api/marketplace/products?take=24&cursor=${encodeURIComponent(nextCursor)}${suffix}`);
-      setProducts((current) => [...current, ...data.products.map(mapProduct)].filter((product, index, all) => all.findIndex((candidate) => candidate.id === product.id) === index));
-      setHasNextPage(data.hasNextPage);
-      setNextCursor(data.nextCursor ?? null);
-    } catch (requestError) {
-      setError(readableError(requestError, "More products could not be loaded."));
-    } finally { setLoadingMore(false); }
-  }
-  return { products, loading, loadingMore, hasNextPage, error, loadMore, retry: () => setReloadKey((value) => value + 1) };
+    void apiRequest<{ products: ApiProduct[] }>("/api/marketplace/products?take=96")
+      .then((data) => setProducts(data.products.map(mapProduct)))
+      .catch(() => setProducts([]));
+  }, []);
+  return products;
 }
 
 export function useMarketplaceCategories() {
-  const [categories, setCategories] = useState<CatalogCategory[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string>();
-  const [reloadKey, setReloadKey] = useState(0);
+  const [categories, setCategories] = useState<CatalogCategory[]>(catalogCategories);
   useEffect(() => {
-    let active = true;
-    setLoading(true);
-    setError(undefined);
     void apiRequest<{ categories: ApiCategory[] }>("/api/marketplace/categories")
-      .then((data) => { if (active) setCategories(mapCategories(data.categories)); })
-      .catch((requestError) => { if (active) { setCategories([]); setError(readableError(requestError, "Categories could not be loaded.")); } })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [reloadKey]);
-  return { categories, loading, error, retry: () => setReloadKey((value) => value + 1) };
+      .then((data) => { if (data.categories.length) setCategories(mapCategories(data.categories)); })
+      .catch(() => undefined);
+  }, []);
+  return categories;
 }
 
 export function useMarketplaceProduct(slug?: string) {
   const [product, setProduct] = useState<CatalogProduct | undefined>();
   const [loading, setLoading] = useState(Boolean(slug));
-  const [error, setError] = useState<string>();
   useEffect(() => {
     if (!slug) return;
-    let active = true;
-    setLoading(true);
-    setError(undefined);
     void apiRequest<{ product: ApiProduct }>(`/api/marketplace/products/${encodeURIComponent(slug)}`)
-      .then((data) => { if (active) setProduct(mapProduct(data.product)); })
-      .catch((requestError) => { if (active) { setProduct(undefined); setError(readableError(requestError, "Product could not be loaded.")); } })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
+      .then((data) => setProduct(mapProduct(data.product)))
+      .catch(() => setProduct(undefined))
+      .finally(() => setLoading(false));
   }, [slug]);
-  return { product, loading, error };
+  return { product, loading };
 }
 
 export type PublicStore = { name: string; about: string; policy: string; rating: number; sales: string; joined: string; mark: string; logoUrl?: string | null; bannerUrl?: string | null };
@@ -190,21 +135,21 @@ export function useMarketplaceStore(slug?: string) {
   const [store, setStore] = useState<PublicStore>();
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [loading, setLoading] = useState(Boolean(slug));
-  const [error, setError] = useState<string>();
   useEffect(() => {
     if (!slug) return;
-    let active = true;
-    setLoading(true);
-    setError(undefined);
     void apiRequest<{ store: { storeName: string; about: string; policy?: string | null; averageRating: number | string; totalSales: number; createdAt: string; logoUrl?: string | null; bannerUrl?: string | null }; products: Array<Omit<ApiProduct, "seller">> }>(`/api/marketplace/stores/${encodeURIComponent(slug)}`)
       .then((data) => {
-        if (!active) return;
         setStore({ name: data.store.storeName, about: data.store.about, policy: data.store.policy || "HSello buyer protection applies to every order.", rating: Number(data.store.averageRating), sales: data.store.totalSales.toLocaleString(), joined: new Date(data.store.createdAt).getFullYear().toString(), mark: data.store.storeName.split(/\s+/).map((word) => word[0]).join("").slice(0, 2).toUpperCase(), logoUrl: normalizePublicMediaUrl(data.store.logoUrl), bannerUrl: normalizePublicMediaUrl(data.store.bannerUrl) });
         setProducts(data.products.map((product, index) => mapProduct({ ...product, seller: { sellerProfile: { storeName: data.store.storeName, slug } } }, index)));
       })
-      .catch((requestError) => { if (active) setError(readableError(requestError, "Store could not be loaded.")); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
+      .catch(() => undefined)
+      .finally(() => setLoading(false));
   }, [slug]);
-  return { store, products, loading, error };
+  return { store, products, loading };
+}
+
+export function useMarketplaceCategory(slug?: string) {
+  const categories = useMarketplaceCategories();
+  const category = useMemo(() => categories.find((item) => item.slug === slug), [categories, slug]);
+  return { category, loading: false };
 }

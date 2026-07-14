@@ -40,18 +40,8 @@ export function CatalogPage() {
   const [sort, setSort] = useState<SortMode>("popular");
   const [view, setView] = useState<ViewMode>("list");
   const [stockOnly, setStockOnly] = useState(false);
-  const marketplaceQuery = useMemo(() => {
-    const params = new URLSearchParams();
-    if (query.trim()) params.set("q", query.trim());
-    if (category !== "all") params.set("category", category);
-    params.set("sort", sort);
-    params.set("stock", stockOnly ? "in_stock" : "all");
-    return params.toString();
-  }, [category, query, sort, stockOnly]);
-  const productState = useMarketplaceProducts(marketplaceQuery);
-  const categoryState = useMarketplaceCategories();
-  const { products } = productState;
-  const { categories } = categoryState;
+  const products = useMarketplaceProducts();
+  const categories = useMarketplaceCategories();
 
   const parentCategories = useMemo(() => categories.filter((item) => !item.parentSlug), [categories]);
   const childrenByParent = useMemo(() => new Map(parentCategories.map((parent) => [parent.slug, categories.filter((item) => item.parentSlug === parent.slug)])), [categories, parentCategories]);
@@ -84,16 +74,14 @@ export function CatalogPage() {
   function setQuery(value: string) {
     setQueryState(value);
     const next = new URLSearchParams(searchParams);
-    if (value) next.set("q", value);
-    else next.delete("q");
+    value ? next.set("q", value) : next.delete("q");
     setSearchParams(next, { replace: true });
   }
 
   function setCategory(value: string) {
     setCategoryState(value);
     const next = new URLSearchParams(searchParams);
-    if (value !== "all") next.set("category", value);
-    else next.delete("category");
+    value !== "all" ? next.set("category", value) : next.delete("category");
     setSearchParams(next, { replace: true });
   }
 
@@ -137,8 +125,6 @@ export function CatalogPage() {
           </div>
         </aside>
         <div className="market-results-panel">
-          {productState.error || categoryState.error ? <div className="status-panel error" role="alert"><strong>Marketplace data is temporarily unavailable.</strong><span>{productState.error ?? categoryState.error}</span><button type="button" onClick={() => { productState.retry(); categoryState.retry(); }}>Try again</button></div> : null}
-          {productState.loading ? <div className="product-skeleton-grid" aria-label="Loading products" aria-busy="true">{Array.from({ length: 6 }, (_, index) => <span key={index} />)}</div> : null}
           <div className="market-filter-bar">
             <div><strong>{filteredProducts.length}</strong><span>{activeCategory ? activeCategory.name : "products"}</span></div>
             <div className="filter-controls">
@@ -148,10 +134,9 @@ export function CatalogPage() {
             </div>
           </div>
           <div className={`market-product-scroll ${view === "grid" ? "grid" : ""}`}>
-            {!productState.loading ? filteredProducts.map((product) => <MarketplaceProductCard key={product.id} product={product} onBuy={addToCart} layout={view} />) : null}
+            {filteredProducts.map((product) => <MarketplaceProductCard key={product.id} product={product} onBuy={addToCart} layout={view} />)}
           </div>
-          {!productState.loading && !productState.error && !filteredProducts.length ? <div className="no-results"><Search /><strong>No matching products</strong><span>Try another category, remove the stock filter, or use a broader phrase.</span></div> : null}
-          {productState.hasNextPage ? <button className="load-more-button" type="button" disabled={productState.loadingMore} onClick={() => void productState.loadMore()}>{productState.loadingMore ? "Loading more…" : "Load more products"}</button> : null}
+          {!filteredProducts.length ? <div className="no-results"><Search /><strong>No matching products</strong><span>Try another category, remove the stock filter, or use a broader phrase.</span></div> : null}
         </div>
       </section>
       <MarketFooter />

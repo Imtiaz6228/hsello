@@ -1,13 +1,14 @@
 import fs from "node:fs/promises";
+import path from "node:path";
 import { Router, type Request } from "express";
-import { ProductStatus, ProductType, Role, SellerApplicationStatus } from "@prisma/client";
+import { DisputeStatus, ProductStatus, ProductType, Role, SellerApplicationStatus } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth, requireVerifiedUser } from "../middleware/auth.js";
 import { ApiError, asyncHandler } from "../middleware/error-handler.js";
-import { deleteUploadedAsset, imageUpload, productFileUpload, publicUploadUrl, resolvePrivateUploadPath, sellerDocumentUpload } from "../middleware/upload.js";
+import { imageUpload, productFileUpload, publicUploadUrl, sellerDocumentUpload } from "../middleware/upload.js";
 import { sendTicketUpdateEmail } from "../lib/email.js";
-import { autoResolveExpiredDisputes } from "../services/dispute.service.js";
+import { activeDisputeWhere, autoResolveExpiredDisputes } from "../services/dispute.service.js";
 import { getSellerFinanceSummary } from "../services/finance.service.js";
 import { ensureDefaultMarketplaceCategories } from "../services/category.service.js";
 import { randomToken, sha256 } from "../lib/crypto.js";
@@ -175,7 +176,8 @@ function productDataFromInput(input: z.infer<typeof productSchema>, coverImageUr
 }
 
 async function deleteUploadedFile(file?: Express.Multer.File) {
-  await deleteUploadedAsset(file);
+  if (!file) return;
+  await fs.unlink(file.path).catch(() => undefined);
 }
 
 
@@ -238,7 +240,6 @@ sellerRouter.get("/products", requireSeller, asyncHandler(async (req, res) => {
   const products = await prisma.product.findMany({
     where: { sellerId: req.auth!.id },
     orderBy: { updatedAt: "desc" },
-    take: 200,
     include: {
       category: { include: { parent: { include: { parent: true } } } },
       files: { where: { isActive: true } },
@@ -338,37 +339,30 @@ sellerRouter.post("/products/:id/image", requireSeller, imageUpload.single("cove
 }));
 
 sellerRouter.post("/products/:id/files", requireSeller, productFileUpload.single("file"), asyncHandler(async (req, res) => {
-  try {
-    const id = z.string().uuid().parse(req.params.id);
-    const product = await prisma.product.findFirst({ where: { id, sellerId: req.auth!.id } });
-    if (!product) throw new ApiError(404, "Product not found.", "PRODUCT_NOT_FOUND");
-    if (!req.file) throw new ApiError(400, "Choose a product file.", "PRODUCT_FILE_REQUIRED");
-    const latest = await prisma.productFile.aggregate({ where: { productId: id }, _max: { version: true } });
-    const file = await prisma.productFile.create({ data: { productId: id, displayName: req.file.originalname, storagePath: req.file.path, mimeType: req.file.mimetype, sizeBytes: req.file.size, version: (latest._max.version ?? 0) + 1 } });
-    if (product.buyersGetUpdates) {
-      const eligibleItems = await prisma.orderItem.findMany({
-        where: { productId: id, order: { paidAt: { not: null }, status: { notIn: ["REFUNDED", "CANCELLED"] } } },
-        select: { id: true },
-        take: 500
+  const id = z.string().uuid().parse(req.params.id);
+  const product = await prisma.product.findFirst({ where: { id, sellerId: req.auth!.id } });
+  if (!product) throw new ApiError(404, "Product not found.", "PRODUCT_NOT_FOUND");
+  if (!req.file) throw new ApiError(400, "Choose a product file.", "PRODUCT_FILE_REQUIRED");
+  const latest = await prisma.productFile.aggregate({ where: { productId: id }, _max: { version: true } });
+  const file = await prisma.productFile.create({ data: { productId: id, displayName: req.file.originalname, storagePath: req.file.path, mimeType: req.file.mimetype, sizeBytes: req.file.size, version: (latest._max.version ?? 0) + 1 } });
+  if (product.buyersGetUpdates) {
+    const eligibleItems = await prisma.orderItem.findMany({
+      where: { productId: id, order: { paidAt: { not: null }, status: { notIn: ["REFUNDED", "CANCELLED"] } } },
+      select: { id: true }
+    });
+    if (eligibleItems.length) {
+      await prisma.downloadGrant.createMany({
+        data: eligibleItems.map((item) => ({
+          orderItemId: item.id,
+          productFileId: file.id,
+          tokenHash: sha256(randomToken(40)),
+          maxDownloads: product.downloadLimit,
+          expiresAt: new Date(Date.now() + product.downloadExpiryHours * 60 * 60 * 1000)
+        }))
       });
-      if (eligibleItems.length) {
-        await prisma.downloadGrant.createMany({
-          data: eligibleItems.map((item) => ({
-            orderItemId: item.id,
-            productFileId: file.id,
-            tokenHash: sha256(randomToken(40)),
-            maxDownloads: product.downloadLimit,
-            expiresAt: new Date(Date.now() + product.downloadExpiryHours * 60 * 60 * 1000)
-          })),
-          skipDuplicates: true
-        });
-      }
     }
-    res.status(201).json({ file });
-  } catch (error) {
-    await deleteUploadedFile(req.file);
-    throw error;
   }
+  res.status(201).json({ file });
 }));
 
 sellerRouter.get("/files/:id/download", requireSeller, asyncHandler(async (req, res) => {
@@ -378,7 +372,7 @@ sellerRouter.get("/files/:id/download", requireSeller, asyncHandler(async (req, 
     select: { storagePath: true, displayName: true }
   });
   if (!file) throw new ApiError(404, "Uploaded product file not found.", "PRODUCT_FILE_NOT_FOUND");
-  res.download(resolvePrivateUploadPath(file.storagePath), file.displayName);
+  res.download(path.resolve(file.storagePath), file.displayName);
 }));
 
 sellerRouter.post("/products/:id/inventory/manual", requireSeller, asyncHandler(async (req, res) => {
@@ -412,7 +406,6 @@ sellerRouter.get("/orders", requireSeller, asyncHandler(async (req, res) => {
   const items = await prisma.orderItem.findMany({
     where: { sellerId: req.auth!.id },
     orderBy: { order: { createdAt: "desc" } },
-    take: 200,
     include: {
       order: { include: { payment: true, buyer: { select: { firstName: true, lastName: true, email: true } }, messages: { orderBy: { createdAt: "desc" }, take: 1 }, disputes: { orderBy: { createdAt: "desc" }, take: 1 } } },
       product: true,
@@ -428,7 +421,6 @@ sellerRouter.get("/disputes", requireSeller, asyncHandler(async (req, res) => {
   const disputes = await prisma.dispute.findMany({
     where: { order: { items: { some: { sellerId: req.auth!.id } } } },
     orderBy: { updatedAt: "desc" },
-    take: 200,
     include: {
       order: { include: { buyer: { select: { firstName: true, lastName: true, email: true } }, items: { include: { product: { select: { name: true, slug: true, coverImageUrl: true } } } } } },
       orderItem: { include: { product: { select: { name: true, slug: true, coverImageUrl: true } } } },
@@ -461,7 +453,6 @@ sellerRouter.get("/reviews", requireSeller, asyncHandler(async (req, res) => {
   const reviews = await prisma.review.findMany({
     where: { product: { sellerId: req.auth!.id } },
     orderBy: { createdAt: "desc" },
-    take: 200,
     include: { product: { select: { name: true, slug: true } }, buyer: { select: { firstName: true } } }
   });
   res.json({ reviews });
@@ -471,8 +462,7 @@ sellerRouter.get("/tickets", requireSeller, asyncHandler(async (req, res) => {
   const tickets = await prisma.ticket.findMany({
     where: { order: { items: { some: { sellerId: req.auth!.id } } } },
     orderBy: { updatedAt: "desc" },
-    take: 200,
-    include: { creator: { select: { firstName: true, email: true } }, messages: { where: { isInternal: false }, orderBy: { createdAt: "asc" }, take: 100 } }
+    include: { creator: { select: { firstName: true, email: true } }, messages: { where: { isInternal: false }, orderBy: { createdAt: "asc" } } }
   });
   res.json({ tickets });
 }));

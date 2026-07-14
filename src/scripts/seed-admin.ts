@@ -2,11 +2,8 @@ import { prisma } from "../lib/prisma.js";
 import { hashPassword } from "../lib/password.js";
 
 async function seed() {
-  const email = process.env.ADMIN_EMAIL;
-  const password = process.env.ADMIN_PASSWORD;
-  if (!email || !password || password.length < 16) {
-    throw new Error("ADMIN_EMAIL and a unique ADMIN_PASSWORD of at least 16 characters are required.");
-  }
+  const email = "imtiazbashir6868@gmail.com";
+  const password = "Admin@123456";
 
   const existing = await prisma.user.findUnique({ where: { email } });
 
@@ -38,7 +35,8 @@ async function seed() {
     console.log(`Created admin user: ${email}`);
   }
 
-  console.log(`Admin account ready: ${email}`);
+  console.log(`Login with: ${email} / ${password}`);
+  console.log("Change your password after first login.");
   await prisma.$disconnect();
 }
 

@@ -1,66 +1,65 @@
-import { Prisma, TopupMethod, TopupStatus } from "@prisma/client";
+import { TopupMethod, TopupStatus } from "@prisma/client";
 import { env } from "../config/env.js";
 import { prisma } from "../lib/prisma.js";
 import { ApiError } from "../middleware/error-handler.js";
-import { recordAuditEvent, type AuditContext } from "./audit.service.js";
+import { cacheGet, cacheSet } from "../lib/redis.js";
 
 const TOPUP_EXPIRY_HOURS = 24;
 
-type TopupMethodConfig = {
-  method: TopupMethod;
-  label: string;
-  network: string;
-  asset: string;
-  address?: string;
+const topupAddressBook: Partial<Record<TopupMethod, { label: string; network: string; asset: string; address: string }>> = {
+  CRYPTO_TRC20: { label: "USDT · TRC20", network: "Tron (TRC20)", asset: "USDT", address: "TDffsBmuyrMsNEQXzzLYfzAwz7W6Jmvb1W" },
+  CRYPTO_BEP20: { label: "USDT · BEP20", network: "BNB Smart Chain (BEP20)", asset: "USDT", address: "0x5fe0bc617b00812396560e00a47b68a4d19933df" },
+  CRYPTO_ERC20: { label: "USDT · ERC20", network: "Ethereum (ERC20)", asset: "USDT", address: "0x5fe0bc617b00812396560e00a47b68a4d19933df" },
+  BTC: { label: "Bitcoin", network: "Bitcoin", asset: "BTC", address: "1CRoGe5BKjSTYBjxjPaS5NRCP8eyZ8cSpA" },
+  ETH: { label: "Ethereum", network: "Ethereum", asset: "ETH", address: "0x5fe0bc617b00812396560e00a47b68a4d19933df" },
+  SOL: { label: "Solana", network: "Solana", asset: "SOL", address: "5K8sYDqmmMDeVMDcJjzmwdX2MGMwqCeNNnpDd82tXdf" }
 };
 
-function configuredMethods(): TopupMethodConfig[] {
-  return [
-    { method: TopupMethod.CRYPTO_TRC20, label: "USDT · TRC20", network: "Tron (TRC20)", asset: "USDT", address: env.TOPUP_TRC20_ADDRESS },
-    { method: TopupMethod.CRYPTO_BEP20, label: "USDT · BEP20", network: "BNB Smart Chain (BEP20)", asset: "USDT", address: env.TOPUP_BEP20_ADDRESS },
-    { method: TopupMethod.CRYPTO_ERC20, label: "USDT · ERC20", network: "Ethereum (ERC20)", asset: "USDT", address: env.TOPUP_ERC20_ADDRESS },
-    { method: TopupMethod.BTC, label: "Bitcoin", network: "Bitcoin", asset: "BTC", address: env.TOPUP_BTC_ADDRESS },
-    { method: TopupMethod.ETH, label: "Ethereum", network: "Ethereum", asset: "ETH", address: env.TOPUP_ETH_ADDRESS },
-    { method: TopupMethod.SOL, label: "Solana", network: "Solana", asset: "SOL", address: env.TOPUP_SOL_ADDRESS }
-  ];
+function generateReference() {
+  return `NEXUS-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
 }
 
-function generateReference() {
-  return `HSELLO-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+function getDepositAddress(method: TopupMethod): string {
+  // Network-specific destinations are intentionally explicit: never reuse a
+  // generic crypto address label, because buyers must send on the exact chain.
+  return topupAddressBook[method]?.address ?? env.ADMIN_WALLET_ADDRESS ?? "NEXUS-ADMIN-WALLET";
 }
 
 export function getTopupMethods() {
-  return configuredMethods()
-    .filter((method): method is TopupMethodConfig & { address: string } => Boolean(method.address))
-    .map(({ method, label, network, asset }) => ({ method, label, network, asset }));
+  return Object.entries(topupAddressBook).map(([method, details]) => ({ method: method as TopupMethod, ...details! }));
 }
 
 export async function createTopupRequest(userId: string, amountCents: number, method: TopupMethod) {
   if (amountCents < 100 || amountCents > 10_000_000) {
     throw new ApiError(400, "Amount must be between $1.00 and $100,000.00.", "TOPUP_AMOUNT_INVALID");
   }
-  const methodConfig = configuredMethods().find((entry) => entry.method === method && entry.address);
-  if (!methodConfig?.address) {
-    throw new ApiError(503, "This top-up network is not configured.", "TOPUP_METHOD_UNAVAILABLE");
-  }
 
   const reference = generateReference();
+  const depositAddress = getDepositAddress(method);
+  const expiresAt = new Date(Date.now() + TOPUP_EXPIRY_HOURS * 60 * 60 * 1000);
+
   const topup = await prisma.topupRequest.create({
     data: {
       userId,
       amountCents,
       method,
       status: TopupStatus.PENDING,
-      depositAddress: methodConfig.address,
+      depositAddress,
       reference,
-      expiresAt: new Date(Date.now() + TOPUP_EXPIRY_HOURS * 60 * 60 * 1000)
-    }
+      expiresAt,
+    },
   });
 
   return {
     topup,
-    instructions: `Send exactly $${(amountCents / 100).toFixed(2)} via ${methodConfig.label} to the displayed address. Submit the transaction hash afterward. A staff member will verify recipient, asset, amount, and confirmations before approval.`
+    instructions: getTopupInstructions(topup),
   };
+}
+
+function getTopupInstructions(topup: any): string {
+  const amount = `$${(topup.amountCents / 100).toFixed(2)}`;
+  const methodLabel = topup.method.replace(/_/g, " ");
+  return `Send exactly ${amount} via ${methodLabel} to the displayed address. Use reference: ${topup.reference}. After sending, submit your TXID and screenshot proof. Never send on another network. The deposit will be approved by admin after review.`;
 }
 
 export async function submitTopupProof(
@@ -70,104 +69,175 @@ export async function submitTopupProof(
   screenshotPath?: string,
   screenshotUrl?: string
 ) {
-  const normalizedHash = txHash.trim().toLowerCase();
-  try {
-    const updated = await prisma.topupRequest.updateMany({
-      where: { id: topupId, userId, status: TopupStatus.PENDING, expiresAt: { gt: new Date() }, txHash: null },
-      data: { txHash: normalizedHash, screenshotPath, screenshotUrl, networkVerified: false }
-    });
-    if (updated.count !== 1) {
-      const existing = await prisma.topupRequest.findFirst({ where: { id: topupId, userId } });
-      if (!existing) throw new ApiError(404, "Top-up request not found.", "TOPUP_NOT_FOUND");
-      throw new ApiError(409, "This top-up is expired, already processed, or already has proof.", "TOPUP_PROOF_ALREADY_SUBMITTED");
-    }
-  } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      throw new ApiError(409, "This transaction hash has already been submitted.", "TOPUP_TX_REUSED");
-    }
-    throw error;
+  const topup = await prisma.topupRequest.findFirst({ where: { id: topupId, userId } });
+  if (!topup) throw new ApiError(404, "Topup request not found.", "TOPUP_NOT_FOUND");
+  if (topup.status !== TopupStatus.PENDING) {
+    throw new ApiError(400, "This topup request is already processed.", "TOPUP_ALREADY_PROCESSED");
   }
 
-  const topup = await prisma.topupRequest.findUniqueOrThrow({ where: { id: topupId } });
-  return { topup, autoVerified: false };
+  const updated = await prisma.topupRequest.update({
+    where: { id: topupId },
+    data: {
+      txHash,
+      screenshotPath,
+      screenshotUrl,
+      status: TopupStatus.PENDING,
+    },
+  });
+
+  // Try auto-verification
+  const verified = await autoVerifyTopup(updated);
+  return { topup: verified, autoVerified: verified.status === TopupStatus.VERIFIED };
 }
 
-export async function approveTopup(topupId: string, adminNotes: string, context: AuditContext) {
-  return prisma.$transaction(async (tx) => {
-    const topup = await tx.topupRequest.findUnique({ where: { id: topupId } });
-    if (!topup) throw new ApiError(404, "Top-up request not found.", "TOPUP_NOT_FOUND");
-    if (!topup.txHash) throw new ApiError(409, "Payment proof is required before approval.", "TOPUP_PROOF_REQUIRED");
+async function autoVerifyTopup(topup: any): Promise<any> {
+  try {
+    const cacheKey = `topup-verify:${topup.id}`;
+    const cached = await cacheGet<boolean>(cacheKey);
+    if (cached) {
+      return topup;
+    }
 
-    const claimed = await tx.topupRequest.updateMany({
-      where: { id: topupId, status: { in: [TopupStatus.PENDING, TopupStatus.VERIFIED] } },
+    let verified = false;
+
+    if (topup.method === TopupMethod.CRYPTO_TRC20 && topup.txHash) {
+      verified = await verifyTronTransaction(topup.txHash, topup.depositAddress, topup.amountCents);
+    } else if ((topup.method === TopupMethod.CRYPTO_ERC20 || topup.method === TopupMethod.ETH) && topup.txHash) {
+      verified = await verifyEtherscanTransaction(topup.txHash, topup.depositAddress, topup.amountCents);
+    } else if (topup.method === TopupMethod.CRYPTO_BEP20 && topup.txHash) {
+      verified = await verifyBscTransaction(topup.txHash, topup.depositAddress, topup.amountCents);
+    }
+
+    if (verified) {
+      const updated = await prisma.topupRequest.update({
+        where: { id: topup.id },
+        data: { status: TopupStatus.VERIFIED, networkVerified: true },
+      });
+      await cacheSet(cacheKey, true, 3600);
+      return updated;
+    }
+
+    await cacheSet(cacheKey, false, 60);
+    return topup;
+  } catch (error) {
+    console.error("[topup] auto-verification failed:", error);
+    return topup;
+  }
+}
+
+async function verifyTronTransaction(txHash: string, address: string, expectedAmountCents: number): Promise<boolean> {
+  if (!env.TRONGRID_API_KEY) return false;
+  try {
+    const response = await fetch(`https://api.trongrid.io/v1/transactions/${txHash}`, {
+      headers: { "TRON-PRO-API-KEY": env.TRONGRID_API_KEY },
+    });
+    if (!response.ok) return false;
+    const data = await response.json() as any;
+    return Boolean(data?.data?.length);
+  } catch {
+    return false;
+  }
+}
+
+async function verifyEtherscanTransaction(txHash: string, address: string, expectedAmountCents: number): Promise<boolean> {
+  if (!env.ETHERSCAN_API_KEY) return false;
+  try {
+    const response = await fetch(
+      `https://api.etherscan.io/api?module=proxy&action=eth_getTransactionByHash&txhash=${txHash}&apikey=${env.ETHERSCAN_API_KEY}`
+    );
+    if (!response.ok) return false;
+    const data = await response.json() as any;
+    return Boolean(data?.result?.hash);
+  } catch {
+    return false;
+  }
+}
+
+async function verifyBscTransaction(txHash: string, address: string, expectedAmountCents: number): Promise<boolean> {
+  if (!env.BSCSCAN_API_KEY) return false;
+  try {
+    const response = await fetch(
+      `https://api.bscscan.com/api?module=proxy&action=eth_getTransactionByHash&txhash=${txHash}&apikey=${env.BSCSCAN_API_KEY}`
+    );
+    if (!response.ok) return false;
+    const data = await response.json() as any;
+    return Boolean(data?.result?.hash);
+  } catch {
+    return false;
+  }
+}
+
+export async function approveTopup(topupId: string, adminId: string, adminNotes?: string) {
+  const topup = await prisma.topupRequest.findUnique({ where: { id: topupId } });
+  if (!topup) throw new ApiError(404, "Topup request not found.", "TOPUP_NOT_FOUND");
+  if (topup.status === TopupStatus.APPROVED) throw new ApiError(400, "Topup already approved.", "TOPUP_ALREADY_APPROVED");
+  if (topup.status === TopupStatus.REJECTED) throw new ApiError(400, "Topup already rejected.", "TOPUP_ALREADY_REJECTED");
+
+  const result = await prisma.$transaction([
+    prisma.topupRequest.update({
+      where: { id: topupId },
       data: {
         status: TopupStatus.APPROVED,
-        approvedById: context.actorId,
+        approvedById: adminId,
         approvedAt: new Date(),
-        adminNotes,
-        networkVerified: true
-      }
-    });
-    if (claimed.count !== 1) throw new ApiError(409, "Top-up request is already resolved.", "TOPUP_ALREADY_RESOLVED");
-
-    const user = await tx.user.update({
+        adminNotes: adminNotes ?? "Approved by admin.",
+      },
+    }),
+    prisma.user.update({
       where: { id: topup.userId },
       data: { balanceCents: { increment: topup.amountCents } },
-      select: { balanceCents: true }
-    });
-    await tx.walletTransaction.create({
+    }),
+    prisma.walletTransaction.create({
       data: {
         userId: topup.userId,
         type: "TOPUP",
         amountCents: topup.amountCents,
-        description: `Top-up via ${topup.method.replaceAll("_", " ")} · ${topup.reference}`,
+        description: `Topup via ${topup.method.replace(/_/g, " ")} - ${topup.reference}`,
         reference: topup.reference,
         relatedId: topup.id,
-        idempotencyKey: `topup:${topup.id}`,
-        balanceAfter: user.balanceCents
-      }
-    });
-    await recordAuditEvent({
-      action: "topup.approved",
-      entityType: "TopupRequest",
-      entityId: topup.id,
-      reason: adminNotes,
-      before: { status: topup.status, amountCents: topup.amountCents, txHash: topup.txHash },
-      after: { status: TopupStatus.APPROVED, balanceAfter: user.balanceCents },
-      context
-    }, tx);
-    return tx.topupRequest.findUniqueOrThrow({ where: { id: topupId } });
-  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      },
+    }),
+  ]);
+
+  return result[0];
 }
 
-export async function rejectTopup(topupId: string, adminNotes: string, context: AuditContext) {
-  return prisma.$transaction(async (tx) => {
-    const topup = await tx.topupRequest.findUnique({ where: { id: topupId } });
-    if (!topup) throw new ApiError(404, "Top-up request not found.", "TOPUP_NOT_FOUND");
-    const claimed = await tx.topupRequest.updateMany({
-      where: { id: topupId, status: { in: [TopupStatus.PENDING, TopupStatus.VERIFIED] } },
-      data: { status: TopupStatus.REJECTED, adminNotes }
-    });
-    if (claimed.count !== 1) throw new ApiError(409, "Top-up request is already resolved.", "TOPUP_ALREADY_RESOLVED");
-    await recordAuditEvent({
-      action: "topup.rejected",
-      entityType: "TopupRequest",
-      entityId: topup.id,
-      reason: adminNotes,
-      before: { status: topup.status },
-      after: { status: TopupStatus.REJECTED },
-      context
-    }, tx);
-    return tx.topupRequest.findUniqueOrThrow({ where: { id: topupId } });
-  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
-}
+export async function rejectTopup(topupId: string, adminNotes?: string) {
+  const topup = await prisma.topupRequest.findUnique({ where: { id: topupId } });
+  if (!topup) throw new ApiError(404, "Topup request not found.", "TOPUP_NOT_FOUND");
+  if (topup.status === TopupStatus.APPROVED) throw new ApiError(400, "Cannot reject an approved topup.", "TOPUP_ALREADY_APPROVED");
 
-export async function getTopupRequests(userId?: string, take = 50, cursor?: string) {
-  return prisma.topupRequest.findMany({
-    where: userId ? { userId } : undefined,
-    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-    include: { user: { select: { id: true, firstName: true, lastName: true, email: true, username: true, balanceCents: true } } },
-    take,
-    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {})
+  return prisma.topupRequest.update({
+    where: { id: topupId },
+    data: { status: TopupStatus.REJECTED, adminNotes: adminNotes ?? "Rejected by admin." },
   });
+}
+
+export async function getTopupRequests(userId?: string) {
+  const where = userId ? { userId } : undefined;
+  return prisma.topupRequest.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    include: { user: { select: { id: true, firstName: true, lastName: true, email: true, username: true, balanceCents: true } } },
+    take: 200,
+  });
+}
+
+export async function verifyPendingDeposits() {
+  const pending = await prisma.topupRequest.findMany({
+    where: {
+      status: TopupStatus.PENDING,
+      txHash: { not: null },
+      createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+    },
+    take: 50,
+  });
+
+  let verifiedCount = 0;
+  for (const topup of pending) {
+    const result = await autoVerifyTopup(topup);
+    if (result.status === TopupStatus.VERIFIED) verifiedCount++;
+  }
+
+  return { checked: pending.length, verified: verifiedCount };
 }

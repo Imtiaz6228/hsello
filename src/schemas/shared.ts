@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const formBoolean = z.preprocess((value) => {
+export const formBoolean = z.preprocess((value) => {
   if (typeof value === "boolean") {
     return value;
   }

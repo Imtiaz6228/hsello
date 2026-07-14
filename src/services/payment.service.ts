@@ -1,10 +1,9 @@
-import { OrderStatus, PaymentMethod, PaymentStatus, Prisma, ProductStatus, ProductType } from "@prisma/client";
+import { OrderStatus, PaymentMethod, PaymentStatus, ProductStatus, ProductType } from "@prisma/client";
 import { env } from "../config/env.js";
 import { randomToken, sha256 } from "../lib/crypto.js";
 import { sendOrderConfirmation } from "../lib/email.js";
 import { prisma } from "../lib/prisma.js";
 import { ApiError } from "../middleware/error-handler.js";
-import { recordAuditEvent, type AuditContext } from "./audit.service.js";
 import { createSellerEarningsForOrderItems, reverseSellerEarningsForOrder } from "./finance.service.js";
 
 export type CheckoutItemInput = { productId: string; quantity: number };
@@ -227,33 +226,20 @@ export async function createCheckout(
     : 0;
 
   const totalCents = subtotalCents - discountCents;
-  const order = await prisma.$transaction(async (tx) => {
-    if (coupon) {
-      const reserved = await tx.coupon.updateMany({
-        where: {
-          id: coupon.id,
-          isActive: true,
-          ...(coupon.maxRedemptions === null ? {} : { redemptionCount: { lt: coupon.maxRedemptions } })
-        },
-        data: { redemptionCount: { increment: 1 } }
-      });
-      if (reserved.count !== 1) throw new ApiError(409, "Coupon has reached its redemption limit.", "COUPON_LIMIT");
-    }
-    return tx.order.create({
-      data: {
-        orderNumber: reference("HS"), invoiceNumber: reference("INV"), buyerId,
-        couponId: coupon?.id, subtotalCents, discountCents, totalCents,
-        buyerEmail: buyer.email, buyerName: `${buyer.firstName} ${buyer.lastName}`,
-        items: { create: products.map((product) => ({
-          productId: product.id, sellerId: product.sellerId, productName: product.name,
-          quantity: normalized.get(product.id) ?? 1, unitPriceCents: product.priceCents,
-          totalCents: product.priceCents * (normalized.get(product.id) ?? 1)
-        })) },
-        payment: { create: { method, amountCents: totalCents, currency: "USD", status: PaymentStatus.REQUIRES_ACTION } }
-      },
-      include: { payment: true, items: true }
-    });
-  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+  const order = await prisma.order.create({
+    data: {
+      orderNumber: reference("HS"), invoiceNumber: reference("INV"), buyerId,
+      couponId: coupon?.id, subtotalCents, discountCents, totalCents,
+      buyerEmail: buyer.email, buyerName: `${buyer.firstName} ${buyer.lastName}`,
+      items: { create: products.map((product) => ({
+        productId: product.id, sellerId: product.sellerId, productName: product.name,
+        quantity: normalized.get(product.id) ?? 1, unitPriceCents: product.priceCents,
+        totalCents: product.priceCents * (normalized.get(product.id) ?? 1)
+      })) },
+      payment: { create: { method, amountCents: totalCents, currency: "USD", status: PaymentStatus.REQUIRES_ACTION } }
+    },
+    include: { payment: true, items: true }
+  });
 
   let provider: ProviderResult & { cryptoPayment?: CryptoPaymentPayload };
   try {
@@ -267,11 +253,7 @@ export async function createCheckout(
     }
     else provider = { instructions: `Order ${order.orderNumber} is awaiting staff approval. Add proof of payment in support if requested.` };
   } catch (error) {
-    await prisma.$transaction([
-      prisma.payment.update({ where: { orderId: order.id }, data: { status: PaymentStatus.FAILED, failureReason: error instanceof Error ? error.message : "Provider error" } }),
-      prisma.order.update({ where: { id: order.id }, data: { status: OrderStatus.CANCELLED } }),
-      ...(coupon ? [prisma.coupon.update({ where: { id: coupon.id }, data: { redemptionCount: { decrement: 1 } } })] : [])
-    ]);
+    await prisma.payment.update({ where: { orderId: order.id }, data: { status: PaymentStatus.FAILED, failureReason: error instanceof Error ? error.message : "Provider error" } });
     throw error;
   }
 
@@ -281,6 +263,8 @@ export async function createCheckout(
       data: { providerReference: provider.providerReference, providerPayload: provider.cryptoPayment ?? undefined }
     });
   }
+  if (coupon) await prisma.coupon.update({ where: { id: coupon.id }, data: { redemptionCount: { increment: 1 } } });
+
   return { order, ...provider };
 }
 
@@ -293,9 +277,12 @@ export async function createWalletCheckout(buyerId: string, items: CheckoutItemI
   }
 
   const order = await prisma.$transaction(async (tx) => {
-    const freshBuyer = await tx.user.findUnique({ where: { id: buyerId }, select: { email: true, firstName: true, lastName: true } });
-    if (!freshBuyer) throw new ApiError(404, "Buyer account not found.", "USER_NOT_FOUND");
-    const order = await tx.order.create({
+    const freshBuyer = await tx.user.findUnique({ where: { id: buyerId }, select: { balanceCents: true, email: true, firstName: true, lastName: true } });
+    if (!freshBuyer || freshBuyer.balanceCents < subtotalCents) {
+      throw new ApiError(402, "Insufficient wallet balance for this order.", "INSUFFICIENT_FUNDS");
+    }
+    await tx.user.update({ where: { id: buyerId }, data: { balanceCents: { decrement: subtotalCents } } });
+    return tx.order.create({
       data: {
         orderNumber: reference("HS"), invoiceNumber: reference("INV"), buyerId,
         status: OrderStatus.AWAITING_PAYMENT,
@@ -313,100 +300,43 @@ export async function createWalletCheckout(buyerId: string, items: CheckoutItemI
       },
       include: { payment: true, items: true }
     });
-    const debited = await tx.user.updateMany({
-      where: { id: buyerId, balanceCents: { gte: subtotalCents } },
-      data: { balanceCents: { decrement: subtotalCents } }
-    });
-    if (debited.count !== 1) throw new ApiError(402, "Insufficient wallet balance for this order.", "INSUFFICIENT_FUNDS");
-    const balance = await tx.user.findUniqueOrThrow({ where: { id: buyerId }, select: { balanceCents: true } });
-    await tx.walletTransaction.create({
-      data: {
-        userId: buyerId,
-        type: "PURCHASE",
-        amountCents: -subtotalCents,
-        description: `Wallet purchase for order ${order.orderNumber}.`,
-        orderId: order.id,
-        relatedId: order.id,
-        idempotencyKey: `wallet-purchase:${order.id}`,
-        balanceAfter: balance.balanceCents
-      }
-    });
-    return order;
-  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+  });
 
   try {
     const completedOrder = await completePayment(order.id);
     const updatedBuyer = await prisma.user.findUnique({ where: { id: buyerId }, select: { balanceCents: true } });
     return { order: completedOrder, balanceCents: updatedBuyer?.balanceCents ?? 0 };
   } catch (error) {
-    await prisma.$transaction(async (tx) => {
-      const failed = await tx.payment.updateMany({
-        where: { orderId: order.id, status: PaymentStatus.REQUIRES_ACTION },
-        data: { status: PaymentStatus.FAILED, failureReason: error instanceof Error ? error.message : "Wallet delivery failed" }
-      });
-      if (failed.count !== 1) return;
-      await tx.order.update({ where: { id: order.id }, data: { status: OrderStatus.CANCELLED } });
-      const user = await tx.user.update({ where: { id: buyerId }, data: { balanceCents: { increment: subtotalCents } }, select: { balanceCents: true } });
-      await tx.walletTransaction.create({
-        data: {
-          userId: buyerId,
-          type: "REFUND",
-          amountCents: subtotalCents,
-          description: `Wallet purchase reversal for order ${order.orderNumber}.`,
-          orderId: order.id,
-          relatedId: order.id,
-          idempotencyKey: `wallet-purchase-reversal:${order.id}`,
-          balanceAfter: user.balanceCents
-        }
-      });
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }).catch(() => undefined);
+    await prisma.$transaction([
+      prisma.user.update({ where: { id: buyerId }, data: { balanceCents: { increment: subtotalCents } } }),
+      prisma.payment.update({ where: { orderId: order.id }, data: { status: PaymentStatus.FAILED, failureReason: error instanceof Error ? error.message : "Wallet delivery failed" } }),
+      prisma.order.update({ where: { id: order.id }, data: { status: OrderStatus.CANCELLED } })
+    ]).catch(() => undefined);
     throw error;
   }
 }
 
 export async function completePayment(orderId: string, approvedById?: string) {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { payment: true, items: { include: { product: { include: { files: { where: { isActive: true } } } } } } }
+  });
+  if (!order?.payment) throw new ApiError(404, "Order not found.", "ORDER_NOT_FOUND");
+  if (order.payment.status === PaymentStatus.PAID) return order;
+
   const rawLinks: Array<{ name: string; token: string }> = [];
   const paidAt = new Date();
-  const completed = await prisma.$transaction(async (tx) => {
-    const order = await tx.order.findUnique({
-      where: { id: orderId },
-      include: { payment: true, items: { include: { product: { include: { files: { where: { isActive: true } } } } } } }
-    });
-    if (!order?.payment) throw new ApiError(404, "Order not found.", "ORDER_NOT_FOUND");
-    if (order.payment.status === PaymentStatus.PAID) return { order, fulfilled: false };
+  const autoDeliver = order.items.every((item) => item.product.type === ProductType.DOWNLOAD);
 
-    const claimed = await tx.payment.updateMany({
-      where: { orderId, status: { in: [PaymentStatus.PENDING, PaymentStatus.REQUIRES_ACTION] } },
-      data: { status: PaymentStatus.PAID, approvedById, approvedAt: approvedById ? paidAt : undefined }
-    });
-    if (claimed.count !== 1) throw new ApiError(409, "Payment is already resolved.", "PAYMENT_ALREADY_RESOLVED");
-
-    const autoDeliver = order.items.every((item) => item.product.type === ProductType.DOWNLOAD);
-    for (const item of order.items) {
-      if (item.product.type !== ProductType.DOWNLOAD) continue;
-      const inventoryRows = await tx.productInventoryItem.findMany({
-        where: { productId: item.productId, isActive: true, orderItemId: null },
-        orderBy: { createdAt: "asc" },
-        take: item.quantity,
-        select: { id: true }
-      });
-      if (item.product.files.length === 0 && inventoryRows.length < item.quantity) {
-        throw new ApiError(409, `${item.productName} no longer has enough available inventory.`, "PRODUCT_OUT_OF_STOCK");
-      }
-      if (inventoryRows.length) {
-        const allocated = await tx.productInventoryItem.updateMany({
-          where: { id: { in: inventoryRows.map((row) => row.id) }, isActive: true, orderItemId: null },
-          data: { orderItemId: item.id, deliveredAt: paidAt }
-        });
-        if (allocated.count !== inventoryRows.length) {
-          throw new ApiError(409, `${item.productName} inventory changed during checkout.`, "PRODUCT_OUT_OF_STOCK");
-        }
-      }
-    }
-
+  await prisma.$transaction(async (tx) => {
+    await tx.payment.update({ where: { orderId }, data: { status: PaymentStatus.PAID, approvedById, approvedAt: approvedById ? paidAt : undefined } });
     await tx.order.update({
       where: { id: orderId },
-      data: { status: autoDeliver ? OrderStatus.DELIVERED : OrderStatus.PROCESSING, paidAt, completedAt: autoDeliver ? paidAt : undefined }
+      data: {
+        status: autoDeliver ? OrderStatus.DELIVERED : OrderStatus.PROCESSING,
+        paidAt,
+        completedAt: autoDeliver ? paidAt : undefined
+      }
     });
     await createSellerEarningsForOrderItems(tx, order.items.map((item) => ({ id: item.id, sellerId: item.sellerId, totalCents: item.totalCents })), paidAt);
     for (const item of order.items) {
@@ -424,13 +354,25 @@ export async function completePayment(orderId: string, approvedById?: string) {
           });
           rawLinks.push({ name: `${item.productName} — ${file.displayName}`, token });
         }
+
+        const inventoryRows = await tx.productInventoryItem.findMany({
+          where: { productId: item.productId, isActive: true, orderItemId: null },
+          orderBy: { createdAt: "asc" },
+          take: item.quantity,
+          select: { id: true }
+        });
+        if (item.product.files.length === 0 && inventoryRows.length < item.quantity) {
+          throw new ApiError(409, `${item.productName} no longer has enough available inventory.`, "PRODUCT_OUT_OF_STOCK");
+        }
+        if (inventoryRows.length) {
+          await tx.productInventoryItem.updateMany({
+            where: { id: { in: inventoryRows.map((row) => row.id) } },
+            data: { orderItemId: item.id, deliveredAt: new Date() }
+          });
+        }
       }
     }
-    return { order, fulfilled: true };
-  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
-
-  if (!completed.fulfilled) return completed.order;
-  const order = completed.order;
+  });
 
   try {
     await sendOrderConfirmation(
@@ -480,7 +422,7 @@ export async function checkCryptoPayment(orderId: string, buyerId: string) {
   return status;
 }
 
-export async function confirmCryptoWebhook(input: { orderId?: string; providerReference?: string; txHash?: string; amount?: string; asset?: string; network?: string; address?: string; confirmations?: number }) {
+export async function confirmCryptoWebhook(input: { orderId?: string; providerReference?: string; txHash?: string; amount?: string; asset?: string; network?: string }) {
   if (!env.CRYPTO_WEBHOOK_SECRET) {
     throw new ApiError(503, "Crypto webhook is not enabled.", "CRYPTO_WEBHOOK_DISABLED");
   }
@@ -497,31 +439,15 @@ export async function confirmCryptoWebhook(input: { orderId?: string; providerRe
   });
   if (!payment) throw new ApiError(404, "Pending crypto payment not found.", "PAYMENT_NOT_FOUND");
   const payload = payment.providerPayload as CryptoPaymentPayload | null;
-  if (payload?.kind !== "CRYPTO_INVOICE") throw new ApiError(409, "Crypto invoice details are missing.", "CRYPTO_INVOICE_INVALID");
-  if (new Date(payload.expiresAt).getTime() <= Date.now()) {
+  if (payload?.kind === "CRYPTO_INVOICE" && new Date(payload.expiresAt).getTime() <= Date.now()) {
     throw new ApiError(410, "Crypto invoice expired.", "CRYPTO_INVOICE_EXPIRED");
-  }
-  if (!input.txHash || !input.amount || !input.asset || !input.network || !input.address || input.confirmations === undefined) {
-    throw new ApiError(400, "Transaction hash, amount, asset, network, destination address, and confirmations are required.", "CRYPTO_PROOF_INCOMPLETE");
-  }
-  const amountCents = Math.round(Number(input.amount) * 100);
-  if (!Number.isFinite(amountCents) || amountCents !== payload.amountUsdCents) {
-    throw new ApiError(409, "Detected crypto amount does not match the invoice.", "CRYPTO_AMOUNT_MISMATCH");
-  }
-  if (input.asset.toUpperCase() !== payload.asset.toUpperCase() || input.network.toUpperCase() !== payload.network.toUpperCase()) {
-    throw new ApiError(409, "Detected asset or network does not match the invoice.", "CRYPTO_NETWORK_MISMATCH");
-  }
-  if (input.address.trim().toLowerCase() !== payload.address.trim().toLowerCase()) {
-    throw new ApiError(409, "Detected destination address does not match the invoice.", "CRYPTO_ADDRESS_MISMATCH");
-  }
-  if (input.confirmations < 1) {
-    throw new ApiError(409, "The transaction has not reached the required confirmation count.", "CRYPTO_CONFIRMATIONS_REQUIRED");
   }
   await prisma.payment.update({
     where: { id: payment.id },
     data: {
-      externalTransactionId: input.txHash.trim().toLowerCase(),
-      providerPayload: { ...payload, status: "DETECTED", txHash: input.txHash, confirmations: input.confirmations, detectedAt: new Date().toISOString() }
+      providerPayload: payload?.kind === "CRYPTO_INVOICE"
+        ? { ...payload, status: "DETECTED", txHash: input.txHash, detectedAt: new Date().toISOString() }
+        : { kind: "CRYPTO_DETECTED", txHash: input.txHash, detectedAt: new Date().toISOString(), amount: input.amount, asset: input.asset, network: input.network }
     }
   });
   return completePayment(payment.orderId);
@@ -537,26 +463,20 @@ export async function confirmHostedPayment(orderId: string, buyerId: string) {
   if (order.payment.method === PaymentMethod.STRIPE) {
     if (!env.STRIPE_SECRET_KEY) throw new ApiError(503, "Stripe is unavailable.", "PAYMENT_METHOD_UNAVAILABLE");
     const response = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(providerReference)}`, { headers: { authorization: `Bearer ${env.STRIPE_SECRET_KEY}` } });
-    const data = await response.json() as { payment_status?: string; client_reference_id?: string; amount_total?: number; currency?: string; payment_intent?: string; error?: { message?: string } };
-    if (!response.ok || data.payment_status !== "paid" || data.client_reference_id !== order.id || data.amount_total !== order.totalCents || data.currency?.toUpperCase() !== order.currency.toUpperCase()) {
+    const data = await response.json() as { payment_status?: string; client_reference_id?: string; error?: { message?: string } };
+    if (!response.ok || data.payment_status !== "paid" || data.client_reference_id !== order.id) {
       throw new ApiError(402, data.error?.message ?? "Stripe payment is not confirmed.", "PAYMENT_NOT_CONFIRMED");
     }
-    if (data.payment_intent) await prisma.payment.update({ where: { orderId: order.id }, data: { externalTransactionId: data.payment_intent } });
   } else if (order.payment.method === PaymentMethod.PAYPAL) {
     const accessToken = await paypalAccessToken();
     const response = await fetch(`${paypalBaseUrl()}/v2/checkout/orders/${encodeURIComponent(providerReference)}/capture`, {
       method: "POST", headers: { authorization: `Bearer ${accessToken}`, "content-type": "application/json", "paypal-request-id": `${order.id}-capture` }
     });
-    const data = await response.json() as { status?: string; message?: string; purchase_units?: Array<{ reference_id?: string; custom_id?: string; payments?: { captures?: Array<{ id: string; status?: string; amount?: { currency_code?: string; value?: string } }> } }> };
-    const unit = data.purchase_units?.[0];
-    const capture = unit?.payments?.captures?.[0];
-    const capturedCents = Math.round(Number(capture?.amount?.value) * 100);
-    if (!response.ok || data.status !== "COMPLETED" || unit?.reference_id !== order.id || capture?.status !== "COMPLETED" || capturedCents !== order.totalCents || capture?.amount?.currency_code?.toUpperCase() !== order.currency.toUpperCase()) {
-      throw new ApiError(402, data.message ?? "PayPal payment is not confirmed.", "PAYMENT_NOT_CONFIRMED");
-    }
-    const captureId = capture.id;
+    const data = await response.json() as { status?: string; message?: string; purchase_units?: Array<{ payments?: { captures?: Array<{ id: string }> } }> };
+    if (!response.ok || data.status !== "COMPLETED") throw new ApiError(402, data.message ?? "PayPal payment is not confirmed.", "PAYMENT_NOT_CONFIRMED");
+    const captureId = data.purchase_units?.[0]?.payments?.captures?.[0]?.id;
     if (captureId) {
-      await prisma.payment.update({ where: { orderId: order.id }, data: { providerPayload: { captureId }, externalTransactionId: captureId } });
+      await prisma.payment.update({ where: { orderId: order.id }, data: { providerPayload: { captureId } } });
     }
   } else {
     throw new ApiError(400, "This payment is not a hosted provider checkout.", "MANUAL_APPROVAL_REQUIRED");
@@ -564,101 +484,48 @@ export async function confirmHostedPayment(orderId: string, buyerId: string) {
   return completePayment(order.id);
 }
 
-export async function issueRefund(refundId: string, context?: AuditContext) {
+export async function issueRefund(refundId: string) {
   const refund = await prisma.refund.findUnique({
     where: { id: refundId },
     include: { order: { include: { payment: true } } }
   });
   if (!refund?.order.payment) throw new ApiError(404, "Refund or payment not found.", "REFUND_NOT_FOUND");
-  if (refund.status === "COMPLETED") return refund;
-  const prior = await prisma.refund.aggregate({
-    where: { orderId: refund.orderId, id: { not: refund.id }, status: "COMPLETED" },
-    _sum: { amountCents: true }
-  });
-  const totalRefundedCents = (prior._sum.amountCents ?? 0) + refund.amountCents;
-  if (totalRefundedCents > refund.order.totalCents) {
-    throw new ApiError(409, "Cumulative refunds would exceed the order total.", "REFUND_AMOUNT_EXCEEDED");
-  }
-  const claimed = await prisma.refund.updateMany({
-    where: { id: refund.id, status: { in: ["REQUESTED", "APPROVED"] } },
-    data: { status: "PROCESSING" }
-  });
-  if (claimed.count !== 1) throw new ApiError(409, "Refund is already being processed or resolved.", "REFUND_ALREADY_PROCESSING");
-
   const payment = refund.order.payment;
   let providerRefundId: string | undefined;
-  try {
-    if (payment.method === PaymentMethod.STRIPE) {
-      if (!env.STRIPE_SECRET_KEY || !payment.providerReference) throw new ApiError(503, "Stripe refund is not configured.", "REFUND_PROVIDER_UNAVAILABLE");
-      const sessionResponse = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(payment.providerReference)}`, { headers: { authorization: `Bearer ${env.STRIPE_SECRET_KEY}` } });
-      const session = await sessionResponse.json() as { payment_intent?: string; error?: { message?: string } };
-      if (!sessionResponse.ok || !session.payment_intent) throw new ApiError(502, session.error?.message ?? "Stripe payment could not be retrieved.", "STRIPE_ERROR");
-      const body = new URLSearchParams({ payment_intent: session.payment_intent, amount: String(refund.amountCents), "metadata[hselloRefundId]": refund.id });
-      const response = await fetch("https://api.stripe.com/v1/refunds", {
-        method: "POST",
-        headers: { authorization: `Bearer ${env.STRIPE_SECRET_KEY}`, "content-type": "application/x-www-form-urlencoded", "idempotency-key": refund.id },
-        body
-      });
-      const data = await response.json() as { id?: string; error?: { message?: string } };
-      if (!response.ok || !data.id) throw new ApiError(502, data.error?.message ?? "Stripe refund failed.", "STRIPE_REFUND_ERROR");
-      providerRefundId = data.id;
-    } else if (payment.method === PaymentMethod.PAYPAL) {
-      const payload = payment.providerPayload as { captureId?: string } | null;
-      if (!payload?.captureId) throw new ApiError(400, "PayPal capture reference is missing.", "PAYPAL_CAPTURE_MISSING");
-      const accessToken = await paypalAccessToken();
-      const response = await fetch(`${paypalBaseUrl()}/v2/payments/captures/${encodeURIComponent(payload.captureId)}/refund`, {
-        method: "POST",
-        headers: { authorization: `Bearer ${accessToken}`, "content-type": "application/json", "paypal-request-id": refund.id },
-        body: JSON.stringify({ amount: { currency_code: refund.order.currency, value: (refund.amountCents / 100).toFixed(2) } })
-      });
-      const data = await response.json() as { id?: string; message?: string };
-      if (!response.ok || !data.id) throw new ApiError(502, data.message ?? "PayPal refund failed.", "PAYPAL_REFUND_ERROR");
-      providerRefundId = data.id;
-    }
 
-    const fullRefund = totalRefundedCents >= refund.order.totalCents;
-    const isWalletPayment = payment.method === PaymentMethod.MANUAL && (payment.providerPayload as { kind?: string } | null)?.kind === "WALLET_BALANCE";
-    await prisma.$transaction(async (tx) => {
-      const resolved = await tx.refund.updateMany({
-        where: { id: refund.id, status: "PROCESSING" },
-        data: { status: "COMPLETED", providerReference: providerRefundId, resolvedAt: new Date() }
-      });
-      if (resolved.count !== 1) throw new ApiError(409, "Refund state changed while processing.", "REFUND_STATE_CHANGED");
-      if (fullRefund) await tx.order.update({ where: { id: refund.orderId }, data: { status: "REFUNDED" } });
-      await tx.payment.update({ where: { orderId: refund.orderId }, data: { status: fullRefund ? "REFUNDED" : "PARTIALLY_REFUNDED" } });
-      if (fullRefund) await tx.downloadGrant.updateMany({ where: { orderItem: { orderId: refund.orderId } }, data: { revokedAt: new Date() } });
-      if (isWalletPayment) {
-        const user = await tx.user.update({ where: { id: refund.order.buyerId }, data: { balanceCents: { increment: refund.amountCents } }, select: { balanceCents: true } });
-        await tx.walletTransaction.create({
-          data: {
-            userId: refund.order.buyerId,
-            type: "REFUND",
-            amountCents: refund.amountCents,
-            description: `Wallet refund for order ${refund.order.orderNumber}.`,
-            orderId: refund.orderId,
-            relatedId: refund.id,
-            idempotencyKey: `wallet-refund:${refund.id}`,
-            balanceAfter: user.balanceCents
-          }
-        });
-      }
-      await recordAuditEvent({
-        action: "refund.completed",
-        entityType: "Refund",
-        entityId: refund.id,
-        reason: refund.reason,
-        before: { status: refund.status },
-        after: { status: "COMPLETED", amountCents: refund.amountCents, providerRefundId },
-        context
-      }, tx);
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
-    if (fullRefund) await reverseSellerEarningsForOrder(refund.orderId);
-    return prisma.refund.findUnique({ where: { id: refund.id } });
-  } catch (error) {
-    await prisma.refund.updateMany({
-      where: { id: refund.id, status: "PROCESSING" },
-      data: { status: "APPROVED", adminNotes: error instanceof Error ? error.message.slice(0, 2000) : "Refund provider failed." }
-    }).catch(() => undefined);
-    throw error;
+  if (payment.method === PaymentMethod.STRIPE) {
+    if (!env.STRIPE_SECRET_KEY || !payment.providerReference) throw new ApiError(503, "Stripe refund is not configured.", "REFUND_PROVIDER_UNAVAILABLE");
+    const sessionResponse = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(payment.providerReference)}`, { headers: { authorization: `Bearer ${env.STRIPE_SECRET_KEY}` } });
+    const session = await sessionResponse.json() as { payment_intent?: string; error?: { message?: string } };
+    if (!sessionResponse.ok || !session.payment_intent) throw new ApiError(502, session.error?.message ?? "Stripe payment could not be retrieved.", "STRIPE_ERROR");
+    const body = new URLSearchParams({ payment_intent: session.payment_intent, amount: String(refund.amountCents), "metadata[hselloRefundId]": refund.id });
+    const response = await fetch("https://api.stripe.com/v1/refunds", { method: "POST", headers: { authorization: `Bearer ${env.STRIPE_SECRET_KEY}`, "content-type": "application/x-www-form-urlencoded" }, body });
+    const data = await response.json() as { id?: string; status?: string; error?: { message?: string } };
+    if (!response.ok || !data.id) throw new ApiError(502, data.error?.message ?? "Stripe refund failed.", "STRIPE_REFUND_ERROR");
+    providerRefundId = data.id;
+  } else if (payment.method === PaymentMethod.PAYPAL) {
+    const payload = payment.providerPayload as { captureId?: string } | null;
+    if (!payload?.captureId) throw new ApiError(400, "PayPal capture reference is missing.", "PAYPAL_CAPTURE_MISSING");
+    const accessToken = await paypalAccessToken();
+    const response = await fetch(`${paypalBaseUrl()}/v2/payments/captures/${encodeURIComponent(payload.captureId)}/refund`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${accessToken}`, "content-type": "application/json", "paypal-request-id": refund.id },
+      body: JSON.stringify({ amount: { currency_code: refund.order.currency, value: (refund.amountCents / 100).toFixed(2) } })
+    });
+    const data = await response.json() as { id?: string; message?: string };
+    if (!response.ok || !data.id) throw new ApiError(502, data.message ?? "PayPal refund failed.", "PAYPAL_REFUND_ERROR");
+    providerRefundId = data.id;
   }
+
+  const fullRefund = refund.amountCents >= refund.order.totalCents;
+  const isWalletPayment = payment.method === PaymentMethod.MANUAL && (payment.providerPayload as any)?.kind === "WALLET_BALANCE";
+  await prisma.$transaction([
+    prisma.refund.update({ where: { id: refund.id }, data: { status: "COMPLETED", providerReference: providerRefundId, resolvedAt: new Date() } }),
+    prisma.order.update({ where: { id: refund.orderId }, data: { status: fullRefund ? "REFUNDED" : undefined } }),
+    prisma.payment.update({ where: { orderId: refund.orderId }, data: { status: fullRefund ? "REFUNDED" : "PARTIALLY_REFUNDED" } }),
+    prisma.downloadGrant.updateMany({ where: { orderItem: { orderId: refund.orderId } }, data: { revokedAt: fullRefund ? new Date() : undefined } }),
+    ...(isWalletPayment ? [prisma.user.update({ where: { id: refund.order.buyerId }, data: { balanceCents: { increment: refund.amountCents } } })] : [])
+  ]);
+  if (fullRefund) await reverseSellerEarningsForOrder(refund.orderId);
+  return prisma.refund.findUnique({ where: { id: refund.id } });
 }

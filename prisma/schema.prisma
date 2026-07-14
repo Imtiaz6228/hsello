@@ -208,7 +208,6 @@ model User {
   liveSessions            LiveSession[]
   chatSessions            ChatSession[]
   chatMessages            ChatMessage[]
-  auditEvents             AuditEvent[]
 
   @@index([email])
   @@index([username])
@@ -433,7 +432,7 @@ model ProductInventoryItem {
   product   Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
   orderItem OrderItem? @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
 
-  @@index([productId, isActive, orderItemId, createdAt])
+  @@index([productId, isActive, deliveredAt])
   @@index([orderItemId])
 }
 
@@ -518,8 +517,7 @@ model Payment {
   status            PaymentStatus @default(PENDING)
   amountCents       Int
   currency          String
-  providerReference String?       @unique
-  externalTransactionId String?   @unique
+  providerReference String?
   providerPayload   Json?
   failureReason     String?
   approvedById      String?
@@ -530,6 +528,7 @@ model Payment {
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([status, createdAt])
+  @@index([providerReference])
 }
 
 model DownloadGrant {
@@ -549,7 +548,6 @@ model DownloadGrant {
 
   @@index([orderItemId])
   @@index([expiresAt])
-  @@unique([orderItemId, productFileId])
 }
 
 model DownloadEvent {
@@ -773,7 +771,7 @@ model PublicUpload {
   @@index([createdAt])
 }
 
-// Marketplace support and earnings models
+// ===== NEXUS Marketplace models =====
 
 model TopupRequest {
   id              String      @id @default(uuid())
@@ -783,7 +781,7 @@ model TopupRequest {
   status          TopupStatus @default(PENDING)
   depositAddress  String
   reference       String      @unique
-  txHash          String?      @unique
+  txHash          String?
   screenshotPath  String?
   screenshotUrl   String?
   networkVerified Boolean     @default(false)
@@ -798,6 +796,7 @@ model TopupRequest {
 
   @@index([userId, createdAt])
   @@index([status, createdAt])
+  @@index([reference])
 }
 
 model WalletTransaction {
@@ -809,7 +808,6 @@ model WalletTransaction {
   reference      String?
   orderId        String?
   relatedId      String?
-  idempotencyKey String?        @unique
   balanceAfter   Int           @default(0)
   createdAt      DateTime      @default(now())
 
@@ -817,27 +815,6 @@ model WalletTransaction {
 
   @@index([userId, createdAt])
   @@index([type, createdAt])
-}
-
-model AuditEvent {
-  id          String   @id @default(uuid())
-  actorId     String?
-  action      String
-  entityType  String
-  entityId    String
-  reason      String?
-  before      Json?
-  after       Json?
-  ipAddress   String?
-  userAgent   String?
-  requestId   String?
-  createdAt   DateTime @default(now())
-
-  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
-
-  @@index([actorId, createdAt])
-  @@index([entityType, entityId, createdAt])
-  @@index([action, createdAt])
 }
 
 model KbArticle {

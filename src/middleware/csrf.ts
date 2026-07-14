@@ -3,7 +3,15 @@ import { verifyCsrfToken } from "../lib/cookies.js";
 import { ApiError } from "./error-handler.js";
 
 const safeMethods = new Set(["GET", "HEAD", "OPTIONS"]);
-const csrfExemptWebhookPaths = new Set([
+const publicAuthPaths = new Set([
+  "/auth/register",
+  "/auth/login",
+  "/auth/refresh",
+  "/auth/logout",
+  "/auth/verify-email",
+  "/auth/resend-verification",
+  "/auth/forgot-password",
+  "/auth/reset-password",
   "/commerce/crypto/webhook"
 ]);
 
@@ -23,7 +31,7 @@ export const csrfProtection: RequestHandler = (req, _res, next) => {
     return;
   }
 
-  if (csrfExemptWebhookPaths.has(apiPath(req.originalUrl))) {
+  if (publicAuthPaths.has(apiPath(req.originalUrl))) {
     next();
     return;
   }

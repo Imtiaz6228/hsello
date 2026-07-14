@@ -1,8 +1,8 @@
 import type { Request } from "express";
 import jwt from "jsonwebtoken";
-import { type Role, type User } from "@prisma/client";
+import { Prisma, type Role, type User } from "@prisma/client";
 import { env } from "../config/env.js";
-import { REFRESH_TOKEN_COOKIE } from "../lib/cookies.js";
+import { clearAuthCookies, REFRESH_TOKEN_COOKIE } from "../lib/cookies.js";
 import { randomToken, sha256 } from "../lib/crypto.js";
 import { sendPasswordResetEmail } from "../lib/email.js";
 import { hashPassword, verifyPassword } from "../lib/password.js";
@@ -381,6 +381,14 @@ export async function getAvailability(email?: string, username?: string) {
 
 export function getRefreshTokenFromRequest(req: Request) {
   return req.cookies?.[REFRESH_TOKEN_COOKIE] as string | undefined;
+}
+
+export function clearSessionCookies(res: Parameters<typeof clearAuthCookies>[0]) {
+  clearAuthCookies(res);
+}
+
+export function isUniqueConstraintError(error: unknown) {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
 }
 
 export type PublicUser = ReturnType<typeof publicUser>;

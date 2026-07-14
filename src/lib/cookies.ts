@@ -6,14 +6,14 @@ import { hmacSha256, randomToken, safeEqual } from "./crypto.js";
 // browsers reject local HTTP cookies. Keep the strong prefix only on HTTPS.
 export const ACCESS_TOKEN_COOKIE = isProduction ? "__Host-auth_access" : "auth_access";
 export const REFRESH_TOKEN_COOKIE = isProduction ? "__Host-auth_refresh" : "auth_refresh";
-const CSRF_COOKIE = isProduction ? "__Host-auth_csrf" : "auth_csrf";
+export const CSRF_COOKIE = isProduction ? "__Host-auth_csrf" : "auth_csrf";
 
 function baseCookieOptions() {
   return {
     secure: isProduction,
-    // Production is served same-origin (directly or through the Vercel proxy),
-    // so auth cookies never need to be attached to cross-site requests.
-    sameSite: isProduction ? "strict" as const : "lax" as const,
+    // Vercel and Railway are different sites. Production auth cookies must be
+    // explicitly cross-site or the browser will silently withhold them.
+    sameSite: isProduction ? "none" as const : "lax" as const,
     path: "/"
   };
 }
@@ -46,10 +46,8 @@ export function clearAuthCookies(res: Response) {
 
 export function issueCsrfToken(res: Response) {
   const token = randomToken(32);
-  const issuedAt = Math.floor(Date.now() / 1000);
-  const payload = `${token}.${issuedAt}`;
-  const signature = hmacSha256(payload, env.CSRF_SECRET);
-  const signed = `${payload}.${signature}`;
+  const signature = hmacSha256(token, env.CSRF_SECRET);
+  const signed = `${token}.${signature}`;
 
   // Set cookie for same-origin fallback, but the signed token is self-validating
   // so cross-site (Vercel → Railway) still works without the cookie.
@@ -69,22 +67,20 @@ export function verifyCsrfToken(req: Request) {
   if (!headerValue) return false;
 
   // Self-validating token (works cross-site without cookie)
-  const [token, issuedAtValue, signature] = headerValue.split(".");
-  const issuedAt = Number(issuedAtValue);
-  if (token && Number.isInteger(issuedAt) && signature) {
-    const ageSeconds = Math.floor(Date.now() / 1000) - issuedAt;
-    const expectedSignature = hmacSha256(`${token}.${issuedAt}`, env.CSRF_SECRET);
-    if (ageSeconds >= 0 && ageSeconds <= 2 * 60 * 60 && safeEqual(signature, expectedSignature)) return true;
+  const [token, signature] = headerValue.split(".");
+  if (token && signature) {
+    const expectedSignature = hmacSha256(token, env.CSRF_SECRET);
+    if (safeEqual(signature, expectedSignature)) return true;
   }
 
   // Fallback: cookie-based double-submit (same-origin only)
   const cookieValue = req.cookies?.[CSRF_COOKIE] as string | undefined;
   if (!cookieValue) return false;
 
-  const [cookieToken, cookieIssuedAt, cookieSignature] = cookieValue.split(".");
-  if (!cookieToken || !cookieIssuedAt || !cookieSignature) return false;
+  const [cookieToken, cookieSignature] = cookieValue.split(".");
+  if (!cookieToken || !cookieSignature) return false;
 
-  const expectedCookieSignature = hmacSha256(`${cookieToken}.${cookieIssuedAt}`, env.CSRF_SECRET);
+  const expectedCookieSignature = hmacSha256(cookieToken, env.CSRF_SECRET);
 
-  return safeEqual(cookieSignature, expectedCookieSignature) && safeEqual(headerValue, cookieValue);
+  return safeEqual(cookieSignature, expectedCookieSignature) && safeEqual(headerValue, cookieToken);
 }

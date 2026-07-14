@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  ArrowRight, BadgeCheck, Download, FileText, Headphones, Home,
-  LogOut, MessageCircle, PackageCheck, RefreshCw, ShieldCheck,
+  ArrowRight, BadgeCheck, BarChart3, Download, FileText, Headphones, Home,
+  LogOut, MessageCircle, PackageCheck, RefreshCw, Settings, ShieldCheck,
   ShoppingBag, Star, Store, TicketCheck, TrendingUp, UserRound, Activity,
   Wallet, CreditCard, Bitcoin, DollarSign, PlusCircle, Gavel, MessageSquare,
-  LockKeyhole, Bell, Search, ChevronDown, Smartphone, ClipboardCopy,
+  LockKeyhole, Bell, Search, ChevronDown, Landmark, Smartphone, ClipboardCopy,
   UploadCloud, CheckCircle2, Clock3, ShieldAlert, Menu, X, Heart, Gift, Tag,
   MapPin, SlidersHorizontal, Sparkles, Award, History, KeyRound, PackageOpen,
-  ListChecks, Percent, Bookmark, ReceiptText, ImageIcon
+  ListChecks, CircleDollarSign, Banknote, Percent, Bookmark, ReceiptText, ImageIcon
 } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import { ApiError, apiDownloadUrl, apiRequest, mediaUrl, STAFF_ROLES } from "../api/client";
@@ -15,7 +15,6 @@ import { useAuth } from "../auth/AuthContext";
 import { Seo } from "../components/Seo";
 import { EarningsChart } from "../components/EarningsChart";
 import { LocaleSwitcher } from "../components/LocaleSwitcher";
-import { useActionPrompt } from "../components/ActionPrompt";
 import { useLocale } from "../i18n/LocaleContext";
 
 type Grant = { id: string; downloadCount: number; maxDownloads: number; expiresAt: string; productFile: { displayName: string; version: number } };
@@ -101,7 +100,6 @@ function roleDashboardRedirect(role: string) {
 }
 
 export function AccountDashboardPage() {
-  const { requestText, confirmAction } = useActionPrompt();
   const { user } = useAuth();
   const { formatMoney } = useLocale();
   const [tab, setTabState] = useState<Tab>(() => {
@@ -172,7 +170,7 @@ export function AccountDashboardPage() {
     void refreshBalance();
     const interval = window.setInterval(() => void refreshBalance(), 12000);
     return () => window.clearInterval(interval);
-  }, [user]);
+  }, [user?.id, user?.balanceCents]);
 
   useEffect(() => {
     if (tab === "seller" && user?.role === "SELLER") {
@@ -190,7 +188,7 @@ export function AccountDashboardPage() {
   }, [tab, user?.role]);
 
   async function requestRefund(order: Order) {
-    const reason = await requestText({ title: "Request a refund", label: "What went wrong?", description: "Support will review this explanation with the order and delivery record.", confirmLabel: "Submit request", minLength: 20, tone: "danger" });
+    const reason = window.prompt("Tell us what went wrong (at least 20 characters):");
     if (!reason) return;
     try {
       await apiRequest(`/api/commerce/orders/${order.id}/refunds`, { method: "POST", body: { reason } });
@@ -202,12 +200,12 @@ export function AccountDashboardPage() {
     }
   }
   async function openDispute(order: Order) {
-    const subject = await requestText({ title: "Open a dispute", label: "Short subject", confirmLabel: "Continue", minLength: 5, multiline: false, tone: "danger" });
+    const subject = window.prompt("Dispute subject (5+ characters):");
     if (!subject || subject.trim().length < 5) return;
-    const description = await requestText({ title: "Describe the dispute", label: "What happened?", confirmLabel: "Continue", minLength: 20, tone: "danger" });
+    const description = window.prompt("Describe the issue (20+ characters):");
     if (!description || description.trim().length < 20) return;
     try {
-      const demandRefund = await confirmAction({ title: "Request a refund too?", description: "The dispute can include a refund demand for admin review.", confirmLabel: "Include refund", tone: "danger" });
+      const demandRefund = window.confirm("Also demand a refund with this dispute?");
       await apiRequest(`/api/commerce/orders/${order.id}/disputes`, { method: "POST", body: { subject, description, demandRefund } });
       setMessage("Dispute opened. Admin support can now review the order, chat, and delivery record.");
       const data = await apiRequest<{ orders: Order[] }>("/api/commerce/orders");
@@ -217,9 +215,7 @@ export function AccountDashboardPage() {
     }
   }
   async function closeDispute(disputeId: string) {
-    const closingNote = await requestText({ title: "Close dispute", label: "Closing note (optional)", confirmLabel: "Close dispute", required: false, tone: "danger" });
-    if (closingNote === null) return;
-    const resolution = closingNote || "Closed by buyer.";
+    const resolution = window.prompt("Optional closing note:") ?? "Closed by buyer.";
     try {
       await apiRequest(`/api/commerce/disputes/${disputeId}/close`, { method: "POST", body: { resolution } });
       setMessage("Dispute closed.");
@@ -231,8 +227,7 @@ export function AccountDashboardPage() {
   }
 
   async function demandDisputeRefund(disputeId: string) {
-    const reason = await requestText({ title: "Demand a refund", label: "Reason", confirmLabel: "Send demand", minLength: 10, tone: "danger" });
-    if (!reason) return;
+    const reason = window.prompt("Refund demand reason:") ?? "Refund demanded from dispute.";
     if (reason.trim().length < 10) return;
     try {
       await apiRequest(`/api/commerce/disputes/${disputeId}/refund`, { method: "POST", body: { reason } });
@@ -245,8 +240,7 @@ export function AccountDashboardPage() {
   }
 
   async function sellerRefund(orderId: string, amountCents: number) {
-    const reason = await requestText({ title: "Request a seller refund", label: "Reason for admin", confirmLabel: "Send request", minLength: 10, tone: "danger" });
-    if (!reason) return;
+    const reason = window.prompt("Refund reason to admin:") ?? "Seller requested refund.";
     if (reason.trim().length < 10) return;
     try {
       await apiRequest(`/api/seller/orders/${orderId}/refund`, { method: "POST", body: { reason, amountCents } });
@@ -257,9 +251,9 @@ export function AccountDashboardPage() {
   }
 
   async function createTicket() {
-    const subject = await requestText({ title: "Create a support ticket", label: "Subject", confirmLabel: "Continue", minLength: 5, multiline: false });
+    const subject = window.prompt("Subject (5+ characters):");
     if (!subject || subject.length < 5) return;
-    const body = await requestText({ title: "Ticket details", label: "Describe the issue", confirmLabel: "Create ticket", minLength: 10 });
+    const body = window.prompt("Describe the issue (10+ characters):");
     if (!body || body.length < 10) return;
     try {
       await apiRequest("/api/commerce/tickets", { method: "POST", body: { category: "TECHNICAL_ISSUE", subject, body } });
@@ -271,7 +265,7 @@ export function AccountDashboardPage() {
     }
   }
   async function replyToTicket(ticketId: string) {
-    const body = await requestText({ title: "Reply to ticket", label: "Your reply", confirmLabel: "Send reply", minLength: 1 });
+    const body = window.prompt("Your reply:");
     if (!body) return;
     try {
       await apiRequest(`/api/commerce/tickets/${ticketId}/messages`, { method: "POST", body: { body } });
@@ -283,7 +277,7 @@ export function AccountDashboardPage() {
     }
   }
   async function submitSellerReply(reviewId: string) {
-    const response = await requestText({ title: "Respond to review", label: "Public response", description: "Buyers viewing this review will see your response.", confirmLabel: "Post response", minLength: 1 });
+    const response = window.prompt("Your response (public):");
     if (!response) return;
     try {
       await apiRequest(`/api/seller/reviews/${reviewId}/respond`, { method: "POST", body: { response } });
@@ -294,11 +288,9 @@ export function AccountDashboardPage() {
   }
 
   async function leaveReview(orderItemId: string) {
-    const ratingText = await requestText({ title: "Rate this product", label: "Rating from 1 to 5", initialValue: "5", confirmLabel: "Continue", minLength: 1, maxLength: 1, multiline: false });
-    if (!ratingText) return;
-    const rating = Number(ratingText);
+    const rating = Number(window.prompt("Rating from 1 to 5:", "5"));
     if (!Number.isInteger(rating) || rating < 1 || rating > 5) return setMessage("Choose a rating from 1 to 5.");
-    const body = await requestText({ title: "Write your review", label: "Share your experience", confirmLabel: "Submit review", minLength: 10 });
+    const body = window.prompt("Share your experience (at least 10 characters):");
     if (!body || body.trim().length < 10) return;
     try {
       await apiRequest("/api/commerce/reviews", { method: "POST", body: { orderItemId, rating, body: body.trim(), mediaUrls: [] } });
@@ -979,7 +971,7 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, m
     window.requestAnimationFrame(() => document.getElementById("topup-payment-request")?.scrollIntoView({ behavior: "smooth", block: "start" }));
   }, [activeTopup]);
 
-  const refreshWallet = useCallback(async () => {
+  async function refreshWallet() {
     const [summary, depositHistory, methodData] = await Promise.all([
       apiRequest<WalletSummary>("/api/wallet/balance"),
       apiRequest<{ deposits: Deposit[] }>("/api/wallet/deposits"),
@@ -992,13 +984,13 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, m
     onBalanceChange(summary.availableBalanceCents ?? summary.balanceCents);
     setDeposits(depositHistory.deposits);
     if (methodData.methods.length) setTopupMethods(methodData.methods);
-  }, [onBalanceChange]);
+  }
 
   useEffect(() => {
     void refreshWallet().catch(() => undefined);
     const interval = window.setInterval(() => void refreshWallet().catch(() => undefined), 12000);
     return () => window.clearInterval(interval);
-  }, [refreshWallet]);
+  }, [onBalanceChange]);
 
   async function submitDeposit() {
     const cents = Math.round(parseFloat(depositAmount) * 100);
@@ -1301,5 +1293,3 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, m
     </div>
   );
 }
-import "../dashboard-polish.css";
-import "../buyer-premium.css";

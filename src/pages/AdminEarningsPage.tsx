@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Download, TrendingUp, DollarSign, Wallet, BarChart3 } from "lucide-react";
 import { apiRequest } from "../api/client";
 import { Seo } from "../components/Seo";
@@ -45,7 +45,6 @@ type Report = {
   breakdown: BreakdownRow[];
   topProducts: TopProduct[];
   summary: AdminSummary;
-  settings: { saleCommissionPercent: number; withdrawalCommissionPercent: number; frozenHoldHours: number };
 };
 
 function money(cents: number) {
@@ -53,31 +52,29 @@ function money(cents: number) {
 }
 
 export function AdminEarningsPage() {
-  const [{ today, thirtyDaysAgo }] = useState(() => {
-    const now = new Date();
-    return { today: now.toISOString().slice(0, 10), thirtyDaysAgo: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10) };
-  });
+  const today = new Date().toISOString().slice(0, 10);
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const [from, setFrom] = useState(thirtyDaysAgo);
   const [to, setTo] = useState(today);
   const [granularity, setGranularity] = useState<Granularity>("daily");
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadReport = useCallback(async () => {
+  async function loadReport() {
     setLoading(true);
     try {
-      const data = await apiRequest<Report>(`/api/assistant/admin/earnings/daily?from=${from}&to=${to}&granularity=${granularity}`);
+      const data = await apiRequest<Report>(`/api/nexus/admin/earnings/daily?from=${from}&to=${to}&granularity=${granularity}`);
       setReport(data);
     } catch {
       setReport(null);
     } finally {
       setLoading(false);
     }
-  }, [from, granularity, to]);
+  }
 
   useEffect(() => {
     void loadReport();
-  }, [loadReport]);
+  }, [from, to, granularity]);
 
   function handleApply(newFrom: string, newTo: string, newGranularity: Granularity) {
     setFrom(newFrom);
@@ -91,14 +88,14 @@ export function AdminEarningsPage() {
       date: r.date,
       label: r.label,
       orders: r.orders,
-      sale_commission: r.saleCommissionCents,
-      withdrawal_commission: r.withdrawCommissionCents,
+      sale_10pct: r.saleCommissionCents,
+      withdraw_3pct: r.withdrawCommissionCents,
       total_admin: r.totalAdminCents,
       withdraw_count: r.withdrawCount,
       withdraw_volume: r.withdrawVolumeCents,
       net_income: r.netIncomeCents,
     }));
-    const csv = toCSV(rows, ["date", "label", "orders", "sale_commission", "withdrawal_commission", "total_admin", "withdraw_count", "withdraw_volume", "net_income"]);
+    const csv = toCSV(rows, ["date", "label", "orders", "sale_10pct", "withdraw_3pct", "total_admin", "withdraw_count", "withdraw_volume", "net_income"]);
     downloadCSV(`admin-earnings-${from}-to-${to}.csv`, csv);
   }
 
@@ -110,31 +107,25 @@ export function AdminEarningsPage() {
       category: p.category,
       orders: p.orders,
       gross: p.grossCents,
-      sale_commission: p.commissionCents,
+      commission_10pct: p.commissionCents,
       net: p.netCents,
       avg_price: p.avgPriceCents,
       contribution_pct: p.contributionPct,
     }));
-    const csv = toCSV(rows, ["product_id", "title", "category", "orders", "gross", "sale_commission", "net", "avg_price", "contribution_pct"]);
+    const csv = toCSV(rows, ["product_id", "title", "category", "orders", "gross", "commission_10pct", "net", "avg_price", "contribution_pct"]);
     downloadCSV(`top-products-${from}-to-${to}.csv`, csv);
   }
 
+  const summary = report?.summary;
   const todayData = report?.breakdown[report.breakdown.length - 1];
-  const saleRate = report?.settings.saleCommissionPercent ?? 0;
-  const withdrawalRate = report?.settings.withdrawalCommissionPercent ?? 0;
-  const holdHours = report?.settings.frozenHoldHours ?? 0;
-  const exampleGrossCents = 10_000;
-  const exampleSaleFeeCents = Math.round(exampleGrossCents * saleRate / 100);
-  const exampleSellerCents = exampleGrossCents - exampleSaleFeeCents;
-  const exampleWithdrawalFeeCents = Math.round(exampleSellerCents * withdrawalRate / 100);
 
   return (
     <main style={{ maxWidth: "1200px", margin: "0 auto", padding: "24px", background: "#0A0A0B", minHeight: "100vh", color: "#fafafa" }}>
-      <Seo title="Admin earnings" description="HSello marketplace earnings analytics" />
+      <Seo title="Admin Earnings" description="NEXUS marketplace earnings analytics" />
       <header style={{ marginBottom: "24px" }}>
         <span style={{ fontSize: "12px", color: "#71717a", textTransform: "uppercase", letterSpacing: "0.05em" }}>ADMIN</span>
         <h1 style={{ fontSize: "28px", margin: "4px 0" }}>Earnings Analytics</h1>
-        <p style={{ color: "#a1a1aa" }}>Track configured commission revenue from sales and withdrawals.</p>
+        <p style={{ color: "#a1a1aa" }}>Track commission revenue from sales (10%) and withdrawals (3%)</p>
       </header>
 
       <div style={{ marginBottom: "24px" }}>
@@ -159,14 +150,14 @@ export function AdminEarningsPage() {
             <div style={{ background: "#18181b", borderRadius: "12px", padding: "20px", border: "1px solid #27272a" }}>
               <DollarSign size={20} color="#7c3aed" />
               <div style={{ marginTop: "8px" }}>
-                <small style={{ color: "#71717a", fontSize: "12px" }}>Sale {saleRate}% (Today)</small>
+                <small style={{ color: "#71717a", fontSize: "12px" }}>Sale 10% (Today)</small>
                 <strong style={{ display: "block", fontSize: "24px" }}>{money(todayData?.saleCommissionCents ?? 0)}</strong>
               </div>
             </div>
             <div style={{ background: "#18181b", borderRadius: "12px", padding: "20px", border: "1px solid #27272a" }}>
               <Wallet size={20} color="#10b981" />
               <div style={{ marginTop: "8px" }}>
-                <small style={{ color: "#71717a", fontSize: "12px" }}>Withdrawal {withdrawalRate}% (Today)</small>
+                <small style={{ color: "#71717a", fontSize: "12px" }}>Withdraw 3% (Today)</small>
                 <strong style={{ display: "block", fontSize: "24px" }}>{money(todayData?.withdrawCommissionCents ?? 0)}</strong>
               </div>
             </div>
@@ -208,7 +199,7 @@ export function AdminEarningsPage() {
             <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "12px" }}>
               <thead style={{ position: "sticky", top: 0, background: "#18181b" }}>
                 <tr style={{ borderBottom: "1px solid #27272a" }}>
-                  {["Date", "Orders", `Sale ${saleRate}%`, `Withdrawal ${withdrawalRate}%`, "Total", "Net Income"].map((h) => (
+                  {["Date", "Orders", "Sale 10%", "Withdraw 3%", "Total", "Net Income"].map((h) => (
                     <th key={h} style={{ padding: "12px 16px", textAlign: "left", fontSize: "12px", color: "#71717a", fontWeight: 500 }}>{h}</th>
                   ))}
                 </tr>
@@ -264,16 +255,16 @@ export function AdminEarningsPage() {
             <h3 style={{ fontSize: "14px", marginBottom: "16px" }}>How Commissions Work</h3>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
               <div>
-                <strong style={{ color: "#7c3aed", fontSize: "13px" }}>Sale commission ({saleRate}%)</strong>
-                <p style={{ fontSize: "12px", color: "#a1a1aa", marginTop: "4px" }}>{money(exampleGrossCents)} sale → {money(exampleSaleFeeCents)} platform fee + {money(exampleSellerCents)} seller earnings held for {holdHours}h</p>
+                <strong style={{ color: "#7c3aed", fontSize: "13px" }}>Sale Commission (10%)</strong>
+                <p style={{ fontSize: "12px", color: "#a1a1aa", marginTop: "4px" }}>$100 product → $10 to admin wallet (COMMISSION_SALE) + $90 frozen 72h → seller balance</p>
               </div>
               <div>
-                <strong style={{ color: "#10b981", fontSize: "13px" }}>Withdrawal fee ({withdrawalRate}%)</strong>
-                <p style={{ fontSize: "12px", color: "#a1a1aa", marginTop: "4px" }}>Seller requests {money(exampleSellerCents)} → {money(exampleWithdrawalFeeCents)} fee → {money(exampleSellerCents - exampleWithdrawalFeeCents)} net payout</p>
+                <strong style={{ color: "#10b981", fontSize: "13px" }}>Withdraw Commission (3%)</strong>
+                <p style={{ fontSize: "12px", color: "#a1a1aa", marginTop: "4px" }}>Seller withdraws $90 → $2.70 to admin (COMMISSION_WITHDRAW) → net $87.30 payout</p>
               </div>
               <div>
-                <strong style={{ color: "#f59e0b", fontSize: "13px" }}>Protected settlement</strong>
-                <p style={{ fontSize: "12px", color: "#a1a1aa", marginTop: "4px" }}>Earnings remain frozen for {holdHours}h. Download and dispute windows follow each listing and order record.</p>
+                <strong style={{ color: "#f59e0b", fontSize: "13px" }}>Escrow Protection</strong>
+                <p style={{ fontSize: "12px", color: "#a1a1aa", marginTop: "4px" }}>Funds frozen 72h, download links signed 7 days, disputes auto-resolve after 24h silence</p>
               </div>
             </div>
           </div>
@@ -284,4 +275,3 @@ export function AdminEarningsPage() {
     </main>
   );
 }
-import "../admin-enterprise.css";

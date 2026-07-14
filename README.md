@@ -27,6 +27,7 @@ DATABASE_URL=${{Postgres.DATABASE_URL}}
 APP_URL=https://YOUR-VERCEL-PROJECT.vercel.app
 API_URL=https://YOUR-RAILWAY-SERVICE.up.railway.app
 CORS_ORIGIN=https://YOUR-VERCEL-PROJECT.vercel.app
+COOKIE_DOMAIN=
 JWT_SECRET=GENERATE_A_RANDOM_SECRET_OF_AT_LEAST_32_CHARACTERS
 CSRF_SECRET=GENERATE_A_DIFFERENT_RANDOM_SECRET_OF_AT_LEAST_32_CHARACTERS
 ACCESS_TOKEN_MINUTES=15
@@ -50,18 +51,11 @@ PAYPAL_CLIENT_SECRET=
 PAYPAL_ENVIRONMENT=sandbox
 BANK_TRANSFER_INSTRUCTIONS="Bank and account details shown after order creation"
 CRYPTO_PAYMENT_INSTRUCTIONS="Supported asset, network, and receiving address"
-CRYPTO_WEBHOOK_SECRET=GENERATE_A_THIRD_RANDOM_SECRET_OF_AT_LEAST_32_CHARACTERS
-TOPUP_TRC20_ADDRESS=
-TOPUP_BEP20_ADDRESS=
-TOPUP_ERC20_ADDRESS=
-TOPUP_BTC_ADDRESS=
-TOPUP_ETH_ADDRESS=
-TOPUP_SOL_ADDRESS=
 PRIVATE_UPLOAD_DIR=/app/private-uploads
 MAX_PRODUCT_FILE_BYTES=104857600
 ```
 
-`APP_URL`, `API_URL`, and each comma-separated `CORS_ORIGIN` entry must be a complete HTTPS origin without a path. Prefer exact preview URLs over broad wildcards.
+`COOKIE_DOMAIN` must remain blank. `APP_URL`, `API_URL`, and each comma-separated `CORS_ORIGIN` entry must be a complete HTTPS origin without a path. Prefer exact preview URLs over broad wildcards.
 
 Railway injects its own `PORT`; you do not need to create that variable. Before every release, `prisma migrate deploy` applies committed migrations to PostgreSQL. A failed migration stops the release before the new API starts.
 
@@ -80,7 +74,7 @@ Railway can also host the complete app at its public URL. To start with that sam
 3. Vercel reads `vercel.json`, proxies `/api` and `/uploads` to Railway, and runs `npm run build:web`.
 4. Update the Railway URL inside `vercel.json` if your Railway service URL is different, then redeploy Vercel.
 
-Set `VITE_SITE_URL` to the final Vercel origin so the build can emit canonical metadata for static public routes. Keep browser API calls same-origin through the configured Vercel rewrites; this preserves strict cookies and CSRF protection.
+Leave `VITE_API_BASE_URL` blank for the normal Vercel setup. If you intentionally want browser requests to call Railway directly, set `VITE_USE_REMOTE_API=true` and `VITE_API_BASE_URL=https://YOUR-RAILWAY-SERVICE.up.railway.app`, then redeploy. Do not append `/api`.
 
 If Turnstile is enabled, also set `VITE_TURNSTILE_SITE_KEY` on Vercel and the matching `TURNSTILE_SECRET_KEY` on Railway. Add a Vercel preview URL to Railway's `CORS_ORIGIN` only when you intend to test that preview.
 

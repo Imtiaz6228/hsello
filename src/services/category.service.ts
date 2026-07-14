@@ -9,7 +9,7 @@ export type DefaultCategory = {
   parentSlug?: string;
 };
 
-const defaultMarketplaceCategories: DefaultCategory[] = [
+export const defaultMarketplaceCategories: DefaultCategory[] = [
   { slug: "social-media", name: "Social media", description: "Creator-safe social media templates, calendars, profile assets, moderation workflows, and analytics tools. Account trading, fake engagement, bots, spam, and credentials are prohibited.", icon: "◉", sortOrder: 10 },
   { slug: "instagram", parentSlug: "social-media", name: "Instagram", description: "Instagram content templates, Reels planning packs, caption systems, profile audit worksheets, and reporting dashboards.", icon: "◉", sortOrder: 11 },
   { slug: "facebook", parentSlug: "social-media", name: "Facebook", description: "Facebook page kits, group resources, ad creative planning, and community management templates for legitimate brands.", icon: "f", sortOrder: 12 },

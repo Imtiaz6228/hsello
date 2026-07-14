@@ -28,7 +28,7 @@ export function SupportWidgetPro() {
 
   useEffect(() => {
     if (!open || !user || sessionId) return;
-    void apiRequest<{ sessions: Array<{ id: string; status: string; messages: Message[] }> }>("/api/assistant/chat/sessions")
+    void apiRequest<{ sessions: Array<{ id: string; status: string; messages: Message[] }> }>("/api/nexus/chat/sessions")
       .then((data) => {
         const latest = data.sessions[0];
         if (!latest) return;
@@ -42,7 +42,7 @@ export function SupportWidgetPro() {
   useEffect(() => {
     if (!open || !humanMode || !sessionId) return;
     const refresh = async () => {
-      const data = await apiRequest<{ sessions: Array<{ id: string; messages: Array<{ id: string; role: "user" | "assistant" | "admin"; body: string }> }> }>("/api/assistant/chat/sessions").catch(() => null);
+      const data = await apiRequest<{ sessions: Array<{ id: string; messages: Array<{ id: string; role: "user" | "assistant" | "admin"; body: string }> }> }>("/api/nexus/chat/sessions").catch(() => null);
       const session = data?.sessions.find((item) => item.id === sessionId);
       if (session) setMessages(session.messages.map((item) => ({ id: item.id, role: item.role, body: item.body })));
     };
@@ -55,7 +55,7 @@ export function SupportWidgetPro() {
     if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
     typingTimerRef.current = setTimeout(() => {
       if (sessionId) {
-        void apiRequest("/api/assistant/live/typing", { method: "POST", body: { sessionId, isTyping } }).catch(() => undefined);
+        void apiRequest("/api/nexus/live/typing", { method: "POST", body: { sessionId, isTyping } }).catch(() => undefined);
       }
     }, 300);
   }, [sessionId]);
@@ -84,9 +84,9 @@ export function SupportWidgetPro() {
 
     try {
       if (humanMode && sessionId) {
-        await apiRequest(`/api/assistant/chat/${sessionId}/messages`, { method: "POST", body: { body: text } });
+        await apiRequest(`/api/nexus/chat/${sessionId}/messages`, { method: "POST", body: { body: text } });
       } else {
-        const result = await apiRequest<{ sessionId: string; reply: string; quickActions: string[] }>("/api/assistant/ai/support", {
+        const result = await apiRequest<{ sessionId: string; reply: string; quickActions: string[] }>("/api/nexus/ai/support", {
           method: "POST",
           body: { message: text, sessionId: sessionId ?? undefined },
         });
@@ -111,7 +111,7 @@ export function SupportWidgetPro() {
   const requestHuman = useCallback(async () => {
     if (!user) { setHandoffMessage("Sign in to start a secure chat with an administrator."); return; }
     try {
-      const result = await apiRequest<{ sessionId: string; message: string }>("/api/assistant/chat/human", { method: "POST", body: { sessionId: sessionId ?? undefined } });
+      const result = await apiRequest<{ sessionId: string; message: string }>("/api/nexus/chat/human", { method: "POST", body: { sessionId: sessionId ?? undefined } });
       setSessionId(result.sessionId);
       setHumanMode(true);
       setHandoffMessage("An administrator has been notified. Messages will appear here in real time.");

@@ -4,35 +4,9 @@
   "installCommand": "npm ci",
   "buildCommand": "npm run build:web",
   "outputDirectory": "dist",
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "Permissions-Policy", "value": "camera=(), geolocation=(), microphone=()" },
-        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src-elem 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self'; frame-src https://challenges.cloudflare.com; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" }
-      ]
-    },
-    { "source": "/assets/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }] }
-  ],
   "rewrites": [
     { "source": "/api/:path*", "destination": "https://hsello-production.up.railway.app/api/:path*" },
     { "source": "/uploads/:path*", "destination": "https://hsello-production.up.railway.app/uploads/:path*" },
-    { "source": "/robots.txt", "destination": "https://hsello-production.up.railway.app/robots.txt" },
-    { "source": "/sitemap.xml", "destination": "https://hsello-production.up.railway.app/sitemap.xml" },
-    { "source": "/catalog", "destination": "/catalog.html" },
-    { "source": "/blog", "destination": "/blog.html" },
-    { "source": "/terms", "destination": "/terms.html" },
-    { "source": "/privacy", "destination": "/privacy.html" },
-    { "source": "/refund-policy", "destination": "/refund-policy.html" },
-    { "source": "/seller-policy", "destination": "/seller-policy.html" },
-    { "source": "/buyer-protection", "destination": "/buyer-protection.html" },
-    { "source": "/prohibited-products", "destination": "/prohibited-products.html" },
-    { "source": "/copyright", "destination": "/copyright.html" },
-    { "source": "/contact", "destination": "/contact.html" },
-    { "source": "/about", "destination": "/about.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

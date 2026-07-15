@@ -198,7 +198,7 @@ export function OrderDeliveryPage() {
 
   return (
     <main className="commerce-page order-workspace">
-      <Seo title="Order delivery workspace" description="Protected buyer and seller messages for a HSello order." />
+      <Seo title="Order delivery workspace" description="Protected buyer and seller messages for a HSello order." noIndex />
       <MarketHeader />
       <section>
         <Link className="back-link" to="/dashboard"><ArrowLeft /> Back to dashboard</Link>

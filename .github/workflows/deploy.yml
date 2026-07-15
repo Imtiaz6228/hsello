@@ -1,16 +1,26 @@
 name: Deploy NEXUS Marketplace
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Build and database check"]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
 
 jobs:
   deploy-vercel:
     name: Deploy to Vercel
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - name: Deploy to Vercel
         uses: amondnet/vercel-action@v25
         with:
@@ -21,9 +31,13 @@ jobs:
 
   deploy-railway:
     name: Deploy to Railway
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - name: Deploy to Railway
         uses: bervProject/railway-deploy@v3
         with:

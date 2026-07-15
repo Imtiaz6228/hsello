@@ -22,7 +22,7 @@ export function SignOutPage() {
 
   return (
     <main className="signout-page">
-      <Seo title="Sign out" description="Securely sign out of your HSello account." />
+      <Seo title="Sign out" description="Securely sign out of your HSello account." noIndex />
       <section className="signout-card">
         <div className="signout-icon"><LogOut /></div>
         <span className="section-index">SECURE SESSION</span>

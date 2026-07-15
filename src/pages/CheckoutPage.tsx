@@ -96,7 +96,7 @@ export function CheckoutPage() {
 
   return (
     <main className="commerce-page checkout-page">
-      <Seo title="Secure checkout" description="Complete your protected HSello order with wallet balance, crypto, card, PayPal, bank transfer, or staff-approved payment." />
+      <Seo title="Secure checkout" description="Complete your protected HSello order." noIndex />
       <MarketHeader />
       <form className="checkout-layout" onSubmit={placeOrder}>
         <section className="checkout-main">

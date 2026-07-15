@@ -140,7 +140,7 @@ export function SellerApplicationPage() {
 
   return (
     <main className="center-page">
-      <Seo title="Seller application" description="Apply for reviewed HSello seller access." />
+      <Seo title="Seller application" description="Apply for reviewed HSello seller access." noIndex />
       <form className="auth-form wide" onSubmit={submit}>
         <Link className="secondary-button" to="/dashboard"><ArrowLeft size={16} /> Dashboard</Link>
         <div className="form-heading">

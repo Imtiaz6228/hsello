@@ -182,7 +182,7 @@ export async function executeQuickAction(action: string, userId: string) {
   }
 }
 
-export async function transcribeVoice(audioPath: string): Promise<string> {
+export async function transcribeVoice(_audioPath: string): Promise<string> {
   if (!env.OPENAI_API_KEY) {
     return "[Voice transcription unavailable - OPENAI_API_KEY not configured]";
   }
@@ -194,7 +194,7 @@ export async function transcribeVoice(audioPath: string): Promise<string> {
   }
 }
 
-export async function ocrScreenshot(imagePath: string): Promise<string> {
+export async function ocrScreenshot(_imagePath: string): Promise<string> {
   if (!env.OPENAI_API_KEY) {
     return "[OCR unavailable - OPENAI_API_KEY not configured]";
   }

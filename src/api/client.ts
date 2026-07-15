@@ -67,11 +67,11 @@ function normalizeApiBaseUrl(value: string | undefined) {
 }
 
 const configuredApiUrl = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL as string | undefined);
-const productionFallbackApiUrl = "https://hsello-production.up.railway.app";
-const remoteApiUrl = configuredApiUrl || (import.meta.env.DEV ? "" : productionFallbackApiUrl);
 const useRemoteApi = (import.meta.env.VITE_USE_REMOTE_API as string | undefined)?.trim() === "true";
-const DEFAULT_API_BASE_URL = useRemoteApi ? remoteApiUrl : "";
-let activeApiBaseUrl = DEFAULT_API_BASE_URL;
+const API_BASE_URL = useRemoteApi ? configuredApiUrl : "";
+if (useRemoteApi && !configuredApiUrl) {
+  throw new Error("VITE_API_BASE_URL is required when VITE_USE_REMOTE_API=true.");
+}
 const csrfExemptUnsafePaths = new Set([
   "/api/auth/register",
   "/api/auth/login",
@@ -97,12 +97,8 @@ export class ApiError extends Error {
   }
 }
 
-function canRetryWithRemoteApi() {
-  return !useRemoteApi && Boolean(remoteApiUrl) && activeApiBaseUrl !== remoteApiUrl;
-}
-
 function apiUrl(path: string) {
-  return `${activeApiBaseUrl}${path}`;
+  return `${API_BASE_URL}${path}`;
 }
 
 /**
@@ -118,7 +114,7 @@ export function mediaUrl(value?: string | null) {
   if (!value) return "";
   if (/^https?:\/\//i.test(value) || value.startsWith("data:") || value.startsWith("blob:")) return value;
   if (value.startsWith("/uploads/")) {
-    return import.meta.env.DEV && !useRemoteApi ? value : `${remoteApiUrl}${value}`;
+    return API_BASE_URL ? `${API_BASE_URL}${value}` : value;
   }
   return value;
 }
@@ -126,36 +122,13 @@ export function mediaUrl(value?: string | null) {
 function networkErrorMessage() {
   return import.meta.env.DEV
     ? "Cannot reach the local authentication service. Start the API server with npm run dev:api and keep the Vite proxy on /api."
-    : "Cannot reach the authentication service. The app tried both the Vercel API proxy and the Railway API.";
+    : "Cannot reach the HSello service. Check the configured API origin and try again.";
 }
 
 async function request(path: string, init: RequestInit) {
   try {
-    const response = await fetch(apiUrl(path), init);
-    if (
-      canRetryWithRemoteApi() &&
-      !response.headers.get("content-type")?.includes("application/json")
-    ) {
-      activeApiBaseUrl = remoteApiUrl;
-      return await fetch(apiUrl(path), init);
-    }
-
-    return response;
+    return await fetch(apiUrl(path), init);
   } catch (error) {
-    if (canRetryWithRemoteApi()) {
-      activeApiBaseUrl = remoteApiUrl;
-      try {
-        return await fetch(apiUrl(path), init);
-      } catch (fallbackError) {
-        throw new ApiError(
-          networkErrorMessage(),
-          0,
-          "NETWORK_ERROR",
-          fallbackError
-        );
-      }
-    }
-
     throw new ApiError(
       networkErrorMessage(),
       0,

@@ -9,10 +9,17 @@ type DateRangePickerProps = {
   onApply: (from: string, to: string, granularity: Granularity) => void;
 };
 
-export function DateRangePicker({ from, to, granularity, onApply }: DateRangePickerProps) {
+export function DateRangePicker({
+  from,
+  to,
+  granularity,
+  onApply,
+}: DateRangePickerProps) {
   const [localFrom, setLocalFrom] = useState(from);
   const [localTo, setLocalTo] = useState(to);
-  const [localGranularity, setLocalGranularity] = useState<Granularity>(granularity);
+  const [localGranularity, setLocalGranularity] =
+    useState<Granularity>(granularity);
+  const invalidRange = Boolean(localFrom && localTo && localFrom > localTo);
 
   const quickRanges = [
     { label: "7d", days: 7 },
@@ -33,34 +40,147 @@ export function DateRangePicker({ from, to, granularity, onApply }: DateRangePic
   }
 
   return (
-    <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap", padding: "12px", background: "#18181b", borderRadius: "12px", border: "1px solid #27272a" }}>
-      <div style={{ display: "flex", gap: "4px" }}>
+    <section
+      aria-label="Report date range"
+      style={{
+        display: "flex",
+        gap: "12px",
+        alignItems: "center",
+        flexWrap: "wrap",
+        padding: "12px",
+        background: "#18181b",
+        borderRadius: "12px",
+        border: "1px solid #27272a",
+      }}
+    >
+      <div
+        role="group"
+        aria-label="Report interval"
+        style={{ display: "flex", gap: "4px" }}
+      >
         {(["daily", "weekly", "monthly"] as Granularity[]).map((g) => (
-          <button key={g} onClick={() => setLocalGranularity(g)} style={{ height: "32px", padding: "0 16px", borderRadius: "9999px", border: "none", background: localGranularity === g ? "#0A0A0B" : "transparent", color: localGranularity === g ? "#fafafa" : "#71717a", cursor: "pointer", fontSize: "13px", fontWeight: 500 }}>
+          <button
+            type="button"
+            aria-pressed={localGranularity === g}
+            key={g}
+            onClick={() => setLocalGranularity(g)}
+            style={{
+              height: "32px",
+              padding: "0 16px",
+              borderRadius: "9999px",
+              border: "none",
+              background: localGranularity === g ? "#0A0A0B" : "transparent",
+              color: localGranularity === g ? "#fafafa" : "#a1a1aa",
+              cursor: "pointer",
+              fontSize: "13px",
+              fontWeight: 500,
+            }}
+          >
             {g.charAt(0).toUpperCase() + g.slice(1)}
           </button>
         ))}
       </div>
       <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-        <input type="date" value={localFrom} onChange={(e) => setLocalFrom(e.target.value)} style={{ background: "#0A0A0B", border: "1px solid #3f3f46", borderRadius: "8px", padding: "6px 10px", color: "#fafafa", fontSize: "13px" }} />
+        <label className="sr-only" htmlFor="report-date-from">
+          Start date
+        </label>
+        <input
+          id="report-date-from"
+          aria-invalid={invalidRange}
+          type="date"
+          max={localTo || undefined}
+          value={localFrom}
+          onChange={(e) => setLocalFrom(e.target.value)}
+          style={{
+            background: "#0A0A0B",
+            border: "1px solid #3f3f46",
+            borderRadius: "8px",
+            padding: "6px 10px",
+            color: "#fafafa",
+            fontSize: "13px",
+          }}
+        />
         <span style={{ color: "#71717a" }}>→</span>
-        <input type="date" value={localTo} onChange={(e) => setLocalTo(e.target.value)} style={{ background: "#0A0A0B", border: "1px solid #3f3f46", borderRadius: "8px", padding: "6px 10px", color: "#fafafa", fontSize: "13px" }} />
+        <label className="sr-only" htmlFor="report-date-to">
+          End date
+        </label>
+        <input
+          id="report-date-to"
+          aria-invalid={invalidRange}
+          type="date"
+          min={localFrom || undefined}
+          value={localTo}
+          onChange={(e) => setLocalTo(e.target.value)}
+          style={{
+            background: "#0A0A0B",
+            border: "1px solid #3f3f46",
+            borderRadius: "8px",
+            padding: "6px 10px",
+            color: "#fafafa",
+            fontSize: "13px",
+          }}
+        />
       </div>
-      <button onClick={() => onApply(localFrom, localTo, localGranularity)} style={{ background: "#7c3aed", color: "white", border: "none", borderRadius: "8px", padding: "6px 16px", cursor: "pointer", fontSize: "13px", fontWeight: 500 }}>Apply</button>
-      <div style={{ display: "flex", gap: "4px" }}>
+      <button
+        type="button"
+        disabled={invalidRange}
+        onClick={() => onApply(localFrom, localTo, localGranularity)}
+        style={{
+          background: "#7c3aed",
+          color: "white",
+          border: "none",
+          borderRadius: "8px",
+          padding: "6px 16px",
+          cursor: invalidRange ? "not-allowed" : "pointer",
+          fontSize: "13px",
+          fontWeight: 500,
+        }}
+      >
+        Apply
+      </button>
+      <div
+        role="group"
+        aria-label="Quick date ranges"
+        style={{ display: "flex", gap: "4px" }}
+      >
         {quickRanges.map((r) => (
-          <button key={r.label} onClick={() => applyQuickRange(r.days)} style={{ background: "#27272a", color: "#a1a1aa", border: "none", borderRadius: "6px", padding: "4px 10px", cursor: "pointer", fontSize: "12px" }}>{r.label}</button>
+          <button
+            type="button"
+            key={r.label}
+            onClick={() => applyQuickRange(r.days)}
+            style={{
+              background: "#27272a",
+              color: "#d4d4d8",
+              border: "none",
+              borderRadius: "6px",
+              padding: "4px 10px",
+              cursor: "pointer",
+              fontSize: "12px",
+            }}
+          >
+            {r.label}
+          </button>
         ))}
       </div>
-    </div>
+      {invalidRange ? (
+        <span role="alert" style={{ color: "#fca5a5", fontSize: "12px" }}>
+          Start date must be before the end date.
+        </span>
+      ) : null}
+    </section>
   );
 }
 
-export function toCSV(rows: Array<Record<string, unknown>>, headers?: string[]): string {
+export function toCSV(
+  rows: Array<Record<string, unknown>>,
+  headers?: string[],
+): string {
   if (rows.length === 0) return "";
   const keys = headers ?? Object.keys(rows[0]);
   const headerLine = keys.map((k) => csvCell(k)).join(",");
-  const dataLines = rows.map((row) => keys.map((k) => csvCell(row[k])).join(","));
+  const dataLines = rows.map((row) =>
+    keys.map((k) => csvCell(row[k])).join(","),
+  );
   return [headerLine, ...dataLines].join("\n");
 }
 

@@ -124,7 +124,7 @@ app.get("/api/csrf", sendRequestToken);
 app.get("/api/session/bootstrap", sendRequestToken);
 
 app.get("/robots.txt", (_req, res) => {
-  res.type("text/plain").send(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /dashboard\nDisallow: /checkout\nSitemap: ${env.APP_URL}/sitemap.xml\n`);
+  res.type("text/plain").send(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /dashboard\nDisallow: /checkout\nDisallow: /orders\nDisallow: /seller\nDisallow: /support\nDisallow: /sign-in\nDisallow: /sign-out\nDisallow: /register\nDisallow: /verify-email\nDisallow: /verify-required\nDisallow: /forgot-password\nDisallow: /reset-password\nSitemap: ${env.APP_URL}/sitemap.xml\n`);
 });
 
 app.get("/sitemap.xml", asyncHandler(async (_req, res) => {
@@ -133,14 +133,20 @@ app.get("/sitemap.xml", asyncHandler(async (_req, res) => {
     prisma.category.findMany({ where: { isActive: true }, select: { slug: true, updatedAt: true } }),
     prisma.sellerProfile.findMany({ where: { isVerified: true, isSuspended: false }, select: { slug: true, updatedAt: true } })
   ]);
+  const staticPaths = [
+    "/", "/catalog", "/blog", "/about", "/contact", "/terms", "/privacy", "/refund-policy",
+    "/seller-policy", "/buyer-protection", "/prohibited-products", "/copyright",
+    "/blog/evaluate-digital-product-before-checkout", "/blog/write-a-trustworthy-product-page",
+    "/blog/why-account-and-credential-trading-is-not-allowed", "/blog/versioning-digital-downloads"
+  ];
   const urls = [
-    { path: "/", updatedAt: new Date() }, { path: "/catalog", updatedAt: new Date() },
-    { path: "/blog", updatedAt: new Date() },
+    ...staticPaths.map((path) => ({ path, updatedAt: new Date("2026-07-15T00:00:00.000Z") })),
     ...products.map((item) => ({ path: `/products/${item.slug}`, updatedAt: item.updatedAt })),
     ...categories.map((item) => ({ path: `/categories/${item.slug}`, updatedAt: item.updatedAt })),
     ...stores.map((item) => ({ path: `/stores/${item.slug}`, updatedAt: item.updatedAt }))
   ];
-  res.type("application/xml").send(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map((item) => `<url><loc>${env.APP_URL}${item.path}</loc><lastmod>${item.updatedAt.toISOString()}</lastmod></url>`).join("")}</urlset>`);
+  const xmlEscape = (value: string) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&apos;");
+  res.type("application/xml").send(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map((item) => `<url><loc>${xmlEscape(`${env.APP_URL}${item.path}`)}</loc><lastmod>${item.updatedAt.toISOString()}</lastmod></url>`).join("")}</urlset>`);
 }));
 
 app.use("/api", csrfProtection);

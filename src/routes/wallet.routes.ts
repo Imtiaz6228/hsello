@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { Role, TopupMethod } from "@prisma/client";
+import { TopupMethod } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
-import { requireAuth, requireRole, requireVerifiedUser } from "../middleware/auth.js";
+import { requireAuth, requireVerifiedUser } from "../middleware/auth.js";
 import { ApiError, asyncHandler } from "../middleware/error-handler.js";
 import { createWalletCheckout } from "../services/payment.service.js";
 import { createWithdrawalRequest, getWalletSummary, releaseAvailableSellerEarnings } from "../services/finance.service.js";

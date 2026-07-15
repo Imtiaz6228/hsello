@@ -1,6 +1,6 @@
 import path from "node:path";
 import { Router } from "express";
-import { DisputeStatus, PaymentMethod, ProductType, TicketCategory, Role } from "@prisma/client";
+import { DisputeStatus, PaymentMethod, TicketCategory, Role } from "@prisma/client";
 import { z } from "zod";
 import { sha256 } from "../lib/crypto.js";
 import { env } from "../config/env.js";

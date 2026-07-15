@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Download, TrendingUp, DollarSign, Wallet, BarChart3 } from "lucide-react";
 import { apiRequest } from "../api/client";
 import { Seo } from "../components/Seo";
@@ -60,7 +60,7 @@ export function AdminEarningsPage() {
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
 
-  async function loadReport() {
+  const loadReport = useCallback(async () => {
     setLoading(true);
     try {
       const data = await apiRequest<Report>(`/api/nexus/admin/earnings/daily?from=${from}&to=${to}&granularity=${granularity}`);
@@ -70,11 +70,11 @@ export function AdminEarningsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [from, granularity, to]);
 
   useEffect(() => {
     void loadReport();
-  }, [from, to, granularity]);
+  }, [loadReport]);
 
   function handleApply(newFrom: string, newTo: string, newGranularity: Granularity) {
     setFrom(newFrom);
@@ -116,12 +116,11 @@ export function AdminEarningsPage() {
     downloadCSV(`top-products-${from}-to-${to}.csv`, csv);
   }
 
-  const summary = report?.summary;
   const todayData = report?.breakdown[report.breakdown.length - 1];
 
   return (
     <main style={{ maxWidth: "1200px", margin: "0 auto", padding: "24px", background: "#0A0A0B", minHeight: "100vh", color: "#fafafa" }}>
-      <Seo title="Admin Earnings" description="NEXUS marketplace earnings analytics" />
+      <Seo title="Admin Earnings" description="HSello marketplace earnings analytics" noIndex />
       <header style={{ marginBottom: "24px" }}>
         <span style={{ fontSize: "12px", color: "#71717a", textTransform: "uppercase", letterSpacing: "0.05em" }}>ADMIN</span>
         <h1 style={{ fontSize: "28px", margin: "4px 0" }}>Earnings Analytics</h1>

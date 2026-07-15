@@ -635,7 +635,7 @@ export function SellerStudioPage() {
 
   return (
     <main className="seller-pro-dashboard">
-      <Seo title="Seller studio" description="Manage your storefront, products, files, orders, and digital delivery." />
+      <Seo title="Seller studio" description="Manage your storefront, products, files, orders, and digital delivery." noIndex />
       {drawerOpen ? <button className="seller-drawer-backdrop" aria-label="Close menu" onClick={() => setDrawerOpen(false)} /> : null}
       <aside className={`seller-pro-sidebar ${drawerOpen ? "open" : ""}`}>
         <div className="seller-sidebar-head"><Link className="brand-lockup" to="/"><span className="brand-glyph">H</span><span><strong>HSELLO</strong><small>SELLER CENTER</small></span></Link><button aria-label="Close seller menu" onClick={() => setDrawerOpen(false)}><X /></button></div>

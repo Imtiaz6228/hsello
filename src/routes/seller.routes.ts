@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { Router, type Request } from "express";
-import { DisputeStatus, ProductStatus, ProductType, Role, SellerApplicationStatus } from "@prisma/client";
+import { ProductStatus, ProductType, Role, SellerApplicationStatus } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth, requireVerifiedUser } from "../middleware/auth.js";
@@ -10,7 +10,6 @@ import { imageUpload, productFileUpload, publicUploadUrl, sellerDocumentUpload }
 import { sendTicketUpdateEmail } from "../lib/email.js";
 import { activeDisputeWhere, autoResolveExpiredDisputes, markDisputeTurn } from "../services/dispute.service.js";
 import { getSellerFinanceSummary } from "../services/finance.service.js";
-import { ensureDefaultMarketplaceCategories } from "../services/category.service.js";
 import { randomToken, sha256 } from "../lib/crypto.js";
 import { sellerApplicationSchema } from "../schemas/seller.schemas.js";
 import {
@@ -182,7 +181,6 @@ async function deleteUploadedFile(file?: Express.Multer.File) {
 
 
 sellerRouter.get("/categories", requireSeller, asyncHandler(async (_req, res) => {
-  await ensureDefaultMarketplaceCategories();
   const categories = await prisma.category.findMany({
     where: { isActive: true },
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],

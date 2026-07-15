@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ArrowRight, BadgeCheck, BarChart3, Download, FileText, Headphones, Home,
-  LogOut, MessageCircle, PackageCheck, RefreshCw, Settings, ShieldCheck,
+  ArrowRight, BadgeCheck, Download, FileText, Headphones, Home,
+  LogOut, MessageCircle, PackageCheck, RefreshCw, ShieldCheck,
   ShoppingBag, Star, Store, TicketCheck, TrendingUp, UserRound, Activity,
   Wallet, CreditCard, Bitcoin, DollarSign, PlusCircle, Gavel, MessageSquare,
-  LockKeyhole, Bell, Search, ChevronDown, Landmark, Smartphone, ClipboardCopy,
+  LockKeyhole, Bell, Search, ChevronDown, Smartphone, ClipboardCopy,
   UploadCloud, CheckCircle2, Clock3, ShieldAlert, Menu, X, Heart, Gift, Tag,
   MapPin, SlidersHorizontal, Sparkles, Award, History, KeyRound, PackageOpen,
-  ListChecks, CircleDollarSign, Banknote, Percent, Bookmark, ReceiptText, ImageIcon
+  ListChecks, Percent, Bookmark, ReceiptText, ImageIcon
 } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import { ApiError, apiDownloadUrl, apiRequest, mediaUrl, STAFF_ROLES } from "../api/client";
@@ -137,6 +137,8 @@ export function AccountDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [walletBalance, setWalletBalance] = useState(user?.balanceCents ?? 0);
+  const userId = user?.id;
+  const userBalanceCents = user?.balanceCents;
 
   const downloads = useMemo(() => orders.flatMap((order) => order.items.flatMap((item) => item.downloadGrants.map((grant) => ({ order, item, grant })))), [orders]);
   const purchasedItems = useMemo(() => orders.flatMap((order) => order.items.map((item) => ({ order, item }))), [orders]);
@@ -163,14 +165,14 @@ export function AccountDashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (!user) return;
-    setWalletBalance(user.balanceCents ?? 0);
+    if (!userId) return;
+    setWalletBalance(userBalanceCents ?? 0);
     const refreshBalance = () => apiRequest<{ balanceCents: number; availableBalanceCents?: number }>("/api/wallet/balance")
       .then((data) => setWalletBalance(data.availableBalanceCents ?? data.balanceCents)).catch(() => undefined);
     void refreshBalance();
     const interval = window.setInterval(() => void refreshBalance(), 12000);
     return () => window.clearInterval(interval);
-  }, [user?.id, user?.balanceCents]);
+  }, [userBalanceCents, userId]);
 
   useEffect(() => {
     if (tab === "seller" && user?.role === "SELLER") {
@@ -314,7 +316,7 @@ export function AccountDashboardPage() {
 
   return (
     <main className="account-dashboard-page buyer-premium-dashboard">
-      <Seo title="Account dashboard" description="Manage HSello orders, downloads, invoices, support, and seller activity." />
+      <Seo title="Account dashboard" description="Manage HSello orders, downloads, invoices, support, and seller activity." noIndex />
 
       {drawerOpen ? <button className="buyer-drawer-backdrop" aria-label="Close buyer menu" onClick={() => setDrawerOpen(false)} /> : null}
       <nav className={`dashboard-sidebar buyer-sidebar ${drawerOpen ? "open" : ""}`}>
@@ -971,7 +973,7 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, m
     window.requestAnimationFrame(() => document.getElementById("topup-payment-request")?.scrollIntoView({ behavior: "smooth", block: "start" }));
   }, [activeTopup]);
 
-  async function refreshWallet() {
+  const refreshWallet = useCallback(async () => {
     const [summary, depositHistory, methodData] = await Promise.all([
       apiRequest<WalletSummary>("/api/wallet/balance"),
       apiRequest<{ deposits: Deposit[] }>("/api/wallet/deposits"),
@@ -984,13 +986,13 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, m
     onBalanceChange(summary.availableBalanceCents ?? summary.balanceCents);
     setDeposits(depositHistory.deposits);
     if (methodData.methods.length) setTopupMethods(methodData.methods);
-  }
+  }, [onBalanceChange]);
 
   useEffect(() => {
     void refreshWallet().catch(() => undefined);
     const interval = window.setInterval(() => void refreshWallet().catch(() => undefined), 12000);
     return () => window.clearInterval(interval);
-  }, [onBalanceChange]);
+  }, [refreshWallet]);
 
   async function submitDeposit() {
     const cents = Math.round(parseFloat(depositAmount) * 100);

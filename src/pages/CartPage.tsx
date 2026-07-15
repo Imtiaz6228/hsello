@@ -20,7 +20,7 @@ export function CartPage() {
   const { items, subtotalCents, remove, setQuantity } = useCart();
   return (
     <main className="commerce-page">
-      <Seo title="Your cart" description="Review your HSello digital products and continue to secure checkout." />
+      <Seo title="Your cart" description="Review your HSello digital products and continue to checkout." noIndex />
       <MarketHeader />
       <section className="simple-hero"><span className="section-index">YOUR CART</span><h1>Ready when you are.</h1><p>Review products, delivery types, and quantities before checkout.</p></section>
       {items.length === 0 ? (

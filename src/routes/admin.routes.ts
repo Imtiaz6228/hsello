@@ -18,7 +18,6 @@ import { prisma } from "../lib/prisma.js";
 import { completePayment, issueRefund } from "../services/payment.service.js";
 import { releaseAvailableSellerEarnings, reviewWithdrawalRequest } from "../services/finance.service.js";
 import { autoResolveExpiredDisputes, markDisputeTurn } from "../services/dispute.service.js";
-import { ensureDefaultMarketplaceCategories } from "../services/category.service.js";
 import { sendTicketUpdateEmail } from "../lib/email.js";
 import { imageUpload, privateUploadRoot, publicUploadUrl } from "../middleware/upload.js";
 import { approveTopup, getTopupRequests, rejectTopup } from "../services/topup.service.js";
@@ -550,7 +549,6 @@ adminRouter.post("/tickets/:id/reply", requireStaff, asyncHandler(async (req, re
 }));
 
 adminRouter.get("/categories", requireStaff, asyncHandler(async (_req, res) => {
-  await ensureDefaultMarketplaceCategories();
   const categories = await prisma.category.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] });
   res.json({ categories });
 }));

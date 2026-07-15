@@ -74,6 +74,8 @@ Railway can also host the complete app at its public URL. To start with that sam
 3. Vercel reads `vercel.json`, proxies `/api` and `/uploads` to Railway, and runs `npm run build:web`.
 4. Update the Railway URL inside `vercel.json` if your Railway service URL is different, then redeploy Vercel.
 
+Set `VITE_SITE_URL` to the final public Vercel origin (for example, `https://market.example.com`). The build prerenders unique titles, descriptions, canonical links, Open Graph tags, and Twitter tags for the home, catalog, blog, article, company, and legal routes. Vercel's generated production URL is used automatically for previews when the explicit value is absent.
+
 Leave `VITE_API_BASE_URL` blank for the normal Vercel setup. If you intentionally want browser requests to call Railway directly, set `VITE_USE_REMOTE_API=true` and `VITE_API_BASE_URL=https://YOUR-RAILWAY-SERVICE.up.railway.app`, then redeploy. Do not append `/api`.
 
 If Turnstile is enabled, also set `VITE_TURNSTILE_SITE_KEY` on Vercel and the matching `TURNSTILE_SECRET_KEY` on Railway. Add a Vercel preview URL to Railway's `CORS_ORIGIN` only when you intend to test that preview.
@@ -84,7 +86,7 @@ After Vercel has its final URL, confirm that Railway's `APP_URL` and `CORS_ORIGI
 
 Vercel and Railway automatically deploy new commits after their GitHub integrations are connected. In Railway's service settings, enable **Wait for CI** so releases start only after the included GitHub Actions workflow passes.
 
-The workflow installs the locked dependencies, validates the Prisma schema, applies every migration to PostgreSQL 16, and builds the frontend and API. It does not need production secrets.
+The workflow installs the locked dependencies, runs lint and tests, audits production dependencies, validates and migrates the Prisma schema on PostgreSQL 16, builds the frontend and API, and validates the Sites artifact. The included deploy workflow starts only after this verification workflow succeeds.
 
 ## Staff accounts
 

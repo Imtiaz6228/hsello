@@ -3,7 +3,6 @@ import { ProductStatus } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { asyncHandler } from "../middleware/error-handler.js";
-import { ensureDefaultMarketplaceCategories } from "../services/category.service.js";
 
 export const marketplaceRouter = Router();
 
@@ -30,7 +29,6 @@ async function categoryAndDescendantIds(slug: string) {
 }
 
 marketplaceRouter.get("/categories", asyncHandler(async (_req, res) => {
-  await ensureDefaultMarketplaceCategories();
   const categories = await prisma.category.findMany({
     where: { isActive: true },
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],

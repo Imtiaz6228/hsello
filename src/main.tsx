@@ -14,14 +14,22 @@ import "./seller-complete.css";
 import "./buyer-premium.css";
 import "./admin-enterprise.css";
 import "./seller-interactions.css";
+import "./system-polish.css";
 import { LocaleProvider } from "./i18n/LocaleContext";
+import { AppErrorBoundary } from "./components/AppErrorBoundary";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <LocaleProvider><AuthProvider>
-        <CartProvider><App /></CartProvider>
-      </AuthProvider></LocaleProvider>
-    </BrowserRouter>
-  </React.StrictMode>
+    <AppErrorBoundary>
+      <BrowserRouter>
+        <LocaleProvider>
+          <AuthProvider>
+            <CartProvider>
+              <App />
+            </CartProvider>
+          </AuthProvider>
+        </LocaleProvider>
+      </BrowserRouter>
+    </AppErrorBoundary>
+  </React.StrictMode>,
 );

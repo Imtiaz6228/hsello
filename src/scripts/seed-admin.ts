@@ -1,9 +1,13 @@
 import { prisma } from "../lib/prisma.js";
 import { hashPassword } from "../lib/password.js";
+import { env } from "../config/env.js";
 
 async function seed() {
-  const email = "imtiazbashir6868@gmail.com";
-  const password = "Admin@123456";
+  if (!env.ADMIN_EMAIL || !env.ADMIN_PASSWORD) {
+    throw new Error("ADMIN_EMAIL and ADMIN_PASSWORD are required to seed an administrator.");
+  }
+  const email = env.ADMIN_EMAIL;
+  const password = env.ADMIN_PASSWORD;
 
   const existing = await prisma.user.findUnique({ where: { email } });
 
@@ -35,8 +39,7 @@ async function seed() {
     console.log(`Created admin user: ${email}`);
   }
 
-  console.log(`Login with: ${email} / ${password}`);
-  console.log("Change your password after first login.");
+  console.log(`Administrator ${email} is ready. The password was not written to logs.`);
   await prisma.$disconnect();
 }
 

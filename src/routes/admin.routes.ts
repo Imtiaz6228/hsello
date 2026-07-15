@@ -479,7 +479,12 @@ adminRouter.patch("/withdrawals/:id/:action", requireAdmin, asyncHandler(async (
   const action = z.enum(["approve", "reject"]).parse(req.params.action);
   const input = z.object({ adminNotes: z.string().trim().max(1000).optional() }).parse(req.body);
   const withdrawal = await reviewWithdrawalRequest(id, action, input.adminNotes);
-  res.json({ message: action === "approve" ? "Withdrawal approved and marked successful." : "Withdrawal rejected and balance returned.", withdrawal });
+  res.json({
+    message: action === "approve"
+      ? "Withdrawal approved for payout. Do not mark it settled until a provider or blockchain reference is recorded."
+      : "Withdrawal rejected and balance returned.",
+    withdrawal
+  });
 }));
 
 adminRouter.get("/refunds", requireStaff, asyncHandler(async (_req, res) => {

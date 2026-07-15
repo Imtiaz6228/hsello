@@ -19,7 +19,7 @@ type AuthContextValue = {
   user: User | null;
   loading: boolean;
   signIn: (payload: SignInPayload) => Promise<User>;
-  register: (payload: FormData) => Promise<User>;
+  register: (payload: FormData) => Promise<{ user: User; verificationEmailSent: boolean }>;
   refreshUser: () => Promise<User | null>;
   logout: () => Promise<void>;
   setUser: (user: User | null) => void;
@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const register = useCallback(async (payload: FormData) => {
-    const data = await apiRequest<{ user: User; message: string; csrfToken: string }>(
+    const data = await apiRequest<{ user: User; message: string; csrfToken: string; verificationEmailSent: boolean }>(
       "/api/auth/register",
       {
         method: "POST",
@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
     setUser(data.user);
 
-    return data.user;
+    return { user: data.user, verificationEmailSent: data.verificationEmailSent };
   }, []);
 
   const logout = useCallback(async () => {

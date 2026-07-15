@@ -781,7 +781,7 @@ model TopupRequest {
   status          TopupStatus @default(PENDING)
   depositAddress  String
   reference       String      @unique
-  txHash          String?
+  txHash          String?     @unique
   screenshotPath  String?
   screenshotUrl   String?
   networkVerified Boolean     @default(false)
@@ -808,6 +808,7 @@ model WalletTransaction {
   reference      String?
   orderId        String?
   relatedId      String?
+  idempotencyKey String?        @unique
   balanceAfter   Int           @default(0)
   createdAt      DateTime      @default(now())
 

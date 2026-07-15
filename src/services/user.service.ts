@@ -3,7 +3,7 @@ import { prisma } from "../lib/prisma.js";
 import { publicUploadUrl } from "../middleware/upload.js";
 import { ApiError } from "../middleware/error-handler.js";
 import type { UpdateProfileInput } from "../schemas/profile.schemas.js";
-import { publicUser } from "./auth.service.js";
+import { publicUser, sendEmailVerificationForUser } from "./auth.service.js";
 
 async function ensureUniqueForProfile(userId: string, input: UpdateProfileInput) {
   const conflicts: User[] = [];
@@ -30,13 +30,20 @@ async function ensureUniqueForProfile(userId: string, input: UpdateProfileInput)
 export async function updateProfile(userId: string, input: UpdateProfileInput) {
   await ensureUniqueForProfile(userId, input);
 
+  const currentUser = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+  const emailChanged = Boolean(input.email && input.email !== currentUser.email);
+
   const updatedUser = await prisma.user.update({
     where: { id: userId },
     data: {
       ...input,
-      emailVerifiedAt: input.email ? new Date() : undefined
+      emailVerifiedAt: emailChanged ? null : undefined
     }
   });
+
+  if (emailChanged) {
+    await sendEmailVerificationForUser(updatedUser);
+  }
 
   return publicUser(updatedUser);
 }

@@ -49,12 +49,12 @@ authRouter.post(
     const input = registerSchema.parse(req.body);
     await verifyCaptcha(input.captchaToken, req.ip);
 
-    const user = await registerUser(input, req.file);
+    const { user, verificationEmailSent } = await registerUser(input, req.file);
     const session = await createSession(
       {
         id: user.id,
         role: user.role,
-        emailVerifiedAt: new Date()
+        emailVerifiedAt: null
       },
       req,
       true
@@ -64,9 +64,12 @@ authRouter.post(
     const csrfToken = issueCsrfToken(res);
 
     res.status(201).json({
-      message: "Account created successfully.",
+      message: verificationEmailSent
+        ? "Account created. Check your email to verify it."
+        : "Account created, but the verification email could not be delivered. Request a new link to continue.",
       user,
-      csrfToken
+      csrfToken,
+      verificationEmailSent
     });
   })
 );

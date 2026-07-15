@@ -1087,14 +1087,12 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, m
     }
   }
 
-  const methods = [
-    { value: "CRYPTO_TRC20", label: "USDT · TRC20", icon: Bitcoin, network: "Tron network", address: "TDffsBmuyrMsNEQXzzLYfzAwz7W6Jmvb1W" },
-    { value: "CRYPTO_BEP20", label: "USDT · BEP20", icon: Bitcoin, network: "BNB Smart Chain", address: "0x5fe0bc617b00812396560e00a47b68a4d19933df" },
-    { value: "CRYPTO_ERC20", label: "USDT · ERC20", icon: Bitcoin, network: "Ethereum network", address: "0x5fe0bc617b00812396560e00a47b68a4d19933df" },
-    { value: "BTC", label: "Bitcoin · BTC", icon: Bitcoin, network: "Bitcoin network", address: "1CRoGe5BKjSTYBjxjPaS5NRCP8eyZ8cSpA" },
-    { value: "ETH", label: "Ethereum · ERC20", icon: DollarSign, network: "Ethereum network", address: "0x5fe0bc617b00812396560e00a47b68a4d19933df" },
-    { value: "SOL", label: "Solana · SOL", icon: Smartphone, network: "Solana network", address: "5K8sYDqmmMDeVMDcJjzmwdX2MGMwqCeNNnpDd82tXdf" }
-  ].map((method) => ({ ...method, ...(topupMethods.find((item) => item.method === method.value) ?? {}) }));
+  const methodIcons = { CRYPTO_TRC20: Bitcoin, CRYPTO_BEP20: Bitcoin, CRYPTO_ERC20: Bitcoin, BTC: Bitcoin, ETH: DollarSign, SOL: Smartphone };
+  const methods = topupMethods.map((method) => ({
+    ...method,
+    value: method.method,
+    icon: methodIcons[method.method as keyof typeof methodIcons] ?? Bitcoin
+  }));
   const selectedMethod = methods.find((method) => method.value === depositMethod) ?? methods[0];
   const chains = ["TRC20 USDT", "ERC20 USDT", "BEP20 USDT", "BTC", "ETH", "SOL", "TON", "Polygon USDT"];
 

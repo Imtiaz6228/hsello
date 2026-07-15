@@ -151,6 +151,9 @@ export function OrderConfirmationPage() {
       void checkCrypto(false);
     }, 15_000);
     return () => window.clearInterval(timer);
+    // checkCrypto intentionally reads the latest render state; recreating the
+    // interval for its function identity would cause polling churn.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCrypto, orderId, state]);
 
   async function checkCrypto(showLoading = true) {

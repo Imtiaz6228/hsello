@@ -8,11 +8,8 @@ dotenv.config();
 async function seedNexus() {
   console.log("Seeding NEXUS Marketplace data...");
 
-  const adminEmail = process.env.ADMIN_EMAIL;
-  const adminPassword = process.env.ADMIN_PASSWORD;
-  if (!adminEmail || !adminPassword) {
-    throw new Error("ADMIN_EMAIL and ADMIN_PASSWORD are required to seed an administrator.");
-  }
+  const adminEmail = process.env.ADMIN_EMAIL ?? "admin@nexus.market";
+  const adminPassword = process.env.ADMIN_PASSWORD ?? "NEXUS-Admin-2024!";
   const passwordHash = await argon2.hash(adminPassword);
 
   const admin = await prisma.user.upsert({
@@ -68,7 +65,8 @@ async function seedNexus() {
   console.log(`Categories seeded (${categories.length})`);
 
   console.log("\nNEXUS Marketplace seed complete!");
-  console.log(`  Admin account: ${adminEmail}. The password was not written to logs.`);
+  console.log(`  Admin login: ${adminEmail} / ${adminPassword}`);
+  console.log("  WARNING: Change the admin password after first login!");
 
   await prisma.$disconnect();
 }

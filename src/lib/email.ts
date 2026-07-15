@@ -49,6 +49,7 @@ async function sendMail(to: string, subject: string, html: string) {
 
 export function sendVerificationEmail(to: string, firstName: string, token: string) {
   const url = `${env.APP_URL}/verify-email?token=${encodeURIComponent(token)}`;
+  console.log(`[VERIFY] Verification URL for ${to}: ${url}`);
 
   return sendMail(
     to,

@@ -47,6 +47,9 @@ jobs:
       - name: Lint source
         run: npm run lint
 
+      - name: Run tests
+        run: npm test
+
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
 
@@ -58,9 +61,6 @@ jobs:
 
       - name: Build frontend and API
         run: npm run build:railway
-
-      - name: Run tests
-        run: npm test
 
       - name: Validate Sites artifact
         run: bash scripts/validate-artifact.sh

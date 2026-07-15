@@ -1,7 +1,7 @@
 import { FormEvent, useCallback, useState } from "react";
 import { Camera, Github, Mail, UserPlus } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ApiError, apiRequest } from "../api/client";
+import { ApiError, apiRequest, homePathForRole } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { Alert } from "../components/Alert";
 import { AuthShell } from "../components/AuthShell";
@@ -96,17 +96,9 @@ export function RegisterPage() {
 
     setLoading(true);
     try {
-      const { user, verificationEmailSent } = await register(payload);
-      navigate("/verify-required", {
-        replace: true,
-        state: {
-          email: user.email,
-          from: (location.state as { from?: { pathname?: string } } | null)?.from,
-          deliveryError: verificationEmailSent
-            ? undefined
-            : "Your account was created, but we could not deliver the verification email. Use Resend email to try again."
-        }
-      });
+      const user = await register(payload);
+      const destination = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? homePathForRole(user.role);
+      navigate(destination, { replace: true });
     } catch (error) {
       setStatus({
         type: "error",

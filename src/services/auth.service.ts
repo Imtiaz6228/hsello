@@ -4,7 +4,7 @@ import { Prisma, type Role, type User } from "@prisma/client";
 import { env } from "../config/env.js";
 import { clearAuthCookies, REFRESH_TOKEN_COOKIE } from "../lib/cookies.js";
 import { randomToken, sha256 } from "../lib/crypto.js";
-import { sendPasswordResetEmail, sendVerificationEmail } from "../lib/email.js";
+import { sendPasswordResetEmail } from "../lib/email.js";
 import { hashPassword, verifyPassword } from "../lib/password.js";
 import { prisma } from "../lib/prisma.js";
 import { publicUploadUrl } from "../middleware/upload.js";
@@ -26,7 +26,7 @@ export function publicUser(user: User) {
     profileImageUrl: user.profileImageUrl,
     role: user.role,
     isSuspended: user.isSuspended,
-    emailVerified: Boolean(user.emailVerifiedAt),
+    emailVerified: true,
     balanceCents: user.balanceCents ?? 0,
     createdAt: user.createdAt
   };
@@ -44,7 +44,7 @@ function signAccessToken(user: SessionUser) {
   return jwt.sign(
     {
       role: user.role,
-      emailVerified: Boolean(user.emailVerifiedAt)
+      emailVerified: true
     },
     env.JWT_SECRET,
     {
@@ -72,21 +72,6 @@ async function createEmailVerificationToken(userId: string) {
   });
 
   return token;
-}
-
-export async function sendEmailVerificationForUser(
-  user: Pick<User, "id" | "email" | "firstName" | "emailVerifiedAt">
-) {
-  if (user.emailVerifiedAt) return true;
-
-  const token = await createEmailVerificationToken(user.id);
-  try {
-    const delivery = await sendVerificationEmail(user.email, user.firstName, token);
-    return Boolean(delivery);
-  } catch (error) {
-    logEmailError("Verification", user.email, error);
-    return false;
-  }
 }
 
 async function createPasswordResetToken(userId: string) {
@@ -177,14 +162,11 @@ export async function registerUser(input: RegisterInput, file?: Express.Multer.F
         city: input.city,
         profileImageUrl: file ? publicUploadUrl(file.filename) : existingEmailUser.profileImageUrl,
         passwordHash: await hashPassword(input.password),
-        emailVerifiedAt: null
+        emailVerifiedAt: existingEmailUser.emailVerifiedAt ?? new Date()
       }
     });
 
-    return {
-      user: publicUser(user),
-      verificationEmailSent: await sendEmailVerificationForUser(user)
-    };
+    return publicUser(user);
   }
 
   const user = await prisma.user.create({
@@ -198,14 +180,11 @@ export async function registerUser(input: RegisterInput, file?: Express.Multer.F
       city: input.city,
       profileImageUrl: file ? publicUploadUrl(file.filename) : undefined,
       passwordHash: await hashPassword(input.password),
-      emailVerifiedAt: null
+      emailVerifiedAt: new Date()
     }
   });
 
-  return {
-    user: publicUser(user),
-    verificationEmailSent: await sendEmailVerificationForUser(user)
-  };
+  return publicUser(user);
 }
 
 export async function loginUser(input: LoginInput, req: Request) {
@@ -311,7 +290,10 @@ export async function resendVerification(email: string) {
     return;
   }
 
-  await sendEmailVerificationForUser(user);
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { emailVerifiedAt: new Date() }
+  });
 }
 
 export async function requestPasswordReset(email: string) {

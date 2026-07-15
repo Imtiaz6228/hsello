@@ -46,7 +46,7 @@ walletRouter.post("/withdrawals", asyncHandler(async (req, res) => {
   const withdrawal = await createWithdrawalRequest(req.auth!.id, input);
   const summary = await getWalletSummary(req.auth!.id);
   res.status(201).json({
-    message: "Withdrawal request submitted. Funds are reserved until the request is rejected or the payout is settled.",
+    message: "Withdrawal request submitted. It will stay pending until admin approves and marks it successful.",
     withdrawal,
     ...summary
   });

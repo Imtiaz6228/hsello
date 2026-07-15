@@ -75,22 +75,19 @@ const tabs: Array<{ id: Tab; label: string; icon: typeof Home; roles?: string[] 
 
 const buyerMenuGroups: Array<{ label: string; items: Array<{ tab: Tab; label: string; icon: typeof Home }> }> = [
   { label: "Dashboard", items: [{ tab: "overview", label: "Overview", icon: Home }] },
-  { label: "My Orders", items: [
-    { tab: "orders", label: "All orders", icon: ShoppingBag }, { tab: "active-orders", label: "Active orders", icon: Activity },
-    { tab: "completed-orders", label: "Completed", icon: CheckCircle2 }, { tab: "pending-orders", label: "Pending", icon: Clock3 },
-    { tab: "cancelled-orders", label: "Cancelled", icon: X }, { tab: "refunds", label: "Refund requests", icon: RefreshCw },
+  { label: "Purchases", items: [
+    { tab: "orders", label: "Orders", icon: ShoppingBag },
+    { tab: "refunds", label: "Refunds", icon: RefreshCw },
     { tab: "disputes", label: "Disputes", icon: Gavel }
   ] },
   { label: "Digital Library", items: [
-    { tab: "purchased-products", label: "Purchased products", icon: PackageOpen }, { tab: "downloads", label: "Downloads", icon: Download },
-    { tab: "license-keys", label: "License keys", icon: KeyRound }, { tab: "activation-codes", label: "Activation codes", icon: ListChecks },
-    { tab: "delivery-history", label: "Delivery history", icon: History }
+    { tab: "purchased-products", label: "My library", icon: PackageOpen },
+    { tab: "wishlist", label: "Saved products", icon: Heart },
+    { tab: "cart", label: "Shopping cart", icon: ShoppingBag }
   ] },
-  { label: "Shopping", items: [{ tab: "wishlist", label: "Wishlist", icon: Heart }, { tab: "cart", label: "Shopping cart", icon: ShoppingBag }, { tab: "favorites", label: "Favorites", icon: Bookmark }] },
-  { label: "Messages", items: [{ tab: "messages", label: "Messages", icon: MessageSquare }, { tab: "chats", label: "Seller chat", icon: MessageCircle }, { tab: "tickets", label: "Support tickets", icon: TicketCheck }, { tab: "notifications", label: "Notifications", icon: Bell }] },
-  { label: "Wallet", items: [{ tab: "wallet", label: "Balance & top up", icon: Wallet }, { tab: "transactions", label: "Transactions", icon: ReceiptText }, { tab: "coupons", label: "Coupons", icon: Tag }, { tab: "gift-cards", label: "Gift cards", icon: Gift }, { tab: "rewards", label: "Rewards", icon: Award }, { tab: "cashback", label: "Cashback", icon: Percent }] },
-  { label: "Account", items: [{ tab: "profile", label: "Profile", icon: UserRound }, { tab: "security", label: "Security", icon: ShieldCheck }, { tab: "addresses", label: "Addresses", icon: MapPin }, { tab: "payment-methods", label: "Payment methods", icon: CreditCard }, { tab: "preferences", label: "Preferences", icon: SlidersHorizontal }] },
-  { label: "Support", items: [{ tab: "reviews", label: "My reviews", icon: Star }, { tab: "tickets", label: "Help center", icon: Headphones }] }
+  { label: "Inbox", items: [{ tab: "messages", label: "Order messages", icon: MessageSquare }, { tab: "tickets", label: "Support", icon: TicketCheck }, { tab: "notifications", label: "Notifications", icon: Bell }] },
+  { label: "Wallet", items: [{ tab: "wallet", label: "Balance & top up", icon: Wallet }, { tab: "transactions", label: "Transactions", icon: ReceiptText }] },
+  { label: "Account", items: [{ tab: "profile", label: "Profile", icon: UserRound }, { tab: "security", label: "Security", icon: ShieldCheck }, { tab: "reviews", label: "My reviews", icon: Star }] }
 ];
 
 function roleDashboardRedirect(role: string) {
@@ -107,7 +104,7 @@ export function AccountDashboardPage() {
     return tabs.some((item) => item.id === hash) ? hash : "overview";
   });
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ Dashboard: true, "My Orders": true, "Digital Library": true, Shopping: true, Messages: true, Wallet: true, Account: true, Support: true });
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ Dashboard: true, Purchases: true, "Digital Library": true, Inbox: true, Wallet: true, Account: true });
   function selectTab(next: Tab) {
     setTabState(next);
     setDrawerOpen(false);
@@ -347,7 +344,7 @@ export function AccountDashboardPage() {
           <button className="buyer-mobile-menu" aria-label="Open buyer menu" onClick={() => setDrawerOpen(true)}><Menu /></button>
           <label><Search size={16} /><input aria-label="Search dashboard" placeholder="Search orders, products, disputes…" /></label>
           <div>
-            <span className="buyer-sync-pill"><i /> LIVE</span>
+            <span className="buyer-sync-pill"><i /> ACCOUNT</span>
             <LocaleSwitcher />
             <button className="command-icon" aria-label="Notifications" onClick={() => selectTab("notifications")}><Bell size={18} /><span /></button>
             <Link className="account-switcher" to="/sign-out" title="Open sign-out page"><span>{user.firstName[0]}{user.lastName[0]}</span><b>{user.firstName}</b><LogOut size={15} /></Link>
@@ -358,18 +355,15 @@ export function AccountDashboardPage() {
         {tab === "overview" && (
           <div className="tab-content overview-tab">
             <section className="buyer-welcome-hero">
-              <div><span className="buyer-live-badge"><i /> REAL-TIME SYNC</span><h1>Welcome back, {user.firstName}.</h1><p>Your orders, digital products, wallet and support are ready in one protected workspace.</p><div><b><Award /> Premium member</b><b><BadgeCheck /> {user.emailVerified ? "Verified account" : "Verification pending"}</b></div></div>
+              <div><span className="buyer-live-badge"><i /> BUYER WORKSPACE</span><h1>Welcome back, {user.firstName}.</h1><p>Start with what needs attention, then move into orders, your library, messages, or account security.</p><div><b><PackageCheck /> Digital delivery center</b><b><BadgeCheck /> {user.emailVerified ? "Verified account" : "Verification pending"}</b></div></div>
               <aside><small>AVAILABLE BALANCE</small><strong>{formatMoney(walletBalance)}</strong><button type="button" onClick={() => selectTab("wallet")}><PlusCircle /> Add funds</button></aside>
             </section>
             <div className="metrics-grid buyer-metrics-grid">
               <button type="button" className="metric-card dashboard-metric-link" onClick={() => selectTab("orders")}><ShoppingBag size={22} /><span><strong>{orders.length}</strong><small>Total orders</small></span><ArrowRight /></button>
-              <button type="button" className="metric-card dashboard-metric-link" onClick={() => selectTab("active-orders")}><Activity size={22} /><span><strong>{activeOrders}</strong><small>Active orders</small></span><ArrowRight /></button>
-              <button type="button" className="metric-card dashboard-metric-link" onClick={() => selectTab("downloads")}><Download size={22} /><span><strong>{availableFileCount}</strong><small>Available files</small></span><ArrowRight /></button>
+              <button type="button" className="metric-card dashboard-metric-link" onClick={() => selectTab("orders")}><Activity size={22} /><span><strong>{activeOrders}</strong><small>Orders in progress</small></span><ArrowRight /></button>
+              <button type="button" className="metric-card dashboard-metric-link" onClick={() => selectTab("purchased-products")}><Download size={22} /><span><strong>{availableFileCount}</strong><small>Library items</small></span><ArrowRight /></button>
               <button type="button" className="metric-card dashboard-metric-link" onClick={() => selectTab("wallet")}><Wallet size={22} /><span><strong>{formatMoney(walletBalance)}</strong><small>Available balance</small></span><ArrowRight /></button>
-              <button type="button" className="metric-card dashboard-metric-link" onClick={() => selectTab("purchased-products")}><TrendingUp size={22} /><span><strong>{formatMoney(totalSpent)}</strong><small>Total purchases</small></span><ArrowRight /></button>
-              <button type="button" className="metric-card dashboard-metric-link" onClick={() => selectTab("coupons")}><Gift size={22} /><span><strong>0</strong><small>Active coupons</small></span><ArrowRight /></button>
-              <button type="button" className="metric-card dashboard-metric-link" onClick={() => selectTab("wishlist")}><Heart size={22} /><span><strong>0</strong><small>Wishlist items</small></span><ArrowRight /></button>
-              <button type="button" className="metric-card dashboard-metric-link" onClick={() => selectTab("rewards")}><Award size={22} /><span><strong>0</strong><small>Reward points</small></span><ArrowRight /></button>
+              <button type="button" className="metric-card dashboard-metric-link" onClick={() => selectTab("purchased-products")}><TrendingUp size={22} /><span><strong>{formatMoney(totalSpent)}</strong><small>Purchase history</small></span><ArrowRight /></button>
               <button type="button" className="metric-card dashboard-metric-link" onClick={() => selectTab("tickets")}><TicketCheck size={22} /><span><strong>{tickets.filter((t) => t.status !== "CLOSED" && t.status !== "RESOLVED").length}</strong><small>Open tickets</small></span><ArrowRight /></button>
             </div>
             <button type="button" className="buyer-topup-hero" onClick={() => selectTab("wallet")}>

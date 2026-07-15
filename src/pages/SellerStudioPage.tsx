@@ -107,53 +107,33 @@ const sellerTabs: Array<{ id: Tab; label: string; icon: typeof Store }> = [
 
 const sellerMenuGroups: Array<{ label: string; items: Array<{ label: string; tab: Tab; icon: typeof Store }> }> = [
   { label: "Workspace", items: [{ label: "Dashboard", tab: "overview", icon: LayoutDashboard }] },
-  { label: "Products", items: [
+  { label: "Catalog", items: [
     { label: "My products", tab: "products", icon: Boxes },
-    { label: "Product groups", tab: "product-groups", icon: FolderKanban },
     { label: "Categories", tab: "categories", icon: Grid3X3 },
     { label: "Inventory & variants", tab: "inventory", icon: Layers3 },
-    { label: "Uploaded files", tab: "downloads", icon: Download },
     { label: "Drafts & review", tab: "drafts", icon: FileText }
   ] },
   { label: "Orders", items: [
     { label: "All orders", tab: "orders", icon: ShoppingBag },
-    { label: "Processing", tab: "processing", icon: Clock3 },
-    { label: "Delivered", tab: "delivered", icon: PackageCheck },
     { label: "Refunds", tab: "refunds", icon: ArrowDownRight },
     { label: "Disputes", tab: "disputes", icon: ShieldCheck }
   ] },
   { label: "Finance", items: [
-    { label: "Financial center", tab: "finance", icon: WalletCards },
-    { label: "Withdrawals", tab: "withdrawals", icon: CircleDollarSign },
-    { label: "Transactions", tab: "transactions", icon: FileText },
-    { label: "Frozen funds", tab: "frozen", icon: LockKeyhole },
-    { label: "Earnings", tab: "earnings", icon: TrendingUp }
+    { label: "Financial center", tab: "finance", icon: WalletCards }
   ] },
-  { label: "Messages", items: [
+  { label: "Inbox", items: [
     { label: "Buyer messages", tab: "messages", icon: MessageSquare },
     { label: "Support tickets", tab: "tickets", icon: TicketCheck },
     { label: "Notifications", tab: "notifications", icon: Bell }
   ] },
-  { label: "Marketing", items: [
-    { label: "Coupons", tab: "coupons", icon: Tag },
-    { label: "Promotions", tab: "promotions", icon: Gift },
-    { label: "Sponsored listings", tab: "sponsored", icon: Megaphone },
-    { label: "Featured products", tab: "featured", icon: Sparkles }
+  { label: "Performance", items: [
+    { label: "Analytics", tab: "analytics", icon: BarChart3 }
   ] },
-  { label: "Analytics", items: [
-    { label: "Analytics", tab: "analytics", icon: BarChart3 },
-    { label: "Revenue", tab: "revenue", icon: TrendingUp },
-    { label: "Visitors", tab: "visitors", icon: Users },
-    { label: "Conversion", tab: "conversion", icon: ArrowUpRight }
-  ] },
-  { label: "Settings", items: [
+  { label: "Store", items: [
     { label: "Store profile", tab: "storefront", icon: Store },
-    { label: "Payment methods", tab: "payments", icon: CreditCard },
     { label: "Security", tab: "security", icon: ShieldCheck },
-    { label: "API", tab: "api", icon: KeyRound },
-    { label: "Preferences", tab: "preferences", icon: Settings }
-  ] },
-  { label: "Support", items: [{ label: "Help center", tab: "support", icon: LifeBuoy }] }
+    { label: "Seller support", tab: "support", icon: LifeBuoy }
+  ] }
 ];
 
 type FinanceSummary = {
@@ -260,7 +240,7 @@ export function SellerStudioPage() {
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [tickets, setTickets] = useState<SellerTicket[]>([]);
   const [withdrawalForm, setWithdrawalForm] = useState({ amount: "", blockchain: "USDT TRC20", walletAddress: "" });
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ Products: true, Orders: true, Finance: true, Messages: true, Marketing: true, Analytics: true, Settings: true, Support: true, Workspace: true });
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ Workspace: true, Catalog: true, Orders: true, Finance: true, Inbox: true, Performance: true, Store: true });
   const [mediaUploading, setMediaUploading] = useState("");
   const [deliveryOrder, setDeliveryOrder] = useState<SellerOrder | null>(null);
   const [analyticsPeriod, setAnalyticsPeriod] = useState<AnalyticsPeriod>("7d");
@@ -655,7 +635,7 @@ export function SellerStudioPage() {
           <label className="seller-global-search"><Search /><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search products, orders, buyers…" /></label>
           <div><button className="seller-icon-button" onClick={() => selectTab("notifications")} aria-label="Notifications"><Bell />{pendingProducts > 0 ? <b>{pendingProducts}</b> : null}</button><LocaleSwitcher compact /><button className="seller-create-button" onClick={() => setOpen(true)}><PackagePlus size={17} /> Publish product</button></div>
         </header>
-        <div className="seller-pro-heading"><div><span className="seller-live-pill"><i /> LIVE DATA</span><h1>{tab === "overview" ? `Welcome back, ${profile?.storeName ?? "Seller"}` : sellerTabs.find((item) => item.id === tab)?.label}</h1><p>{tab === "overview" ? "Here’s what is happening with your store today." : "Manage this area with real-time data and complete control."}</p></div><button className="seller-refresh-button" onClick={() => void refreshDashboard()} disabled={refreshing}><RefreshCw className={refreshing ? "spinning" : ""} /> Refresh</button></div>
+        <div className="seller-pro-heading"><div><span className="seller-live-pill"><i /> STORE DATA</span><h1>{tab === "overview" ? `Welcome back, ${profile?.storeName ?? "Seller"}` : sellerTabs.find((item) => item.id === tab)?.label}</h1><p>{tab === "overview" ? "Start with orders and listings that need attention, then review performance." : "Manage this area with focused tools and current marketplace records."}</p></div><button className="seller-refresh-button" onClick={() => void refreshDashboard()} disabled={refreshing}><RefreshCw className={refreshing ? "spinning" : ""} /> Refresh</button></div>
         {message ? <div className={`dashboard-message ${messageType}`}>{message}</div> : null}
 
         {tab === "overview" ? <>
@@ -665,13 +645,13 @@ export function SellerStudioPage() {
             <span className="seller-balance-orb"><Sparkles /></span>
           </section>
           <section className="seller-metric-grid seller-metric-grid-premium">
-            <button type="button" className="seller-metric-action" onClick={() => selectTab("revenue")}><span><TrendingUp /></span><div><small>Today’s revenue</small><strong>{formatMoney(finance?.todayIncomeCents ?? 0)}</strong><p className="positive"><ArrowUpRight /> Live earnings</p></div></button>
+            <button type="button" className="seller-metric-action" onClick={() => selectTab("finance")}><span><TrendingUp /></span><div><small>Today’s revenue</small><strong>{formatMoney(finance?.todayIncomeCents ?? 0)}</strong><p className="positive"><ArrowUpRight /> Current total</p></div></button>
             <button type="button" className="seller-metric-action" onClick={() => selectTab("earnings")}><span><WalletCards /></span><div><small>Lifetime earnings</small><strong>{formatMoney(finance?.totalSellerEarningsCents ?? grossSales)}</strong><p className="positive"><ArrowUpRight /> All-time total</p></div></button>
             <button type="button" className="seller-metric-action" onClick={() => selectTab("processing")}><span><ShoppingBag /></span><div><small>Pending orders</small><strong>{pendingOrders}</strong><p><Clock3 /> Requires attention</p></div></button>
             <button type="button" className="seller-metric-action" onClick={() => selectTab("delivered")}><span><PackageCheck /></span><div><small>Completed orders</small><strong>{deliveredOrders}</strong><p className="positive"><ArrowUpRight /> Successful delivery</p></div></button>
             <button type="button" className="seller-metric-action" onClick={() => selectTab("products")}><span><Boxes /></span><div><small>Published products</small><strong>{liveProducts}</strong><p>{pendingProducts} awaiting review</p></div></button>
             <button type="button" className="seller-metric-action" onClick={() => selectTab("orders")}><span><Users /></span><div><small>Unique buyers</small><strong>{uniqueBuyers}</strong><p>Across {orders.length} orders</p></div></button>
-            <button type="button" className="seller-metric-action" onClick={() => selectTab("analytics")}><span><BadgeCheck /></span><div><small>Average rating</small><strong>{Number(profile?.averageRating ?? 0).toFixed(1)}</strong><p className="positive">Verified feedback</p></div></button>
+            <button type="button" className="seller-metric-action" onClick={() => selectTab("analytics")}><span><BadgeCheck /></span><div><small>Average rating</small><strong>{Number(profile?.averageRating ?? 0).toFixed(1)}</strong><p className="positive">Buyer feedback</p></div></button>
             <button type="button" className="seller-metric-action" onClick={() => selectTab("frozen")}><span><LockKeyhole /></span><div><small>Frozen balance</small><strong>{formatMoney(finance?.frozenBalanceCents ?? 0)}</strong><p>Releases automatically</p></div></button>
           </section>
           <section className="seller-performance-grid">

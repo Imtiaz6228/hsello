@@ -4,8 +4,12 @@ import {
   Check,
   Clock3,
   Download,
+  FileArchive,
   Flag,
+  Globe2,
+  Layers3,
   MessageCircle,
+  PackageCheck,
   RefreshCw,
   ShieldCheck,
   ShoppingBag,
@@ -16,8 +20,10 @@ import { useAuth } from "../auth/AuthContext";
 import { useCart } from "../commerce/CartContext";
 import { MarketFooter, MarketHeader } from "../components/MarketHeader";
 import { Seo } from "../components/Seo";
-import { useMarketplaceProduct } from "../commerce/useMarketplace";
+import { useMarketplaceProduct, useMarketplaceProducts } from "../commerce/useMarketplace";
 import { useLocale } from "../i18n/LocaleContext";
+import { MarketplaceProductCard } from "../components/MarketplaceProductCard";
+import type { CatalogProduct } from "../data/catalog";
 
 export function ProductPage() {
   const { formatMoney, currency } = useLocale();
@@ -27,7 +33,10 @@ export function ProductPage() {
   const { add } = useCart();
   const [added, setAdded] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
+  const [artMode, setArtMode] = useState<"cover" | "contents" | "license">("cover");
   const { product, loading } = useMarketplaceProduct(slug);
+  const marketplaceProducts = useMarketplaceProducts();
+  const relatedProducts = useMemo(() => marketplaceProducts.filter((item) => item.id !== product?.id && (item.categorySlug === product?.categorySlug || item.type === product?.type)).slice(0, 4), [marketplaceProducts, product]);
   const schema = useMemo(
     () =>
       product
@@ -69,6 +78,16 @@ export function ProductPage() {
     navigate("/cart");
   }
 
+  function addRelatedToCart(item: CatalogProduct) {
+    add(item);
+    navigate("/cart");
+  }
+
+  const included = product.included ?? (product.type === "DOWNLOAD"
+    ? ["Primary digital product files", "Setup and usage guide", "Future file corrections"]
+    : ["Seller-delivered project scope", "Written delivery summary", "Order-linked revision window"]);
+  const formats = product.formats ?? (product.type === "DOWNLOAD" ? ["Digital files", "PDF guide"] : ["Protected order delivery"]);
+
   return (
     <main className="commerce-page">
       <Seo
@@ -89,20 +108,33 @@ export function ProductPage() {
         <span>{product.title}</span>
       </div>
       <section className="product-detail">
-        <div className="product-detail-art">
-          {product.imageUrl && !imageFailed ? (
-            <img
-              src={product.imageUrl}
-              alt={product.title}
-              decoding="async"
-              fetchPriority="high"
-              onError={() => setImageFailed(true)}
-            />
-          ) : (
-            <b>{product.icon}</b>
-          )}
-          <span>{product.badge}</span>
-          <small>ORIGINAL DIGITAL WORK</small>
+        <div className="product-gallery">
+          <div className={`product-detail-art product-art-${artMode}`}>
+            {artMode === "cover" ? (
+              product.imageUrl && !imageFailed ? (
+                <img
+                  src={product.imageUrl}
+                  alt={product.title}
+                  decoding="async"
+                  fetchPriority="high"
+                  onError={() => setImageFailed(true)}
+                />
+              ) : (
+                <b>{product.icon}</b>
+              )
+            ) : artMode === "contents" ? (
+              <div className="product-art-information"><PackageCheck /><small>WHAT IS INCLUDED</small><strong>{included.length} ready-to-use deliverables</strong><span>{included.join(" · ")}</span></div>
+            ) : (
+              <div className="product-art-information"><ShieldCheck /><small>LICENSE & SUPPORT</small><strong>{product.license ?? "Standard marketplace license"}</strong><span>{product.afterSalesServiceHours ?? 24}-hour after-sales support window</span></div>
+            )}
+            <span>{product.badge}</span>
+            <small>ORIGINAL DIGITAL WORK</small>
+          </div>
+          <div className="product-gallery-thumbs" aria-label="Product information views">
+            <button className={artMode === "cover" ? "active" : ""} onClick={() => setArtMode("cover")}><span>{product.icon}</span><small>Preview</small></button>
+            <button className={artMode === "contents" ? "active" : ""} onClick={() => setArtMode("contents")}><PackageCheck /><small>Included</small></button>
+            <button className={artMode === "license" ? "active" : ""} onClick={() => setArtMode("license")}><ShieldCheck /><small>License</small></button>
+          </div>
         </div>
         <div className="product-detail-copy">
           <span className="section-index">{product.category}</span>
@@ -150,6 +182,9 @@ export function ProductPage() {
               </span>
             )}
           </div>
+          <div className="product-format-row">
+            {formats.map((format) => <span key={format}>{format}</span>)}
+          </div>
         </div>
         <aside className="buy-panel">
           <span>One-time purchase</span>
@@ -172,6 +207,31 @@ export function ProductPage() {
             </li>
           </ul>
         </aside>
+      </section>
+
+      <section className="product-information-grid">
+        <article className="product-included-card">
+          <span className="section-index">PACKAGE CONTENTS</span>
+          <h2>Everything included in your order.</h2>
+          <div>{included.map((item) => <p key={item}><Check /> {item}</p>)}</div>
+        </article>
+        <article className="product-facts-card">
+          <span className="section-index">PRODUCT FACTS</span>
+          <dl>
+            <div><dt><ShieldCheck /> License</dt><dd>{product.license ?? "Standard marketplace license"}</dd></div>
+            <div><dt><FileArchive /> Formats</dt><dd>{formats.join(", ")}</dd></div>
+            <div><dt><Layers3 /> Version</dt><dd>{product.version ?? "Current release"}</dd></div>
+            <div><dt><RefreshCw /> Last updated</dt><dd>{product.updatedAt ?? "Maintained by seller"}</dd></div>
+            <div><dt><Globe2 /> Delivery</dt><dd>{product.delivery}</dd></div>
+            <div><dt><MessageCircle /> Seller response</dt><dd>Within {product.afterSalesServiceHours ?? 24} hours</dd></div>
+          </dl>
+        </article>
+      </section>
+
+      <section className="product-policy-strip">
+        <div><ShieldCheck /><span><strong>Review before buying</strong><small>Confirm the file formats, license scope, and requirements above.</small></span></div>
+        <div><Download /><span><strong>Protected delivery</strong><small>Downloads and seller submissions stay linked to your order.</small></span></div>
+        <div><MessageCircle /><span><strong>Contextual support</strong><small>Open a support request directly from the relevant order.</small></span></div>
       </section>
 
       <section className="detail-section review-showcase">
@@ -203,6 +263,17 @@ export function ProductPage() {
         </div>
       </section>
 
+      <section className="product-faq-section">
+        <div><span className="section-index">BEFORE YOU BUY</span><h2>Common questions</h2><p>Important delivery and usage details, kept close to the purchase decision.</p></div>
+        <div>
+          <details open><summary>When will I receive this product?</summary><p>{product.delivery}. Your order page shows the exact delivery state and any seller message.</p></details>
+          <details><summary>Can I use it for client or commercial work?</summary><p>{product.license ?? "The standard marketplace license applies"}. Review any seller-specific restrictions shown in the delivered license file.</p></details>
+          <details><summary>What happens if something is missing?</summary><p>Use the order-linked support flow within the {product.afterSalesServiceHours ?? 24}-hour after-sales window so the seller and support team have the correct context.</p></details>
+        </div>
+      </section>
+
+      {relatedProducts.length ? <section className="related-product-section"><div className="catalog-section-heading"><div><span className="section-index">CONTINUE EXPLORING</span><h2>Related products</h2><p>More products with a similar category or delivery format.</p></div><Link to={`/categories/${product.categorySlug}`}>View category <ArrowLink /></Link></div><div className="related-product-grid">{relatedProducts.map((item) => <MarketplaceProductCard key={item.id} product={item} onBuy={addRelatedToCart} layout="grid" />)}</div></section> : null}
+
       <section className="report-line">
         <Flag />
         <div>
@@ -217,4 +288,8 @@ export function ProductPage() {
       <MarketFooter />
     </main>
   );
+}
+
+function ArrowLink() {
+  return <span aria-hidden="true">→</span>;
 }

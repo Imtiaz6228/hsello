@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiRequest, mediaUrl } from "../api/client";
-import { catalogCategories, type CatalogCategory, type CatalogProduct } from "../data/catalog";
+import { catalogCategories, catalogProducts, type CatalogCategory, type CatalogProduct } from "../data/catalog";
 
 type ApiCategory = {
   id: string;
@@ -97,11 +97,11 @@ function mapCategories(categories: ApiCategory[]): CatalogCategory[] {
 }
 
 export function useMarketplaceProducts() {
-  const [products, setProducts] = useState<CatalogProduct[]>([]);
+  const [products, setProducts] = useState<CatalogProduct[]>(import.meta.env.DEV ? catalogProducts : []);
   useEffect(() => {
     void apiRequest<{ products: ApiProduct[] }>("/api/marketplace/products?take=96")
       .then((data) => setProducts(data.products.map(mapProduct)))
-      .catch(() => setProducts([]));
+      .catch(() => { if (!import.meta.env.DEV) setProducts([]); });
   }, []);
   return products;
 }
@@ -117,13 +117,13 @@ export function useMarketplaceCategories() {
 }
 
 export function useMarketplaceProduct(slug?: string) {
-  const [product, setProduct] = useState<CatalogProduct | undefined>();
+  const [product, setProduct] = useState<CatalogProduct | undefined>(() => import.meta.env.DEV ? catalogProducts.find((item) => item.slug === slug) : undefined);
   const [loading, setLoading] = useState(Boolean(slug));
   useEffect(() => {
     if (!slug) return;
     void apiRequest<{ product: ApiProduct }>(`/api/marketplace/products/${encodeURIComponent(slug)}`)
       .then((data) => setProduct(mapProduct(data.product)))
-      .catch(() => setProduct(undefined))
+      .catch(() => setProduct(import.meta.env.DEV ? catalogProducts.find((item) => item.slug === slug) : undefined))
       .finally(() => setLoading(false));
   }, [slug]);
   return { product, loading };

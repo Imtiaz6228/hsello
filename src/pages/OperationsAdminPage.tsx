@@ -44,7 +44,6 @@ import {
   Moon,
   Server,
   ShieldCheck,
-  Sparkles,
   Star,
   Sun,
   TrendingUp,
@@ -344,19 +343,24 @@ const navGroups: Array<{ label: string; icon: LucideIcon; items: Tab[] }> = [
   {
     label: "Marketplace",
     icon: Store,
-    items: ["sellers", "products", "categories", "users", "orders"],
+    items: ["products", "categories", "sellers", "homepage", "coupons"],
+  },
+  { label: "Users & access", icon: Users, items: ["users"] },
+  {
+    label: "Orders & resolution",
+    icon: PackageCheck,
+    items: ["orders", "refunds", "disputes"],
   },
   {
     label: "Finance",
     icon: CircleDollarSign,
-    items: ["payments", "deposits", "withdrawals", "refunds", "disputes"],
+    items: ["payments", "deposits", "withdrawals"],
   },
   {
     label: "Support & safety",
     icon: ShieldCheck,
     items: ["tickets", "chats", "reports"],
-  },
-  { label: "Growth & content", icon: Sparkles, items: ["coupons", "homepage"] },
+  }
 ];
 
 const adminPathTabs: Record<string, Tab> = {
@@ -1198,7 +1202,7 @@ export function OperationsAdminPage() {
             </h1>
             <p>
               {tab === "overview"
-                ? "Monitor marketplace health, revenue, risk, approvals and customer operations from one real-time command center."
+                ? "Review marketplace activity, approval queues, customer operations, and available financial records from one command center."
                 : "Search, review and act with protected permissions, clear status visibility and a complete operational workflow."}
             </p>
           </div>
@@ -2652,12 +2656,12 @@ function OverviewPanel({
       <section className="admin-market-health-hero">
         <div>
           <span>
-            <Activity /> LIVE MARKETPLACE HEALTH
+            <Activity /> OPERATIONAL OVERVIEW
           </span>
-          <h2>Operations are stable and synchronized.</h2>
+          <h2>Start with the queues that need a decision.</h2>
           <p>
-            Approval queues, financial risk, customer support and catalog
-            quality are tracked continuously.
+            This view summarizes current marketplace records. Infrastructure
+            health remains unknown until a monitoring provider is connected.
           </p>
           <div>
             <button type="button" onClick={() => onOpen("deposits")}>
@@ -2669,10 +2673,10 @@ function OverviewPanel({
           </div>
         </div>
         <aside>
-          <span>System confidence</span>
-          <strong>99.9%</strong>
+          <span>Items requiring review</span>
+          <strong>{(overview?.pendingSellers ?? 0) + (overview?.pendingProducts ?? 0) + (overview?.openTickets ?? 0) + (overview?.openDisputes ?? 0)}</strong>
           <small>
-            <i /> Database, payments and delivery online
+            <i /> Based on available marketplace records
           </small>
         </aside>
       </section>
@@ -2684,7 +2688,7 @@ function OverviewPanel({
               <span>
                 <Icon />
               </span>
-              <small>LIVE</small>
+              <small>RECORDED</small>
             </header>
             <p>{label}</p>
             <strong>{value}</strong>
@@ -2734,8 +2738,8 @@ function OverviewPanel({
         </article>
         <article className="admin-health-panel">
           <header>
-            <span>SYSTEM STATUS</span>
-            <h2>Marketplace infrastructure</h2>
+            <span>MONITORING READINESS</span>
+            <h2>Infrastructure signals</h2>
           </header>
           <div>
             <span>
@@ -2743,9 +2747,9 @@ function OverviewPanel({
             </span>
             <div>
               <strong>API & delivery</strong>
-              <small>Operational</small>
+              <small>No health provider connected</small>
             </div>
-            <b>Online</b>
+            <b>Unknown</b>
           </div>
           <div>
             <span>
@@ -2753,9 +2757,9 @@ function OverviewPanel({
             </span>
             <div>
               <strong>Marketplace database</strong>
-              <small>Live synchronization</small>
+              <small>No latency or uptime feed</small>
             </div>
-            <b>Healthy</b>
+            <b>Unknown</b>
           </div>
           <div>
             <span>
@@ -2763,9 +2767,9 @@ function OverviewPanel({
             </span>
             <div>
               <strong>Public media storage</strong>
-              <small>{storageMb} MB protected</small>
+              <small>{storageMb} MB recorded usage</small>
             </div>
-            <b>Durable</b>
+            <b>Usage only</b>
           </div>
           <div>
             <span>
@@ -2773,9 +2777,9 @@ function OverviewPanel({
             </span>
             <div>
               <strong>Security controls</strong>
-              <small>Role access enforced</small>
+              <small>Review permissions and audit coverage</small>
             </div>
-            <b>Protected</b>
+            <b>Review</b>
           </div>
         </article>
       </section>
@@ -2807,7 +2811,7 @@ function OverviewPanel({
         <article>
           <header>
             <div>
-              <span>REAL-TIME ACTIVITY</span>
+              <span>CURRENT QUEUES</span>
               <h2>Priority workflow</h2>
             </div>
             <button type="button" onClick={() => onOpen("orders")}>
@@ -2883,7 +2887,7 @@ function OverviewPanel({
             <ShieldAlert /> Review safety reports <ChevronRight />
           </button>
           <footer>
-            <Zap /> Real-time sync active
+            <Zap /> Counts reflect the latest successful refresh
           </footer>
         </aside>
       </section>

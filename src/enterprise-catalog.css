@@ -185,3 +185,36 @@
 }
 
 @media (max-width: 460px) { .lux-subcategory-preview-grid { grid-template-columns: 1fr; } }
+
+/* 2026 marketplace hero: compact, explicit, and product-first. */
+.lux-home .lux-hero { position: relative; min-height: 610px; overflow: hidden; border: 1px solid rgba(148,163,184,.2); border-radius: 28px; color: #f8fafc; background: linear-gradient(rgba(124,58,237,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(124,58,237,.08) 1px,transparent 1px),radial-gradient(circle at 72% 30%,rgba(99,102,241,.34),transparent 31%),linear-gradient(135deg,#070b18 0%,#11152b 58%,#17113a 100%); background-size: 44px 44px,44px 44px,auto,auto; box-shadow: 0 30px 90px rgba(15,23,42,.24); }
+.lux-home .lux-hero-copy { position: relative; z-index: 2; max-width: 690px; padding: 72px 0 62px 64px; }
+.lux-home .lux-hero h1 { margin: 15px 0 18px; color: #fff; font-family: Inter,ui-sans-serif,system-ui,sans-serif; font-size: clamp(43px,5.2vw,72px); font-weight: 760; line-height: .98; letter-spacing: -.055em; }
+.lux-home .lux-hero h1 em { color: #a5b4fc; font-family: inherit; font-style: normal; }
+.lux-home .lux-hero-copy>p { max-width: 610px; color: #cbd5e1; font-size: 16px; line-height: 1.65; }
+.lux-home .lux-search { max-width: 650px; height: 62px; margin-top: 26px; grid-template-columns: auto minmax(0,1fr) auto; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.97); box-shadow: 0 18px 50px rgba(0,0,0,.28); }
+.lux-home .lux-search button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 174px; height: 48px; border-radius: 12px; background: linear-gradient(135deg,#6d5dfc,#4f46e5); }
+.lux-home .lux-search button svg { width: 16px; }
+.lux-home .lux-hero-actions { display: flex; align-items: center; gap: 12px; margin-top: 18px; }
+.lux-home .lux-hero-actions a { min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 14px; border: 1px solid rgba(255,255,255,.18); border-radius: 10px; color: #e2e8f0; font-size: 12px; font-weight: 800; text-decoration: none; }
+.lux-home .lux-hero-actions a:first-child { border-color: #8b7cff; color: #fff; background: rgba(109,93,252,.28); }
+.lux-home .lux-popular button { color: #dbeafe; }
+.lux-home .lux-proof { border-color: rgba(255,255,255,.14); }
+.lux-home .lux-proof span { color: #94a3b8; }
+@media (max-width: 700px) {
+  .lux-home .lux-hero { width: calc(100% - 28px); min-height: 0; margin-top: 12px; padding: 0; display: block; border-radius: 20px; }
+  .lux-home .lux-hero-copy { max-width: none; padding: 32px 20px 26px; }
+  .lux-home .lux-eyebrow { font-size: 9px; }
+  .lux-home .lux-hero h1 { margin: 12px 0; font-size: clamp(34px,10.5vw,46px); line-height: 1.02; }
+  .lux-home .lux-hero-copy>p { margin: 0; font-size: 13px; line-height: 1.55; }
+  .lux-home .lux-search { height: 54px; margin-top: 18px; padding: 5px 6px 5px 13px; grid-template-columns: auto minmax(0,1fr) 43px; }
+  .lux-home .lux-search input { min-width: 0; font-size: 13px; }
+  .lux-home .lux-search button { min-width: 0; width: 43px; height: 42px; padding: 0; }
+  .lux-home .lux-search button span { display: none; }
+  .lux-home .lux-hero-actions { margin-top: 12px; }
+  .lux-home .lux-hero-actions a { min-height: 38px; padding: 7px 10px; font-size: 10px; }
+  .lux-home .lux-popular,.lux-home .lux-proof,.lux-home .lux-hero-stage { display: none; }
+  .lux-home .lux-trust { overflow-x: auto; justify-content: flex-start; padding: 13px 14px; scroll-snap-type: x proximity; }
+  .lux-home .lux-trust>div { min-width: 190px; scroll-snap-align: start; }
+  .lux-home #categories { padding-top: 42px; }
+}

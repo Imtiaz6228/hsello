@@ -151,6 +151,7 @@ export function OrderConfirmationPage() {
       void checkCrypto(false);
     }, 15_000);
     return () => window.clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCrypto, orderId, state]);
 
   async function checkCrypto(showLoading = true) {

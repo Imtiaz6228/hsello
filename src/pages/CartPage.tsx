@@ -32,7 +32,7 @@ export function CartPage() {
               <article key={product.id}>
                 <div className="cart-thumb"><CartProductImage src={product.imageUrl} alt={product.title} icon={product.icon} /></div>
                 <div><span>{product.category}</span><Link to={`/products/${product.slug}`}>{product.title}</Link><small>{product.delivery} · {product.seller}</small></div>
-                <div className="quantity-control"><button onClick={() => setQuantity(product.id, quantity - 1)}><Minus /></button><span>{quantity}</span><button onClick={() => setQuantity(product.id, quantity + 1)}><Plus /></button></div>
+                <div className="quantity-control"><button aria-label={`Decrease ${product.title} quantity`} onClick={() => setQuantity(product.id, quantity - 1)}><Minus /></button><span aria-live="polite">{quantity}</span><button aria-label={`Increase ${product.title} quantity`} onClick={() => setQuantity(product.id, quantity + 1)}><Plus /></button></div>
                 <strong>{formatMoney(product.priceCents * quantity)}</strong>
                 <button className="icon-button" onClick={() => remove(product.id)} aria-label={`Remove ${product.title}`}><Trash2 /></button>
               </article>

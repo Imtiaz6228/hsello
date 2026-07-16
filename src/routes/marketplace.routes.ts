@@ -3,6 +3,7 @@ import { ProductStatus } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { asyncHandler } from "../middleware/error-handler.js";
+import { equivalentCategorySlugs } from "../data/categoryAliases.js";
 
 export const marketplaceRouter = Router();
 
@@ -11,10 +12,10 @@ async function categoryAndDescendantIds(slug: string) {
     where: { isActive: true },
     select: { id: true, parentId: true, slug: true }
   });
-  const target = categories.find((category) => category.slug === slug);
-  if (!target) return [];
-
-  const ids = new Set([target.id]);
+  const equivalentSlugs = equivalentCategorySlugs(slug);
+  const targets = categories.filter((category) => equivalentSlugs.has(category.slug));
+  if (!targets.length) return [];
+  const ids = new Set(targets.map((target) => target.id));
   let changed = true;
   while (changed) {
     changed = false;

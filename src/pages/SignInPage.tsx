@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { Github, LockKeyhole, Mail } from "lucide-react";
+import { LockKeyhole } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ApiError, homePathForRole } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
@@ -95,16 +95,6 @@ export function SignInPage() {
           {loading ? "Signing in..." : "Sign in"}
         </button>
 
-        <div className="social-grid" aria-label="Social sign in options">
-          <button type="button" disabled>
-            <Mail size={17} aria-hidden="true" />
-            Google
-          </button>
-          <button type="button" disabled>
-            <Github size={17} aria-hidden="true" />
-            GitHub
-          </button>
-        </div>
 
         <p className="switch-auth">
           New here? <Link to="/register" state={location.state}>Create an account</Link>

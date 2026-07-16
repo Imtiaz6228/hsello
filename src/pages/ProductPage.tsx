@@ -51,13 +51,13 @@ export function ProductPage() {
               "@type": "Offer",
               price: (product.priceCents / 100).toFixed(2),
               priceCurrency: "USD",
-              availability: "https://schema.org/InStock",
+              availability: product.type === "SERVICE" || (product.stockCount ?? 0) > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
             },
-            aggregateRating: {
+            ...(product.reviews > 0 && product.rating > 0 ? { aggregateRating: {
               "@type": "AggregateRating",
               ratingValue: product.rating,
               reviewCount: product.reviews,
-            },
+            } } : {}),
           }
         : undefined,
     [product],
@@ -163,7 +163,7 @@ export function ProductPage() {
               <Clock3 /> {product.delivery}
             </span>
             <span>
-              <RefreshCw /> Updated files included
+              <RefreshCw /> Order-linked delivery record
             </span>
             <span>
               <ShieldCheck /> Buyer protection
@@ -174,7 +174,7 @@ export function ProductPage() {
             </span>
             {product.type === "DOWNLOAD" ? (
               <span>
-                <Download /> 5 protected downloads
+                <Download /> Protected download access
               </span>
             ) : (
               <span>
@@ -247,24 +247,7 @@ export function ProductPage() {
             respond, and abusive content enters moderation.
           </p>
         </div>
-        <div className="review-cards">
-          <article>
-            <span>★★★★★</span>
-            <p>
-              “Clear files, thoughtful organization, and exactly the license I
-              expected.”
-            </p>
-            <small>Verified buyer · 3 weeks ago</small>
-          </article>
-          <article>
-            <span>★★★★★</span>
-            <p>
-              “The update appeared in my library automatically. That part is
-              genuinely lovely.”
-            </p>
-            <small>Verified buyer · 1 month ago</small>
-          </article>
-        </div>
+        <div className="review-cards"><article><span>{product.reviews > 0 ? `${product.rating.toFixed(1)} / 5` : "NEW"}</span><p>{product.reviews > 0 ? `Based on ${product.reviews} verified purchase${product.reviews === 1 ? "" : "s"}. Individual reviews will appear here when review content is available.` : "This listing has no verified buyer reviews yet. Only customers with a paid order can publish one."}</p><small>{product.reviews > 0 ? "Verified-purchase aggregate" : "Be the first verified buyer to review"}</small></article></div>
       </section>
 
       <section className="product-faq-section">

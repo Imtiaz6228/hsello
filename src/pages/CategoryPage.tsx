@@ -1,7 +1,8 @@
 import { ArrowRight, BadgeCheck, Clock3, Grid2X2, List, Search, ShieldCheck, SlidersHorizontal } from "lucide-react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { useCallback, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useCart } from "../commerce/CartContext";
+import { categoryMatches } from "../commerce/catalogHierarchy";
 import { useMarketplaceCategories, useMarketplaceCategory, useMarketplaceProducts } from "../commerce/useMarketplace";
 import { MarketFooter, MarketHeader } from "../components/MarketHeader";
 import { MarketplaceProductCard } from "../components/MarketplaceProductCard";
@@ -39,30 +40,21 @@ export function CategoryPage() {
   const { category, loading } = useMarketplaceCategory(slug);
   const children = useMemo(() => categories.filter((item) => item.parentSlug === slug), [categories, slug]);
   const siblings = useMemo(() => categories.filter((item) => !item.parentSlug && item.slug !== slug).slice(0, 8), [categories, slug]);
-  const isDescendant = useCallback((candidate: string, ancestor: string) => {
-    let current = categories.find((item) => item.slug === candidate);
-    while (current?.parentSlug) {
-      if (current.parentSlug === ancestor) return true;
-      current = categories.find((item) => item.slug === current?.parentSlug);
-    }
-    return candidate === ancestor;
-  }, [categories]);
-
   const filteredProducts = useMemo(() => {
     if (!slug) return [];
     const matches = products.filter((product) => {
-      const inCurrent = isDescendant(product.categorySlug, slug);
-      const inSubFilter = subFilter === "all" || isDescendant(product.categorySlug, subFilter);
+      const inCurrent = categoryMatches(product.categorySlug, slug, categories);
+      const inSubFilter = categoryMatches(product.categorySlug, subFilter, categories);
       const matchesQuery = !query.trim() || `${product.title} ${product.description} ${product.seller}`.toLowerCase().includes(query.trim().toLowerCase());
       const matchesKind = kind === "all" || product.type === kind;
       return inCurrent && inSubFilter && matchesQuery && matchesKind;
     });
     return sortProducts(matches, sort);
-  }, [isDescendant, kind, products, query, slug, sort, subFilter]);
+  }, [categories, kind, products, query, slug, sort, subFilter]);
 
   const categoryProducts = useMemo(() => products.filter((product) => {
-    return Boolean(slug && isDescendant(product.categorySlug, slug));
-  }), [isDescendant, products, slug]);
+    return Boolean(slug && categoryMatches(product.categorySlug, slug, categories));
+  }), [categories, products, slug]);
 
   if (loading) return <main className="commerce-page"><MarketHeader /><p className="empty-state">Loading category…</p></main>;
   if (!category || !slug) return <Navigate to="/catalog" replace />;
@@ -87,7 +79,7 @@ export function CategoryPage() {
       {children.length ? (
         <section className="category-specialty-grid" aria-label={`${category.name} specialties`}>
           {children.map((child) => {
-            const count = categoryProducts.filter((product) => product.categorySlug === child.slug).length;
+            const count = categoryProducts.filter((product) => categoryMatches(product.categorySlug, child.slug, categories)).length;
             return <button type="button" className={subFilter === child.slug ? "active" : ""} key={child.slug} onClick={() => setSubFilter(child.slug)}><span>{child.icon}</span><div><strong>{child.name}</strong><small>{child.description}</small><b>{count} product{count === 1 ? "" : "s"}</b></div><ArrowRight /></button>;
           })}
         </section>
@@ -103,8 +95,8 @@ export function CategoryPage() {
           <div><strong>{filteredProducts.length}</strong><span>products found</span></div>
           <div className="filter-controls">
             <label className="category-inline-search"><Search /><input aria-label={`Search ${category.name}`} value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${category.name}`} /></label>
-            <label><select value={kind} onChange={(event) => setKind(event.target.value as "all" | "DOWNLOAD" | "SERVICE")}><option value="all">All types</option><option value="DOWNLOAD">Downloads</option><option value="SERVICE">Services</option></select></label>
-            <label><SlidersHorizontal /> <select value={sort} onChange={(event) => setSort(event.target.value as SortMode)}><option value="popular">Default - Popular</option><option value="price_asc">Price: Low → High</option><option value="price_desc">Price: High → Low</option><option value="newest">Newest</option></select></label>
+            <label><select aria-label="Product type" value={kind} onChange={(event) => setKind(event.target.value as "all" | "DOWNLOAD" | "SERVICE")}><option value="all">All types</option><option value="DOWNLOAD">Downloads</option><option value="SERVICE">Services</option></select></label>
+            <label><SlidersHorizontal /> <select aria-label="Sort products" value={sort} onChange={(event) => setSort(event.target.value as SortMode)}><option value="popular">Default - Popular</option><option value="price_asc">Price: Low → High</option><option value="price_desc">Price: High → Low</option><option value="newest">Newest</option></select></label>
             <button className={view === "list" ? "active" : ""} onClick={() => setView("list")} aria-label="List view"><List /></button>
             <button className={view === "grid" ? "active" : ""} onClick={() => setView("grid")} aria-label="Grid view"><Grid2X2 /></button>
           </div>

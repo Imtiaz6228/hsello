@@ -12,6 +12,7 @@ import {
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useCart } from "../commerce/CartContext";
+import { categoryMatches, productCategoryBuckets } from "../commerce/catalogHierarchy";
 import {
   useMarketplaceCategories,
   useMarketplaceProducts,
@@ -19,28 +20,13 @@ import {
 import { MarketFooter, MarketHeader } from "../components/MarketHeader";
 import { MarketplaceProductCard } from "../components/MarketplaceProductCard";
 import { Seo } from "../components/Seo";
-import type { CatalogCategory, CatalogProduct } from "../data/catalog";
+import type { CatalogProduct } from "../data/catalog";
 import { useLocale } from "../i18n/LocaleContext";
 
 type SortMode = "popular" | "price_asc" | "price_desc" | "newest";
 type ViewMode = "list" | "grid";
 type ProductKind = "all" | "DOWNLOAD" | "SERVICE";
 type PriceBand = "all" | "under_25" | "25_50" | "over_50";
-
-function productMatchesCategory(
-  product: CatalogProduct,
-  selected: string,
-  categories: CatalogCategory[],
-) {
-  if (selected === "all") return true;
-  if (product.categorySlug === selected) return true;
-  let productCategory = categories.find((category) => category.slug === product.categorySlug);
-  while (productCategory?.parentSlug) {
-    if (productCategory.parentSlug === selected) return true;
-    productCategory = categories.find((category) => category.slug === productCategory?.parentSlug);
-  }
-  return false;
-}
 
 function sortProducts(products: CatalogProduct[], sort: SortMode) {
   return [...products].sort((a, b) => {
@@ -96,18 +82,7 @@ export function CatalogPage() {
   const categoryCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const product of products) {
-      counts.set(
-        product.categorySlug,
-        (counts.get(product.categorySlug) ?? 0) + 1,
-      );
-      const productCategory = categories.find(
-        (item) => item.slug === product.categorySlug,
-      );
-      if (productCategory?.parentSlug)
-        counts.set(
-          productCategory.parentSlug,
-          (counts.get(productCategory.parentSlug) ?? 0) + 1,
-        );
+      for (const bucket of productCategoryBuckets(product.categorySlug, categories)) counts.set(bucket, (counts.get(bucket) ?? 0) + 1);
     }
     return counts;
   }, [categories, products]);
@@ -118,7 +93,7 @@ export function CatalogPage() {
       const isInStock =
         product.type === "SERVICE" || (product.stockCount ?? 0) > 0;
       return (
-        productMatchesCategory(product, category, categories) &&
+        categoryMatches(product.categorySlug, category, categories) &&
         (!stockOnly || isInStock) &&
         (kind === "all" || product.type === kind) &&
         (priceBand === "all" ||
@@ -203,6 +178,7 @@ export function CatalogPage() {
         <div className="catalog-search">
           <Search />
           <input
+            aria-label="Search marketplace"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={t("search")}
@@ -313,6 +289,7 @@ export function CatalogPage() {
             <div className="directory-search">
               <Search />
               <input
+                aria-label="Search categories"
                 value={categoryQuery}
                 onChange={(event) => setCategoryQuery(event.target.value)}
                 placeholder="Search category name..."

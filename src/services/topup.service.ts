@@ -2,17 +2,16 @@ import { TopupMethod, TopupStatus } from "@prisma/client";
 import { env } from "../config/env.js";
 import { prisma } from "../lib/prisma.js";
 import { ApiError } from "../middleware/error-handler.js";
-import { cacheGet, cacheSet } from "../lib/redis.js";
 
 const TOPUP_EXPIRY_HOURS = 24;
 
 const topupAddressBook: Partial<Record<TopupMethod, { label: string; network: string; asset: string; address: string }>> = {
-  CRYPTO_TRC20: { label: "USDT · TRC20", network: "Tron (TRC20)", asset: "USDT", address: "TDffsBmuyrMsNEQXzzLYfzAwz7W6Jmvb1W" },
-  CRYPTO_BEP20: { label: "USDT · BEP20", network: "BNB Smart Chain (BEP20)", asset: "USDT", address: "0x5fe0bc617b00812396560e00a47b68a4d19933df" },
-  CRYPTO_ERC20: { label: "USDT · ERC20", network: "Ethereum (ERC20)", asset: "USDT", address: "0x5fe0bc617b00812396560e00a47b68a4d19933df" },
-  BTC: { label: "Bitcoin", network: "Bitcoin", asset: "BTC", address: "1CRoGe5BKjSTYBjxjPaS5NRCP8eyZ8cSpA" },
-  ETH: { label: "Ethereum", network: "Ethereum", asset: "ETH", address: "0x5fe0bc617b00812396560e00a47b68a4d19933df" },
-  SOL: { label: "Solana", network: "Solana", asset: "SOL", address: "5K8sYDqmmMDeVMDcJjzmwdX2MGMwqCeNNnpDd82tXdf" }
+  CRYPTO_TRC20: { label: "USDT · TRC20", network: "Tron (TRC20)", asset: "USDT", address: env.TOPUP_TRC20_ADDRESS ?? "" },
+  CRYPTO_BEP20: { label: "USDT · BEP20", network: "BNB Smart Chain (BEP20)", asset: "USDT", address: env.TOPUP_BEP20_ADDRESS ?? "" },
+  CRYPTO_ERC20: { label: "USDT · ERC20", network: "Ethereum (ERC20)", asset: "USDT", address: env.TOPUP_ERC20_ADDRESS ?? "" },
+  BTC: { label: "Bitcoin", network: "Bitcoin", asset: "BTC", address: env.TOPUP_BTC_ADDRESS ?? "" },
+  ETH: { label: "Ethereum", network: "Ethereum", asset: "ETH", address: env.TOPUP_ETH_ADDRESS ?? "" },
+  SOL: { label: "Solana", network: "Solana", asset: "SOL", address: env.TOPUP_SOL_ADDRESS ?? "" }
 };
 
 function generateReference() {
@@ -22,11 +21,13 @@ function generateReference() {
 function getDepositAddress(method: TopupMethod): string {
   // Network-specific destinations are intentionally explicit: never reuse a
   // generic crypto address label, because buyers must send on the exact chain.
-  return topupAddressBook[method]?.address ?? env.ADMIN_WALLET_ADDRESS ?? "NEXUS-ADMIN-WALLET";
+  const address = topupAddressBook[method]?.address;
+  if (!address) throw new ApiError(503, "This top-up network is not configured.", "TOPUP_METHOD_UNAVAILABLE");
+  return address;
 }
 
 export function getTopupMethods() {
-  return Object.entries(topupAddressBook).map(([method, details]) => ({ method: method as TopupMethod, ...details! }));
+  return Object.entries(topupAddressBook).filter(([, details]) => Boolean(details?.address)).map(([method, details]) => ({ method: method as TopupMethod, ...details! }));
 }
 
 export async function createTopupRequest(userId: string, amountCents: number, method: TopupMethod) {
@@ -91,80 +92,9 @@ export async function submitTopupProof(
 }
 
 async function autoVerifyTopup(topup: any): Promise<any> {
-  try {
-    const cacheKey = `topup-verify:${topup.id}`;
-    const cached = await cacheGet<boolean>(cacheKey);
-    if (cached) {
-      return topup;
-    }
-
-    let verified = false;
-
-    if (topup.method === TopupMethod.CRYPTO_TRC20 && topup.txHash) {
-      verified = await verifyTronTransaction(topup.txHash, topup.depositAddress, topup.amountCents);
-    } else if ((topup.method === TopupMethod.CRYPTO_ERC20 || topup.method === TopupMethod.ETH) && topup.txHash) {
-      verified = await verifyEtherscanTransaction(topup.txHash, topup.depositAddress, topup.amountCents);
-    } else if (topup.method === TopupMethod.CRYPTO_BEP20 && topup.txHash) {
-      verified = await verifyBscTransaction(topup.txHash, topup.depositAddress, topup.amountCents);
-    }
-
-    if (verified) {
-      const updated = await prisma.topupRequest.update({
-        where: { id: topup.id },
-        data: { status: TopupStatus.VERIFIED, networkVerified: true },
-      });
-      await cacheSet(cacheKey, true, 3600);
-      return updated;
-    }
-
-    await cacheSet(cacheKey, false, 60);
-    return topup;
-  } catch (error) {
-    console.error("[topup] auto-verification failed:", error);
-    return topup;
-  }
-}
-
-async function verifyTronTransaction(txHash: string, address: string, expectedAmountCents: number): Promise<boolean> {
-  if (!env.TRONGRID_API_KEY) return false;
-  try {
-    const response = await fetch(`https://api.trongrid.io/v1/transactions/${txHash}`, {
-      headers: { "TRON-PRO-API-KEY": env.TRONGRID_API_KEY },
-    });
-    if (!response.ok) return false;
-    const data = await response.json() as any;
-    return Boolean(data?.data?.length);
-  } catch {
-    return false;
-  }
-}
-
-async function verifyEtherscanTransaction(txHash: string, address: string, expectedAmountCents: number): Promise<boolean> {
-  if (!env.ETHERSCAN_API_KEY) return false;
-  try {
-    const response = await fetch(
-      `https://api.etherscan.io/api?module=proxy&action=eth_getTransactionByHash&txhash=${txHash}&apikey=${env.ETHERSCAN_API_KEY}`
-    );
-    if (!response.ok) return false;
-    const data = await response.json() as any;
-    return Boolean(data?.result?.hash);
-  } catch {
-    return false;
-  }
-}
-
-async function verifyBscTransaction(txHash: string, address: string, expectedAmountCents: number): Promise<boolean> {
-  if (!env.BSCSCAN_API_KEY) return false;
-  try {
-    const response = await fetch(
-      `https://api.bscscan.com/api?module=proxy&action=eth_getTransactionByHash&txhash=${txHash}&apikey=${env.BSCSCAN_API_KEY}`
-    );
-    if (!response.ok) return false;
-    const data = await response.json() as any;
-    return Boolean(data?.result?.hash);
-  } catch {
-    return false;
-  }
+  // Keep deposits in manual review until recipient, asset/contract, amount,
+  // confirmations, success, and transaction-hash uniqueness are all verified.
+  return topup;
 }
 
 export async function approveTopup(topupId: string, adminId: string, adminNotes?: string) {

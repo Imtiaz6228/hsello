@@ -54,26 +54,6 @@ function signAccessToken(user: SessionUser) {
   );
 }
 
-async function createEmailVerificationToken(userId: string) {
-  await prisma.emailVerificationToken.deleteMany({
-    where: {
-      userId,
-      consumedAt: null
-    }
-  });
-
-  const token = randomToken(48);
-  await prisma.emailVerificationToken.create({
-    data: {
-      userId,
-      tokenHash: sha256(token),
-      expiresAt: addHours(24)
-    }
-  });
-
-  return token;
-}
-
 async function createPasswordResetToken(userId: string) {
   await prisma.passwordResetToken.deleteMany({
     where: {

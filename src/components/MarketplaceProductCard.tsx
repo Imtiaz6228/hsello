@@ -30,7 +30,6 @@ export function MarketplaceProductCard({ product, onBuy, layout = "grid" }: Prop
             <Link className="market-product-category" to={`/categories/${product.categorySlug}`}>{product.category}</Link>
             <Link to={`/products/${product.slug}`}><h2>{product.title}</h2></Link>
           </div>
-          <button className="heart-button" type="button" aria-label="Save product">♡</button>
         </div>
         <p>{product.description}</p>
         <div className="market-product-meta">

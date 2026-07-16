@@ -1,5 +1,5 @@
 import { FormEvent, useCallback, useState } from "react";
-import { Camera, Github, Mail, UserPlus } from "lucide-react";
+import { Camera, UserPlus } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ApiError, apiRequest, homePathForRole } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
@@ -220,10 +220,6 @@ export function RegisterPage() {
           {loading ? "Creating account..." : "Create account"}
         </button>
 
-        <div className="social-grid" aria-label="Social registration options">
-          <button type="button" disabled><Mail size={17} aria-hidden="true" /> Google</button>
-          <button type="button" disabled><Github size={17} aria-hidden="true" /> GitHub</button>
-        </div>
 
         <p className="switch-auth">
           Already have an account? <Link to="/sign-in" state={location.state}>Sign in</Link>

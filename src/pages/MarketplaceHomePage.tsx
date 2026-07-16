@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   BadgeCheck,
@@ -32,7 +32,7 @@ import {
   Zap,
   type LucideIcon,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { STAFF_ROLES } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import {
@@ -40,6 +40,7 @@ import {
   useMarketplaceProducts,
 } from "../commerce/useMarketplace";
 import { useCart } from "../commerce/CartContext";
+import { categoryMatches } from "../commerce/catalogHierarchy";
 import { LocaleSwitcher } from "../components/LocaleSwitcher";
 import { Seo } from "../components/Seo";
 import { useLocale } from "../i18n/LocaleContext";
@@ -56,6 +57,7 @@ type Category = {
 };
 type Product = {
   slug?: string;
+  categorySlug?: string;
   imageUrl?: string | null;
   category: string;
   title: string;
@@ -355,6 +357,25 @@ const products: Product[] = [
 
 const sellers = [
   {
+    slug: "northstar-studio",
+    name: "Northstar Studio",
+    mark: "NS",
+    focus: "Brand systems & publishing",
+    status: "Verified profile",
+    response: "Clear delivery terms",
+    accent: "orange",
+  },
+  {
+    slug: "pixel-supply",
+    name: "Pixel Supply",
+    mark: "PS",
+    focus: "Interface & game assets",
+    status: "Verified profile",
+    response: "Digital delivery",
+    accent: "indigo",
+  },
+  {
+    slug: "neural-desk",
     name: "Neural Desk",
     mark: "ND",
     focus: "AI & productivity",
@@ -363,28 +384,13 @@ const sellers = [
     accent: "purple",
   },
   {
-    name: "Pixel Supply",
-    mark: "PS",
-    focus: "Games & gift cards",
-    status: "Verified profile",
-    response: "Digital delivery",
-    accent: "indigo",
-  },
-  {
-    name: "Cloud Keys",
-    mark: "CK",
-    focus: "Software licenses",
+    slug: "inbox-atelier",
+    name: "Inbox Atelier",
+    mark: "IA",
+    focus: "Email design & lifecycle",
     status: "Verified profile",
     response: "Product support",
     accent: "blue",
-  },
-  {
-    name: "Creator District",
-    mark: "CD",
-    focus: "Social resources",
-    status: "Verified profile",
-    response: "Creator resources",
-    accent: "orange",
   },
 ];
 
@@ -567,6 +573,7 @@ export function MarketplaceHomePage() {
   const { user } = useAuth();
   const { count } = useCart();
   const { t } = useLocale();
+  const navigate = useNavigate();
   const liveCatalogProducts = useMarketplaceProducts();
   const marketplaceCategories = useMarketplaceCategories();
   const [query, setQuery] = useState("");
@@ -575,6 +582,19 @@ export function MarketplaceHomePage() {
   const [mobileMenu, setMobileMenu] = useState(false);
   const [mobileCatalogOpen, setMobileCatalogOpen] = useState(false);
   const [mobileCategory, setMobileCategory] = useState("Social media");
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!mobileMenu) return;
+    closeButtonRef.current?.focus();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { setMobileMenu(false); menuButtonRef.current?.focus(); }
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => { document.body.style.overflow = previousOverflow; document.removeEventListener("keydown", closeOnEscape); };
+  }, [mobileMenu]);
   const accountPath = user
     ? STAFF_ROLES.includes(user.role)
       ? "/admin"
@@ -645,11 +665,12 @@ export function MarketplaceHomePage() {
     () =>
       liveCatalogProducts.length
         ? liveCatalogProducts.map((product) => {
+            const categoryPath = product.category.toLowerCase().split(" / ");
             const match = categories.find(
               (item) =>
-                item.name.toLowerCase() === product.category.toLowerCase() ||
+                categoryPath.includes(item.name.toLowerCase()) ||
                 item.subcategories.some(
-                  (sub) => sub.toLowerCase() === product.category.toLowerCase(),
+                  (sub) => categoryPath.includes(sub.toLowerCase()),
                 ),
             );
             const visual = {
@@ -658,6 +679,7 @@ export function MarketplaceHomePage() {
             };
             return {
               slug: product.slug,
+              categorySlug: product.categorySlug,
               imageUrl: product.imageUrl,
               category: product.category,
               title: product.title,
@@ -677,22 +699,22 @@ export function MarketplaceHomePage() {
   );
   const visibleProducts = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const selectedCategory = categories.find((category) => category.name === activeCategory);
     return displayProducts.filter(
       (p) =>
         (activeCategory === "All" ||
+          Boolean(p.categorySlug && selectedCategory?.slug && categoryMatches(p.categorySlug, selectedCategory.slug, marketplaceCategories)) ||
           p.category === activeCategory ||
-          categories
-            .find((c) => c.name === activeCategory)
-            ?.subcategories.includes(p.category)) &&
+          selectedCategory?.subcategories.includes(p.category)) &&
         (!q ||
           [p.title, p.seller, p.category, ...p.tags].some((v) =>
             v.toLowerCase().includes(q),
           )),
     );
-  }, [activeCategory, categories, displayProducts, query]);
+  }, [activeCategory, categories, displayProducts, marketplaceCategories, query]);
   function submitSearch(e: FormEvent) {
     e.preventDefault();
-    document.querySelector("#products")?.scrollIntoView({ behavior: "smooth" });
+    navigate(`/catalog${query.trim() ? `?q=${encodeURIComponent(query.trim())}` : ""}`);
   }
   function pickCategory(name: string) {
     setBrowseCategory(name);
@@ -745,10 +767,11 @@ export function MarketplaceHomePage() {
             <small>DIGITAL MARKET</small>
           </div>
         </Link>
-        <nav className={mobileMenu ? "open" : ""} aria-label="Main navigation">
+        <nav id="homepage-navigation" className={mobileMenu ? "open" : ""} aria-label="Main navigation">
           <button
+            ref={closeButtonRef}
             className="mobile-close"
-            onClick={() => setMobileMenu(false)}
+            onClick={() => { setMobileMenu(false); menuButtonRef.current?.focus(); }}
             aria-label={t("close")}
           >
             <X />
@@ -760,6 +783,7 @@ export function MarketplaceHomePage() {
             {t("categories")} <ChevronDown size={14} />
           </a>
           <button
+            ref={menuButtonRef}
             className={`mobile-catalog-trigger ${mobileCatalogOpen ? "active" : ""}`}
             type="button"
             onClick={() => setMobileCatalogOpen((open) => !open)}
@@ -889,6 +913,8 @@ export function MarketplaceHomePage() {
             className="menu-button"
             onClick={() => setMobileMenu(true)}
             aria-label={t("menu")}
+            aria-expanded={mobileMenu}
+            aria-controls="homepage-navigation"
           >
             <Menu />
           </button>
@@ -922,19 +948,15 @@ export function MarketplaceHomePage() {
               placeholder={t("homeSearch")}
               aria-label="Search products"
             />
-            <button>{t("searchMarketplace")}</button>
+            <button type="submit" aria-label={t("searchMarketplace")}><span>{t("searchMarketplace")}</span><ArrowRight /></button>
           </form>
+          <div className="lux-hero-actions"><Link to="/catalog">Browse marketplace <ArrowRight size={16} /></Link><a href="#categories">Explore categories</a></div>
           <div className="lux-popular">
             <span>Trending:</span>
             {["ChatGPT", "Microsoft 365", "Spotify", "Gift cards"].map((t) => (
               <button
                 key={t}
-                onClick={() => {
-                  setQuery(t);
-                  document
-                    .querySelector("#products")
-                    ?.scrollIntoView({ behavior: "smooth" });
-                }}
+                onClick={() => navigate(`/catalog?q=${encodeURIComponent(t)}`)}
               >
                 {t}
               </button>
@@ -973,7 +995,7 @@ export function MarketplaceHomePage() {
               Create faster.
             </h2>
             <p>Premium AI tools from verified sellers.</p>
-            <Link to="/catalog">
+            <Link to="/catalog?category=ai-marketplace">
               Explore AI tools <ArrowRight size={16} />
             </Link>
           </article>
@@ -999,7 +1021,7 @@ export function MarketplaceHomePage() {
           <ShieldCheck />
           <span>
             <strong>Buyer protection</strong>
-            <small>Every transaction is covered</small>
+            <small>Eligible orders are covered</small>
           </span>
         </div>
         <div>
@@ -1013,7 +1035,7 @@ export function MarketplaceHomePage() {
           <Zap />
           <span>
             <strong>Fast delivery</strong>
-            <small>Most products arrive instantly</small>
+            <small>Timing is shown before checkout</small>
           </span>
         </div>
         <div>
@@ -1128,11 +1150,12 @@ export function MarketplaceHomePage() {
             View all products <ArrowRight size={16} />
           </Link>
         </div>
-        <div className="lux-tabs">
+        <div className="lux-tabs" role="group" aria-label="Filter featured products">
           {["All", ...categories.slice(0, 6).map((c) => c.name)].map((c) => (
             <button
               key={c}
               className={activeCategory === c ? "active" : ""}
+              aria-pressed={activeCategory === c}
               onClick={() => setActiveCategory(c)}
             >
               {c}
@@ -1190,7 +1213,7 @@ export function MarketplaceHomePage() {
         <div className="lux-section-head">
           <div>
             <span>THE BEST OF HSELLO</span>
-            <h2>Top sellers</h2>
+            <h2>Featured sellers</h2>
           </div>
           <Link to="/catalog">
             Discover all stores <ArrowRight size={16} />
@@ -1217,8 +1240,8 @@ export function MarketplaceHomePage() {
                 <span>Delivery details</span>
                 <span>Support terms</span>
               </div>
-              <Link to="/catalog">
-                Visit store <ArrowRight size={15} />
+              <Link to={`/stores/${s.slug}`}>
+                Explore their products <ArrowRight size={15} />
               </Link>
             </article>
           ))}

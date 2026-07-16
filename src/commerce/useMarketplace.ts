@@ -162,6 +162,13 @@ export function useMarketplaceProduct(slug?: string) {
 
 export type PublicStore = { name: string; about: string; policy: string; rating: number; sales: string; joined: string; mark: string; logoUrl?: string | null; bannerUrl?: string | null };
 
+export type FeaturedStore = { name:string;slug:string;about:string;rating:number;sales:number;joined:string;mark:string;logoUrl?:string|null };
+export function useMarketplaceStores() {
+  const [stores, setStores] = useState<FeaturedStore[]>([]);
+  useEffect(() => { void apiRequest<{ stores:Array<{storeName:string;slug:string;about:string;averageRating:number|string;totalSales:number;createdAt:string;logoUrl?:string|null}> }>("/api/marketplace/stores").then((data) => setStores(data.stores.map((store) => ({ name:store.storeName,slug:store.slug,about:store.about,rating:Number(store.averageRating)||0,sales:store.totalSales,joined:new Date(store.createdAt).getFullYear().toString(),mark:store.storeName.split(/\s+/).map((word)=>word[0]).join("").slice(0,2).toUpperCase(),logoUrl:normalizePublicMediaUrl(store.logoUrl) })))).catch(() => setStores([])); }, []);
+  return stores;
+}
+
 export function useMarketplaceStore(slug?: string) {
   const { locale } = useLocale();
   const [store, setStore] = useState<PublicStore>();

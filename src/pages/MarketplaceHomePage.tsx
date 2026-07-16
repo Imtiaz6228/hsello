@@ -45,6 +45,7 @@ import { Seo } from "../components/Seo";
 import { useLocale } from "../i18n/LocaleContext";
 
 type Category = {
+  slug?: string;
   name: string;
   short: string;
   description: string;
@@ -570,6 +571,7 @@ export function MarketplaceHomePage() {
   const marketplaceCategories = useMarketplaceCategories();
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+  const [browseCategory, setBrowseCategory] = useState("Gaming");
   const [mobileMenu, setMobileMenu] = useState(false);
   const [mobileCatalogOpen, setMobileCatalogOpen] = useState(false);
   const [mobileCategory, setMobileCategory] = useState("Social media");
@@ -611,11 +613,13 @@ export function MarketplaceHomePage() {
       "teal",
       "blue",
     ];
+    const preferredRoots = ["gaming", "social-media-marketplace", "email-accounts-marketplace", "ai-marketplace", "software-marketplace", "digital-goods-marketplace", "professional-services"];
     return parents.map((parent, index) => {
       const children = marketplaceCategories.filter(
         (item) => item.parentId === parent.id,
       );
       return {
+        slug: parent.slug,
         name: parent.name,
         short: parent.name.split(/\s+/).slice(0, 2).join(" "),
         description: parent.description,
@@ -631,6 +635,10 @@ export function MarketplaceHomePage() {
         icon: icons[index % icons.length],
         accent: accents[index % accents.length],
       };
+    }).sort((a, b) => {
+      const ai = preferredRoots.indexOf(a.slug ?? ""); const bi = preferredRoots.indexOf(b.slug ?? "");
+      if (ai >= 0 || bi >= 0) return (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi);
+      return a.name.localeCompare(b.name);
     });
   }, [marketplaceCategories]);
   const displayProducts = useMemo<Product[]>(
@@ -687,9 +695,11 @@ export function MarketplaceHomePage() {
     document.querySelector("#products")?.scrollIntoView({ behavior: "smooth" });
   }
   function pickCategory(name: string) {
-    setActiveCategory(name);
-    document.querySelector("#products")?.scrollIntoView({ behavior: "smooth" });
+    setBrowseCategory(name);
   }
+
+  const mainCategories = categories.filter((category) => ["gaming", "social-media-marketplace", "email-accounts-marketplace", "ai-marketplace", "software-marketplace", "digital-goods-marketplace", "professional-services"].includes(category.slug ?? "")).slice(0, 7);
+  const focusedCategory = mainCategories.find((category) => category.name === browseCategory) ?? mainCategories[0] ?? categories[0];
 
   return (
     <main className="lux-home">
@@ -1025,37 +1035,30 @@ export function MarketplaceHomePage() {
             Browse all categories <ArrowRight size={16} />
           </Link>
         </div>
-        <div className="lux-category-grid">
-          {categories.map((c) => {
+        <div className="lux-main-category-row" role="tablist" aria-label="Main marketplace categories">
+          {mainCategories.map((c) => {
             const Icon = c.icon;
             return (
               <button
                 key={c.name}
                 onClick={() => pickCategory(c.name)}
-                className={`lux-category-card accent-${c.accent}`}
+                className={`${browseCategory === c.name ? "active " : ""}accent-${c.accent}`}
+                role="tab"
+                aria-selected={browseCategory === c.name}
               >
                 <span className="category-symbol">
                   <Icon />
                 </span>
-                <span className="category-text">
-                  <strong>{c.name}</strong>
-                  <small>{c.description}</small>
-                </span>
-                <span className="category-tags">
-                  {c.subcategories.slice(0, 3).map((s) => (
-                    <i key={s}>{s}</i>
-                  ))}
-                </span>
-                <span className="category-more">
-                  {c.subcategories.length > 3
-                    ? `+${c.subcategories.length - 3} more`
-                    : "Explore"}{" "}
-                  <ArrowRight size={14} />
-                </span>
+                <strong>{c.name}</strong>
               </button>
             );
           })}
         </div>
+        {focusedCategory ? <div className="lux-category-preview">
+          <header><div><span>SELECTED DEPARTMENT</span><h3>{focusedCategory.name}</h3><p>{focusedCategory.description}</p></div><Link to={`/catalog?category=${encodeURIComponent(focusedCategory.slug ?? "")}`}>View all <ArrowRight /></Link></header>
+          <div className="lux-subcategory-preview-grid">{focusedCategory.subcategories.slice(0, 8).map((subcategory) => <Link key={subcategory} to={`/catalog?category=${encodeURIComponent(focusedCategory.subDetails?.[subcategory]?.[0]?.slug ?? focusedCategory.slug ?? "")}&q=${encodeURIComponent(subcategory)}`}><span>{subcategory.slice(0, 2).toUpperCase()}</span><strong>{subcategory}</strong><small>{(focusedCategory.subDetails?.[subcategory] ?? []).slice(0, 3).map((item) => item.name).join(" · ") || "Browse listings"}</small><ArrowRight /></Link>)}</div>
+          {focusedCategory.subcategories.length > 8 ? <Link className="lux-category-view-all" to={`/catalog?category=${encodeURIComponent(focusedCategory.slug ?? "")}`}>View all {focusedCategory.name} subcategories <ArrowRight /></Link> : null}
+        </div> : null}
       </section>
 
       <section className="lux-flash">

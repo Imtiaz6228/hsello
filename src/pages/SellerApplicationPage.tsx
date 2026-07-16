@@ -9,17 +9,13 @@ import { Seo } from "../components/Seo";
 type SellerForm = {
   userName: string;
   fullLegalName: string;
-  phoneNumber: string;
   email: string;
   country: string;
   stateProvince: string;
   city: string;
-  fullAddress: string;
-  postalCode: string;
   storeName: string;
   documentName: string;
   documentType: "ID_CARD" | "PASSPORT";
-  documentNumber: string;
   storeDescription: string;
   productCategories: string;
   termsAccepted: boolean;
@@ -31,17 +27,13 @@ function initialForm(user: ReturnType<typeof useAuth>["user"]): SellerForm {
   return {
     userName: user?.username ?? "",
     fullLegalName: legalName,
-    phoneNumber: user?.phone ?? "",
     email: user?.email ?? "",
     country: user?.country ?? "",
     stateProvince: "",
     city: user?.city ?? "",
-    fullAddress: "",
-    postalCode: "",
     storeName: "",
     documentName: legalName,
     documentType: "ID_CARD",
-    documentNumber: "",
     storeDescription: "",
     productCategories: "",
     termsAccepted: false
@@ -103,17 +95,13 @@ export function SellerApplicationPage() {
     const data = new FormData();
     data.append("userName", form.userName);
     data.append("fullLegalName", form.fullLegalName);
-    data.append("phoneNumber", form.phoneNumber);
     data.append("email", form.email);
     data.append("country", form.country);
     data.append("stateProvince", form.stateProvince);
     data.append("city", form.city);
-    data.append("fullAddress", form.fullAddress);
-    data.append("postalCode", form.postalCode);
     data.append("storeName", form.storeName);
     data.append("documentName", form.documentName);
     data.append("documentType", form.documentType);
-    data.append("documentNumber", form.documentNumber);
     data.append("storeDescription", form.storeDescription);
     data.append("productCategories", form.productCategories);
     data.append("termsAccepted", String(form.termsAccepted));
@@ -172,14 +160,11 @@ export function SellerApplicationPage() {
               <label className="field" htmlFor="sellerUserName"><span>Username</span><input id="sellerUserName" value={form.userName} onChange={(event) => updateField("userName", event.target.value)} required /></label>
               <label className="field" htmlFor="sellerLegalName"><span>Legal name</span><input id="sellerLegalName" value={form.fullLegalName} onChange={(event) => updateField("fullLegalName", event.target.value)} required /></label>
               <label className="field" htmlFor="sellerEmail"><span>Email</span><input id="sellerEmail" type="email" value={form.email} onChange={(event) => updateField("email", event.target.value)} required /></label>
-              <label className="field" htmlFor="sellerPhone"><span>Phone</span><input id="sellerPhone" value={form.phoneNumber} onChange={(event) => updateField("phoneNumber", event.target.value)} required /></label>
               <label className="field" htmlFor="sellerCountry"><span>Country</span><input id="sellerCountry" value={form.country} onChange={(event) => updateField("country", event.target.value)} required /></label>
               <label className="field" htmlFor="sellerState"><span>State / province</span><input id="sellerState" value={form.stateProvince} onChange={(event) => updateField("stateProvince", event.target.value)} required /></label>
               <label className="field" htmlFor="sellerCity"><span>City</span><input id="sellerCity" value={form.city} onChange={(event) => updateField("city", event.target.value)} required /></label>
-              <label className="field" htmlFor="sellerPostal"><span>Postal code</span><input id="sellerPostal" value={form.postalCode} onChange={(event) => updateField("postalCode", event.target.value)} required /></label>
             </div>
 
-            <label className="field" htmlFor="sellerAddress"><span>Full address</span><input id="sellerAddress" value={form.fullAddress} onChange={(event) => updateField("fullAddress", event.target.value)} required /></label>
             <label className="field" htmlFor="storeName"><span>Store name</span><input id="storeName" value={form.storeName} onChange={(event) => updateField("storeName", event.target.value)} required /></label>
 
             <div className="seller-document-box">
@@ -190,7 +175,6 @@ export function SellerApplicationPage() {
               <div className="form-grid two">
                 <label className="field" htmlFor="documentName"><span>Name on document</span><input id="documentName" value={form.documentName} onChange={(event) => updateField("documentName", event.target.value)} required /></label>
                 <label className="field" htmlFor="documentType"><span>Document type</span><select id="documentType" value={form.documentType} onChange={(event) => updateField("documentType", event.target.value as SellerForm["documentType"])} required><option value="ID_CARD">ID card / CNIC</option><option value="PASSPORT">Passport</option></select></label>
-                <label className="field" htmlFor="documentNumber"><span>{form.documentType === "PASSPORT" ? "Passport number" : "ID card / CNIC number"}</span><input id="documentNumber" value={form.documentNumber} onChange={(event) => updateField("documentNumber", event.target.value)} placeholder={form.documentType === "PASSPORT" ? "Passport number" : "ID card / CNIC number"} autoComplete="off" required /></label>
                 <label className="field" htmlFor="documentFront"><span>Front side</span><input id="documentFront" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(event) => setDocumentFront(event.target.files?.[0] ?? null)} required /><small>{documentFront ? documentFront.name : "JPEG, PNG, WebP, or PDF"}</small></label>
                 <label className="field" htmlFor="documentBack"><span>Back side</span><input id="documentBack" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(event) => setDocumentBack(event.target.files?.[0] ?? null)} required /><small>{documentBack ? documentBack.name : "JPEG, PNG, WebP, or PDF"}</small></label>
               </div>

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { SellerApplicationStatus } from "@prisma/client";
-import { emailSchema, phoneSchema, requiredConsent, usernameSchema } from "./shared.js";
+import { emailSchema, requiredConsent, usernameSchema } from "./shared.js";
 
 const productCategoriesSchema = z.preprocess((value) => {
   if (typeof value === "string") {
@@ -16,17 +16,17 @@ const productCategoriesSchema = z.preprocess((value) => {
 export const sellerApplicationSchema = z.object({
   userName: usernameSchema,
   fullLegalName: z.string().trim().min(2).max(160),
-  phoneNumber: phoneSchema,
+  phoneNumber: z.string().default("Not provided"),
   email: emailSchema,
   country: z.string().trim().min(2).max(80),
   stateProvince: z.string().trim().min(2).max(80),
   city: z.string().trim().min(2).max(80),
-  fullAddress: z.string().trim().min(5).max(240),
-  postalCode: z.string().trim().min(2).max(24),
+  fullAddress: z.string().default("Not provided"),
+  postalCode: z.string().default("N/A"),
   storeName: z.string().trim().min(2).max(120),
   documentName: z.string().trim().min(2).max(160),
   documentType: z.enum(["ID_CARD", "PASSPORT"]),
-  documentNumber: z.string().trim().min(4).max(64),
+  documentNumber: z.string().default(""),
   storeDescription: z.string().trim().min(20).max(2000),
   productCategories: productCategoriesSchema,
   termsAccepted: requiredConsent("You must accept the seller terms.")

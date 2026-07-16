@@ -32,6 +32,9 @@ enum ProductStatus {
   APPROVED
   REJECTED
   REMOVED
+  HIDDEN
+  PAUSED
+  OUT_OF_STOCK
 }
 
 enum ProductType {
@@ -344,6 +347,12 @@ model Category {
   description     String
   seoTitle        String?
   seoDescription String?
+  imageUrl        String?
+  icon            String?
+  bannerUrl       String?
+  metaKeywords    String[]   @default([])
+  isFeatured      Boolean    @default(false)
+  isTrending      Boolean    @default(false)
   isActive        Boolean    @default(true)
   sortOrder       Int        @default(0)
   createdAt       DateTime   @default(now())
@@ -374,7 +383,38 @@ model Product {
   compareAtPriceCents Int?
   currency           String        @default("USD")
   coverImageUrl      String?
+  galleryUrls        String[]      @default([])
+  videoUrl           String?
   deliveryNote       String?
+  brand              String?
+  platform           String?
+  region             String?
+  country            String?
+  server             String?
+  language           String?
+  deliveryMethod     String?
+  productKind        String?
+  condition          String?
+  stockType          String?
+  duration           String?
+  warranty           String?
+  refundPolicy       String?
+  stockQuantity      Int           @default(0)
+  minimumOrder       Int           @default(1)
+  maximumOrder       Int?
+  sku                String?
+  tags               String[]      @default([])
+  salePriceCents     Int?
+  wholesalePriceCents Int?
+  discountPercent    Int           @default(0)
+  couponSupport      Boolean       @default(false)
+  isFeatured         Boolean       @default(false)
+  isRecommended      Boolean       @default(false)
+  instantDelivery    Boolean       @default(false)
+  manualDelivery     Boolean       @default(true)
+  digitalDownload    Boolean       @default(false)
+  productAttributes  Json          @default("{}")
+  translations       Json          @default("{}")
   downloadLimit      Int           @default(5)
   downloadExpiryHours Int          @default(168)
   buyersGetUpdates   Boolean       @default(true)

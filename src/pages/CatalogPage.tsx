@@ -34,10 +34,12 @@ function productMatchesCategory(
 ) {
   if (selected === "all") return true;
   if (product.categorySlug === selected) return true;
-  const productCategory = categories.find(
-    (category) => category.slug === product.categorySlug,
-  );
-  return productCategory?.parentSlug === selected;
+  let productCategory = categories.find((category) => category.slug === product.categorySlug);
+  while (productCategory?.parentSlug) {
+    if (productCategory.parentSlug === selected) return true;
+    productCategory = categories.find((category) => category.slug === productCategory?.parentSlug);
+  }
+  return false;
 }
 
 function sortProducts(products: CatalogProduct[], sort: SortMode) {

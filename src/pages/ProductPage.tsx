@@ -224,9 +224,13 @@ export function ProductPage() {
             <div><dt><RefreshCw /> Last updated</dt><dd>{product.updatedAt ?? "Maintained by seller"}</dd></div>
             <div><dt><Globe2 /> Delivery</dt><dd>{product.delivery}</dd></div>
             <div><dt><MessageCircle /> Seller response</dt><dd>Within {product.afterSalesServiceHours ?? 24} hours</dd></div>
+            {Object.entries(product.facts ?? {}).map(([label, value]) => <div key={label}><dt><Check /> {label.replace(/([A-Z])/g, " $1")}</dt><dd>{String(value)}</dd></div>)}
+            {product.sku ? <div><dt><Layers3 /> SKU</dt><dd>{product.sku}</dd></div> : null}
           </dl>
         </article>
       </section>
+
+      {(product.warranty || product.refundPolicy) ? <section className="product-policy-strip"><div><ShieldCheck /><span><strong>Warranty</strong><small>{product.warranty ?? "Seller warranty terms apply."}</small></span></div><div><RefreshCw /><span><strong>Refund policy</strong><small>{product.refundPolicy ?? "Marketplace refund policy applies."}</small></span></div></section> : null}
 
       <section className="product-policy-strip">
         <div><ShieldCheck /><span><strong>Review before buying</strong><small>Confirm the file formats, license scope, and requirements above.</small></span></div>

@@ -16,6 +16,7 @@ import "./admin-enterprise.css";
 import "./seller-interactions.css";
 import "./system-polish.css";
 import "./marketplace-experience.css";
+import "./enterprise-catalog.css";
 import { LocaleProvider } from "./i18n/LocaleContext";
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
 

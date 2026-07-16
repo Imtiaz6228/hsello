@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiRequest, mediaUrl } from "../api/client";
 import { catalogCategories, catalogProducts, type CatalogCategory, type CatalogProduct } from "../data/catalog";
+import { useLocale } from "../i18n/LocaleContext";
 
 type ApiCategory = {
   id: string;
@@ -10,6 +11,11 @@ type ApiCategory = {
   description: string;
   sortOrder?: number;
   _count?: { products?: number };
+  imageUrl?: string | null;
+  bannerUrl?: string | null;
+  icon?: string | null;
+  isFeatured?: boolean;
+  isTrending?: boolean;
 };
 
 type ApiProduct = {
@@ -31,6 +37,13 @@ type ApiProduct = {
   category: { name: string; slug: string; parent?: { name: string; slug: string; parent?: { name: string; slug: string } | null } | null };
   seller: { sellerProfile?: { storeName: string; slug: string } | null };
   _count?: { inventoryItems?: number; files?: number };
+  galleryUrls?: string[];
+  videoUrl?: string | null;
+  productAttributes?: Record<string, unknown>;
+  translations?: Record<string, { title?: string; name?: string; shortDescription?: string; description?: string; seoTitle?: string; seoDescription?: string }>;
+  brand?: string | null; platform?: string | null; region?: string | null; country?: string | null; server?: string | null; language?: string | null;
+  deliveryMethod?: string | null; productKind?: string | null; condition?: string | null; stockType?: string | null; duration?: string | null;
+  warranty?: string | null; refundPolicy?: string | null; salePriceCents?: number | null; minimumOrder?: number; maximumOrder?: number | null; sku?: string | null; tags?: string[];
 };
 
 function iconForSlug(slug: string, index = 0) {
@@ -49,7 +62,8 @@ function normalizePublicMediaUrl(value?: string | null) {
   return mediaUrl(value);
 }
 
-function mapProduct(product: ApiProduct, index = 0): CatalogProduct {
+function mapProduct(product: ApiProduct, index = 0, locale = "en"): CatalogProduct {
+  const translation = product.translations?.[locale] ?? (locale.startsWith("zh") ? product.translations?.["zh-CN"] : undefined) ?? product.translations?.en;
   return {
     id: product.id,
     slug: product.slug,
@@ -57,12 +71,12 @@ function mapProduct(product: ApiProduct, index = 0): CatalogProduct {
       .filter(Boolean)
       .join(" / "),
     categorySlug: product.category.slug,
-    title: product.name,
-    description: product.shortDescription,
-    longDescription: product.description,
+    title: translation?.title ?? translation?.name ?? product.name,
+    description: translation?.shortDescription ?? product.shortDescription,
+    longDescription: translation?.description ?? product.description,
     seller: product.seller.sellerProfile?.storeName ?? "Verified seller",
     sellerSlug: product.seller.sellerProfile?.slug ?? "",
-    priceCents: product.priceCents,
+    priceCents: product.salePriceCents && product.salePriceCents > 0 ? Math.min(product.priceCents, product.salePriceCents) : product.priceCents,
     priceCnyCents: product.priceCnyCents,
     priceRubCents: product.priceRubCents,
     afterSalesServiceHours: product.afterSalesServiceHours,
@@ -74,7 +88,18 @@ function mapProduct(product: ApiProduct, index = 0): CatalogProduct {
     type: product.type,
     icon: iconForSlug(product.category.slug, index),
     imageUrl: normalizePublicMediaUrl(product.coverImageUrl),
-    stockCount: product.type === "SERVICE" ? 999 : Math.max(product._count?.inventoryItems ?? 0, product._count?.files ?? 0)
+    stockCount: product.type === "SERVICE" ? 999 : Math.max(product._count?.inventoryItems ?? 0, product._count?.files ?? 0),
+    galleryUrls: product.galleryUrls?.map((url) => normalizePublicMediaUrl(url) ?? url),
+    videoUrl: product.videoUrl,
+    attributes: product.productAttributes,
+    facts: Object.fromEntries(Object.entries({ brand: product.brand, platform: product.platform, region: product.region, country: product.country, server: product.server, language: product.language, deliveryMethod: product.deliveryMethod, productKind: product.productKind, condition: product.condition, stockType: product.stockType, duration: product.duration }).filter((entry): entry is [string, string] => typeof entry[1] === "string" && entry[1].length > 0)),
+    warranty: product.warranty,
+    refundPolicy: product.refundPolicy,
+    salePriceCents: product.salePriceCents,
+    minimumOrder: product.minimumOrder,
+    maximumOrder: product.maximumOrder,
+    sku: product.sku,
+    tags: product.tags
   };
 }
 
@@ -89,20 +114,25 @@ function mapCategories(categories: ApiCategory[]): CatalogCategory[] {
       description: category.description,
       parentId: category.parentId ?? null,
       parentSlug: parent?.slug ?? null,
-      icon: iconForSlug(parent?.slug ?? category.slug, index),
+      icon: category.icon || iconForSlug(parent?.slug ?? category.slug, index),
       sortOrder: category.sortOrder ?? index,
-      productCount: category._count?.products ?? 0
+      productCount: category._count?.products ?? 0,
+      imageUrl: normalizePublicMediaUrl(category.imageUrl),
+      bannerUrl: normalizePublicMediaUrl(category.bannerUrl),
+      isFeatured: category.isFeatured,
+      isTrending: category.isTrending
     };
   }).sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.name.localeCompare(b.name));
 }
 
 export function useMarketplaceProducts() {
+  const { locale } = useLocale();
   const [products, setProducts] = useState<CatalogProduct[]>(import.meta.env.DEV ? catalogProducts : []);
   useEffect(() => {
     void apiRequest<{ products: ApiProduct[] }>("/api/marketplace/products?take=96")
-      .then((data) => setProducts(data.products.map(mapProduct)))
+      .then((data) => setProducts(data.products.map((product, index) => mapProduct(product, index, locale))))
       .catch(() => { if (!import.meta.env.DEV) setProducts([]); });
-  }, []);
+  }, [locale]);
   return products;
 }
 
@@ -117,21 +147,23 @@ export function useMarketplaceCategories() {
 }
 
 export function useMarketplaceProduct(slug?: string) {
+  const { locale } = useLocale();
   const [product, setProduct] = useState<CatalogProduct | undefined>(() => import.meta.env.DEV ? catalogProducts.find((item) => item.slug === slug) : undefined);
   const [loading, setLoading] = useState(Boolean(slug));
   useEffect(() => {
     if (!slug) return;
     void apiRequest<{ product: ApiProduct }>(`/api/marketplace/products/${encodeURIComponent(slug)}`)
-      .then((data) => setProduct(mapProduct(data.product)))
+      .then((data) => setProduct(mapProduct(data.product, 0, locale)))
       .catch(() => setProduct(import.meta.env.DEV ? catalogProducts.find((item) => item.slug === slug) : undefined))
       .finally(() => setLoading(false));
-  }, [slug]);
+  }, [locale, slug]);
   return { product, loading };
 }
 
 export type PublicStore = { name: string; about: string; policy: string; rating: number; sales: string; joined: string; mark: string; logoUrl?: string | null; bannerUrl?: string | null };
 
 export function useMarketplaceStore(slug?: string) {
+  const { locale } = useLocale();
   const [store, setStore] = useState<PublicStore>();
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [loading, setLoading] = useState(Boolean(slug));
@@ -140,11 +172,11 @@ export function useMarketplaceStore(slug?: string) {
     void apiRequest<{ store: { storeName: string; about: string; policy?: string | null; averageRating: number | string; totalSales: number; createdAt: string; logoUrl?: string | null; bannerUrl?: string | null }; products: Array<Omit<ApiProduct, "seller">> }>(`/api/marketplace/stores/${encodeURIComponent(slug)}`)
       .then((data) => {
         setStore({ name: data.store.storeName, about: data.store.about, policy: data.store.policy || "HSello buyer protection applies to every order.", rating: Number(data.store.averageRating), sales: data.store.totalSales.toLocaleString(), joined: new Date(data.store.createdAt).getFullYear().toString(), mark: data.store.storeName.split(/\s+/).map((word) => word[0]).join("").slice(0, 2).toUpperCase(), logoUrl: normalizePublicMediaUrl(data.store.logoUrl), bannerUrl: normalizePublicMediaUrl(data.store.bannerUrl) });
-        setProducts(data.products.map((product, index) => mapProduct({ ...product, seller: { sellerProfile: { storeName: data.store.storeName, slug } } }, index)));
+        setProducts(data.products.map((product, index) => mapProduct({ ...product, seller: { sellerProfile: { storeName: data.store.storeName, slug } } }, index, locale)));
       })
       .catch(() => undefined)
       .finally(() => setLoading(false));
-  }, [slug]);
+  }, [locale, slug]);
   return { store, products, loading };
 }
 

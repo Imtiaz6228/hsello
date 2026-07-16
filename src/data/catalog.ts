@@ -1,3 +1,5 @@
+import { enterpriseCatalog } from "./enterpriseCatalog";
+
 export type CatalogCategory = {
   id: string;
   slug: string;
@@ -8,6 +10,11 @@ export type CatalogCategory = {
   icon: string;
   sortOrder?: number;
   productCount?: number;
+  imageUrl?: string | null;
+  bannerUrl?: string | null;
+  isFeatured?: boolean;
+  isTrending?: boolean;
+  depth?: number;
 };
 
 export type CatalogProduct = {
@@ -38,9 +45,20 @@ export type CatalogProduct = {
   formats?: string[];
   version?: string;
   updatedAt?: string;
+  galleryUrls?: string[];
+  videoUrl?: string | null;
+  attributes?: Record<string, unknown>;
+  facts?: Record<string, string | number | boolean | null>;
+  warranty?: string | null;
+  refundPolicy?: string | null;
+  salePriceCents?: number | null;
+  minimumOrder?: number;
+  maximumOrder?: number | null;
+  sku?: string | null;
+  tags?: string[];
 };
 
-export const catalogCategories: CatalogCategory[] = [
+const legacyCatalogCategories: CatalogCategory[] = [
   { id: "cat-instagram", slug: "instagram", name: "Instagram", description: "Creator-safe Instagram templates, profile resources, content planners, and reporting tools. Accounts, credentials, bots, and fake engagement are not allowed.", icon: "◉", sortOrder: 10 },
   { id: "cat-instagram-reels", slug: "instagram-reels-templates", parentSlug: "instagram", name: "Reels templates", description: "Short-form video structures, hooks, captions, and edit checklists for original Reels.", icon: "◉", sortOrder: 11 },
   { id: "cat-instagram-captions", slug: "instagram-caption-packs", parentSlug: "instagram", name: "Caption packs", description: "Niche caption prompts, launch calendars, and brand voice worksheets.", icon: "◉", sortOrder: 12 },
@@ -123,6 +141,25 @@ export const catalogCategories: CatalogCategory[] = [
   { id: "cat-photo", slug: "photography", name: "Photography", description: "Presets, stock photography, lighting guides, and professional editing workflows.", icon: "◈", sortOrder: 190 },
   { id: "cat-presets", slug: "photo-presets", parentSlug: "photography", name: "Photo presets", description: "Color presets, profiles, and documented editing recipes.", icon: "◈", sortOrder: 191 },
   { id: "cat-stock-photo", slug: "stock-photography", parentSlug: "photography", name: "Stock photography", description: "Original themed image collections with commercial licensing.", icon: "◈", sortOrder: 192 }
+];
+
+export const catalogCategories: CatalogCategory[] = [
+  ...new Map([
+    ...legacyCatalogCategories,
+    ...enterpriseCatalog.map((category) => ({
+      id: `enterprise-${category.slug}`,
+      slug: category.slug,
+      name: category.name,
+      description: category.description,
+      parentSlug: category.parentSlug ?? null,
+      icon: category.icon,
+      sortOrder: category.sortOrder,
+      imageUrl: category.imageUrl ?? null,
+      bannerUrl: category.bannerUrl ?? null,
+      isFeatured: category.isFeatured ?? false,
+      isTrending: category.isTrending ?? false
+    }))
+  ].map((category) => [category.slug, category])).values()
 ];
 
 export const categoryDescriptions: Record<string, { name: string; description: string }> = Object.fromEntries(

@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma.js";
+import { enterpriseCatalog } from "../data/enterpriseCatalog.js";
 
 export type DefaultCategory = {
   slug: string;
@@ -7,9 +8,16 @@ export type DefaultCategory = {
   icon: string;
   sortOrder: number;
   parentSlug?: string;
+  imageUrl?: string;
+  bannerUrl?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  metaKeywords?: string[];
+  isFeatured?: boolean;
+  isTrending?: boolean;
 };
 
-export const defaultMarketplaceCategories: DefaultCategory[] = [
+const legacyMarketplaceCategories: DefaultCategory[] = [
   { slug: "social-media", name: "Social media", description: "Creator-safe social media templates, calendars, profile assets, moderation workflows, and analytics tools. Account trading, fake engagement, bots, spam, and credentials are prohibited.", icon: "◉", sortOrder: 10 },
   { slug: "instagram", parentSlug: "social-media", name: "Instagram", description: "Instagram content templates, Reels planning packs, caption systems, profile audit worksheets, and reporting dashboards.", icon: "◉", sortOrder: 11 },
   { slug: "facebook", parentSlug: "social-media", name: "Facebook", description: "Facebook page kits, group resources, ad creative planning, and community management templates for legitimate brands.", icon: "f", sortOrder: 12 },
@@ -100,6 +108,10 @@ export const defaultMarketplaceCategories: DefaultCategory[] = [
   { slug: "cloud-storage", parentSlug: "subscription-platforms", name: "Cloud storage", description: "Dropbox, iCloud, Google Drive, and OneDrive organization systems, naming standards, and backup workflows.", icon: "☁", sortOrder: 510 }
 ];
 
+export const defaultMarketplaceCategories: DefaultCategory[] = [
+  ...new Map([...legacyMarketplaceCategories, ...enterpriseCatalog].map((category) => [category.slug, category])).values()
+];
+
 let ensuredCategoriesAt = 0;
 
 export async function ensureDefaultMarketplaceCategories(force = false) {
@@ -127,8 +139,14 @@ export async function ensureDefaultMarketplaceCategories(force = false) {
           name: category.name,
           slug: category.slug,
           description: category.description,
-          seoTitle: category.name,
-          seoDescription: category.description.slice(0, 170),
+          seoTitle: category.seoTitle ?? category.name,
+          seoDescription: category.seoDescription ?? category.description.slice(0, 170),
+          imageUrl: category.imageUrl ?? null,
+          icon: category.icon,
+          bannerUrl: category.bannerUrl ?? null,
+          metaKeywords: category.metaKeywords ?? [],
+          isFeatured: category.isFeatured ?? false,
+          isTrending: category.isTrending ?? false,
           sortOrder: category.sortOrder,
           isActive: true
         },
@@ -136,8 +154,14 @@ export async function ensureDefaultMarketplaceCategories(force = false) {
           parentId: parentId ?? null,
           name: category.name,
           description: category.description,
-          seoTitle: category.name,
-          seoDescription: category.description.slice(0, 170),
+          seoTitle: category.seoTitle ?? category.name,
+          seoDescription: category.seoDescription ?? category.description.slice(0, 170),
+          imageUrl: category.imageUrl ?? null,
+          icon: category.icon,
+          bannerUrl: category.bannerUrl ?? null,
+          metaKeywords: category.metaKeywords ?? [],
+          isFeatured: category.isFeatured ?? false,
+          isTrending: category.isTrending ?? false,
           sortOrder: category.sortOrder
         },
         select: { id: true }

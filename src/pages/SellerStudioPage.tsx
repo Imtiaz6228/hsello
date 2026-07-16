@@ -12,6 +12,7 @@ import { ApiError, apiDownloadUrl, apiRequest, mediaUrl } from "../api/client";
 import { Seo } from "../components/Seo";
 import { LocaleSwitcher } from "../components/LocaleSwitcher";
 import { useLocale } from "../i18n/LocaleContext";
+import { catalogAttributePresets } from "../data/enterpriseCatalog";
 
 type Category = {
   id: string;
@@ -24,6 +25,7 @@ type Category = {
 
 type Product = {
   id: string;
+  slug: string;
   name: string;
   status: string;
   type: string;
@@ -167,12 +169,15 @@ function MediaPreview({ src, alt, fallback }: { src?: string | null; alt: string
 }
 
 const initialForm = {
-  rootCategoryId: "",
-  platformCategoryId: "",
-  listingTypeId: "",
+  categoryPathIds: [] as string[],
   name: "",
   shortDescription: "",
   description: "",
+  chineseTitle: "",
+  chineseShortDescription: "",
+  chineseDescription: "",
+  chineseSeoTitle: "",
+  chineseSeoDescription: "",
   type: "DOWNLOAD",
   priceUsd: "",
   priceCny: "",
@@ -182,7 +187,12 @@ const initialForm = {
   downloadLimit: 5,
   downloadExpiryHours: 168,
   buyersGetUpdates: true,
-  inventoryLines: ""
+  inventoryLines: "",
+  brand: "", platform: "", region: "", country: "", server: "", language: "English",
+  deliveryMethod: "Manual delivery", productKind: "", condition: "New", stockType: "Single", duration: "", warranty: "", refundPolicy: "",
+  stockQuantity: 0, minimumOrder: 1, maximumOrder: 1, sku: "", tags: "", salePrice: "", wholesalePrice: "", discountPercent: 0,
+  couponSupport: false, instantDelivery: false, manualDelivery: true, digitalDownload: true,
+  productAttributes: {} as Record<string, string>
 };
 
 function cents(value: string) {
@@ -244,22 +254,26 @@ export function SellerStudioPage() {
   const [mediaUploading, setMediaUploading] = useState("");
   const [deliveryOrder, setDeliveryOrder] = useState<SellerOrder | null>(null);
   const [analyticsPeriod, setAnalyticsPeriod] = useState<AnalyticsPeriod>("7d");
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
 
   const rootCategories = useMemo(() => categories.filter((category) => !category.parentId), [categories]);
-  const platformCategories = useMemo(
-    () => categories.filter((category) => category.parentId === form.rootCategoryId),
-    [categories, form.rootCategoryId]
-  );
-  const listingTypes = useMemo(
-    () => categories.filter((category) => category.parentId === form.platformCategoryId),
-    [categories, form.platformCategoryId]
-  );
-  const selectedCategoryId = form.listingTypeId || form.platformCategoryId || form.rootCategoryId;
-  const selectedPath = [
-    categories.find((category) => category.id === form.rootCategoryId)?.name,
-    categories.find((category) => category.id === form.platformCategoryId)?.name,
-    categories.find((category) => category.id === form.listingTypeId)?.name
-  ].filter(Boolean);
+  const categoryLevels = useMemo(() => {
+    const levels: Category[][] = [];
+    let parentId: string | null = null;
+    for (let depth = 0; depth < 12; depth += 1) {
+      const choices = categories.filter((category) => (category.parentId ?? null) === parentId);
+      if (!choices.length) break;
+      levels.push(choices);
+      const selected = form.categoryPathIds[depth];
+      if (!selected || !choices.some((category) => category.id === selected)) break;
+      parentId = selected;
+    }
+    return levels;
+  }, [categories, form.categoryPathIds]);
+  const selectedCategoryId = form.categoryPathIds[form.categoryPathIds.length - 1] ?? "";
+  const selectedPath = form.categoryPathIds.map((id) => categories.find((category) => category.id === id)?.name).filter(Boolean);
+  const selectedRoot = categories.find((category) => category.id === form.categoryPathIds[0]);
+  const dynamicAttributes = selectedRoot?.slug ? (catalogAttributePresets[selectedRoot.slug] ?? []) : [];
   const pendingProducts = products.filter((product) => product.status === "PENDING").length;
   const liveProducts = products.filter((product) => product.status === "APPROVED").length;
   const grossSales = orders.reduce((sum, item) => sum + item.totalCents, 0);
@@ -364,9 +378,9 @@ export function SellerStudioPage() {
     setProfile(profileData.profile);
     setProfileForm({ about: profileData.profile?.about ?? "", policy: profileData.profile?.policy ?? "" });
     setForm((current) => {
-      if (current.rootCategoryId) return current;
+      if (current.categoryPathIds.length) return current;
       const firstRoot = categoriesData.categories.find((category) => !category.parentId);
-      return firstRoot ? { ...current, rootCategoryId: firstRoot.id } : current;
+      return firstRoot ? { ...current, categoryPathIds: [firstRoot.id] } : current;
     });
   }, []);
 
@@ -414,8 +428,9 @@ export function SellerStudioPage() {
       showMessage("Choose the full category path before creating the product.", "error");
       return;
     }
-    if (listingTypes.length && !form.listingTypeId) {
-      showMessage("Choose a listing type such as New, Old, With audience, or Business ready.", "error");
+    const lastLevel = categoryLevels[form.categoryPathIds.length];
+    if (lastLevel?.length) {
+      showMessage("Complete the category path to the most specific available option.", "error");
       return;
     }
     if (!coverImage) {
@@ -449,6 +464,15 @@ export function SellerStudioPage() {
     data.append("downloadExpiryHours", String(form.downloadExpiryHours));
     data.append("buyersGetUpdates", String(form.buyersGetUpdates));
     data.append("inventoryLines", form.inventoryLines.trim());
+    data.append("brand", form.brand.trim()); data.append("platform", form.platform.trim()); data.append("region", form.region.trim()); data.append("country", form.country.trim()); data.append("server", form.server.trim()); data.append("language", form.language.trim());
+    data.append("deliveryMethod", form.deliveryMethod.trim()); data.append("productKind", form.productKind.trim()); data.append("condition", form.condition.trim()); data.append("stockType", form.stockType.trim()); data.append("duration", form.duration.trim()); data.append("warranty", form.warranty.trim()); data.append("refundPolicy", form.refundPolicy.trim());
+    data.append("stockQuantity", String(form.stockQuantity)); data.append("minimumOrder", String(form.minimumOrder)); data.append("maximumOrder", String(form.maximumOrder)); data.append("sku", form.sku.trim()); data.append("tags", form.tags.trim());
+    if (form.salePrice) data.append("salePriceCents", String(cents(form.salePrice))); if (form.wholesalePrice) data.append("wholesalePriceCents", String(cents(form.wholesalePrice))); data.append("discountPercent", String(form.discountPercent));
+    data.append("couponSupport", String(form.couponSupport)); data.append("instantDelivery", String(form.instantDelivery)); data.append("manualDelivery", String(form.manualDelivery)); data.append("digitalDownload", String(form.digitalDownload)); data.append("productAttributes", JSON.stringify(form.productAttributes));
+    data.append("translations", JSON.stringify({
+      en: { title: form.name.trim(), shortDescription: form.shortDescription.trim(), description: form.description.trim(), seoTitle: form.name.trim().slice(0, 70), seoDescription: form.shortDescription.trim().slice(0, 170) },
+      "zh-CN": { title: form.chineseTitle.trim(), shortDescription: form.chineseShortDescription.trim(), description: form.chineseDescription.trim(), seoTitle: form.chineseSeoTitle.trim(), seoDescription: form.chineseSeoDescription.trim() }
+    }));
     // SEO limits are intentionally smaller than the visible product fields.
     data.append("seoTitle", form.name.trim().slice(0, 70));
     data.append("seoDescription", form.shortDescription.trim().slice(0, 170));
@@ -458,12 +482,7 @@ export function SellerStudioPage() {
       const result = await apiRequest<{ message?: string }>("/api/seller/products", { method: "POST", body: data });
       setOpen(false);
       setCoverImage(null);
-      setForm((current) => ({
-        ...initialForm,
-        rootCategoryId: current.rootCategoryId,
-        platformCategoryId: current.platformCategoryId,
-        listingTypeId: current.listingTypeId
-      }));
+      setForm((current) => ({ ...initialForm, categoryPathIds: current.categoryPathIds.slice(0, 1) }));
       showMessage(result.message ?? "Product created and sent for approval.", "success");
       selectTab("products");
       await load();
@@ -542,6 +561,48 @@ export function SellerStudioPage() {
     } catch (error) {
       showMessage(errorText(error, "Product could not be submitted."), "error");
     }
+  }
+
+  async function editProduct(product: Product) {
+    const name = window.prompt("Product title", product.name);
+    if (!name?.trim()) return;
+    const price = window.prompt("Price in USD", ((product.priceUsdCents ?? product.priceCents) / 100).toFixed(2));
+    if (!price || cents(price) < 50) return showMessage("Enter a price of at least $0.50.", "error");
+    try {
+      await apiRequest(`/api/seller/products/${product.id}`, { method: "PATCH", body: { name: name.trim(), priceUsdCents: cents(price) } });
+      showMessage("Product updated and moved to review when required.", "success");
+      await load();
+    } catch (error) { showMessage(errorText(error, "Product could not be edited."), "error"); }
+  }
+
+  async function productAction(productId: string, action: "duplicate" | "remove" | "hide" | "pause" | "activate") {
+    if (action === "remove" && !window.confirm("Remove this product from your catalog?")) return;
+    try {
+      if (action === "duplicate") await apiRequest(`/api/seller/products/${productId}/duplicate`, { method: "POST" });
+      else if (action === "remove") await apiRequest(`/api/seller/products/${productId}`, { method: "DELETE" });
+      else await apiRequest(`/api/seller/products/${productId}/status`, { method: "PATCH", body: { status: action === "hide" ? "HIDDEN" : action === "pause" ? "PAUSED" : "PENDING" } });
+      showMessage(action === "duplicate" ? "Product cloned as a draft." : `Product ${action} action completed.`, "success");
+      await load();
+    } catch (error) { showMessage(errorText(error, "Product action failed."), "error"); }
+  }
+
+  async function bulkStatus(status: "DRAFT" | "PENDING" | "HIDDEN" | "PAUSED" | "OUT_OF_STOCK" | "REMOVED") {
+    if (!selectedProductIds.length) return showMessage("Select one or more products first.", "error");
+    try {
+      const result = await apiRequest<{ updated: number }>("/api/seller/products/bulk/update", { method: "PATCH", body: { ids: selectedProductIds, status } });
+      showMessage(`${result.updated} products updated.`, "success");
+      setSelectedProductIds([]);
+      await load();
+    } catch (error) { showMessage(errorText(error, "Bulk update failed."), "error"); }
+  }
+
+  async function importProducts(file?: File) {
+    if (!file) return;
+    const data = new FormData(); data.append("file", file);
+    try {
+      const result = await apiRequest<{ imported: number; message: string }>("/api/seller/products-import", { method: "POST", body: data });
+      showMessage(result.message, "success"); await load();
+    } catch (error) { showMessage(errorText(error, "Products could not be imported."), "error"); }
   }
 
   async function uploadStoreMedia(kind: "logo" | "banner", file?: File) {
@@ -666,16 +727,17 @@ export function SellerStudioPage() {
         {tab === "categories" ? <section className="seller-category-page"><header className="seller-table-toolbar"><div><h2>Marketplace categories</h2><p>Use the approved category path when publishing a product</p></div><div><label><Search /><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search categories" /></label></div></header><div className="seller-category-cards">{rootCategories.filter((category) => !searchQuery || category.name.toLowerCase().includes(searchQuery.toLowerCase())).map((root) => <article key={root.id}><header><span><Grid3X3 /></span><div><small>MAIN CATEGORY</small><h3>{root.name}</h3></div></header><div>{categories.filter((category) => category.parentId === root.id).map((child) => <span key={child.id}>{child.name}<b>{categories.filter((item) => item.parentId === child.id).length}</b></span>)}</div><button onClick={() => setOpen(true)}>Publish in this category <ArrowRight /></button></article>)}</div></section> : null}
 
         {["products", "inventory", "drafts"].includes(tab) ? <section className="seller-product-list seller-pro-products">
-          <header className="seller-table-toolbar"><div><h2>{tab === "inventory" ? "Inventory & variants" : tab === "drafts" ? "Drafts and review queue" : "Product catalog"}</h2><p>{tab === "inventory" ? "Manage delivery files, codes and available stock" : tab === "drafts" ? `${visibleProducts.length} listings need work or review` : `${products.length} products · ${liveProducts} published`}</p></div><div><label><Search /><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search products" /></label><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="ALL">All statuses</option><option value="APPROVED">Published</option><option value="PENDING">Pending review</option><option value="DRAFT">Draft</option><option value="REJECTED">Rejected</option></select><button onClick={() => setOpen(true)}><PackagePlus /> Add product</button></div></header>
+          <header className="seller-table-toolbar"><div><h2>{tab === "inventory" ? "Inventory & variants" : tab === "drafts" ? "Drafts and review queue" : "Product catalog"}</h2><p>{tab === "inventory" ? "Manage delivery files, codes and available stock" : tab === "drafts" ? `${visibleProducts.length} listings need work or review` : `${products.length} products · ${liveProducts} published`}</p></div><div><label><Search /><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search products" /></label><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="ALL">All statuses</option><option value="APPROVED">Published</option><option value="PENDING">Pending review</option><option value="DRAFT">Draft</option><option value="REJECTED">Rejected</option><option value="HIDDEN">Hidden</option><option value="PAUSED">Paused</option><option value="OUT_OF_STOCK">Out of stock</option></select><label className="seller-export-link"><Upload /> Import CSV<input type="file" accept=".csv,text/csv" hidden onChange={(event) => void importProducts(event.target.files?.[0])} /></label><a className="seller-export-link" href={apiDownloadUrl("/api/seller/products-export.csv")}><Download /> Export</a><button onClick={() => setOpen(true)}><PackagePlus /> Add product</button></div></header>
+          {selectedProductIds.length ? <div className="seller-bulk-bar"><strong>{selectedProductIds.length} selected</strong><button onClick={() => void bulkStatus("PENDING")}>Publish</button><button onClick={() => void bulkStatus("PAUSED")}>Pause</button><button onClick={() => void bulkStatus("HIDDEN")}>Hide</button><button onClick={() => void bulkStatus("OUT_OF_STOCK")}>Out of stock</button><button className="danger" onClick={() => void bulkStatus("REMOVED")}>Remove</button><button onClick={() => setSelectedProductIds([])}>Clear</button></div> : null}
           <div className="seller-list-heading"><span>Product</span><span>Status</span><span>Delivery</span><span>Actions</span></div>
           {visibleProducts.length ? visibleProducts.map((product) => {
             const availableRows = product.inventoryItems.filter((item) => item.isActive && !item.deliveredAt).length;
             const deliveredRows = product.inventoryItems.filter((item) => item.deliveredAt).length;
             return <article key={product.id}>
-              <div className="seller-product-identity"><div className="seller-product-cover"><MediaPreview src={product.coverImageUrl} alt={product.name} fallback={product.name.slice(0, 2).toUpperCase()} /><label className={mediaUploading === `product:${product.id}` ? "uploading" : ""}><ImagePlus />{mediaUploading === `product:${product.id}` ? "Uploading…" : "Replace image"}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={Boolean(mediaUploading)} onChange={(event) => void uploadImage(product.id, event.target.files?.[0])} /></label></div><div className="seller-product-copy"><strong>{product.name}</strong><small>{categoryLabel(product.category)}</small><div><b>{formatMoney(product.priceUsdCents ?? product.priceCents)}</b><span>After-sales {product.afterSalesServiceHours ?? 12}h</span></div>{product.rejectionReason ? <p>{product.rejectionReason}</p> : null}</div></div>
+              <div className="seller-product-identity"><label className="seller-row-check"><input type="checkbox" checked={selectedProductIds.includes(product.id)} onChange={(event) => setSelectedProductIds(event.target.checked ? [...selectedProductIds, product.id] : selectedProductIds.filter((id) => id !== product.id))} /><span /></label><div className="seller-product-cover"><MediaPreview src={product.coverImageUrl} alt={product.name} fallback={product.name.slice(0, 2).toUpperCase()} /><label className={mediaUploading === `product:${product.id}` ? "uploading" : ""}><ImagePlus />{mediaUploading === `product:${product.id}` ? "Uploading…" : "Replace image"}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={Boolean(mediaUploading)} onChange={(event) => void uploadImage(product.id, event.target.files?.[0])} /></label></div><div className="seller-product-copy"><strong>{product.name}</strong><small>{categoryLabel(product.category)}</small><div><b>{formatMoney(product.priceUsdCents ?? product.priceCents)}</b><span>After-sales {product.afterSalesServiceHours ?? 12}h</span></div>{product.rejectionReason ? <p>{product.rejectionReason}</p> : null}</div></div>
               <span className={`status-pill ${product.status.toLowerCase()}`}>{product.status.replaceAll("_", " ")}</span>
               <div className="file-versions">{product.files.map((file) => <span key={file.id}>{file.displayName} <small>v{file.version}</small></span>)}{availableRows || deliveredRows ? <span>{availableRows} available <small>{deliveredRows} delivered</small></span> : null}{!product.files.length && !availableRows && !deliveredRows ? <small>No delivery added</small> : null}</div>
-              <div className="seller-product-actions"><label className="upload-action"><Upload /> Delivery file<input type="file" onChange={(event) => void uploadDeliveryFile(product.id, event.target.files?.[0])} /></label><label className="upload-action"><FileUp /> Inventory file<input type="file" accept=".txt,.csv,text/plain,text/csv" onChange={(event) => void uploadInventoryFile(product.id, event.target.files?.[0])} /></label><button type="button" onClick={() => void addInventoryRows(product.id)}><PackagePlus /> Add rows</button>{!["PENDING", "APPROVED", "REMOVED"].includes(product.status) ? <button onClick={() => void submit(product.id)}><Send /> Submit review</button> : null}</div>
+              <div className="seller-product-actions"><Link to={`/products/${product.slug}`}><Eye /> Preview</Link><button type="button" onClick={() => void editProduct(product)}><FileText /> Edit</button><button type="button" onClick={() => void productAction(product.id, "duplicate")}><Copy /> Clone</button><button type="button" onClick={() => void productAction(product.id, product.status === "PAUSED" || product.status === "HIDDEN" ? "activate" : "pause")}><RefreshCw /> {product.status === "PAUSED" || product.status === "HIDDEN" ? "Activate" : "Pause"}</button><button type="button" onClick={() => void productAction(product.id, "hide")}><Eye /> Hide</button><button type="button" className="danger" onClick={() => void productAction(product.id, "remove")}><X /> Remove</button><label className="upload-action"><Upload /> Delivery file<input type="file" onChange={(event) => void uploadDeliveryFile(product.id, event.target.files?.[0])} /></label><label className="upload-action"><FileUp /> Inventory file<input type="file" accept=".txt,.csv,text/plain,text/csv" onChange={(event) => void uploadInventoryFile(product.id, event.target.files?.[0])} /></label><button type="button" onClick={() => void addInventoryRows(product.id)}><PackagePlus /> Add rows</button>{!["PENDING", "APPROVED", "REMOVED"].includes(product.status) ? <button onClick={() => void submit(product.id)}><Send /> Submit review</button> : null}</div>
             </article>;
           }) : <div className="dashboard-empty"><FileUp /><h2>{products.length ? "No matching products" : "No products yet"}</h2><p>{products.length ? "Try another search or status filter." : "Create your first listing with a product image and the full admin-managed category path."}</p>{!products.length ? <button className="primary-button" onClick={() => setOpen(true)}>Create product</button> : null}</div>}
         </section> : null}
@@ -736,11 +798,15 @@ export function SellerStudioPage() {
       {deliveryOrder ? <div className="modal-backdrop seller-delivery-backdrop" role="dialog" aria-modal="true" aria-label="Delivered accounts"><section className="seller-delivery-modal"><header><div><small>DELIVERY DETAILS</small><h2>{deliveryOrder.productName}</h2><p>Order #{deliveryOrder.order.orderNumber} · {deliveryOrder.order.buyer.firstName} {deliveryOrder.order.buyer.lastName}</p></div><button type="button" onClick={() => setDeliveryOrder(null)} aria-label="Close"><X /></button></header><div className="seller-delivery-toolbar"><span><PackageCheck /> {deliveryOrder.inventoryItems?.length ?? 0} account{deliveryOrder.inventoryItems?.length === 1 ? "" : "s"} delivered</span><button type="button" onClick={() => void navigator.clipboard?.writeText((deliveryOrder.inventoryItems ?? []).map((row) => row.content).join("\n"))}><Copy /> Copy all</button></div><div className="seller-delivery-list">{deliveryOrder.inventoryItems?.map((row, index) => <article key={row.id}><b>{String(index + 1).padStart(2, "0")}</b><code>{row.content}</code><button type="button" onClick={() => void navigator.clipboard?.writeText(row.content)} aria-label={`Copy delivered account ${index + 1}`}><Copy /></button></article>)}</div><footer><a href={apiDownloadUrl(`/api/commerce/order-items/${deliveryOrder.id}/delivery?format=txt`)}><FileText /> TXT file</a><a href={apiDownloadUrl(`/api/commerce/order-items/${deliveryOrder.id}/delivery?format=csv`)}><Download /> CSV file</a><a className="primary" href={apiDownloadUrl(`/api/commerce/order-items/${deliveryOrder.id}/delivery?format=zip`)}><Download /> Download ZIP</a></footer></section></div> : null}
 
       {open ? <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Create product"><form className="seller-product-form seller-pro-product-form" onSubmit={create}><button type="button" className="modal-close" onClick={() => setOpen(false)} aria-label="Close">×</button><span className="section-index">NEW PRODUCT</span><h2>Create a smooth, buyer-friendly listing.</h2><p className="modal-helper">Follow the path from market category to platform and then listing type.</p>
-        <div className="seller-flow-steps"><span className={form.rootCategoryId ? "done" : "active"}><b>1</b>Main category</span><span className={form.platformCategoryId ? "done" : form.rootCategoryId ? "active" : ""}><b>2</b>Platform</span><span className={form.listingTypeId || !listingTypes.length ? "done" : form.platformCategoryId ? "active" : ""}><b>3</b>Listing type</span></div>
+        <div className="seller-flow-steps"><span className={form.categoryPathIds[0] ? "done" : "active"}><b>1</b>Category</span><span className={form.categoryPathIds[1] ? "done" : form.categoryPathIds[0] ? "active" : ""}><b>2</b>Subcategory</span><span className={selectedCategoryId && !categoryLevels[form.categoryPathIds.length]?.length ? "done" : ""}><b>3</b>Product details</span></div>
         <label className={`seller-image-picker ${coverPreview ? "has-preview" : ""}`}>{coverPreview ? <img src={coverPreview} alt="Product preview" /> : <ImagePlus size={34} />}<span>Clear product image *</span><input required type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => chooseImage(event.target.files?.[0])} /><small>{coverImage ? coverImage.name : "JPEG, PNG, or WebP · max 8 MB"}</small></label>
-        <section className="seller-category-flow"><header><CheckCircle2 /><div><strong>Category path</strong><small>{selectedPath.length ? selectedPath.join(" → ") : "Choose where this product belongs"}</small></div></header><div className="form-grid three"><label><span>1. Main category</span><select required value={form.rootCategoryId} onChange={(event) => setForm({ ...form, rootCategoryId: event.target.value, platformCategoryId: "", listingTypeId: "" })}><option value="">Choose category</option>{rootCategories.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select></label><label><span>2. Platform / subcategory</span><select required={platformCategories.length > 0} value={form.platformCategoryId} disabled={!platformCategories.length} onChange={(event) => setForm({ ...form, platformCategoryId: event.target.value, listingTypeId: "" })}><option value="">{platformCategories.length ? "Choose platform" : "No second level"}</option>{platformCategories.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select></label><label><span>3. Listing type</span><select required={listingTypes.length > 0} value={form.listingTypeId} disabled={!listingTypes.length} onChange={(event) => setForm({ ...form, listingTypeId: event.target.value })}><option value="">{listingTypes.length ? "Choose New / Old / other" : "No third level"}</option>{listingTypes.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select></label></div></section>
-        <div className="form-grid two"><label><span>Product title</span><input required minLength={3} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Instagram account setup service" /></label><label><span>Product type</span><select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })}><option value="DOWNLOAD">Digital product</option><option value="SERVICE">Service</option></select></label><label><span>Price (USD)</span><input required type="number" min="0.50" step="0.01" value={form.priceUsd} onChange={(event) => setForm({ ...form, priceUsd: event.target.value })} /></label><label><span>Price (CNY)</span><input type="number" min="0" step="0.01" value={form.priceCny} onChange={(event) => setForm({ ...form, priceCny: event.target.value })} /></label><label><span>Price (RUB)</span><input type="number" min="0" step="0.01" value={form.priceRub} onChange={(event) => setForm({ ...form, priceRub: event.target.value })} /></label><label><span>After-sales hours</span><input required type="number" min={12} max={8760} value={form.afterSalesServiceHours} onChange={(event) => setForm({ ...form, afterSalesServiceHours: Number(event.target.value) })} /></label></div>
-        <label><span>Short description</span><input required minLength={10} maxLength={240} value={form.shortDescription} onChange={(event) => setForm({ ...form, shortDescription: event.target.value })} placeholder="A clear one-line summary buyers see in the catalog" /></label><label><span>Full description</span><textarea required minLength={30} rows={6} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label><label><span>Buyer delivery note</span><textarea rows={3} value={form.deliveryNote} onChange={(event) => setForm({ ...form, deliveryNote: event.target.value })} /></label><label><span>Digital inventory rows</span><textarea rows={5} placeholder="One license, code, or deliverable per line. You can also add these later." value={form.inventoryLines} onChange={(event) => setForm({ ...form, inventoryLines: event.target.value })} /></label><button className="primary-button seller-submit-product" disabled={busy}><PackagePlus /> {busy ? "Creating product…" : "Create product and send for review"}</button>
+        <section className="seller-category-flow"><header><CheckCircle2 /><div><strong>Predefined category path</strong><small>{selectedPath.length ? selectedPath.join(" → ") : "Choose where this product belongs"}</small></div></header><div className="form-grid three">{categoryLevels.map((choices, depth) => <label key={`${depth}-${form.categoryPathIds[depth - 1] ?? "root"}`}><span>{depth + 1}. {depth === 0 ? "Main category" : depth === 1 ? "Subcategory" : depth === 2 ? "Product / game" : `Level ${depth + 1}`}</span><select required value={form.categoryPathIds[depth] ?? ""} onChange={(event) => setForm({ ...form, categoryPathIds: [...form.categoryPathIds.slice(0, depth), event.target.value].filter(Boolean) })}><option value="">Choose {depth === 0 ? "category" : "option"}</option>{choices.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select></label>)}</div></section>
+        {dynamicAttributes.length ? <section className="seller-auto-attributes"><header><Sparkles /><div><strong>Auto-generated product attributes</strong><small>These options are based on the selected marketplace department.</small></div></header><div className="form-grid three">{dynamicAttributes.map((attribute) => <label key={attribute.key}><span>{attribute.label}{attribute.optional ? " (optional)" : ""}</span><select required={!attribute.optional} value={form.productAttributes[attribute.key] ?? ""} onChange={(event) => setForm({ ...form, productAttributes: { ...form.productAttributes, [attribute.key]: event.target.value } })}><option value="">Choose {attribute.label.toLowerCase()}</option>{attribute.options.map((option) => <option key={option}>{option}</option>)}</select></label>)}</div></section> : null}
+        <section className="seller-language-panel"><header><span>EN</span><div><strong>English product content</strong><small>Shown to English-language buyers and used as the default fallback.</small></div></header><div className="form-grid two"><label><span>Product title</span><input required minLength={3} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Clear, searchable product title" /></label><label><span>Product type</span><select value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value })}><option value="DOWNLOAD">Digital product</option><option value="SERVICE">Service</option></select></label></div><label><span>Short description</span><input required minLength={10} maxLength={240} value={form.shortDescription} onChange={(event) => setForm({ ...form, shortDescription: event.target.value })} placeholder="A clear one-line summary buyers see in the catalog" /></label><label><span>Full description</span><textarea required minLength={30} rows={6} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label></section>
+        <section className="seller-language-panel"><header><span>中文</span><div><strong>Chinese product content</strong><small>Displayed automatically when the buyer selects Simplified Chinese.</small></div></header><div className="form-grid two"><label><span>产品标题</span><input value={form.chineseTitle} onChange={(event) => setForm({ ...form, chineseTitle: event.target.value })} /></label><label><span>SEO 标题</span><input maxLength={70} value={form.chineseSeoTitle} onChange={(event) => setForm({ ...form, chineseSeoTitle: event.target.value })} /></label></div><label><span>简短描述</span><input maxLength={240} value={form.chineseShortDescription} onChange={(event) => setForm({ ...form, chineseShortDescription: event.target.value })} /></label><label><span>完整描述</span><textarea rows={5} value={form.chineseDescription} onChange={(event) => setForm({ ...form, chineseDescription: event.target.value })} /></label><label><span>SEO 描述</span><textarea maxLength={170} rows={2} value={form.chineseSeoDescription} onChange={(event) => setForm({ ...form, chineseSeoDescription: event.target.value })} /></label></section>
+        <section className="seller-listing-section"><header><Tag /><div><strong>Pricing, inventory & identifiers</strong><small>Control retail, sale, wholesale, and order quantity rules.</small></div></header><div className="form-grid three"><label><span>Price (USD)</span><input required type="number" min="0.50" step="0.01" value={form.priceUsd} onChange={(event) => setForm({ ...form, priceUsd: event.target.value })} /></label><label><span>Sale price</span><input type="number" min="0" step="0.01" value={form.salePrice} onChange={(event) => setForm({ ...form, salePrice: event.target.value })} /></label><label><span>Wholesale price</span><input type="number" min="0" step="0.01" value={form.wholesalePrice} onChange={(event) => setForm({ ...form, wholesalePrice: event.target.value })} /></label><label><span>Price (CNY)</span><input type="number" min="0" step="0.01" value={form.priceCny} onChange={(event) => setForm({ ...form, priceCny: event.target.value })} /></label><label><span>Price (RUB)</span><input type="number" min="0" step="0.01" value={form.priceRub} onChange={(event) => setForm({ ...form, priceRub: event.target.value })} /></label><label><span>Discount %</span><input type="number" min={0} max={100} value={form.discountPercent} onChange={(event) => setForm({ ...form, discountPercent: Number(event.target.value) })} /></label><label><span>SKU</span><input value={form.sku} onChange={(event) => setForm({ ...form, sku: event.target.value })} /></label><label><span>Stock quantity</span><input type="number" min={0} value={form.stockQuantity} onChange={(event) => setForm({ ...form, stockQuantity: Number(event.target.value) })} /></label><label><span>Min / max order</span><span className="seller-inline-inputs"><input type="number" min={1} value={form.minimumOrder} onChange={(event) => setForm({ ...form, minimumOrder: Number(event.target.value) })} /><input type="number" min={1} value={form.maximumOrder} onChange={(event) => setForm({ ...form, maximumOrder: Number(event.target.value) })} /></span></label><label><span>Tags</span><input value={form.tags} onChange={(event) => setForm({ ...form, tags: event.target.value })} placeholder="popular, instant, premium" /></label><label><span>After-sales hours</span><input required type="number" min={12} max={8760} value={form.afterSalesServiceHours} onChange={(event) => setForm({ ...form, afterSalesServiceHours: Number(event.target.value) })} /></label></div></section>
+        <section className="seller-listing-section"><header><SlidersHorizontal /><div><strong>Listing specifications</strong><small>Optional searchable facts help buyers compare listings.</small></div></header><div className="form-grid three">{([['brand','Brand'],['platform','Platform'],['region','Region'],['country','Country'],['server','Server'],['language','Language'],['productKind','Product type'],['condition','Condition'],['stockType','Stock type'],['duration','Duration'],['warranty','Warranty']] as const).map(([key,label]) => <label key={key}><span>{label}</span><input value={form[key]} onChange={(event) => setForm({ ...form, [key]: event.target.value })} /></label>)}<label><span>Delivery method</span><select value={form.deliveryMethod} onChange={(event) => setForm({ ...form, deliveryMethod: event.target.value })}><option>Manual delivery</option><option>Instant delivery</option><option>Automatic delivery</option><option>Digital download</option><option>Seller service</option></select></label></div><div className="seller-option-toggles"><label><input type="checkbox" checked={form.instantDelivery} onChange={(event) => setForm({ ...form, instantDelivery: event.target.checked })} /> Instant delivery</label><label><input type="checkbox" checked={form.manualDelivery} onChange={(event) => setForm({ ...form, manualDelivery: event.target.checked })} /> Manual delivery</label><label><input type="checkbox" checked={form.digitalDownload} onChange={(event) => setForm({ ...form, digitalDownload: event.target.checked })} /> Digital download</label><label><input type="checkbox" checked={form.couponSupport} onChange={(event) => setForm({ ...form, couponSupport: event.target.checked })} /> Coupons supported</label></div></section>
+        <label><span>Buyer delivery note</span><textarea rows={3} value={form.deliveryNote} onChange={(event) => setForm({ ...form, deliveryNote: event.target.value })} /></label><label><span>Refund policy</span><textarea rows={3} value={form.refundPolicy} onChange={(event) => setForm({ ...form, refundPolicy: event.target.value })} /></label><label><span>Digital inventory rows</span><textarea rows={5} placeholder="One license, code, or deliverable per line. You can also add these later." value={form.inventoryLines} onChange={(event) => setForm({ ...form, inventoryLines: event.target.value })} /></label><button className="primary-button seller-submit-product" disabled={busy}><PackagePlus /> {busy ? "Creating product…" : "Create product and send for review"}</button>
       </form></div> : null}
     </main>
   );

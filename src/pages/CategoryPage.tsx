@@ -1,6 +1,6 @@
 import { ArrowRight, BadgeCheck, Clock3, Grid2X2, List, Search, ShieldCheck, SlidersHorizontal } from "lucide-react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useCart } from "../commerce/CartContext";
 import { useMarketplaceCategories, useMarketplaceCategory, useMarketplaceProducts } from "../commerce/useMarketplace";
 import { MarketFooter, MarketHeader } from "../components/MarketHeader";
@@ -39,24 +39,30 @@ export function CategoryPage() {
   const { category, loading } = useMarketplaceCategory(slug);
   const children = useMemo(() => categories.filter((item) => item.parentSlug === slug), [categories, slug]);
   const siblings = useMemo(() => categories.filter((item) => !item.parentSlug && item.slug !== slug).slice(0, 8), [categories, slug]);
+  const isDescendant = useCallback((candidate: string, ancestor: string) => {
+    let current = categories.find((item) => item.slug === candidate);
+    while (current?.parentSlug) {
+      if (current.parentSlug === ancestor) return true;
+      current = categories.find((item) => item.slug === current?.parentSlug);
+    }
+    return candidate === ancestor;
+  }, [categories]);
 
   const filteredProducts = useMemo(() => {
     if (!slug) return [];
     const matches = products.filter((product) => {
-      const productCategory = categories.find((item) => item.slug === product.categorySlug);
-      const inCurrent = product.categorySlug === slug || productCategory?.parentSlug === slug;
-      const inSubFilter = subFilter === "all" || product.categorySlug === subFilter;
+      const inCurrent = isDescendant(product.categorySlug, slug);
+      const inSubFilter = subFilter === "all" || isDescendant(product.categorySlug, subFilter);
       const matchesQuery = !query.trim() || `${product.title} ${product.description} ${product.seller}`.toLowerCase().includes(query.trim().toLowerCase());
       const matchesKind = kind === "all" || product.type === kind;
       return inCurrent && inSubFilter && matchesQuery && matchesKind;
     });
     return sortProducts(matches, sort);
-  }, [categories, kind, products, query, slug, sort, subFilter]);
+  }, [isDescendant, kind, products, query, slug, sort, subFilter]);
 
   const categoryProducts = useMemo(() => products.filter((product) => {
-    const productCategory = categories.find((item) => item.slug === product.categorySlug);
-    return product.categorySlug === slug || productCategory?.parentSlug === slug;
-  }), [categories, products, slug]);
+    return Boolean(slug && isDescendant(product.categorySlug, slug));
+  }), [isDescendant, products, slug]);
 
   if (loading) return <main className="commerce-page"><MarketHeader /><p className="empty-state">Loading category…</p></main>;
   if (!category || !slug) return <Navigate to="/catalog" replace />;

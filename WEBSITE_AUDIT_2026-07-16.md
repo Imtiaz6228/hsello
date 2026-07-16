@@ -1,5 +1,11 @@
 # HSello website audit — 16 July 2026
 
+## Follow-up corrections
+
+- Fixed the catalog mobile breakpoint cascade. Filters and categories now open from a compact control, while results use the full phone width.
+- Removed the hard-coded initially expanded Instagram group. Games, AI, Email, and other departments now expand only their own selected root.
+- Replaced the hard-coded Featured Sellers list with recently admin-approved, active seller profiles. Newly approved stores such as PrimeStore are now eligible immediately.
+
 ## Scope and confidence
 
 Reviewed the complete React/Express source, public and protected route map, catalog hierarchy, product/store/cart/auth flows, responsive CSS, SEO generation, accessibility controls, API filtering, payment/top-up logic, automated tests, and production build output.
@@ -114,4 +120,3 @@ This revision fixes the highest-risk items that can be corrected safely without 
 ## Recommended release gate
 
 Do not accept live money until: prohibited catalog categories are reconciled with policy; staging database migrations and seed data are verified; every enabled payment method passes amount/address/currency/idempotency/refund tests; SMTP and verification flows pass; product/store/category dynamic SEO is addressed; and real mobile/desktop browser QA plus Lighthouse/Web Vitals is completed on the deployed origin.
-

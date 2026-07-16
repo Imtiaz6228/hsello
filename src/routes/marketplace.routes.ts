@@ -120,6 +120,16 @@ marketplaceRouter.get("/products/:slug", asyncHandler(async (req, res) => {
   res.json({ product });
 }));
 
+marketplaceRouter.get("/stores", asyncHandler(async (_req, res) => {
+  const stores = await prisma.sellerProfile.findMany({
+    where: { isVerified: true, isSuspended: false, user: { isSuspended: false } },
+    orderBy: [{ updatedAt: "desc" }, { totalSales: "desc" }, { averageRating: "desc" }],
+    take: 12,
+    select: { storeName: true, slug: true, about: true, logoUrl: true, averageRating: true, totalSales: true, createdAt: true }
+  });
+  res.json({ stores });
+}));
+
 marketplaceRouter.get("/stores/:slug", asyncHandler(async (req, res) => {
   const slug = z.string().min(1).max(160).parse(req.params.slug);
   const store = await prisma.sellerProfile.findFirst({

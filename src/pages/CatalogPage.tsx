@@ -9,7 +9,7 @@ import {
   SlidersHorizontal,
   Sparkles,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useCart } from "../commerce/CartContext";
 import { categoryMatches, productCategoryBuckets } from "../commerce/catalogHierarchy";
@@ -54,7 +54,8 @@ export function CatalogPage() {
   const [category, setCategoryState] = useState(
     searchParams.get("category") ?? "all",
   );
-  const [expanded, setExpanded] = useState("instagram");
+  const [expanded, setExpanded] = useState("");
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [categoryQuery, setCategoryQuery] = useState("");
   const [sort, setSort] = useState<SortMode>("popular");
   const [view, setView] = useState<ViewMode>("list");
@@ -64,6 +65,13 @@ export function CatalogPage() {
   const [minimumRating, setMinimumRating] = useState("all");
   const products = useMarketplaceProducts();
   const categories = useMarketplaceCategories();
+
+  useEffect(() => {
+    if (category === "all") { setExpanded(""); return; }
+    let current = categories.find((item) => item.slug === category);
+    while (current?.parentSlug) current = categories.find((item) => item.slug === current?.parentSlug);
+    setExpanded(current?.slug ?? "");
+  }, [categories, category]);
 
   const parentCategories = useMemo(
     () => categories.filter((item) => !item.parentSlug),
@@ -245,7 +253,11 @@ export function CatalogPage() {
         </div>
       </section>
       <section className="market-browser-layout">
-        <aside className="category-directory">
+        <button type="button" className="mobile-catalog-filters-toggle" aria-expanded={mobileFiltersOpen} aria-controls="catalog-filter-directory" onClick={() => setMobileFiltersOpen((open) => !open)}>
+          <SlidersHorizontal /> {mobileFiltersOpen ? "Hide filters & categories" : "Filters & categories"}
+          {activeFilterCount ? <span>{activeFilterCount}</span> : null}<ChevronDown />
+        </button>
+        <aside id="catalog-filter-directory" className={`category-directory ${mobileFiltersOpen ? "mobile-open" : ""}`}>
           <div className="directory-card">
             <header>
               <strong>{t("allCategories")}</strong>

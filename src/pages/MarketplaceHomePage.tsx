@@ -38,6 +38,7 @@ import { useAuth } from "../auth/AuthContext";
 import {
   useMarketplaceCategories,
   useMarketplaceProducts,
+  useMarketplaceStores,
 } from "../commerce/useMarketplace";
 import { useCart } from "../commerce/CartContext";
 import { categoryMatches } from "../commerce/catalogHierarchy";
@@ -355,7 +356,7 @@ const products: Product[] = [
   },
 ];
 
-const sellers = [
+const fallbackSellers = [
   {
     slug: "northstar-studio",
     name: "Northstar Studio",
@@ -576,6 +577,7 @@ export function MarketplaceHomePage() {
   const navigate = useNavigate();
   const liveCatalogProducts = useMarketplaceProducts();
   const marketplaceCategories = useMarketplaceCategories();
+  const approvedStores = useMarketplaceStores();
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [browseCategory, setBrowseCategory] = useState("Gaming");
@@ -722,6 +724,7 @@ export function MarketplaceHomePage() {
 
   const mainCategories = categories.filter((category) => ["gaming", "social-media-marketplace", "email-accounts-marketplace", "ai-marketplace", "software-marketplace", "digital-goods-marketplace", "professional-services"].includes(category.slug ?? "")).slice(0, 7);
   const focusedCategory = mainCategories.find((category) => category.name === browseCategory) ?? mainCategories[0] ?? categories[0];
+  const featuredSellers = approvedStores.length ? approvedStores.slice(0,8).map((store,index)=>({slug:store.slug,name:store.name,mark:store.mark,focus:store.about,status:"Admin approved",response:store.sales?`${store.sales.toLocaleString()} sales`:"New verified store",accent:["purple","indigo","blue","orange"][index%4],logoUrl:store.logoUrl})) : fallbackSellers;
 
   return (
     <main className="lux-home">
@@ -1220,10 +1223,10 @@ export function MarketplaceHomePage() {
           </Link>
         </div>
         <div className="lux-seller-grid">
-          {sellers.map((s, i) => (
+          {featuredSellers.map((s, i) => (
             <article key={s.name}>
               <span className="seller-rank">0{i + 1}</span>
-              <div className={`seller-avatar accent-${s.accent}`}>{s.mark}</div>
+              <div className={`seller-avatar accent-${s.accent}`}>{"logoUrl" in s && typeof s.logoUrl === "string" ? <img src={s.logoUrl} alt={`${s.name} logo`} /> : s.mark}</div>
               <div className="seller-name">
                 <h3>
                   {s.name} <BadgeCheck size={15} />

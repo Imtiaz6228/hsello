@@ -12,7 +12,10 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useCart } from "../commerce/CartContext";
-import { categoryMatches, productCategoryBuckets } from "../commerce/catalogHierarchy";
+import {
+  categoryMatches,
+  productCategoryBuckets,
+} from "../commerce/catalogHierarchy";
 import {
   useMarketplaceCategories,
   useMarketplaceProducts,
@@ -67,9 +70,13 @@ export function CatalogPage() {
   const categories = useMarketplaceCategories();
 
   useEffect(() => {
-    if (category === "all") { setExpanded(""); return; }
+    if (category === "all") {
+      setExpanded("");
+      return;
+    }
     let current = categories.find((item) => item.slug === category);
-    while (current?.parentSlug) current = categories.find((item) => item.slug === current?.parentSlug);
+    while (current?.parentSlug)
+      current = categories.find((item) => item.slug === current?.parentSlug);
     setExpanded(current?.slug ?? "");
   }, [categories, category]);
 
@@ -90,7 +97,11 @@ export function CatalogPage() {
   const categoryCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const product of products) {
-      for (const bucket of productCategoryBuckets(product.categorySlug, categories)) counts.set(bucket, (counts.get(bucket) ?? 0) + 1);
+      for (const bucket of productCategoryBuckets(
+        product.categorySlug,
+        categories,
+      ))
+        counts.set(bucket, (counts.get(bucket) ?? 0) + 1);
     }
     return counts;
   }, [categories, products]);
@@ -106,7 +117,9 @@ export function CatalogPage() {
         (kind === "all" || product.type === kind) &&
         (priceBand === "all" ||
           (priceBand === "under_25" && product.priceCents < 2500) ||
-          (priceBand === "25_50" && product.priceCents >= 2500 && product.priceCents <= 5000) ||
+          (priceBand === "25_50" &&
+            product.priceCents >= 2500 &&
+            product.priceCents <= 5000) ||
           (priceBand === "over_50" && product.priceCents > 5000)) &&
         (minimumRating === "all" || product.rating >= Number(minimumRating)) &&
         (!normalizedQuery ||
@@ -116,7 +129,17 @@ export function CatalogPage() {
       );
     });
     return sortProducts(matches, sort);
-  }, [category, categories, kind, minimumRating, priceBand, products, query, sort, stockOnly]);
+  }, [
+    category,
+    categories,
+    kind,
+    minimumRating,
+    priceBand,
+    products,
+    query,
+    sort,
+    stockOnly,
+  ]);
 
   function addToCart(product: CatalogProduct) {
     add(product);
@@ -174,8 +197,16 @@ export function CatalogPage() {
     <main className="commerce-page market-browse-page">
       <Seo
         title="Browse products and categories"
-        description="Scrollable marketplace categories, subcategories, stocked digital products, and secure buying from verified sellers."
+        description="Explore approved digital products and expert services by category, seller, price, delivery type, and availability on HSello."
         canonicalPath="/catalog"
+        schema={{
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: "HSello digital marketplace catalog",
+          description:
+            "Approved digital products and expert services with clear delivery and seller details.",
+          url: `${window.location.origin}/catalog`,
+        }}
       />
       <MarketHeader />
       <section className="catalog-hero market-browser-hero">
@@ -219,11 +250,19 @@ export function CatalogPage() {
       <section className="catalog-discovery-intro">
         <div className="catalog-section-heading">
           <div>
-            <span className="section-index"><Sparkles /> CURATED DEPARTMENTS</span>
+            <span className="section-index">
+              <Sparkles /> CURATED DEPARTMENTS
+            </span>
             <h2>Find the right digital product faster.</h2>
-            <p>Browse professional assets, software, courses, creative tools, and seller-delivered services with clear licensing and delivery details.</p>
+            <p>
+              Browse professional assets, software, courses, creative tools, and
+              seller-delivered services with clear licensing and delivery
+              details.
+            </p>
           </div>
-          <Link to="/support">Buying guide <ArrowRight /></Link>
+          <Link to="/support">
+            Buying guide <ArrowRight />
+          </Link>
         </div>
         <div className="catalog-department-grid">
           {parentCategories.slice(0, 12).map((item) => (
@@ -234,30 +273,55 @@ export function CatalogPage() {
               onClick={() => {
                 setCategory(item.slug);
                 setExpanded(item.slug);
-                document.querySelector(".market-browser-layout")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                document
+                  .querySelector(".market-browser-layout")
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
               }}
             >
               <span>{item.icon}</span>
               <div>
                 <strong>{item.name}</strong>
-                <small>{(childrenByParent.get(item.slug) ?? []).length} specialties · {categoryCounts.get(item.slug) ?? item.productCount ?? 0} products</small>
+                <small>
+                  {(childrenByParent.get(item.slug) ?? []).length} specialties ·{" "}
+                  {categoryCounts.get(item.slug) ?? item.productCount ?? 0}{" "}
+                  products
+                </small>
               </div>
               <ArrowRight />
             </button>
           ))}
         </div>
         <div className="catalog-confidence-row">
-          <span><ShieldCheck /> Clear licenses and delivery terms</span>
-          <span><ShieldCheck /> Moderated seller listings</span>
-          <span><ShieldCheck /> Order-linked support</span>
+          <span>
+            <ShieldCheck /> Clear licenses and delivery terms
+          </span>
+          <span>
+            <ShieldCheck /> Moderated seller listings
+          </span>
+          <span>
+            <ShieldCheck /> Order-linked support
+          </span>
         </div>
       </section>
       <section className="market-browser-layout">
-        <button type="button" className="mobile-catalog-filters-toggle" aria-expanded={mobileFiltersOpen} aria-controls="catalog-filter-directory" onClick={() => setMobileFiltersOpen((open) => !open)}>
-          <SlidersHorizontal /> {mobileFiltersOpen ? "Hide filters & categories" : "Filters & categories"}
-          {activeFilterCount ? <span>{activeFilterCount}</span> : null}<ChevronDown />
+        <button
+          type="button"
+          className="mobile-catalog-filters-toggle"
+          aria-expanded={mobileFiltersOpen}
+          aria-controls="catalog-filter-directory"
+          onClick={() => setMobileFiltersOpen((open) => !open)}
+        >
+          <SlidersHorizontal />{" "}
+          {mobileFiltersOpen
+            ? "Hide filters & categories"
+            : "Filters & categories"}
+          {activeFilterCount ? <span>{activeFilterCount}</span> : null}
+          <ChevronDown />
         </button>
-        <aside id="catalog-filter-directory" className={`category-directory ${mobileFiltersOpen ? "mobile-open" : ""}`}>
+        <aside
+          id="catalog-filter-directory"
+          className={`category-directory ${mobileFiltersOpen ? "mobile-open" : ""}`}
+        >
           <div className="directory-card">
             <header>
               <strong>{t("allCategories")}</strong>
@@ -274,7 +338,12 @@ export function CatalogPage() {
             <div className="directory-filter-stack">
               <label>
                 <span>Product type</span>
-                <select value={kind} onChange={(event) => setKind(event.target.value as ProductKind)}>
+                <select
+                  value={kind}
+                  onChange={(event) =>
+                    setKind(event.target.value as ProductKind)
+                  }
+                >
                   <option value="all">All products</option>
                   <option value="DOWNLOAD">Instant downloads</option>
                   <option value="SERVICE">Seller services</option>
@@ -282,7 +351,12 @@ export function CatalogPage() {
               </label>
               <label>
                 <span>Price</span>
-                <select value={priceBand} onChange={(event) => setPriceBand(event.target.value as PriceBand)}>
+                <select
+                  value={priceBand}
+                  onChange={(event) =>
+                    setPriceBand(event.target.value as PriceBand)
+                  }
+                >
                   <option value="all">Any price</option>
                   <option value="under_25">Under $25</option>
                   <option value="25_50">$25–$50</option>
@@ -291,7 +365,10 @@ export function CatalogPage() {
               </label>
               <label>
                 <span>Rating</span>
-                <select value={minimumRating} onChange={(event) => setMinimumRating(event.target.value)}>
+                <select
+                  value={minimumRating}
+                  onChange={(event) => setMinimumRating(event.target.value)}
+                >
                   <option value="all">Any rating</option>
                   <option value="4.5">4.5 and above</option>
                   <option value="4.8">4.8 and above</option>
@@ -366,12 +443,22 @@ export function CatalogPage() {
             <div>
               <span>{activeCategory?.icon ?? "✦"}</span>
               <div>
-                <small>{activeCategory ? "SELECTED CATEGORY" : "ALL PRODUCTS"}</small>
+                <small>
+                  {activeCategory ? "SELECTED CATEGORY" : "ALL PRODUCTS"}
+                </small>
                 <strong>{activeCategory?.name ?? "Marketplace catalog"}</strong>
-                <p>{activeCategory?.description ?? "Explore every department or narrow the catalog with precise filters."}</p>
+                <p>
+                  {activeCategory?.description ??
+                    "Explore every department or narrow the catalog with precise filters."}
+                </p>
               </div>
             </div>
-            {activeFilterCount ? <button type="button" onClick={clearFilters}><RotateCcw /> Reset {activeFilterCount} filter{activeFilterCount === 1 ? "" : "s"}</button> : null}
+            {activeFilterCount ? (
+              <button type="button" onClick={clearFilters}>
+                <RotateCcw /> Reset {activeFilterCount} filter
+                {activeFilterCount === 1 ? "" : "s"}
+              </button>
+            ) : null}
           </div>
           <div className="market-filter-bar">
             <div>
@@ -409,13 +496,38 @@ export function CatalogPage() {
           </div>
           {activeFilterCount ? (
             <div className="active-filter-summary" role="status">
-              <span>Showing {filteredProducts.length} matched product{filteredProducts.length === 1 ? "" : "s"}</span>
-              {query.trim() ? <button onClick={() => setQuery("")}>Search: “{query.trim()}” ×</button> : null}
-              {category !== "all" ? <button onClick={() => setCategory("all")}>{activeCategory?.name} ×</button> : null}
-              {kind !== "all" ? <button onClick={() => setKind("all")}>{kind === "DOWNLOAD" ? "Downloads" : "Services"} ×</button> : null}
-              {priceBand !== "all" ? <button onClick={() => setPriceBand("all")}>Price filter ×</button> : null}
-              {minimumRating !== "all" ? <button onClick={() => setMinimumRating("all")}>{minimumRating}+ rating ×</button> : null}
-              {stockOnly ? <button onClick={() => setStockOnly(false)}>In stock ×</button> : null}
+              <span>
+                Showing {filteredProducts.length} matched product
+                {filteredProducts.length === 1 ? "" : "s"}
+              </span>
+              {query.trim() ? (
+                <button onClick={() => setQuery("")}>
+                  Search: “{query.trim()}” ×
+                </button>
+              ) : null}
+              {category !== "all" ? (
+                <button onClick={() => setCategory("all")}>
+                  {activeCategory?.name} ×
+                </button>
+              ) : null}
+              {kind !== "all" ? (
+                <button onClick={() => setKind("all")}>
+                  {kind === "DOWNLOAD" ? "Downloads" : "Services"} ×
+                </button>
+              ) : null}
+              {priceBand !== "all" ? (
+                <button onClick={() => setPriceBand("all")}>
+                  Price filter ×
+                </button>
+              ) : null}
+              {minimumRating !== "all" ? (
+                <button onClick={() => setMinimumRating("all")}>
+                  {minimumRating}+ rating ×
+                </button>
+              ) : null}
+              {stockOnly ? (
+                <button onClick={() => setStockOnly(false)}>In stock ×</button>
+              ) : null}
             </div>
           ) : null}
           <div
@@ -438,7 +550,9 @@ export function CatalogPage() {
                 Try another category, remove the stock filter, or use a broader
                 phrase.
               </span>
-              <button type="button" onClick={clearFilters}>Clear all filters</button>
+              <button type="button" onClick={clearFilters}>
+                Clear all filters
+              </button>
             </div>
           ) : null}
         </div>

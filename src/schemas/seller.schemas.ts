@@ -2,16 +2,19 @@ import { z } from "zod";
 import { SellerApplicationStatus } from "@prisma/client";
 import { emailSchema, requiredConsent, usernameSchema } from "./shared.js";
 
-const productCategoriesSchema = z.preprocess((value) => {
-  if (typeof value === "string") {
-    return value
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean);
-  }
+const productCategoriesSchema = z.preprocess(
+  (value) => {
+    if (typeof value === "string") {
+      return value
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
 
-  return value;
-}, z.array(z.string().trim().min(2).max(80)).min(1).max(12));
+    return value;
+  },
+  z.array(z.string().trim().min(2).max(80)).min(1).max(12),
+);
 
 export const sellerApplicationSchema = z.object({
   userName: usernameSchema,
@@ -29,15 +32,17 @@ export const sellerApplicationSchema = z.object({
   documentNumber: z.string().default(""),
   storeDescription: z.string().trim().min(20).max(2000),
   productCategories: productCategoriesSchema,
-  termsAccepted: requiredConsent("You must accept the seller terms.")
+  termsAccepted: requiredConsent("You must accept the seller terms."),
 });
 
-export const sellerReviewSchema = z.object({
-  status: z.nativeEnum(SellerApplicationStatus),
-  adminNotes: z.string().trim().max(1000).optional()
-}).refine((value) => value.status !== SellerApplicationStatus.PENDING, {
-  path: ["status"],
-  message: "Choose Approved or Rejected for a review decision."
-});
+export const sellerReviewSchema = z
+  .object({
+    status: z.nativeEnum(SellerApplicationStatus),
+    adminNotes: z.string().trim().max(1000).optional(),
+  })
+  .refine((value) => value.status !== SellerApplicationStatus.PENDING, {
+    path: ["status"],
+    message: "Choose Approved or Rejected for a review decision.",
+  });
 
 export type SellerApplicationInput = z.infer<typeof sellerApplicationSchema>;

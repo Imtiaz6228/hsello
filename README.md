@@ -76,6 +76,8 @@ Railway can also host the complete app at its public URL. To start with that sam
 
 Set `VITE_SITE_URL` to the final public Vercel origin (for example, `https://market.example.com`). The build prerenders unique titles, descriptions, canonical links, Open Graph tags, and Twitter tags for the home, catalog, blog, article, company, and legal routes. Vercel's generated production URL is used automatically for previews when the explicit value is absent.
 
+Set any real webmaster verification tokens using the optional `VITE_GOOGLE_SITE_VERIFICATION`, `VITE_BING_SITE_VERIFICATION`, `VITE_YANDEX_SITE_VERIFICATION`, and `VITE_BAIDU_SITE_VERIFICATION` variables. Empty variables produce no tag. Domain redirects, sitemap submission, and post-deployment indexing checks are documented in `SEO_DEPLOYMENT.md`.
+
 Leave `VITE_API_BASE_URL` blank for the normal Vercel setup. If you intentionally want browser requests to call Railway directly, set `VITE_USE_REMOTE_API=true` and `VITE_API_BASE_URL=https://YOUR-RAILWAY-SERVICE.up.railway.app`, then redeploy. Do not append `/api`.
 
 If Turnstile is enabled, also set `VITE_TURNSTILE_SITE_KEY` on Vercel and the matching `TURNSTILE_SECRET_KEY` on Railway. Add a Vercel preview URL to Railway's `CORS_ORIGIN` only when you intend to test that preview.

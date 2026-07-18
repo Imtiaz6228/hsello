@@ -9,7 +9,10 @@ import { Captcha } from "../components/Captcha";
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [captchaToken, setCaptchaToken] = useState("");
-  const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [status, setStatus] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -29,16 +32,19 @@ export function ForgotPasswordPage() {
           method: "POST",
           body: {
             email,
-            captchaToken: captchaToken || undefined
-          }
+            captchaToken: captchaToken || undefined,
+          },
         },
-        false
+        false,
       );
       setStatus({ type: "success", message: data.message });
     } catch (error) {
       setStatus({
         type: "error",
-        message: error instanceof ApiError ? error.message : "Could not send a reset link. Please try again."
+        message:
+          error instanceof ApiError
+            ? error.message
+            : "Could not send a reset link. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -74,12 +80,18 @@ export function ForgotPasswordPage() {
         <Captcha onVerify={setCaptchaToken} />
 
         <button className="primary-button" type="submit" disabled={loading}>
-          {loading ? <MailCheck size={18} aria-hidden="true" /> : <Send size={18} aria-hidden="true" />}
+          {loading ? (
+            <MailCheck size={18} aria-hidden="true" />
+          ) : (
+            <Send size={18} aria-hidden="true" />
+          )}
           {loading ? "Sending link..." : "Send reset link"}
         </button>
 
         <p className="switch-auth">
-          <Link to="/sign-in"><ArrowLeft size={14} aria-hidden="true" /> Back to sign in</Link>
+          <Link to="/sign-in">
+            <ArrowLeft size={14} aria-hidden="true" /> Back to sign in
+          </Link>
         </p>
       </form>
     </AuthShell>

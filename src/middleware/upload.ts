@@ -24,14 +24,14 @@ const storage = multer.diskStorage({
   filename: (_req, file, callback) => {
     const extension = path.extname(file.originalname).toLowerCase();
     callback(null, `${Date.now()}-${crypto.randomUUID()}${extension}`);
-  }
+  },
 });
 
 const diskImageUpload = multer({
   storage,
   limits: {
     fileSize: env.MAX_UPLOAD_BYTES,
-    files: 1
+    files: 1,
   },
   fileFilter: (_req, file, callback) => {
     if (!allowedTypes.has(file.mimetype)) {
@@ -40,7 +40,7 @@ const diskImageUpload = multer({
     }
 
     callback(null, true);
-  }
+  },
 });
 
 async function persistPublicImage(file: Express.Multer.File) {
@@ -51,13 +51,13 @@ async function persistPublicImage(file: Express.Multer.File) {
       fileName: file.filename,
       mimeType: file.mimetype,
       sizeBytes: file.size,
-      data
+      data,
     },
     update: {
       mimeType: file.mimetype,
       sizeBytes: file.size,
-      data
-    }
+      data,
+    },
   });
 }
 
@@ -87,7 +87,7 @@ export const imageUpload = {
           });
       });
     };
-  }
+  },
 };
 
 export function publicUploadUrl(fileName: string) {
@@ -95,9 +95,18 @@ export function publicUploadUrl(fileName: string) {
 }
 
 const allowedProductTypes = new Set([
-  "application/zip", "application/x-zip-compressed", "application/pdf",
-  "application/octet-stream", "text/plain", "text/csv", "application/csv", "audio/mpeg", "video/mp4",
-  "image/jpeg", "image/png", "image/webp"
+  "application/zip",
+  "application/x-zip-compressed",
+  "application/pdf",
+  "application/octet-stream",
+  "text/plain",
+  "text/csv",
+  "application/csv",
+  "audio/mpeg",
+  "video/mp4",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
 ]);
 
 const productStorage = multer.diskStorage({
@@ -105,7 +114,7 @@ const productStorage = multer.diskStorage({
   filename: (_req, file, callback) => {
     const extension = path.extname(file.originalname).toLowerCase();
     callback(null, `${Date.now()}-${crypto.randomUUID()}${extension}`);
-  }
+  },
 });
 
 export const productFileUpload = multer({
@@ -117,15 +126,14 @@ export const productFileUpload = multer({
       return;
     }
     callback(null, true);
-  }
+  },
 });
-
 
 const allowedSellerDocumentTypes = new Set([
   "image/jpeg",
   "image/png",
   "image/webp",
-  "application/pdf"
+  "application/pdf",
 ]);
 
 const sellerDocumentStorage = multer.diskStorage({
@@ -133,20 +141,22 @@ const sellerDocumentStorage = multer.diskStorage({
   filename: (_req, file, callback) => {
     const extension = path.extname(file.originalname).toLowerCase();
     callback(null, `${Date.now()}-${crypto.randomUUID()}${extension}`);
-  }
+  },
 });
 
 export const sellerDocumentUpload = multer({
   storage: sellerDocumentStorage,
   limits: {
     fileSize: env.MAX_UPLOAD_BYTES,
-    files: 2
+    files: 2,
   },
   fileFilter: (_req, file, callback) => {
     if (!allowedSellerDocumentTypes.has(file.mimetype)) {
-      callback(new Error("Seller documents must be JPEG, PNG, WebP, or PDF files."));
+      callback(
+        new Error("Seller documents must be JPEG, PNG, WebP, or PDF files."),
+      );
       return;
     }
     callback(null, true);
-  }
+  },
 });

@@ -26,13 +26,18 @@ function crc32(buffer: Buffer) {
 
 function dosDateTime(date = new Date()) {
   const year = Math.max(1980, date.getFullYear());
-  const dosTime = (date.getHours() << 11) | (date.getMinutes() << 5) | Math.floor(date.getSeconds() / 2);
-  const dosDate = ((year - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate();
+  const dosTime =
+    (date.getHours() << 11) |
+    (date.getMinutes() << 5) |
+    Math.floor(date.getSeconds() / 2);
+  const dosDate =
+    ((year - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate();
   return { dosTime, dosDate };
 }
 
 function safeZipName(value: string, index: number) {
-  const base = path.basename(value || `product-file-${index + 1}`)
+  const base = path
+    .basename(value || `product-file-${index + 1}`)
     .replace(/[\u0000-\u001f<>:"|?*\\/]+/g, "-")
     .replace(/^\.+$/, "file")
     .slice(0, 160);
@@ -59,9 +64,12 @@ export async function createZipBuffer(files: ZipInput[]) {
 
   for (let index = 0; index < files.length; index += 1) {
     const file = files[index];
-    const content = file.content !== undefined
-      ? Buffer.isBuffer(file.content) ? file.content : Buffer.from(file.content, "utf8")
-      : await fs.readFile(path.resolve(file.storagePath!));
+    const content =
+      file.content !== undefined
+        ? Buffer.isBuffer(file.content)
+          ? file.content
+          : Buffer.from(file.content, "utf8")
+        : await fs.readFile(path.resolve(file.storagePath!));
     const name = Buffer.from(safeZipName(file.name, index), "utf8");
     const { dosTime, dosDate } = dosDateTime();
     const crc = crc32(content);
@@ -79,7 +87,7 @@ export async function createZipBuffer(files: ZipInput[]) {
       u32(size),
       u16(name.length),
       u16(0),
-      name
+      name,
     ]);
 
     localParts.push(localHeader, content);
@@ -102,7 +110,7 @@ export async function createZipBuffer(files: ZipInput[]) {
       u16(0),
       u32(0),
       u32(offset),
-      name
+      name,
     ]);
 
     centralParts.push(centralHeader);
@@ -118,7 +126,7 @@ export async function createZipBuffer(files: ZipInput[]) {
     u16(files.length),
     u32(centralDirectory.length),
     u32(offset),
-    u16(0)
+    u16(0),
   ]);
 
   return Buffer.concat([...localParts, centralDirectory, end]);

@@ -9,7 +9,7 @@ declare global {
           sitekey: string;
           callback: (token: string) => void;
           "expired-callback": () => void;
-        }
+        },
       ) => string;
       remove: (id: string) => void;
     };
@@ -30,7 +30,8 @@ export function Captcha({ onVerify }: { onVerify: (token: string) => void }) {
     if (!document.querySelector("#turnstile-script")) {
       const script = document.createElement("script");
       script.id = "turnstile-script";
-      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+      script.src =
+        "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
       script.async = true;
       script.defer = true;
       document.head.appendChild(script);
@@ -41,7 +42,7 @@ export function Captcha({ onVerify }: { onVerify: (token: string) => void }) {
         widgetRef.current = window.turnstile.render(containerRef.current, {
           sitekey: siteKey,
           callback: onVerify,
-          "expired-callback": () => onVerify("")
+          "expired-callback": () => onVerify(""),
         });
         window.clearInterval(interval);
       }

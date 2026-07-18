@@ -122,7 +122,7 @@ const fallbackCategories: Category[] = [
   {
     name: "Streaming",
     short: "Streaming",
-    description: "Entertainment and music access",
+    description: "Creator assets and streaming workflows",
     subcategories: [
       "Netflix",
       "Spotify",
@@ -152,7 +152,7 @@ const fallbackCategories: Category[] = [
   {
     name: "Gaming",
     short: "Gaming",
-    description: "Accounts, items and game services",
+    description: "Guides, creator assets and coaching",
     subcategories: [
       "Steam",
       "PlayStation",
@@ -165,31 +165,31 @@ const fallbackCategories: Category[] = [
     accent: "indigo",
   },
   {
-    name: "Game currency",
-    short: "Currency",
-    description: "Coins, skins and collectibles",
+    name: "Game art & UI",
+    short: "Game assets",
+    description: "Original interface and creator resources",
     subcategories: [
-      "EA FC Coins",
-      "WoW Gold",
-      "Robux",
-      "Fortnite",
-      "Diablo",
-      "CS2 Skins",
+      "HUD kits",
+      "Icon packs",
+      "Streaming overlays",
+      "Server templates",
+      "UI sounds",
+      "Game guides",
     ],
     icon: WalletCards,
     accent: "yellow",
   },
   {
-    name: "Gift cards",
-    short: "Gift cards",
-    description: "Global codes and wallet top-ups",
+    name: "Business kits",
+    short: "Business",
+    description: "Practical templates for independent teams",
     subcategories: [
-      "Steam",
-      "PlayStation",
-      "Xbox",
-      "Apple",
-      "Google Play",
-      "Nintendo",
+      "Client onboarding",
+      "Finance models",
+      "Operations",
+      "Ecommerce",
+      "Project planning",
+      "Reporting",
     ],
     icon: Gift,
     accent: "red",
@@ -210,148 +210,49 @@ const fallbackCategories: Category[] = [
     accent: "cyan",
   },
   {
-    name: "Boosting",
-    short: "Boosting",
-    description: "Coaching and progress services",
+    name: "Coaching",
+    short: "Coaching",
+    description: "Skill development and review services",
     subcategories: [
-      "Valorant",
-      "League",
-      "Fortnite",
-      "WoW",
-      "EA FC",
-      "Call of Duty",
+      "Design critique",
+      "Code review",
+      "Portfolio review",
+      "Marketing strategy",
+      "Career planning",
+      "Creative coaching",
     ],
     icon: TrendingUp,
     accent: "lime",
   },
   {
-    name: "VPN & proxies",
-    short: "VPN",
-    description: "Private, reliable connectivity",
+    name: "Privacy & security",
+    short: "Security",
+    description: "Training, checklists and safe workflows",
     subcategories: [
-      "Residential",
-      "Mobile",
-      "Datacenter",
-      "VPN",
-      "Static ISP",
-      "Rotating IP",
+      "Security awareness",
+      "Privacy checklists",
+      "Backup planning",
+      "Access reviews",
+      "Incident templates",
+      "Team training",
     ],
     icon: Wifi,
     accent: "teal",
   },
   {
-    name: "Mobile top-up",
+    name: "Mobile resources",
     short: "Mobile",
-    description: "Airtime, data and global eSIM",
+    description: "App templates and travel workflows",
     subcategories: [
-      "United States",
-      "United Kingdom",
-      "Europe",
-      "Middle East",
-      "Asia",
-      "Global eSIM",
+      "App UI kits",
+      "Travel planners",
+      "Mobile presets",
+      "Device checklists",
+      "Content templates",
+      "Setup guides",
     ],
     icon: Smartphone,
     accent: "blue",
-  },
-];
-
-const products: Product[] = [
-  {
-    category: "AI & productivity",
-    title: "ChatGPT Plus — 1 month premium access",
-    seller: "Neural Desk",
-    price: 14.9,
-    rating: "New",
-    reviews: "Preview listing",
-    delivery: "Instant",
-    icon: Bot,
-    accent: "purple",
-    tags: ["chatgpt", "ai", "openai", "productivity"],
-  },
-  {
-    category: "Software",
-    title: "Microsoft 365 — 12 month activation",
-    seller: "Cloud Keys",
-    price: 39.5,
-    rating: "New",
-    reviews: "Preview listing",
-    delivery: "Instant",
-    icon: KeyRound,
-    accent: "blue",
-    tags: ["microsoft", "office", "windows", "software"],
-  },
-  {
-    category: "Streaming",
-    title: "Spotify Premium — personal upgrade",
-    seller: "Stream District",
-    price: 7.5,
-    rating: "New",
-    reviews: "Preview listing",
-    delivery: "5–15 min",
-    icon: Cloud,
-    accent: "green",
-    tags: ["spotify", "music", "streaming"],
-  },
-  {
-    category: "Gift cards",
-    title: "PlayStation Store — instant digital code",
-    seller: "Pixel Supply",
-    price: 24.8,
-    rating: "New",
-    reviews: "Preview listing",
-    delivery: "Instant",
-    icon: Gift,
-    accent: "indigo",
-    tags: ["playstation", "psn", "gift card", "gaming"],
-  },
-  {
-    category: "VPN & proxies",
-    title: "Residential proxy plan — 10 GB traffic",
-    seller: "Route Works",
-    price: 21,
-    rating: "New",
-    reviews: "Preview listing",
-    delivery: "Instant",
-    icon: Wifi,
-    accent: "cyan",
-    tags: ["proxy", "vpn", "residential"],
-  },
-  {
-    category: "Gaming",
-    title: "Steam starter bundle — curated game library",
-    seller: "Nova Profiles",
-    price: 16.9,
-    rating: "New",
-    reviews: "Preview listing",
-    delivery: "Under 1h",
-    icon: Gamepad2,
-    accent: "orange",
-    tags: ["steam", "gaming", "pc"],
-  },
-  {
-    category: "Social media",
-    title: "Creator content kit — 250 post templates",
-    seller: "Creator District",
-    price: 18,
-    rating: "New",
-    reviews: "Preview listing",
-    delivery: "Instant",
-    icon: Users,
-    accent: "pink",
-    tags: ["instagram", "social", "templates", "creator"],
-  },
-  {
-    category: "Mobile top-up",
-    title: "Global eSIM — 5 GB travel data plan",
-    seller: "TopUp Relay",
-    price: 10,
-    rating: "New",
-    reviews: "Preview listing",
-    delivery: "Instant",
-    icon: Smartphone,
-    accent: "teal",
-    tags: ["mobile", "esim", "travel", "data"],
   },
 ];
 
@@ -458,11 +359,11 @@ const platformSlugs: Record<string, string> = {
 function detailOptions(platform: string, category: string) {
   if (platform === "Facebook")
     return [
-      "New Facebook",
-      "Old Facebook",
-      "Facebook pages",
-      "With friends",
-      "Business manager",
+      "Page design kits",
+      "Ad creative templates",
+      "Group moderation guides",
+      "Business page setup",
+      "Analytics reviews",
     ];
   if (
     ["Instagram", "TikTok", "X / Twitter", "LinkedIn", "Snapchat"].includes(
@@ -470,40 +371,46 @@ function detailOptions(platform: string, category: string) {
     )
   )
     return [
-      `New ${platform}`,
-      `Old ${platform}`,
-      "With followers",
-      "With posts",
-      "Business ready",
+      `${platform} content templates`,
+      "Publishing calendars",
+      "Audience analytics",
+      "Profile audits",
+      "Business workflows",
     ];
   if (category === "Gaming" || category === "Game currency")
     return [
-      `New ${platform}`,
-      `Old ${platform}`,
-      "Full access",
-      "Currency & items",
-      "Ranked profiles",
+      `${platform} coaching guides`,
+      "UI and stream assets",
+      "Server resources",
+      "Strategy sessions",
+      "Creator packs",
     ];
   if (category === "Email products" || category === "Messaging")
     return [
-      `New ${platform}`,
-      `Old ${platform}`,
-      "Phone verified",
-      "Recovery included",
-      "Bulk packs",
+      `${platform} templates`,
+      "Setup guides",
+      "Organization workflows",
+      "Automation blueprints",
+      "Support resources",
     ];
   if (
     category === "Streaming" ||
     category === "AI & productivity" ||
     category === "Software"
   )
-    return ["1 month", "3 months", "6 months", "12 months", "Family / team"];
+    return [
+      "Setup guides",
+      "Workflow templates",
+      "Training resources",
+      "Integration help",
+      "Team documentation",
+    ];
   return [
-    "New listings",
-    "Old listings",
-    "Premium",
-    "Bulk packs",
-    "Instant delivery",
+    "Templates",
+    "Guides",
+    "Creator assets",
+    "Expert services",
+    "Support resources",
   ];
 }
 
@@ -523,7 +430,7 @@ function ProductCard({ product }: { product: Product }) {
         {product.imageUrl && !imageFailed ? (
           <img
             src={product.imageUrl}
-            alt={product.title}
+            alt={`${product.title} product preview`}
             loading="lazy"
             decoding="async"
             onError={() => setImageFailed(true)}
@@ -591,10 +498,16 @@ export function MarketplaceHomePage() {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") { setMobileMenu(false); menuButtonRef.current?.focus(); }
+      if (event.key === "Escape") {
+        setMobileMenu(false);
+        menuButtonRef.current?.focus();
+      }
     };
     document.addEventListener("keydown", closeOnEscape);
-    return () => { document.body.style.overflow = previousOverflow; document.removeEventListener("keydown", closeOnEscape); };
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", closeOnEscape);
+    };
   }, [mobileMenu]);
   const accountPath = user
     ? STAFF_ROLES.includes(user.role)
@@ -634,33 +547,44 @@ export function MarketplaceHomePage() {
       "teal",
       "blue",
     ];
-    const preferredRoots = ["gaming", "social-media-marketplace", "email-accounts-marketplace", "ai-marketplace", "software-marketplace", "digital-goods-marketplace", "professional-services"];
-    return parents.map((parent, index) => {
-      const children = marketplaceCategories.filter(
-        (item) => item.parentId === parent.id,
-      );
-      return {
-        slug: parent.slug,
-        name: parent.name,
-        short: parent.name.split(/\s+/).slice(0, 2).join(" "),
-        description: parent.description,
-        subcategories: children.map((item) => item.name),
-        subDetails: Object.fromEntries(
-          children.map((child) => [
-            child.name,
-            marketplaceCategories
-              .filter((item) => item.parentId === child.id)
-              .map((item) => ({ name: item.name, slug: item.slug })),
-          ]),
-        ),
-        icon: icons[index % icons.length],
-        accent: accents[index % accents.length],
-      };
-    }).sort((a, b) => {
-      const ai = preferredRoots.indexOf(a.slug ?? ""); const bi = preferredRoots.indexOf(b.slug ?? "");
-      if (ai >= 0 || bi >= 0) return (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi);
-      return a.name.localeCompare(b.name);
-    });
+    const preferredRoots = [
+      "social-media",
+      "email-services",
+      "games",
+      "ai-platforms",
+      "subscription-platforms",
+      "professional-services",
+    ];
+    return parents
+      .map((parent, index) => {
+        const children = marketplaceCategories.filter(
+          (item) => item.parentId === parent.id,
+        );
+        return {
+          slug: parent.slug,
+          name: parent.name,
+          short: parent.name.split(/\s+/).slice(0, 2).join(" "),
+          description: parent.description,
+          subcategories: children.map((item) => item.name),
+          subDetails: Object.fromEntries(
+            children.map((child) => [
+              child.name,
+              marketplaceCategories
+                .filter((item) => item.parentId === child.id)
+                .map((item) => ({ name: item.name, slug: item.slug })),
+            ]),
+          ),
+          icon: icons[index % icons.length],
+          accent: accents[index % accents.length],
+        };
+      })
+      .sort((a, b) => {
+        const ai = preferredRoots.indexOf(a.slug ?? "");
+        const bi = preferredRoots.indexOf(b.slug ?? "");
+        if (ai >= 0 || bi >= 0)
+          return (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi);
+        return a.name.localeCompare(b.name);
+      });
   }, [marketplaceCategories]);
   const displayProducts = useMemo<Product[]>(
     () =>
@@ -670,8 +594,8 @@ export function MarketplaceHomePage() {
             const match = categories.find(
               (item) =>
                 categoryPath.includes(item.name.toLowerCase()) ||
-                item.subcategories.some(
-                  (sub) => categoryPath.includes(sub.toLowerCase()),
+                item.subcategories.some((sub) =>
+                  categoryPath.includes(sub.toLowerCase()),
                 ),
             );
             const visual = {
@@ -695,16 +619,26 @@ export function MarketplaceHomePage() {
               tags: [product.title, product.category, product.seller],
             };
           })
-        : products,
+        : [],
     [categories, liveCatalogProducts],
   );
   const visibleProducts = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const selectedCategory = categories.find((category) => category.name === activeCategory);
+    const selectedCategory = categories.find(
+      (category) => category.name === activeCategory,
+    );
     return displayProducts.filter(
       (p) =>
         (activeCategory === "All" ||
-          Boolean(p.categorySlug && selectedCategory?.slug && categoryMatches(p.categorySlug, selectedCategory.slug, marketplaceCategories)) ||
+          Boolean(
+            p.categorySlug &&
+            selectedCategory?.slug &&
+            categoryMatches(
+              p.categorySlug,
+              selectedCategory.slug,
+              marketplaceCategories,
+            ),
+          ) ||
           p.category === activeCategory ||
           selectedCategory?.subcategories.includes(p.category)) &&
         (!q ||
@@ -712,21 +646,54 @@ export function MarketplaceHomePage() {
             v.toLowerCase().includes(q),
           )),
     );
-  }, [activeCategory, categories, displayProducts, marketplaceCategories, query]);
+  }, [
+    activeCategory,
+    categories,
+    displayProducts,
+    marketplaceCategories,
+    query,
+  ]);
   function submitSearch(e: FormEvent) {
     e.preventDefault();
-    navigate(`/catalog${query.trim() ? `?q=${encodeURIComponent(query.trim())}` : ""}`);
+    navigate(
+      `/catalog${query.trim() ? `?q=${encodeURIComponent(query.trim())}` : ""}`,
+    );
   }
   function pickCategory(name: string) {
     setBrowseCategory(name);
   }
 
-  const mainCategories = categories.filter((category) => ["gaming", "social-media-marketplace", "email-accounts-marketplace", "ai-marketplace", "software-marketplace", "digital-goods-marketplace", "professional-services"].includes(category.slug ?? "")).slice(0, 7);
-  const focusedCategory = mainCategories.find((category) => category.name === browseCategory) ?? mainCategories[0] ?? categories[0];
-  const featuredSellers = approvedStores.length ? approvedStores.slice(0,8).map((store,index)=>({slug:store.slug,name:store.name,mark:store.mark,focus:store.about,status:"Admin approved",response:store.sales?`${store.sales.toLocaleString()} sales`:"New verified store",accent:["purple","indigo","blue","orange"][index%4],logoUrl:store.logoUrl})) : fallbackSellers;
-  const heroProduct = displayProducts.find((product) => product.imageUrl) ?? displayProducts[0];
+  const mainCategories = categories.slice(0, 7);
+  const focusedCategory =
+    mainCategories.find((category) => category.name === browseCategory) ??
+    mainCategories[0] ??
+    categories[0];
+  const featuredSellers = approvedStores.length
+    ? approvedStores.slice(0, 8).map((store, index) => ({
+        slug: store.slug,
+        name: store.name,
+        mark: store.mark,
+        focus: store.about,
+        status: "Admin approved",
+        response: store.sales
+          ? `${store.sales.toLocaleString()} sales`
+          : "New verified store",
+        accent: ["purple", "indigo", "blue", "orange"][index % 4],
+        logoUrl: store.logoUrl,
+      }))
+    : import.meta.env.DEV
+      ? fallbackSellers
+      : [];
+  const heroProduct =
+    displayProducts.find((product) => product.imageUrl) ?? displayProducts[0];
   const HeroProductIcon = heroProduct?.icon ?? Bot;
-  const heroProductPath = heroProduct?.slug ? `/products/${heroProduct.slug}` : `/catalog?q=${encodeURIComponent(heroProduct?.title ?? "")}`;
+  const heroProductPath = heroProduct?.slug
+    ? `/products/${heroProduct.slug}`
+    : "/catalog";
+  const heroCategory = heroProduct?.category.split(" /").slice(-1)[0];
+  const heroCategoryCode = heroCategory
+    ? heroCategory.slice(0, 3).toUpperCase()
+    : "NEW";
 
   return (
     <main className="lux-home">
@@ -772,11 +739,18 @@ export function MarketplaceHomePage() {
             <small>DIGITAL MARKET</small>
           </div>
         </Link>
-        <nav id="homepage-navigation" className={mobileMenu ? "open" : ""} aria-label="Main navigation">
+        <nav
+          id="homepage-navigation"
+          className={mobileMenu ? "open" : ""}
+          aria-label="Main navigation"
+        >
           <button
             ref={closeButtonRef}
             className="mobile-close"
-            onClick={() => { setMobileMenu(false); menuButtonRef.current?.focus(); }}
+            onClick={() => {
+              setMobileMenu(false);
+              menuButtonRef.current?.focus();
+            }}
             aria-label={t("close")}
           >
             <X />
@@ -953,12 +927,25 @@ export function MarketplaceHomePage() {
               placeholder={t("homeSearch")}
               aria-label="Search products"
             />
-            <button type="submit" aria-label={t("searchMarketplace")}><span>{t("searchMarketplace")}</span><ArrowRight /></button>
+            <button type="submit" aria-label={t("searchMarketplace")}>
+              <span>{t("searchMarketplace")}</span>
+              <ArrowRight />
+            </button>
           </form>
-          <div className="lux-hero-actions"><Link to="/catalog">Browse marketplace <ArrowRight size={16} /></Link><a href="#categories">Explore categories</a></div>
+          <div className="lux-hero-actions">
+            <Link to="/catalog">
+              Browse marketplace <ArrowRight size={16} />
+            </Link>
+            <a href="#categories">Explore categories</a>
+          </div>
           <div className="lux-popular">
             <span>Trending:</span>
-            {["ChatGPT", "Microsoft 365", "Spotify", "Gift cards"].map((t) => (
+            {[
+              "Design templates",
+              "AI workflows",
+              "Code starters",
+              "Business kits",
+            ].map((t) => (
               <button
                 key={t}
                 onClick={() => navigate(`/catalog?q=${encodeURIComponent(t)}`)}
@@ -990,14 +977,33 @@ export function MarketplaceHomePage() {
           <div className="hero-orb orb-two" />
           <article className="hero-feature-card">
             <span className="hero-card-label">MARKETPLACE PICK</span>
-            <div className={`hero-feature-art ${heroProduct?.imageUrl ? "has-image" : ""}`}>
-              {heroProduct?.imageUrl ? <img src={heroProduct.imageUrl} alt="" /> : <HeroProductIcon size={74} />}
-              <span>{heroProduct ? heroProduct.category.split(" /")[heroProduct.category.split(" /").length - 1]?.slice(0, 3).toUpperCase() : "NEW"}</span>
+            <div
+              className={`hero-feature-art ${heroProduct?.imageUrl ? "has-image" : ""}`}
+            >
+              {heroProduct?.imageUrl ? (
+                <img
+                  src={heroProduct.imageUrl}
+                  alt=""
+                  decoding="async"
+                  fetchPriority="high"
+                />
+              ) : (
+                <HeroProductIcon size={74} />
+              )}
+              <span>{heroCategoryCode}</span>
             </div>
-            <h2>{heroProduct?.title ?? "Explore digital tools and expert services."}</h2>
-            <p>{heroProduct ? `${heroProduct.seller} · ${formatMoney(Math.round(heroProduct.price * 100))} · ${heroProduct.delivery}` : "Compare clear product details and seller terms."}</p>
+            <h2>
+              {heroProduct?.title ??
+                "Explore digital tools and expert services."}
+            </h2>
+            <p>
+              {heroProduct
+                ? `${heroProduct.seller} · ${formatMoney(Math.round(heroProduct.price * 100))} · ${heroProduct.delivery}`
+                : "Compare clear product details and seller terms."}
+            </p>
             <Link to={heroProductPath}>
-              {heroProduct ? "View product" : "Explore marketplace"} <ArrowRight size={16} />
+              {heroProduct ? "View product" : "Explore marketplace"}{" "}
+              <ArrowRight size={16} />
             </Link>
           </article>
           <div className="floating-review">
@@ -1010,8 +1016,16 @@ export function MarketplaceHomePage() {
           <div className="floating-order">
             <Store size={16} />
             <span>
-              <strong>{approvedStores.length ? `${approvedStores.length} approved stores` : "Approved sellers"}</strong>
-              <small>{liveCatalogProducts.length ? `${liveCatalogProducts.length} live listings` : "Browse the live catalog"}</small>
+              <strong>
+                {approvedStores.length
+                  ? `${approvedStores.length} approved stores`
+                  : "Approved sellers"}
+              </strong>
+              <small>
+                {liveCatalogProducts.length
+                  ? `${liveCatalogProducts.length} live listings`
+                  : "Browse the live catalog"}
+              </small>
             </span>
           </div>
         </div>
@@ -1048,11 +1062,47 @@ export function MarketplaceHomePage() {
         </div>
       </section>
 
-      <section className="lux-market-pulse" aria-label="Marketplace at a glance">
-        <div><small>LIVE CATALOG</small><strong>{liveCatalogProducts.length || "Explore"}</strong><span>{liveCatalogProducts.length ? "approved listings" : "current listings"}</span></div>
-        <div><small>DEPARTMENTS</small><strong>{marketplaceCategories.filter((category) => !category.parentId).length || categories.length}</strong><span>organized paths</span></div>
-        <div><small>SELLER NETWORK</small><strong>{approvedStores.length || "Reviewed"}</strong><span>{approvedStores.length ? "approved stores" : "seller profiles"}</span></div>
-        <div className="pulse-action"><ShieldCheck /><span><strong>Order-linked confidence</strong><small>Delivery, messages, support, and disputes stay attached to the purchase.</small></span><Link to="/support">How protection works <ArrowRight /></Link></div>
+      <section
+        className="lux-market-pulse"
+        aria-label="Marketplace at a glance"
+      >
+        <div>
+          <small>LIVE CATALOG</small>
+          <strong>{liveCatalogProducts.length || "Explore"}</strong>
+          <span>
+            {liveCatalogProducts.length
+              ? "approved listings"
+              : "current listings"}
+          </span>
+        </div>
+        <div>
+          <small>DEPARTMENTS</small>
+          <strong>
+            {marketplaceCategories.filter((category) => !category.parentId)
+              .length || categories.length}
+          </strong>
+          <span>organized paths</span>
+        </div>
+        <div>
+          <small>SELLER NETWORK</small>
+          <strong>{approvedStores.length || "Reviewed"}</strong>
+          <span>
+            {approvedStores.length ? "approved stores" : "seller profiles"}
+          </span>
+        </div>
+        <div className="pulse-action">
+          <ShieldCheck />
+          <span>
+            <strong>Order-linked confidence</strong>
+            <small>
+              Delivery, messages, support, and disputes stay attached to the
+              purchase.
+            </small>
+          </span>
+          <Link to="/support">
+            How protection works <ArrowRight />
+          </Link>
+        </div>
       </section>
 
       <section className="lux-section" id="categories">
@@ -1065,7 +1115,11 @@ export function MarketplaceHomePage() {
             Browse all categories <ArrowRight size={16} />
           </Link>
         </div>
-        <div className="lux-main-category-row" role="tablist" aria-label="Main marketplace categories">
+        <div
+          className="lux-main-category-row"
+          role="tablist"
+          aria-label="Main marketplace categories"
+        >
           {mainCategories.map((c) => {
             const Icon = c.icon;
             return (
@@ -1084,11 +1138,48 @@ export function MarketplaceHomePage() {
             );
           })}
         </div>
-        {focusedCategory ? <div className="lux-category-preview">
-          <header><div><span>SELECTED DEPARTMENT</span><h3>{focusedCategory.name}</h3><p>{focusedCategory.description}</p></div><Link to={`/catalog?category=${encodeURIComponent(focusedCategory.slug ?? "")}`}>View all <ArrowRight /></Link></header>
-          <div className="lux-subcategory-preview-grid">{focusedCategory.subcategories.slice(0, 8).map((subcategory) => <Link key={subcategory} to={`/catalog?category=${encodeURIComponent(focusedCategory.subDetails?.[subcategory]?.[0]?.slug ?? focusedCategory.slug ?? "")}&q=${encodeURIComponent(subcategory)}`}><span>{subcategory.slice(0, 2).toUpperCase()}</span><strong>{subcategory}</strong><small>{(focusedCategory.subDetails?.[subcategory] ?? []).slice(0, 3).map((item) => item.name).join(" · ") || "Browse listings"}</small><ArrowRight /></Link>)}</div>
-          {focusedCategory.subcategories.length > 8 ? <Link className="lux-category-view-all" to={`/catalog?category=${encodeURIComponent(focusedCategory.slug ?? "")}`}>View all {focusedCategory.name} subcategories <ArrowRight /></Link> : null}
-        </div> : null}
+        {focusedCategory ? (
+          <div className="lux-category-preview">
+            <header>
+              <div>
+                <span>SELECTED DEPARTMENT</span>
+                <h3>{focusedCategory.name}</h3>
+                <p>{focusedCategory.description}</p>
+              </div>
+              <Link
+                to={`/catalog?category=${encodeURIComponent(focusedCategory.slug ?? "")}`}
+              >
+                View all <ArrowRight />
+              </Link>
+            </header>
+            <div className="lux-subcategory-preview-grid">
+              {focusedCategory.subcategories.slice(0, 8).map((subcategory) => (
+                <Link
+                  key={subcategory}
+                  to={`/catalog?category=${encodeURIComponent(focusedCategory.subDetails?.[subcategory]?.[0]?.slug ?? focusedCategory.slug ?? "")}&q=${encodeURIComponent(subcategory)}`}
+                >
+                  <span>{subcategory.slice(0, 2).toUpperCase()}</span>
+                  <strong>{subcategory}</strong>
+                  <small>
+                    {(focusedCategory.subDetails?.[subcategory] ?? [])
+                      .slice(0, 3)
+                      .map((item) => item.name)
+                      .join(" · ") || "Browse listings"}
+                  </small>
+                  <ArrowRight />
+                </Link>
+              ))}
+            </div>
+            {focusedCategory.subcategories.length > 8 ? (
+              <Link
+                className="lux-category-view-all"
+                to={`/catalog?category=${encodeURIComponent(focusedCategory.slug ?? "")}`}
+              >
+                View all {focusedCategory.name} subcategories <ArrowRight />
+              </Link>
+            ) : null}
+          </div>
+        ) : null}
       </section>
 
       <section className="lux-flash">
@@ -1158,7 +1249,11 @@ export function MarketplaceHomePage() {
             View all products <ArrowRight size={16} />
           </Link>
         </div>
-        <div className="lux-tabs" role="group" aria-label="Filter featured products">
+        <div
+          className="lux-tabs"
+          role="group"
+          aria-label="Filter featured products"
+        >
           {["All", ...categories.slice(0, 6).map((c) => c.name)].map((c) => (
             <button
               key={c}
@@ -1231,7 +1326,18 @@ export function MarketplaceHomePage() {
           {featuredSellers.map((s, i) => (
             <article key={s.name}>
               <span className="seller-rank">0{i + 1}</span>
-              <div className={`seller-avatar accent-${s.accent}`}>{"logoUrl" in s && typeof s.logoUrl === "string" ? <img src={s.logoUrl} alt={`${s.name} logo`} /> : s.mark}</div>
+              <div className={`seller-avatar accent-${s.accent}`}>
+                {"logoUrl" in s && typeof s.logoUrl === "string" ? (
+                  <img
+                    src={s.logoUrl}
+                    alt={`${s.name} logo`}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  s.mark
+                )}
+              </div>
               <div className="seller-name">
                 <h3>
                   {s.name} <BadgeCheck size={15} />
@@ -1387,9 +1493,9 @@ export function MarketplaceHomePage() {
         <div>
           <strong>Sell</strong>
           <Link to="/seller/apply">Become a seller</Link>
-          <Link to="/dashboard">Seller dashboard</Link>
+          <Link to="/seller">Seller dashboard</Link>
           <Link to="/support">Seller support</Link>
-          <Link to="/terms">Seller policy</Link>
+          <Link to="/seller-policy">Seller policy</Link>
         </div>
         <div>
           <strong>Company</strong>

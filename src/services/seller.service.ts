@@ -12,14 +12,18 @@ type SellerDocumentUploads = {
 export async function submitSellerApplication(
   userId: string,
   input: SellerApplicationInput,
-  documents: SellerDocumentUploads
+  documents: SellerDocumentUploads,
 ) {
   const existing = await prisma.sellerApplication.findUnique({
-    where: { userId }
+    where: { userId },
   });
 
   if (existing) {
-    throw new ApiError(409, "A seller application already exists for this account.", "APPLICATION_EXISTS");
+    throw new ApiError(
+      409,
+      "A seller application already exists for this account.",
+      "APPLICATION_EXISTS",
+    );
   }
 
   const application = await prisma.sellerApplication.create({
@@ -31,12 +35,15 @@ export async function submitSellerApplication(
       documentFrontMimeType: documents.front.mimetype,
       documentBackPath: documents.back.path,
       documentBackOriginalName: documents.back.originalname,
-      documentBackMimeType: documents.back.mimetype
-    } as any
+      documentBackMimeType: documents.back.mimetype,
+    } as any,
   });
 
   try {
-    await sendSellerApplicationNotification(application.storeName, application.email);
+    await sendSellerApplicationNotification(
+      application.storeName,
+      application.email,
+    );
   } catch {
     // Email notification is best-effort; SMTP failures should not block the application.
   }
@@ -46,7 +53,7 @@ export async function submitSellerApplication(
 
 export function getSellerApplicationForUser(userId: string) {
   return prisma.sellerApplication.findUnique({
-    where: { userId }
+    where: { userId },
   });
 }
 
@@ -60,17 +67,17 @@ export function listSellerApplications(status?: SellerApplicationStatus) {
           id: true,
           email: true,
           username: true,
-          role: true
-        }
+          role: true,
+        },
       },
       reviewer: {
         select: {
           id: true,
           email: true,
-          username: true
-        }
-      }
-    }
+          username: true,
+        },
+      },
+    },
   });
 }
 
@@ -78,14 +85,18 @@ export async function reviewSellerApplication(
   id: string,
   reviewerId: string,
   status: SellerApplicationStatus,
-  adminNotes?: string
+  adminNotes?: string,
 ) {
   const application = await prisma.sellerApplication.findUnique({
-    where: { id }
+    where: { id },
   });
 
   if (!application) {
-    throw new ApiError(404, "Seller application not found.", "APPLICATION_NOT_FOUND");
+    throw new ApiError(
+      404,
+      "Seller application not found.",
+      "APPLICATION_NOT_FOUND",
+    );
   }
 
   const now = new Date();
@@ -97,21 +108,22 @@ export async function reviewSellerApplication(
         status,
         adminNotes,
         reviewedAt: now,
-        reviewedById: reviewerId
-      }
+        reviewedById: reviewerId,
+      },
     });
 
     if (status === SellerApplicationStatus.APPROVED) {
       await tx.user.update({
         where: { id: application.userId },
-        data: { role: "SELLER" }
+        data: { role: "SELLER" },
       });
 
-      const baseSlug = application.storeName
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-|-$/g, "") || "store";
+      const baseSlug =
+        application.storeName
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "") || "store";
 
       await tx.sellerProfile.upsert({
         where: { userId: application.userId },
@@ -120,15 +132,15 @@ export async function reviewSellerApplication(
           storeName: application.storeName,
           slug: `${baseSlug}-${application.userId.slice(0, 8)}`,
           about: application.storeDescription,
-          isVerified: true
+          isVerified: true,
         },
         update: {
           storeName: application.storeName,
           about: application.storeDescription,
           isVerified: true,
           isSuspended: false,
-          suspensionReason: null
-        }
+          suspensionReason: null,
+        },
       });
     }
 
@@ -136,14 +148,14 @@ export async function reviewSellerApplication(
       await tx.user.updateMany({
         where: {
           id: application.userId,
-          role: "SELLER"
+          role: "SELLER",
         },
-        data: { role: "CUSTOMER" }
+        data: { role: "CUSTOMER" },
       });
 
       await tx.sellerProfile.updateMany({
         where: { userId: application.userId },
-        data: { isVerified: false }
+        data: { isVerified: false },
       });
     }
 

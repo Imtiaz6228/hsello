@@ -4,6 +4,7 @@ import { ProtectedRoute } from "./auth/ProtectedRoute";
 import { HomepageContentBanner } from "./components/HomepageContentBanner";
 import { RouteLoading } from "./components/RouteLoading";
 import { SupportWidgetPro } from "./components/SupportWidgetPro";
+import { publicPages } from "./content/publicPages";
 
 const MarketplaceHomePage = lazy(() =>
   import("./pages/MarketplaceHomePage").then((module) => ({
@@ -128,17 +129,9 @@ const NotFoundPage = lazy(() =>
   })),
 );
 
-const legalRoutes = [
-  "/terms",
-  "/privacy",
-  "/refund-policy",
-  "/seller-policy",
-  "/buyer-protection",
-  "/prohibited-products",
-  "/copyright",
-  "/contact",
-  "/about",
-];
+const legalRoutes = publicPages
+  .map((page) => page.path)
+  .filter((path) => !["/", "/catalog", "/blog"].includes(path));
 
 export function App() {
   return (

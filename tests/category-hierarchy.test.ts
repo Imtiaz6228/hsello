@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { categoryMatches, productCategoryBuckets } from "../src/commerce/catalogHierarchy";
+import {
+  categoryMatches,
+  productCategoryBuckets,
+} from "../src/commerce/catalogHierarchy";
 import { catalogCategories, catalogProducts } from "../src/data/catalog";
 
 test("Social Media includes products assigned to the legacy platform tree", () => {
@@ -26,4 +29,3 @@ test("category buckets count products under canonical and legacy roots", () => {
   assert.equal(buckets.has("instagram"), true);
   assert.equal(buckets.has("social-media-marketplace"), true);
 });
-

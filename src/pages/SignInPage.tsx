@@ -14,7 +14,10 @@ export function SignInPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
-  const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [status, setStatus] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -22,7 +25,10 @@ export function SignInPage() {
     setStatus(null);
 
     if (!email.includes("@") || !password) {
-      setStatus({ type: "error", message: "Enter a valid email and password." });
+      setStatus({
+        type: "error",
+        message: "Enter a valid email and password.",
+      });
       return;
     }
 
@@ -31,13 +37,18 @@ export function SignInPage() {
       const user = await signIn({ email, password, rememberMe });
       setStatus({ type: "success", message: "Signed in successfully." });
 
-      const destination = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? homePathForRole(user.role);
+      const destination =
+        (location.state as { from?: { pathname?: string } } | null)?.from
+          ?.pathname ?? homePathForRole(user.role);
 
       navigate(destination, { replace: true });
     } catch (error) {
       setStatus({
         type: "error",
-        message: error instanceof ApiError ? error.message : "Could not sign in. Please try again."
+        message:
+          error instanceof ApiError
+            ? error.message
+            : "Could not sign in. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -95,9 +106,11 @@ export function SignInPage() {
           {loading ? "Signing in..." : "Sign in"}
         </button>
 
-
         <p className="switch-auth">
-          New here? <Link to="/register" state={location.state}>Create an account</Link>
+          New here?{" "}
+          <Link to="/register" state={location.state}>
+            Create an account
+          </Link>
         </p>
       </form>
     </AuthShell>

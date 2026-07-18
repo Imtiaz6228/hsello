@@ -5,7 +5,7 @@ import {
   useEffect,
   useMemo,
   useState,
-  type ReactNode
+  type ReactNode,
 } from "react";
 import { apiRequest, resetCsrfToken, type User } from "../api/client";
 
@@ -47,13 +47,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refreshUser]);
 
   const signIn = useCallback(async (payload: SignInPayload) => {
-    const data = await apiRequest<{ user: User; message: string; csrfToken: string }>(
+    const data = await apiRequest<{
+      user: User;
+      message: string;
+      csrfToken: string;
+    }>(
       "/api/auth/login",
       {
         method: "POST",
-        body: payload
+        body: payload,
       },
-      false
+      false,
     );
     setUser(data.user);
 
@@ -61,13 +65,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const register = useCallback(async (payload: FormData) => {
-    const data = await apiRequest<{ user: User; message: string; csrfToken: string }>(
+    const data = await apiRequest<{
+      user: User;
+      message: string;
+      csrfToken: string;
+    }>(
       "/api/auth/register",
       {
         method: "POST",
-        body: payload
+        body: payload,
       },
-      false
+      false,
     );
     setUser(data.user);
 
@@ -83,21 +91,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const value = useMemo<AuthContextValue>(() => ({
-    user,
-    loading,
-    signIn,
-    register,
-    refreshUser,
-    logout,
-    setUser
-  }), [loading, logout, refreshUser, register, signIn, user]);
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      user,
+      loading,
+      signIn,
+      register,
+      refreshUser,
+      logout,
+      setUser,
+    }),
+    [loading, logout, refreshUser, register, signIn, user],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

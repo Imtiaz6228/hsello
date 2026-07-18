@@ -5,14 +5,22 @@ type SeoProps = {
   description: string;
   canonicalPath?: string;
   image?: string;
+  imageAlt?: string;
   type?: "website" | "article" | "product";
   noIndex?: boolean;
   schema?: Record<string, unknown> | Array<Record<string, unknown>>;
 };
 
+const viteEnvironment = import.meta.env || {};
+const browserOrigin =
+  typeof window === "undefined" ? "http://localhost" : window.location.origin;
 const configuredOrigin = String(
-  import.meta.env.VITE_SITE_URL || window.location.origin,
-).replace(/\/$/, "");
+  viteEnvironment.VITE_SITE_URL || browserOrigin,
+).replace(/\/+$/, "");
+
+const indexDirective =
+  "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1";
+const noIndexDirective = "noindex, nofollow, noarchive";
 
 function setMeta(
   selector: string,
@@ -29,14 +37,24 @@ function setMeta(
   element.content = content;
 }
 
-function removeMeta(selector: string) {
-  document.head.querySelector(selector)?.remove();
-}
-
 function absoluteUrl(value: string) {
   return value.startsWith("http://") || value.startsWith("https://")
     ? value
     : `${configuredOrigin}${value.startsWith("/") ? value : `/${value}`}`;
+}
+
+function canonicalPathname(value: string) {
+  try {
+    const url = new URL(value, configuredOrigin);
+    const pathname =
+      url.pathname === "/" ? "/" : url.pathname.replace(/\/+$/, "");
+    return `${url.origin}${pathname}`;
+  } catch {
+    const pathname = value.split(/[?#]/, 1)[0] || "/";
+    return absoluteUrl(
+      pathname === "/" ? pathname : pathname.replace(/\/+$/, ""),
+    );
+  }
 }
 
 export function Seo({
@@ -44,6 +62,7 @@ export function Seo({
   description,
   canonicalPath = window.location.pathname,
   image,
+  imageAlt,
   type = "website",
   noIndex = false,
   schema,
@@ -57,16 +76,38 @@ export function Seo({
     const pageTitle = title.toLowerCase().includes("hsello")
       ? title
       : `${title} · HSello`;
-    const canonicalUrl = absoluteUrl(canonicalPath);
+    const canonicalUrl = canonicalPathname(canonicalPath);
     document.title = pageTitle;
     setMeta('meta[name="description"]', "name", "description", description);
     setMeta(
       'meta[name="robots"]',
       "name",
       "robots",
-      noIndex
-        ? "noindex, nofollow"
-        : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+      noIndex ? noIndexDirective : indexDirective,
+    );
+    setMeta(
+      'meta[name="googlebot"]',
+      "name",
+      "googlebot",
+      noIndex ? noIndexDirective : indexDirective,
+    );
+    setMeta(
+      'meta[name="bingbot"]',
+      "name",
+      "bingbot",
+      noIndex ? noIndexDirective : indexDirective,
+    );
+    setMeta(
+      'meta[property="og:site_name"]',
+      "property",
+      "og:site_name",
+      "HSello",
+    );
+    setMeta(
+      'meta[property="og:locale"]',
+      "property",
+      "og:locale",
+      document.documentElement.lang.replace("-", "_") || "en_US",
     );
     setMeta('meta[property="og:title"]', "property", "og:title", pageTitle);
     setMeta(
@@ -81,7 +122,7 @@ export function Seo({
       'meta[name="twitter:card"]',
       "name",
       "twitter:card",
-      image ? "summary_large_image" : "summary",
+      "summary_large_image",
     );
     setMeta('meta[name="twitter:title"]', "name", "twitter:title", pageTitle);
     setMeta(
@@ -90,14 +131,23 @@ export function Seo({
       "twitter:description",
       description,
     );
-    if (image) {
-      const imageUrl = absoluteUrl(image);
-      setMeta('meta[property="og:image"]', "property", "og:image", imageUrl);
-      setMeta('meta[name="twitter:image"]', "name", "twitter:image", imageUrl);
-    } else {
-      removeMeta('meta[property="og:image"]');
-      removeMeta('meta[name="twitter:image"]');
-    }
+    const imageUrl = absoluteUrl(image || "/og-default.png");
+    const resolvedImageAlt =
+      imageAlt || (image ? title : "HSello digital marketplace");
+    setMeta('meta[property="og:image"]', "property", "og:image", imageUrl);
+    setMeta(
+      'meta[property="og:image:alt"]',
+      "property",
+      "og:image:alt",
+      resolvedImageAlt,
+    );
+    setMeta('meta[name="twitter:image"]', "name", "twitter:image", imageUrl);
+    setMeta(
+      'meta[name="twitter:image:alt"]',
+      "name",
+      "twitter:image:alt",
+      resolvedImageAlt,
+    );
 
     let canonical = document.head.querySelector<HTMLLinkElement>(
       'link[rel="canonical"]',
@@ -121,6 +171,15 @@ export function Seo({
     return () => {
       document.getElementById(id)?.remove();
     };
-  }, [canonicalPath, description, image, noIndex, schemaText, title, type]);
+  }, [
+    canonicalPath,
+    description,
+    image,
+    imageAlt,
+    noIndex,
+    schemaText,
+    title,
+    type,
+  ]);
   return null;
 }

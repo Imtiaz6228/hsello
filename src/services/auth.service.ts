@@ -28,7 +28,7 @@ export function publicUser(user: User) {
     isSuspended: user.isSuspended,
     emailVerified: true,
     balanceCents: user.balanceCents ?? 0,
-    createdAt: user.createdAt
+    createdAt: user.createdAt,
   };
 }
 
@@ -44,13 +44,13 @@ function signAccessToken(user: SessionUser) {
   return jwt.sign(
     {
       role: user.role,
-      emailVerified: true
+      emailVerified: true,
     },
     env.JWT_SECRET,
     {
       subject: user.id,
-      expiresIn: `${env.ACCESS_TOKEN_MINUTES}m`
-    }
+      expiresIn: `${env.ACCESS_TOKEN_MINUTES}m`,
+    },
   );
 }
 
@@ -58,8 +58,8 @@ async function createPasswordResetToken(userId: string) {
   await prisma.passwordResetToken.deleteMany({
     where: {
       userId,
-      consumedAt: null
-    }
+      consumedAt: null,
+    },
   });
 
   const token = randomToken(48);
@@ -67,8 +67,8 @@ async function createPasswordResetToken(userId: string) {
     data: {
       userId,
       tokenHash: sha256(token),
-      expiresAt: addHours(1)
-    }
+      expiresAt: addHours(1),
+    },
   });
 
   return token;
@@ -77,18 +77,25 @@ async function createPasswordResetToken(userId: string) {
 function logEmailError(kind: string, to: string, error: unknown) {
   console.error(
     `${kind} email failed for ${to}:`,
-    error instanceof Error ? error.message : error
+    error instanceof Error ? error.message : error,
   );
 }
 
-async function queuePasswordReset(user: Pick<User, "id" | "email" | "firstName">) {
+async function queuePasswordReset(
+  user: Pick<User, "id" | "email" | "firstName">,
+) {
   const token = await createPasswordResetToken(user.id);
 
-  void sendPasswordResetEmail(user.email, user.firstName, token)
-    .catch((error) => logEmailError("Password reset", user.email, error));
+  void sendPasswordResetEmail(user.email, user.firstName, token).catch(
+    (error) => logEmailError("Password reset", user.email, error),
+  );
 }
 
-export async function createSession(user: SessionUser, req: Request, rememberMe: boolean) {
+export async function createSession(
+  user: SessionUser,
+  req: Request,
+  rememberMe: boolean,
+) {
   const refreshToken = randomToken(64);
   const expiresAt = rememberMe
     ? addDays(env.REFRESH_TOKEN_DAYS)
@@ -101,34 +108,42 @@ export async function createSession(user: SessionUser, req: Request, rememberMe:
       rememberMe,
       userAgent: req.get("user-agent"),
       ipAddress: req.ip,
-      expiresAt
-    }
+      expiresAt,
+    },
   });
 
   return {
     accessToken: signAccessToken(user),
     refreshToken,
-    rememberMe
+    rememberMe,
   };
 }
 
-export async function registerUser(input: RegisterInput, file?: Express.Multer.File) {
+export async function registerUser(
+  input: RegisterInput,
+  file?: Express.Multer.File,
+) {
   const [existingEmailUser, existingUsernameUser] = await Promise.all([
     prisma.user.findUnique({ where: { email: input.email } }),
-    prisma.user.findUnique({ where: { username: input.username } })
+    prisma.user.findUnique({ where: { username: input.username } }),
   ]);
 
   if (existingUsernameUser && existingUsernameUser.email !== input.email) {
     throw new ApiError(409, "Username is already in use.", "USERNAME_EXISTS", {
-      username: true
+      username: true,
     });
   }
 
   if (existingEmailUser) {
     if (existingEmailUser.emailVerifiedAt) {
-      throw new ApiError(409, "Email is already registered. Sign in instead.", "EMAIL_EXISTS", {
-        email: true
-      });
+      throw new ApiError(
+        409,
+        "Email is already registered. Sign in instead.",
+        "EMAIL_EXISTS",
+        {
+          email: true,
+        },
+      );
     }
 
     const user = await prisma.user.update({
@@ -140,10 +155,12 @@ export async function registerUser(input: RegisterInput, file?: Express.Multer.F
         phone: input.phone,
         country: input.country,
         city: input.city,
-        profileImageUrl: file ? publicUploadUrl(file.filename) : existingEmailUser.profileImageUrl,
+        profileImageUrl: file
+          ? publicUploadUrl(file.filename)
+          : existingEmailUser.profileImageUrl,
         passwordHash: await hashPassword(input.password),
-        emailVerifiedAt: existingEmailUser.emailVerifiedAt ?? new Date()
-      }
+        emailVerifiedAt: existingEmailUser.emailVerifiedAt ?? new Date(),
+      },
     });
 
     return publicUser(user);
@@ -160,66 +177,92 @@ export async function registerUser(input: RegisterInput, file?: Express.Multer.F
       city: input.city,
       profileImageUrl: file ? publicUploadUrl(file.filename) : undefined,
       passwordHash: await hashPassword(input.password),
-      emailVerifiedAt: new Date()
-    }
+      emailVerifiedAt: new Date(),
+    },
   });
 
   return publicUser(user);
 }
 
 export async function loginUser(input: LoginInput, req: Request) {
-  const invalidError = new ApiError(401, "Invalid email or password.", "INVALID_CREDENTIALS");
+  const invalidError = new ApiError(
+    401,
+    "Invalid email or password.",
+    "INVALID_CREDENTIALS",
+  );
   const user = await prisma.user.findUnique({ where: { email: input.email } });
 
   if (!user) {
     throw invalidError;
   }
 
-  const passwordMatches = await verifyPassword(user.passwordHash, input.password);
+  const passwordMatches = await verifyPassword(
+    user.passwordHash,
+    input.password,
+  );
   if (!passwordMatches) {
     throw invalidError;
   }
 
   if (user.isSuspended) {
-    throw new ApiError(403, "This account is suspended. Contact support for help.", "ACCOUNT_SUSPENDED");
+    throw new ApiError(
+      403,
+      "This account is suspended. Contact support for help.",
+      "ACCOUNT_SUSPENDED",
+    );
   }
 
   const session = await createSession(user, req, input.rememberMe);
 
   return {
     user: publicUser(user),
-    session
+    session,
   };
 }
 
-export async function refreshUserSession(refreshToken: string | undefined, req: Request) {
+export async function refreshUserSession(
+  refreshToken: string | undefined,
+  req: Request,
+) {
   if (!refreshToken) {
     throw new ApiError(401, "Refresh session required.", "REFRESH_REQUIRED");
   }
 
   const session = await prisma.refreshSession.findUnique({
     where: { tokenHash: sha256(refreshToken) },
-    include: { user: true }
+    include: { user: true },
   });
 
   if (!session || session.revokedAt || session.expiresAt <= new Date()) {
-    throw new ApiError(401, "Refresh session is invalid or expired.", "REFRESH_INVALID");
+    throw new ApiError(
+      401,
+      "Refresh session is invalid or expired.",
+      "REFRESH_INVALID",
+    );
   }
 
   if (session.user.isSuspended) {
-    throw new ApiError(403, "This account is suspended. Contact support for help.", "ACCOUNT_SUSPENDED");
+    throw new ApiError(
+      403,
+      "This account is suspended. Contact support for help.",
+      "ACCOUNT_SUSPENDED",
+    );
   }
 
   await prisma.refreshSession.update({
     where: { id: session.id },
-    data: { revokedAt: new Date() }
+    data: { revokedAt: new Date() },
   });
 
-  const nextSession = await createSession(session.user, req, session.rememberMe);
+  const nextSession = await createSession(
+    session.user,
+    req,
+    session.rememberMe,
+  );
 
   return {
     user: publicUser(session.user),
-    session: nextSession
+    session: nextSession,
   };
 }
 
@@ -231,34 +274,44 @@ export async function logoutUser(refreshToken: string | undefined) {
   await prisma.refreshSession.updateMany({
     where: {
       tokenHash: sha256(refreshToken),
-      revokedAt: null
+      revokedAt: null,
     },
-    data: { revokedAt: new Date() }
+    data: { revokedAt: new Date() },
   });
 }
 
 export async function verifyEmailToken(token: string) {
   const tokenRecord = await prisma.emailVerificationToken.findUnique({
     where: { tokenHash: sha256(token) },
-    include: { user: true }
+    include: { user: true },
   });
 
-  if (!tokenRecord || tokenRecord.consumedAt || tokenRecord.expiresAt <= new Date()) {
-    throw new ApiError(400, "Verification link is invalid or expired.", "TOKEN_INVALID");
+  if (
+    !tokenRecord ||
+    tokenRecord.consumedAt ||
+    tokenRecord.expiresAt <= new Date()
+  ) {
+    throw new ApiError(
+      400,
+      "Verification link is invalid or expired.",
+      "TOKEN_INVALID",
+    );
   }
 
   await prisma.$transaction([
     prisma.emailVerificationToken.update({
       where: { id: tokenRecord.id },
-      data: { consumedAt: new Date() }
+      data: { consumedAt: new Date() },
     }),
     prisma.user.update({
       where: { id: tokenRecord.userId },
-      data: { emailVerifiedAt: tokenRecord.user.emailVerifiedAt ?? new Date() }
-    })
+      data: { emailVerifiedAt: tokenRecord.user.emailVerifiedAt ?? new Date() },
+    }),
   ]);
 
-  const user = await prisma.user.findUniqueOrThrow({ where: { id: tokenRecord.userId } });
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: tokenRecord.userId },
+  });
 
   return publicUser(user);
 }
@@ -272,7 +325,7 @@ export async function resendVerification(email: string) {
 
   await prisma.user.update({
     where: { id: user.id },
-    data: { emailVerifiedAt: new Date() }
+    data: { emailVerifiedAt: new Date() },
   });
 }
 
@@ -289,55 +342,74 @@ export async function requestPasswordReset(email: string) {
 export async function resetPassword(token: string, password: string) {
   const tokenRecord = await prisma.passwordResetToken.findUnique({
     where: { tokenHash: sha256(token) },
-    include: { user: true }
+    include: { user: true },
   });
 
-  if (!tokenRecord || tokenRecord.consumedAt || tokenRecord.expiresAt <= new Date()) {
-    throw new ApiError(400, "Reset link is invalid or expired.", "TOKEN_INVALID");
+  if (
+    !tokenRecord ||
+    tokenRecord.consumedAt ||
+    tokenRecord.expiresAt <= new Date()
+  ) {
+    throw new ApiError(
+      400,
+      "Reset link is invalid or expired.",
+      "TOKEN_INVALID",
+    );
   }
 
   await prisma.$transaction([
     prisma.user.update({
       where: { id: tokenRecord.userId },
-      data: { passwordHash: await hashPassword(password) }
+      data: { passwordHash: await hashPassword(password) },
     }),
     prisma.passwordResetToken.updateMany({
       where: {
         userId: tokenRecord.userId,
-        consumedAt: null
+        consumedAt: null,
       },
-      data: { consumedAt: new Date() }
+      data: { consumedAt: new Date() },
     }),
     prisma.refreshSession.updateMany({
       where: {
         userId: tokenRecord.userId,
-        revokedAt: null
+        revokedAt: null,
       },
-      data: { revokedAt: new Date() }
-    })
+      data: { revokedAt: new Date() },
+    }),
   ]);
 }
 
-export async function changePassword(userId: string, currentPassword: string, password: string) {
+export async function changePassword(
+  userId: string,
+  currentPassword: string,
+  password: string,
+) {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
-  const passwordMatches = await verifyPassword(user.passwordHash, currentPassword);
+  const passwordMatches = await verifyPassword(
+    user.passwordHash,
+    currentPassword,
+  );
 
   if (!passwordMatches) {
-    throw new ApiError(400, "Current password is incorrect.", "PASSWORD_INCORRECT");
+    throw new ApiError(
+      400,
+      "Current password is incorrect.",
+      "PASSWORD_INCORRECT",
+    );
   }
 
   await prisma.$transaction([
     prisma.user.update({
       where: { id: userId },
-      data: { passwordHash: await hashPassword(password) }
+      data: { passwordHash: await hashPassword(password) },
     }),
     prisma.refreshSession.updateMany({
       where: {
         userId,
-        revokedAt: null
+        revokedAt: null,
       },
-      data: { revokedAt: new Date() }
-    })
+      data: { revokedAt: new Date() },
+    }),
   ]);
 }
 
@@ -349,13 +421,17 @@ export async function getCurrentUser(userId: string) {
 
 export async function getAvailability(email?: string, username?: string) {
   const [emailUser, usernameUser] = await Promise.all([
-    email ? prisma.user.findUnique({ where: { email } }) : Promise.resolve(null),
-    username ? prisma.user.findUnique({ where: { username } }) : Promise.resolve(null)
+    email
+      ? prisma.user.findUnique({ where: { email } })
+      : Promise.resolve(null),
+    username
+      ? prisma.user.findUnique({ where: { username } })
+      : Promise.resolve(null),
   ]);
 
   return {
     emailAvailable: email ? !emailUser : undefined,
-    usernameAvailable: username ? !usernameUser : undefined
+    usernameAvailable: username ? !usernameUser : undefined,
   };
 }
 
@@ -363,12 +439,17 @@ export function getRefreshTokenFromRequest(req: Request) {
   return req.cookies?.[REFRESH_TOKEN_COOKIE] as string | undefined;
 }
 
-export function clearSessionCookies(res: Parameters<typeof clearAuthCookies>[0]) {
+export function clearSessionCookies(
+  res: Parameters<typeof clearAuthCookies>[0],
+) {
   clearAuthCookies(res);
 }
 
 export function isUniqueConstraintError(error: unknown) {
-  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2002"
+  );
 }
 
 export type PublicUser = ReturnType<typeof publicUser>;

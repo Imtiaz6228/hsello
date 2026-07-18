@@ -34,7 +34,7 @@ const initialForm: RegisterForm = {
   country: "",
   city: "",
   termsAccepted: false,
-  privacyAccepted: false
+  privacyAccepted: false,
 };
 
 export function RegisterPage() {
@@ -44,32 +44,50 @@ export function RegisterPage() {
   const [form, setForm] = useState(initialForm);
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
   const [captchaToken, setCaptchaToken] = useState("");
-  const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
-  const [availability, setAvailability] = useState<{ email?: boolean; username?: boolean }>({});
+  const [status, setStatus] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+  const [availability, setAvailability] = useState<{
+    email?: boolean;
+    username?: boolean;
+  }>({});
   const [loading, setLoading] = useState(false);
 
-  function updateField<K extends keyof RegisterForm>(key: K, value: RegisterForm[K]) {
+  function updateField<K extends keyof RegisterForm>(
+    key: K,
+    value: RegisterForm[K],
+  ) {
     setForm((current) => ({ ...current, [key]: value }));
   }
 
-  const checkAvailability = useCallback(async (field: "email" | "username", value: string) => {
-    if (!value || (field === "username" && value.length < 3) || (field === "email" && !value.includes("@"))) {
-      return;
-    }
+  const checkAvailability = useCallback(
+    async (field: "email" | "username", value: string) => {
+      if (
+        !value ||
+        (field === "username" && value.length < 3) ||
+        (field === "email" && !value.includes("@"))
+      ) {
+        return;
+      }
 
-    const params = new URLSearchParams({ [field]: value });
-    try {
-      const data = await apiRequest<{ emailAvailable?: boolean; usernameAvailable?: boolean }>(
-        `/api/auth/availability?${params.toString()}`
-      );
-      setAvailability((current) => ({
-        ...current,
-        [field]: field === "email" ? data.emailAvailable : data.usernameAvailable
-      }));
-    } catch {
-      setAvailability((current) => ({ ...current, [field]: undefined }));
-    }
-  }, []);
+      const params = new URLSearchParams({ [field]: value });
+      try {
+        const data = await apiRequest<{
+          emailAvailable?: boolean;
+          usernameAvailable?: boolean;
+        }>(`/api/auth/availability?${params.toString()}`);
+        setAvailability((current) => ({
+          ...current,
+          [field]:
+            field === "email" ? data.emailAvailable : data.usernameAvailable,
+        }));
+      } catch {
+        setAvailability((current) => ({ ...current, [field]: undefined }));
+      }
+    },
+    [],
+  );
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -81,12 +99,17 @@ export function RegisterPage() {
     }
 
     if (!form.termsAccepted || !form.privacyAccepted) {
-      setStatus({ type: "error", message: "Accept the terms and privacy policy to continue." });
+      setStatus({
+        type: "error",
+        message: "Accept the terms and privacy policy to continue.",
+      });
       return;
     }
 
     const payload = new FormData();
-    Object.entries(form).forEach(([key, value]) => payload.append(key, String(value)));
+    Object.entries(form).forEach(([key, value]) =>
+      payload.append(key, String(value)),
+    );
     if (profilePicture) {
       payload.append("profilePicture", profilePicture);
     }
@@ -97,12 +120,17 @@ export function RegisterPage() {
     setLoading(true);
     try {
       const user = await register(payload);
-      const destination = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? homePathForRole(user.role);
+      const destination =
+        (location.state as { from?: { pathname?: string } } | null)?.from
+          ?.pathname ?? homePathForRole(user.role);
       navigate(destination, { replace: true });
     } catch (error) {
       setStatus({
         type: "error",
-        message: error instanceof ApiError ? error.message : "Could not create account. Please try again."
+        message:
+          error instanceof ApiError
+            ? error.message
+            : "Could not create account. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -126,11 +154,23 @@ export function RegisterPage() {
         <div className="form-grid two">
           <label className="field" htmlFor="firstName">
             <span>First name</span>
-            <input id="firstName" value={form.firstName} onChange={(event) => updateField("firstName", event.target.value)} autoComplete="given-name" required />
+            <input
+              id="firstName"
+              value={form.firstName}
+              onChange={(event) => updateField("firstName", event.target.value)}
+              autoComplete="given-name"
+              required
+            />
           </label>
           <label className="field" htmlFor="lastName">
             <span>Last name</span>
-            <input id="lastName" value={form.lastName} onChange={(event) => updateField("lastName", event.target.value)} autoComplete="family-name" required />
+            <input
+              id="lastName"
+              value={form.lastName}
+              onChange={(event) => updateField("lastName", event.target.value)}
+              autoComplete="family-name"
+              required
+            />
           </label>
           <label className="field" htmlFor="username">
             <span>Username</span>
@@ -142,8 +182,12 @@ export function RegisterPage() {
               autoComplete="username"
               required
             />
-            {availability.username === false ? <small className="field-error">Username is already taken.</small> : null}
-            {availability.username === true ? <small className="field-success">Username is available.</small> : null}
+            {availability.username === false ? (
+              <small className="field-error">Username is already taken.</small>
+            ) : null}
+            {availability.username === true ? (
+              <small className="field-success">Username is available.</small>
+            ) : null}
           </label>
           <label className="field" htmlFor="registerEmail">
             <span>Email address</span>
@@ -156,20 +200,43 @@ export function RegisterPage() {
               autoComplete="email"
               required
             />
-            {availability.email === false ? <small className="field-error">Email is already registered.</small> : null}
-            {availability.email === true ? <small className="field-success">Email is available.</small> : null}
+            {availability.email === false ? (
+              <small className="field-error">
+                Email is already registered.
+              </small>
+            ) : null}
+            {availability.email === true ? (
+              <small className="field-success">Email is available.</small>
+            ) : null}
           </label>
           <label className="field" htmlFor="phone">
             <span>Phone number</span>
-            <input id="phone" value={form.phone} onChange={(event) => updateField("phone", event.target.value)} autoComplete="tel" required />
+            <input
+              id="phone"
+              value={form.phone}
+              onChange={(event) => updateField("phone", event.target.value)}
+              autoComplete="tel"
+              required
+            />
           </label>
           <label className="field" htmlFor="country">
             <span>Country</span>
-            <input id="country" value={form.country} onChange={(event) => updateField("country", event.target.value)} autoComplete="country-name" required />
+            <input
+              id="country"
+              value={form.country}
+              onChange={(event) => updateField("country", event.target.value)}
+              autoComplete="country-name"
+              required
+            />
           </label>
           <label className="field" htmlFor="city">
             <span>City</span>
-            <input id="city" value={form.city} onChange={(event) => updateField("city", event.target.value)} autoComplete="address-level2" />
+            <input
+              id="city"
+              value={form.city}
+              onChange={(event) => updateField("city", event.target.value)}
+              autoComplete="address-level2"
+            />
           </label>
           <label className="field file-field" htmlFor="profilePicture">
             <span>Profile picture</span>
@@ -177,9 +244,14 @@ export function RegisterPage() {
               id="profilePicture"
               type="file"
               accept="image/jpeg,image/png,image/webp"
-              onChange={(event) => setProfilePicture(event.target.files?.[0] ?? null)}
+              onChange={(event) =>
+                setProfilePicture(event.target.files?.[0] ?? null)
+              }
             />
-            <small><Camera size={14} aria-hidden="true" /> {profilePicture?.name ?? "Optional JPEG, PNG, or WebP"}</small>
+            <small>
+              <Camera size={14} aria-hidden="true" />{" "}
+              {profilePicture?.name ?? "Optional JPEG, PNG, or WebP"}
+            </small>
           </label>
         </div>
 
@@ -204,11 +276,23 @@ export function RegisterPage() {
 
         <div className="consent-stack">
           <label className="check-row">
-            <input type="checkbox" checked={form.termsAccepted} onChange={(event) => updateField("termsAccepted", event.target.checked)} />
+            <input
+              type="checkbox"
+              checked={form.termsAccepted}
+              onChange={(event) =>
+                updateField("termsAccepted", event.target.checked)
+              }
+            />
             <span>I accept the Terms & Conditions.</span>
           </label>
           <label className="check-row">
-            <input type="checkbox" checked={form.privacyAccepted} onChange={(event) => updateField("privacyAccepted", event.target.checked)} />
+            <input
+              type="checkbox"
+              checked={form.privacyAccepted}
+              onChange={(event) =>
+                updateField("privacyAccepted", event.target.checked)
+              }
+            />
             <span>I agree to the Privacy Policy.</span>
           </label>
         </div>
@@ -220,9 +304,11 @@ export function RegisterPage() {
           {loading ? "Creating account..." : "Create account"}
         </button>
 
-
         <p className="switch-auth">
-          Already have an account? <Link to="/sign-in" state={location.state}>Sign in</Link>
+          Already have an account?{" "}
+          <Link to="/sign-in" state={location.state}>
+            Sign in
+          </Link>
         </p>
       </form>
     </AuthShell>

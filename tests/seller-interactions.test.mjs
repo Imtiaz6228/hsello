@@ -9,7 +9,9 @@ test("seller dashboard cards and revenue periods are interactive", async () => {
   assert.match(source, /setAnalyticsPeriod\("7d"\)/);
   assert.match(source, /setAnalyticsPeriod\("30d"\)/);
   assert.match(source, /setAnalyticsPeriod\("year"\)/);
-  assert.ok((source.match(/className="seller-metric-action"/g) ?? []).length >= 8);
+  assert.ok(
+    (source.match(/className="seller-metric-action"/g) ?? []).length >= 8,
+  );
 });
 
 test("seller product list opens a complete product editor", async () => {
@@ -17,7 +19,14 @@ test("seller product list opens a complete product editor", async () => {
   const editor = await read("src/components/SellerProductEditor.tsx");
   assert.match(studio, /setEditingProduct\(product\)/);
   assert.match(studio, /<SellerProductEditor/);
-  for (const section of ["Basic product details", "English and Chinese content", "Pricing and stock", "Product specifications and delivery", "Images, gallery, video and inventory"]) assert.match(editor, new RegExp(section));
+  for (const section of [
+    "Basic product details",
+    "English and Chinese content",
+    "Pricing and stock",
+    "Product specifications and delivery",
+    "Images, gallery, video and inventory",
+  ])
+    assert.match(editor, new RegExp(section));
   assert.match(editor, /method: "PATCH"/);
   assert.match(editor, /Save changes/);
 });
@@ -27,8 +36,20 @@ test("new listing flow keeps essentials simple and identity application omits ad
   const application = await read("src/pages/SellerApplicationPage.tsx");
   assert.match(studio, /Price and delivery/);
   assert.match(studio, /<details className="seller-create-advanced">/);
-  for (const field of ["Product title", "Full description", "产品标题", "完整描述"]) assert.match(studio, new RegExp(field));
-  for (const field of ["phoneNumber", "postalCode", "fullAddress", "documentNumber"]) assert.doesNotMatch(application, new RegExp(field));
+  for (const field of [
+    "Product title",
+    "Full description",
+    "产品标题",
+    "完整描述",
+  ])
+    assert.match(studio, new RegExp(field));
+  for (const field of [
+    "phoneNumber",
+    "postalCode",
+    "fullAddress",
+    "documentNumber",
+  ])
+    assert.doesNotMatch(application, new RegExp(field));
 });
 
 test("marketplace category discovery shows main categories with one focused preview", async () => {
@@ -43,8 +64,18 @@ test("open dispute chat exposes seller refund, replacement and full order detail
   const source = await read("src/pages/OrderDeliveryPage.tsx");
   assert.match(source, /user\?\.role === "SELLER" && activeDispute/);
   assert.match(source, /\/api\/seller\/orders\/\$\{order\.id\}\/refund/);
-  assert.match(source, /\/api\/seller\/orders\/\$\{order\.id\}\/items\/\$\{item\.id\}\/replace/);
-  for (const label of ["Buyer email", "Product ID", "Quantity bought", "Unit price", "Order time"]) assert.match(source, new RegExp(label));
+  assert.match(
+    source,
+    /\/api\/seller\/orders\/\$\{order\.id\}\/items\/\$\{item\.id\}\/replace/,
+  );
+  for (const label of [
+    "Buyer email",
+    "Product ID",
+    "Quantity bought",
+    "Unit price",
+    "Order time",
+  ])
+    assert.match(source, new RegExp(label));
 });
 
 test("replacement API requires seller ownership and an active dispute", async () => {

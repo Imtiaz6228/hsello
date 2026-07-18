@@ -4,19 +4,37 @@ import test from "node:test";
 
 test("prerenders public routes with unique metadata", () => {
   const about = readFileSync("dist/about.html", "utf8");
-  const blog = readFileSync("dist/blog/evaluate-digital-product-before-checkout.html", "utf8");
-  assert.match(about, /<title>About HSello<\/title>/);
-  assert.match(about, /rel="canonical" href="http:\/\/localhost:5173\/about"/);
+  const blog = readFileSync(
+    "dist/blog/evaluate-digital-product-before-checkout.html",
+    "utf8",
+  );
+  assert.match(about, /<title>About the HSello digital marketplace<\/title>/);
+  assert.match(about, /rel="canonical" href="\/about"/);
+  assert.match(about, /<h1>About HSello<\/h1>/);
+  assert.match(about, /<h2>The idea<\/h2>/);
   assert.match(blog, /property="og:type" content="article"/);
   assert.match(blog, /name="twitter:description"/);
+  assert.doesNotMatch(about, /localhost|codex-preview/);
 });
 
-test("keeps crawler files ahead of the SPA fallback", () => {
+test("keeps crawler files and data-backed public HTML ahead of explicit private SPA routes", () => {
   const vercel = JSON.parse(readFileSync("vercel.json", "utf8"));
   const rewriteSources = vercel.rewrites.map((rule) => rule.source);
   assert.deepEqual(rewriteSources.slice(0, 2), ["/robots.txt", "/sitemap.xml"]);
-  assert.equal(rewriteSources.at(-1), "/(.*)");
-  assert.ok(vercel.headers.some((rule) => rule.headers.some((header) => header.key === "Content-Security-Policy")));
+  assert.ok(rewriteSources.includes("/catalog"));
+  assert.ok(rewriteSources.includes("/products/:slug"));
+  assert.ok(rewriteSources.includes("/dashboard"));
+  assert.ok(!rewriteSources.includes("/(.*)"));
+  assert.ok(
+    vercel.headers.some((rule) =>
+      rule.headers.some((header) => header.key === "Content-Security-Policy"),
+    ),
+  );
+  assert.ok(
+    vercel.headers.some((rule) =>
+      rule.headers.some((header) => header.key === "X-Robots-Tag"),
+    ),
+  );
 });
 
 test("provides route recovery and accessible support dialog controls", () => {
@@ -31,8 +49,24 @@ test("provides route recovery and accessible support dialog controls", () => {
   assert.match(support, /clearTimeout\(guestReplyTimerRef\.current\)/);
 });
 
-test("removes abandoned framework and starter assets", () => {
-  for (const path of ["app/page.tsx", "db/schema.ts", "drizzle.config.ts", "next.config.ts", "public/file.svg"]) {
-    assert.equal(existsSync(path), false, `${path} should not remain in the canonical project`);
+test("removes abandoned framework, dashboard, and starter assets", () => {
+  for (const path of [
+    "app/page.tsx",
+    "build/sites-vite-plugin.ts",
+    "db/schema.ts",
+    "drizzle/meta/_journal.json",
+    "drizzle.config.ts",
+    "examples/d1/db/schema.ts",
+    "next.config.ts",
+    "public/file.svg",
+    "public/globe.svg",
+    "src/pages/AdminPanelPage.tsx",
+    "src/pages/DashboardPage.tsx",
+  ]) {
+    assert.equal(
+      existsSync(path),
+      false,
+      `${path} should not remain in the canonical project`,
+    );
   }
 });

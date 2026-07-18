@@ -6,6 +6,7 @@ export type BlogPost = {
   time: string;
   color: string;
   published: string;
+  publishedIso: string;
   sections: Array<{ title: string; body: string }>;
 };
 
@@ -19,6 +20,7 @@ export const blogPosts: BlogPost[] = [
     time: "6 min",
     color: "lime",
     published: "July 8, 2026",
+    publishedIso: "2026-07-08",
     sections: [
       {
         title: "Start with the deliverable",
@@ -47,6 +49,7 @@ export const blogPosts: BlogPost[] = [
     time: "8 min",
     color: "violet",
     published: "July 5, 2026",
+    publishedIso: "2026-07-05",
     sections: [
       {
         title: "Name the outcome",
@@ -75,6 +78,7 @@ export const blogPosts: BlogPost[] = [
     time: "5 min",
     color: "coral",
     published: "July 2, 2026",
+    publishedIso: "2026-07-02",
     sections: [
       {
         title: "Access is not ownership",
@@ -103,6 +107,7 @@ export const blogPosts: BlogPost[] = [
     time: "7 min",
     color: "cyan",
     published: "June 29, 2026",
+    publishedIso: "2026-06-29",
     sections: [
       {
         title: "Use understandable versions",

@@ -17,6 +17,7 @@
     "src/server.ts",
     "src/api-app.ts",
     "src/config/**/*.ts",
+    "src/content/**/*.ts",
     "src/data/enterpriseCatalog.ts",
     "src/lib/**/*.ts",
     "src/middleware/**/*.ts",

@@ -89,11 +89,28 @@ function formatLabel(date: Date, granularity: Granularity): string {
   if (granularity === "weekly") {
     return `W${mm}/${dd}`;
   }
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const monthNames = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
   return `${monthNames[date.getMonth()]} ${String(date.getFullYear()).slice(2)}`;
 }
 
-export function getDateRanges(from: Date, to: Date, granularity: Granularity): DateRange[] {
+export function getDateRanges(
+  from: Date,
+  to: Date,
+  granularity: Granularity,
+): DateRange[] {
   const ranges: DateRange[] = [];
   let current = new Date(from);
   const end = new Date(to);
@@ -112,7 +129,11 @@ export function getDateRanges(from: Date, to: Date, granularity: Granularity): D
       current = new Date(rangeStart.getTime() + 7 * 24 * 60 * 60 * 1000);
     } else {
       rangeStart = startOfMonth(current);
-      const nextMonth = new Date(current.getFullYear(), current.getMonth() + 1, 1);
+      const nextMonth = new Date(
+        current.getFullYear(),
+        current.getMonth() + 1,
+        1,
+      );
       rangeEnd = new Date(nextMonth.getTime() - 1);
       current = nextMonth;
     }
@@ -129,11 +150,15 @@ export function getDateRanges(from: Date, to: Date, granularity: Granularity): D
 }
 
 export class EarningsAnalyticsService {
-  async getAdminReport(from: Date, to: Date, granularity: Granularity): Promise<EarningsReport> {
+  async getAdminReport(
+    from: Date,
+    to: Date,
+    granularity: Granularity,
+  ): Promise<EarningsReport> {
     const ranges = getDateRanges(from, to, granularity);
 
     const breakdown = await Promise.all(
-      ranges.map(async (range) => this.getBreakdownRow(range))
+      ranges.map(async (range) => this.getBreakdownRow(range)),
     );
 
     const topProducts = await this.getTopProducts(from, to);
@@ -142,11 +167,16 @@ export class EarningsAnalyticsService {
     return { ranges, breakdown, topProducts, summary };
   }
 
-  async getSellerReport(sellerId: string, from: Date, to: Date, granularity: Granularity): Promise<EarningsReport> {
+  async getSellerReport(
+    sellerId: string,
+    from: Date,
+    to: Date,
+    granularity: Granularity,
+  ): Promise<EarningsReport> {
     const ranges = getDateRanges(from, to, granularity);
 
     const breakdown = await Promise.all(
-      ranges.map(async (range) => this.getSellerBreakdownRow(sellerId, range))
+      ranges.map(async (range) => this.getSellerBreakdownRow(sellerId, range)),
     );
 
     const topProducts = await this.getSellerTopProducts(sellerId, from, to);
@@ -156,26 +186,39 @@ export class EarningsAnalyticsService {
   }
 
   private async getBreakdownRow(range: DateRange): Promise<BreakdownRow> {
-    const [orders, saleCommission, withdrawCommission, withdrawals] = await Promise.all([
-      prisma.order.count({
-        where: { paidAt: { gte: range.start, lte: range.end }, status: { notIn: ["CANCELLED", "AWAITING_PAYMENT"] } },
-      }),
-      prisma.adminTransaction.aggregate({
-        where: { type: "COMMISSION_SALE", createdAt: { gte: range.start, lte: range.end } },
-        _sum: { amountCents: true },
-        _count: true,
-      }),
-      prisma.adminTransaction.aggregate({
-        where: { type: "COMMISSION_WITHDRAW", createdAt: { gte: range.start, lte: range.end } },
-        _sum: { amountCents: true },
-        _count: true,
-      }),
-      (prisma as any).withdrawalRequest.aggregate({
-        where: { status: "APPROVED", createdAt: { gte: range.start, lte: range.end } },
-        _sum: { amountCents: true },
-        _count: true,
-      }),
-    ]);
+    const [orders, saleCommission, withdrawCommission, withdrawals] =
+      await Promise.all([
+        prisma.order.count({
+          where: {
+            paidAt: { gte: range.start, lte: range.end },
+            status: { notIn: ["CANCELLED", "AWAITING_PAYMENT"] },
+          },
+        }),
+        prisma.adminTransaction.aggregate({
+          where: {
+            type: "COMMISSION_SALE",
+            createdAt: { gte: range.start, lte: range.end },
+          },
+          _sum: { amountCents: true },
+          _count: true,
+        }),
+        prisma.adminTransaction.aggregate({
+          where: {
+            type: "COMMISSION_WITHDRAW",
+            createdAt: { gte: range.start, lte: range.end },
+          },
+          _sum: { amountCents: true },
+          _count: true,
+        }),
+        (prisma as any).withdrawalRequest.aggregate({
+          where: {
+            status: "APPROVED",
+            createdAt: { gte: range.start, lte: range.end },
+          },
+          _sum: { amountCents: true },
+          _count: true,
+        }),
+      ]);
 
     const saleCommissionCents = saleCommission._sum.amountCents ?? 0;
     const withdrawCommissionCents = withdrawCommission._sum.amountCents ?? 0;
@@ -197,10 +240,16 @@ export class EarningsAnalyticsService {
     };
   }
 
-  private async getSellerBreakdownRow(sellerId: string, range: DateRange): Promise<BreakdownRow> {
+  private async getSellerBreakdownRow(
+    sellerId: string,
+    range: DateRange,
+  ): Promise<BreakdownRow> {
     const [orderItems, earnings, withdrawals] = await Promise.all([
       prisma.orderItem.count({
-        where: { sellerId, order: { paidAt: { gte: range.start, lte: range.end } } },
+        where: {
+          sellerId,
+          order: { paidAt: { gte: range.start, lte: range.end } },
+        },
       }),
       (prisma as any).sellerEarning.aggregate({
         where: { sellerId, createdAt: { gte: range.start, lte: range.end } },
@@ -208,7 +257,11 @@ export class EarningsAnalyticsService {
         _count: true,
       }),
       (prisma as any).withdrawalRequest.aggregate({
-        where: { userId: sellerId, status: "APPROVED", createdAt: { gte: range.start, lte: range.end } },
+        where: {
+          userId: sellerId,
+          status: "APPROVED",
+          createdAt: { gte: range.start, lte: range.end },
+        },
         _sum: { amountCents: true },
         _count: true,
       }),
@@ -235,19 +288,41 @@ export class EarningsAnalyticsService {
 
   private async getTopProducts(from: Date, to: Date): Promise<TopProductRow[]> {
     const orderItems = await prisma.orderItem.findMany({
-      where: { order: { paidAt: { gte: from, lte: to }, status: { notIn: ["CANCELLED", "AWAITING_PAYMENT"] } } },
-      include: { product: { select: { id: true, name: true, coverImageUrl: true, category: { select: { name: true } } } } },
+      where: {
+        order: {
+          paidAt: { gte: from, lte: to },
+          status: { notIn: ["CANCELLED", "AWAITING_PAYMENT"] },
+        },
+      },
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            coverImageUrl: true,
+            category: { select: { name: true } },
+          },
+        },
+      },
     });
 
-    const grouped = new Map<string, { product: any; orders: number; grossCents: number }>();
+    const grouped = new Map<
+      string,
+      { product: any; orders: number; grossCents: number }
+    >();
     for (const item of orderItems) {
-      const existing = grouped.get(item.productId) ?? { product: item.product, orders: 0, grossCents: 0 };
+      const existing = grouped.get(item.productId) ?? {
+        product: item.product,
+        orders: 0,
+        grossCents: 0,
+      };
       existing.orders += item.quantity;
       existing.grossCents += item.totalCents;
       grouped.set(item.productId, existing);
     }
 
-    const totalGross = [...grouped.values()].reduce((sum, g) => sum + g.grossCents, 0) || 1;
+    const totalGross =
+      [...grouped.values()].reduce((sum, g) => sum + g.grossCents, 0) || 1;
     const rows = [...grouped.values()]
       .map((g) => ({
         productId: g.product.id,
@@ -257,8 +332,12 @@ export class EarningsAnalyticsService {
         orders: g.orders,
         avgPriceCents: g.orders > 0 ? Math.round(g.grossCents / g.orders) : 0,
         grossCents: g.grossCents,
-        commissionCents: Math.round(g.grossCents * env.COMMISSION_SALE_PERCENT / 100),
-        netCents: Math.round(g.grossCents * (100 - env.COMMISSION_SALE_PERCENT) / 100),
+        commissionCents: Math.round(
+          (g.grossCents * env.COMMISSION_SALE_PERCENT) / 100,
+        ),
+        netCents: Math.round(
+          (g.grossCents * (100 - env.COMMISSION_SALE_PERCENT)) / 100,
+        ),
         contributionPct: Math.round((g.grossCents / totalGross) * 1000) / 10,
       }))
       .sort((a, b) => b.grossCents - a.grossCents)
@@ -267,21 +346,48 @@ export class EarningsAnalyticsService {
     return rows;
   }
 
-  private async getSellerTopProducts(sellerId: string, from: Date, to: Date): Promise<TopProductRow[]> {
+  private async getSellerTopProducts(
+    sellerId: string,
+    from: Date,
+    to: Date,
+  ): Promise<TopProductRow[]> {
     const orderItems = await prisma.orderItem.findMany({
-      where: { sellerId, order: { paidAt: { gte: from, lte: to }, status: { notIn: ["CANCELLED", "AWAITING_PAYMENT"] } } },
-      include: { product: { select: { id: true, name: true, coverImageUrl: true, category: { select: { name: true } } } } },
+      where: {
+        sellerId,
+        order: {
+          paidAt: { gte: from, lte: to },
+          status: { notIn: ["CANCELLED", "AWAITING_PAYMENT"] },
+        },
+      },
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            coverImageUrl: true,
+            category: { select: { name: true } },
+          },
+        },
+      },
     });
 
-    const grouped = new Map<string, { product: any; orders: number; grossCents: number }>();
+    const grouped = new Map<
+      string,
+      { product: any; orders: number; grossCents: number }
+    >();
     for (const item of orderItems) {
-      const existing = grouped.get(item.productId) ?? { product: item.product, orders: 0, grossCents: 0 };
+      const existing = grouped.get(item.productId) ?? {
+        product: item.product,
+        orders: 0,
+        grossCents: 0,
+      };
       existing.orders += item.quantity;
       existing.grossCents += item.totalCents;
       grouped.set(item.productId, existing);
     }
 
-    const totalGross = [...grouped.values()].reduce((sum, g) => sum + g.grossCents, 0) || 1;
+    const totalGross =
+      [...grouped.values()].reduce((sum, g) => sum + g.grossCents, 0) || 1;
     const rows = [...grouped.values()]
       .map((g) => ({
         productId: g.product.id,
@@ -291,8 +397,12 @@ export class EarningsAnalyticsService {
         orders: g.orders,
         avgPriceCents: g.orders > 0 ? Math.round(g.grossCents / g.orders) : 0,
         grossCents: g.grossCents,
-        commissionCents: Math.round(g.grossCents * env.COMMISSION_SALE_PERCENT / 100),
-        netCents: Math.round(g.grossCents * (100 - env.COMMISSION_SALE_PERCENT) / 100),
+        commissionCents: Math.round(
+          (g.grossCents * env.COMMISSION_SALE_PERCENT) / 100,
+        ),
+        netCents: Math.round(
+          (g.grossCents * (100 - env.COMMISSION_SALE_PERCENT)) / 100,
+        ),
         contributionPct: Math.round((g.grossCents / totalGross) * 1000) / 10,
       }))
       .sort((a, b) => b.grossCents - a.grossCents)
@@ -302,12 +412,24 @@ export class EarningsAnalyticsService {
   }
 
   private async getAdminSummary(from: Date, to: Date): Promise<AdminSummary> {
-    const [orderCount, orderGross, saleCommission, withdrawCommission, withdrawals] = await Promise.all([
+    const [
+      orderCount,
+      orderGross,
+      saleCommission,
+      withdrawCommission,
+      withdrawals,
+    ] = await Promise.all([
       prisma.order.count({
-        where: { paidAt: { gte: from, lte: to }, status: { notIn: ["CANCELLED", "AWAITING_PAYMENT"] } },
+        where: {
+          paidAt: { gte: from, lte: to },
+          status: { notIn: ["CANCELLED", "AWAITING_PAYMENT"] },
+        },
       }),
       prisma.order.aggregate({
-        where: { paidAt: { gte: from, lte: to }, status: { notIn: ["CANCELLED", "AWAITING_PAYMENT"] } },
+        where: {
+          paidAt: { gte: from, lte: to },
+          status: { notIn: ["CANCELLED", "AWAITING_PAYMENT"] },
+        },
         _sum: { totalCents: true },
       }),
       prisma.adminTransaction.aggregate({
@@ -315,7 +437,10 @@ export class EarningsAnalyticsService {
         _sum: { amountCents: true },
       }),
       prisma.adminTransaction.aggregate({
-        where: { type: "COMMISSION_WITHDRAW", createdAt: { gte: from, lte: to } },
+        where: {
+          type: "COMMISSION_WITHDRAW",
+          createdAt: { gte: from, lte: to },
+        },
         _sum: { amountCents: true },
       }),
       (prisma as any).withdrawalRequest.aggregate({
@@ -326,7 +451,8 @@ export class EarningsAnalyticsService {
     ]);
 
     const totalSaleCommissionCents = saleCommission._sum.amountCents ?? 0;
-    const totalWithdrawCommissionCents = withdrawCommission._sum.amountCents ?? 0;
+    const totalWithdrawCommissionCents =
+      withdrawCommission._sum.amountCents ?? 0;
 
     return {
       totalOrders: orderCount,
@@ -340,38 +466,55 @@ export class EarningsAnalyticsService {
     };
   }
 
-  private async getSellerSummary(sellerId: string, from: Date, to: Date): Promise<SellerSummary> {
-    const [orderItems, earnings, available, frozen, held, withdrawals] = await Promise.all([
-      prisma.orderItem.count({
-        where: { sellerId, order: { paidAt: { gte: from, lte: to }, status: { notIn: ["CANCELLED", "AWAITING_PAYMENT"] } } },
-      }),
-      (prisma as any).sellerEarning.aggregate({
-        where: { sellerId, createdAt: { gte: from, lte: to } },
-        _sum: { grossCents: true, platformFeeCents: true, netCents: true },
-      }),
-      (prisma as any).sellerEarning.aggregate({
-        where: { sellerId, status: "AVAILABLE" },
-        _sum: { netCents: true },
-      }),
-      (prisma as any).sellerEarning.aggregate({
-        where: { sellerId, status: "FROZEN" },
-        _sum: { netCents: true },
-      }),
-      (prisma as any).withdrawalRequest.aggregate({
-        where: { userId: sellerId, status: "PENDING" },
-        _sum: { amountCents: true },
-      }),
-      (prisma as any).withdrawalRequest.aggregate({
-        where: { userId: sellerId, status: "APPROVED", createdAt: { gte: from, lte: to } },
-        _sum: { amountCents: true },
-      }),
-    ]);
+  private async getSellerSummary(
+    sellerId: string,
+    from: Date,
+    to: Date,
+  ): Promise<SellerSummary> {
+    const [orderItems, earnings, available, frozen, held, withdrawals] =
+      await Promise.all([
+        prisma.orderItem.count({
+          where: {
+            sellerId,
+            order: {
+              paidAt: { gte: from, lte: to },
+              status: { notIn: ["CANCELLED", "AWAITING_PAYMENT"] },
+            },
+          },
+        }),
+        (prisma as any).sellerEarning.aggregate({
+          where: { sellerId, createdAt: { gte: from, lte: to } },
+          _sum: { grossCents: true, platformFeeCents: true, netCents: true },
+        }),
+        (prisma as any).sellerEarning.aggregate({
+          where: { sellerId, status: "AVAILABLE" },
+          _sum: { netCents: true },
+        }),
+        (prisma as any).sellerEarning.aggregate({
+          where: { sellerId, status: "FROZEN" },
+          _sum: { netCents: true },
+        }),
+        (prisma as any).withdrawalRequest.aggregate({
+          where: { userId: sellerId, status: "PENDING" },
+          _sum: { amountCents: true },
+        }),
+        (prisma as any).withdrawalRequest.aggregate({
+          where: {
+            userId: sellerId,
+            status: "APPROVED",
+            createdAt: { gte: from, lte: to },
+          },
+          _sum: { amountCents: true },
+        }),
+      ]);
 
     const totalGrossCents = earnings._sum.grossCents ?? 0;
     const totalCommissionCents = earnings._sum.platformFeeCents ?? 0;
     const totalNetCents = earnings._sum.netCents ?? 0;
     const withdrawVolume = withdrawals._sum.amountCents ?? 0;
-    const withdrawCommission = Math.round(withdrawVolume * env.COMMISSION_WITHDRAW_PERCENT / 100);
+    const withdrawCommission = Math.round(
+      (withdrawVolume * env.COMMISSION_WITHDRAW_PERCENT) / 100,
+    );
 
     return {
       totalOrders: orderItems,

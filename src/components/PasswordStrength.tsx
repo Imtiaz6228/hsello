@@ -2,9 +2,12 @@ import { Check, X } from "lucide-react";
 
 const rules = [
   { label: "12+ characters", test: (value: string) => value.length >= 12 },
-  { label: "Uppercase and lowercase", test: (value: string) => /[A-Z]/.test(value) && /[a-z]/.test(value) },
+  {
+    label: "Uppercase and lowercase",
+    test: (value: string) => /[A-Z]/.test(value) && /[a-z]/.test(value),
+  },
   { label: "Number", test: (value: string) => /[0-9]/.test(value) },
-  { label: "Symbol", test: (value: string) => /[^A-Za-z0-9]/.test(value) }
+  { label: "Symbol", test: (value: string) => /[^A-Za-z0-9]/.test(value) },
 ];
 
 export function PasswordStrength({ value }: { value: string }) {

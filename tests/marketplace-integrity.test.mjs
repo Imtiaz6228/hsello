@@ -27,7 +27,12 @@ test("top-up UI only renders server-configured destinations", async () => {
   const dashboard = await read("src/pages/AccountDashboardPage.tsx");
   assert.match(dashboard, /const methods = topupMethods\.map/);
   assert.match(dashboard, /No verified payment destination is configured/);
-  for (const unsafeAddress of ["TDffsBmuyrMsNEQXzzLYfzAwz7W6Jmvb1W", "1CRoGe5BKjSTYBjxjPaS5NRCP8eyZ8cSpA", "5K8sYDqmmMDeVMDcJjzmwdX2MGMwqCeNNnpDd82tXdf"]) assert.doesNotMatch(dashboard, new RegExp(unsafeAddress));
+  for (const unsafeAddress of [
+    "TDffsBmuyrMsNEQXzzLYfzAwz7W6Jmvb1W",
+    "1CRoGe5BKjSTYBjxjPaS5NRCP8eyZ8cSpA",
+    "5K8sYDqmmMDeVMDcJjzmwdX2MGMwqCeNNnpDd82tXdf",
+  ])
+    assert.doesNotMatch(dashboard, new RegExp(unsafeAddress));
 });
 
 test("seller cases, reviews, exports, and analytics use real records", async () => {

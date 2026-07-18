@@ -1,35 +1,76 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-const developmentPreviewMeta =
-  /<meta(?=[^>]*\bname=["']codex-preview["'])(?=[^>]*\bcontent=["']development["'])[^>]*>/i;
-
-test("renders development preview metadata", async () => {
+async function workerUnderTest() {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
-  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
-  const { default: worker } = await import(workerUrl.href);
+  workerUrl.searchParams.set(
+    "test",
+    `${process.pid}-${Date.now()}-${Math.random()}`,
+  );
+  return (await import(workerUrl.href)).default;
+}
 
+function assets(responses) {
+  return {
+    fetch: async (request) => {
+      const pathname = new URL(request.url).pathname;
+      return responses[pathname] ?? new Response("Not found", { status: 404 });
+    },
+  };
+}
+
+test("serves a prerendered public page without falling through to the SPA", async () => {
+  const worker = await workerUnderTest();
   const response = await worker.fetch(
-    new Request("http://localhost/", {
+    new Request("https://market.example/about", {
       headers: { accept: "text/html" },
     }),
     {
-      ASSETS: {
-        fetch: async (request) => new URL(request.url).pathname === "/index.html"
-          ? new Response('<!doctype html><meta name="codex-preview" content="development">', { status: 200, headers: { "content-type": "text/html; charset=utf-8" } })
-          : new Response("Not found", { status: 404 }),
-      },
-    },
-    {
-      waitUntil() {},
-      passThroughOnException() {},
+      ASSETS: assets({
+        "/about.html": new Response("<!doctype html><h1>About HSello</h1>", {
+          headers: { "content-type": "text/html" },
+        }),
+      }),
     },
   );
-
   assert.equal(response.status, 200);
-  assert.match(
-    response.headers.get("content-type") ?? "",
-    /^text\/html\b/i,
+  assert.match(await response.text(), /About HSello/);
+});
+
+test("marks private SPA routes noindex", async () => {
+  const worker = await workerUnderTest();
+  const response = await worker.fetch(
+    new Request("https://market.example/dashboard", {
+      headers: { accept: "text/html" },
+    }),
+    {
+      ASSETS: assets({
+        "/index.html": new Response('<!doctype html><div id="root"></div>', {
+          headers: { "content-type": "text/html" },
+        }),
+      }),
+    },
   );
-  assert.match(await response.text(), developmentPreviewMeta);
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("x-robots-tag") ?? "", /noindex/);
+  assert.equal(response.headers.get("cache-control"), "private, no-store");
+});
+
+test("returns a real 404 with noindex for unknown routes", async () => {
+  const worker = await workerUnderTest();
+  const response = await worker.fetch(
+    new Request("https://market.example/missing-page", {
+      headers: { accept: "text/html" },
+    }),
+    {
+      ASSETS: assets({
+        "/404.html": new Response("<!doctype html><h1>Not found</h1>", {
+          headers: { "content-type": "text/html" },
+        }),
+      }),
+    },
+  );
+  assert.equal(response.status, 404);
+  assert.match(response.headers.get("x-robots-tag") ?? "", /noindex/);
+  assert.match(await response.text(), /Not found/);
 });

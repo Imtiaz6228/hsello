@@ -1,4 +1,9 @@
-import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import {
+  createHash,
+  createHmac,
+  randomBytes,
+  timingSafeEqual,
+} from "node:crypto";
 
 export function randomToken(bytes = 32) {
   return randomBytes(bytes).toString("base64url");

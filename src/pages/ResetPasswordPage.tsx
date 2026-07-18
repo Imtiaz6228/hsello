@@ -12,8 +12,13 @@ export function ResetPasswordPage() {
   const token = params.get("token") ?? "";
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(
-    token ? null : { type: "error", message: "This reset link is missing its token." }
+  const [status, setStatus] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(
+    token
+      ? null
+      : { type: "error", message: "This reset link is missing its token." },
   );
   const [loading, setLoading] = useState(false);
   const resetComplete = status?.type === "success";
@@ -23,7 +28,10 @@ export function ResetPasswordPage() {
     setStatus(null);
 
     if (!token) {
-      setStatus({ type: "error", message: "This reset link is missing its token." });
+      setStatus({
+        type: "error",
+        message: "This reset link is missing its token.",
+      });
       return;
     }
 
@@ -41,10 +49,10 @@ export function ResetPasswordPage() {
           body: {
             token,
             password,
-            confirmPassword
-          }
+            confirmPassword,
+          },
         },
-        false
+        false,
       );
       setPassword("");
       setConfirmPassword("");
@@ -52,7 +60,10 @@ export function ResetPasswordPage() {
     } catch (error) {
       setStatus({
         type: "error",
-        message: error instanceof ApiError ? error.message : "Could not reset your password. Please try again."
+        message:
+          error instanceof ApiError
+            ? error.message
+            : "Could not reset your password. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -74,8 +85,15 @@ export function ResetPasswordPage() {
         {status ? <Alert type={status.type} message={status.message} /> : null}
 
         {resetComplete || !token ? (
-          <Link className="primary-button" to={resetComplete ? "/sign-in" : "/forgot-password"}>
-            {resetComplete ? <CheckCircle2 size={18} aria-hidden="true" /> : <ArrowLeft size={18} aria-hidden="true" />}
+          <Link
+            className="primary-button"
+            to={resetComplete ? "/sign-in" : "/forgot-password"}
+          >
+            {resetComplete ? (
+              <CheckCircle2 size={18} aria-hidden="true" />
+            ) : (
+              <ArrowLeft size={18} aria-hidden="true" />
+            )}
             {resetComplete ? "Go to sign in" : "Request a new link"}
           </Link>
         ) : (
@@ -106,7 +124,9 @@ export function ResetPasswordPage() {
         )}
 
         <p className="switch-auth">
-          <Link to="/sign-in"><ArrowLeft size={14} aria-hidden="true" /> Back to sign in</Link>
+          <Link to="/sign-in">
+            <ArrowLeft size={14} aria-hidden="true" /> Back to sign in
+          </Link>
         </p>
       </form>
     </AuthShell>

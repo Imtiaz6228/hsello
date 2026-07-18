@@ -16,7 +16,7 @@ export function PasswordField({
   value,
   onChange,
   error,
-  autoComplete
+  autoComplete,
 }: PasswordFieldProps) {
   const [visible, setVisible] = useState(false);
 

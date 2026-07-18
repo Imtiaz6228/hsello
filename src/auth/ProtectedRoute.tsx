@@ -7,7 +7,10 @@ type ProtectedRouteProps = {
   roles?: Role[];
 };
 
-export function ProtectedRoute({ requireVerified = true, roles }: ProtectedRouteProps) {
+export function ProtectedRoute({
+  requireVerified = true,
+  roles,
+}: ProtectedRouteProps) {
   const { user, loading } = useAuth();
   const location = useLocation();
 
@@ -20,7 +23,9 @@ export function ProtectedRoute({ requireVerified = true, roles }: ProtectedRoute
   }
 
   if (requireVerified && !user.emailVerified) {
-    return <Navigate to="/verify-required" replace state={{ email: user.email }} />;
+    return (
+      <Navigate to="/verify-required" replace state={{ email: user.email }} />
+    );
   }
 
   if (roles && !roles.includes(user.role)) {

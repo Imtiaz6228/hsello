@@ -21,16 +21,19 @@ export function BlogArticlePage() {
           "@type": "Article",
           headline: post.title,
           description: post.excerpt,
-          datePublished:
-            "2026-07-" +
-            ({
-              "evaluate-digital-product-before-checkout": "08",
-              "write-a-trustworthy-product-page": "05",
-              "why-account-and-credential-trading-is-not-allowed": "02",
-              "versioning-digital-downloads": "01",
-            }[post.slug] ?? "01"),
-          author: { "@type": "Organization", name: "HSello" },
-          publisher: { "@type": "Organization", name: "HSello" },
+          datePublished: post.publishedIso,
+          dateModified: post.publishedIso,
+          mainEntityOfPage: `${window.location.origin}/blog/${post.slug}`,
+          author: {
+            "@type": "Organization",
+            name: "HSello",
+            url: window.location.origin,
+          },
+          publisher: {
+            "@type": "Organization",
+            name: "HSello",
+            url: window.location.origin,
+          },
         }}
       />
       <MarketHeader />

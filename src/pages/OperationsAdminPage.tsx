@@ -360,7 +360,7 @@ const navGroups: Array<{ label: string; icon: LucideIcon; items: Tab[] }> = [
     label: "Support & safety",
     icon: ShieldCheck,
     items: ["tickets", "chats", "reports"],
-  }
+  },
 ];
 
 const adminPathTabs: Record<string, Tab> = {
@@ -2264,10 +2264,7 @@ export function OperationsAdminPage() {
             </p>
             <label className="admin-product-image-picker">
               {adminCoverPreview ? (
-                <img
-                  src={adminCoverPreview}
-                  alt="Selected product preview"
-                />
+                <img src={adminCoverPreview} alt="Selected product preview" />
               ) : (
                 <ImagePlus size={34} aria-hidden="true" />
               )}
@@ -2674,7 +2671,12 @@ function OverviewPanel({
         </div>
         <aside>
           <span>Items requiring review</span>
-          <strong>{(overview?.pendingSellers ?? 0) + (overview?.pendingProducts ?? 0) + (overview?.openTickets ?? 0) + (overview?.openDisputes ?? 0)}</strong>
+          <strong>
+            {(overview?.pendingSellers ?? 0) +
+              (overview?.pendingProducts ?? 0) +
+              (overview?.openTickets ?? 0) +
+              (overview?.openDisputes ?? 0)}
+          </strong>
           <small>
             <i /> Based on available marketplace records
           </small>

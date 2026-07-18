@@ -4,7 +4,7 @@ export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 500,
   standardHeaders: "draft-7",
-  legacyHeaders: false
+  legacyHeaders: false,
 });
 
 export const authLimiter = rateLimit({
@@ -14,8 +14,8 @@ export const authLimiter = rateLimit({
   legacyHeaders: false,
   message: {
     message: "Too many authentication attempts. Please try again later.",
-    code: "RATE_LIMITED"
-  }
+    code: "RATE_LIMITED",
+  },
 });
 
 export const sensitiveLimiter = rateLimit({
@@ -25,6 +25,6 @@ export const sensitiveLimiter = rateLimit({
   legacyHeaders: false,
   message: {
     message: "Too many requests. Please wait before trying again.",
-    code: "RATE_LIMITED"
-  }
+    code: "RATE_LIMITED",
+  },
 });

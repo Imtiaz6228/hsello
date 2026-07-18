@@ -1,4 +1,4 @@
-name: Deploy NEXUS Marketplace
+name: Deploy HSello Marketplace
 
 on:
   workflow_run:

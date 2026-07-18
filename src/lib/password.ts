@@ -47,7 +47,7 @@ export function hashPassword(password: string) {
     type: argon2.argon2id,
     memoryCost: 19_456,
     timeCost: 3,
-    parallelism: 1
+    parallelism: 1,
   });
 }
 

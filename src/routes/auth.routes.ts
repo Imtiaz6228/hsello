@@ -12,7 +12,7 @@ import {
   registerSchema,
   resendVerificationSchema,
   resetPasswordSchema,
-  verifyEmailSchema
+  verifyEmailSchema,
 } from "../schemas/auth.schemas.js";
 import {
   changePassword,
@@ -27,19 +27,23 @@ import {
   requestPasswordReset,
   resendVerification,
   resetPassword,
-  verifyEmailToken
+  verifyEmailToken,
 } from "../services/auth.service.js";
 import { verifyCaptcha } from "../services/captcha.service.js";
 import { clearAuthCookies } from "../lib/cookies.js";
 
 export const authRouter = Router();
 
-authRouter.get("/availability", authLimiter, asyncHandler(async (req, res) => {
-  const input = availabilitySchema.parse(req.query);
-  const availability = await getAvailability(input.email, input.username);
+authRouter.get(
+  "/availability",
+  authLimiter,
+  asyncHandler(async (req, res) => {
+    const input = availabilitySchema.parse(req.query);
+    const availability = await getAvailability(input.email, input.username);
 
-  res.json(availability);
-}));
+    res.json(availability);
+  }),
+);
 
 authRouter.post(
   "/register",
@@ -54,102 +58,152 @@ authRouter.post(
       {
         id: user.id,
         role: user.role,
-        emailVerifiedAt: new Date()
+        emailVerifiedAt: new Date(),
       },
       req,
-      true
+      true,
     );
 
-    setAuthCookies(res, session.accessToken, session.refreshToken, session.rememberMe);
+    setAuthCookies(
+      res,
+      session.accessToken,
+      session.refreshToken,
+      session.rememberMe,
+    );
     const csrfToken = issueCsrfToken(res);
 
     res.status(201).json({
       message: "Account created successfully.",
       user,
-      csrfToken
+      csrfToken,
     });
-  })
+  }),
 );
 
-authRouter.post("/login", authLimiter, asyncHandler(async (req, res) => {
-  const input = loginSchema.parse(req.body);
-  const { user, session } = await loginUser(input, req);
+authRouter.post(
+  "/login",
+  authLimiter,
+  asyncHandler(async (req, res) => {
+    const input = loginSchema.parse(req.body);
+    const { user, session } = await loginUser(input, req);
 
-  setAuthCookies(res, session.accessToken, session.refreshToken, session.rememberMe);
-  const csrfToken = issueCsrfToken(res);
+    setAuthCookies(
+      res,
+      session.accessToken,
+      session.refreshToken,
+      session.rememberMe,
+    );
+    const csrfToken = issueCsrfToken(res);
 
-  res.json({
-    message: "Signed in successfully.",
-    user,
-    csrfToken
-  });
-}));
+    res.json({
+      message: "Signed in successfully.",
+      user,
+      csrfToken,
+    });
+  }),
+);
 
-authRouter.post("/refresh", asyncHandler(async (req, res) => {
-  const { user, session } = await refreshUserSession(getRefreshTokenFromRequest(req), req);
+authRouter.post(
+  "/refresh",
+  asyncHandler(async (req, res) => {
+    const { user, session } = await refreshUserSession(
+      getRefreshTokenFromRequest(req),
+      req,
+    );
 
-  setAuthCookies(res, session.accessToken, session.refreshToken, session.rememberMe);
-  const csrfToken = issueCsrfToken(res);
+    setAuthCookies(
+      res,
+      session.accessToken,
+      session.refreshToken,
+      session.rememberMe,
+    );
+    const csrfToken = issueCsrfToken(res);
 
-  res.json({
-    user,
-    csrfToken
-  });
-}));
+    res.json({
+      user,
+      csrfToken,
+    });
+  }),
+);
 
-authRouter.post("/logout", asyncHandler(async (req, res) => {
-  await logoutUser(getRefreshTokenFromRequest(req));
-  clearAuthCookies(res);
+authRouter.post(
+  "/logout",
+  asyncHandler(async (req, res) => {
+    await logoutUser(getRefreshTokenFromRequest(req));
+    clearAuthCookies(res);
 
-  res.json({
-    message: "Signed out successfully."
-  });
-}));
+    res.json({
+      message: "Signed out successfully.",
+    });
+  }),
+);
 
-authRouter.get("/me", requireAuth, asyncHandler(async (req, res) => {
-  const user = await getCurrentUser(req.auth!.id);
+authRouter.get(
+  "/me",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const user = await getCurrentUser(req.auth!.id);
 
-  res.json({ user });
-}));
+    res.json({ user });
+  }),
+);
 
-authRouter.post("/verify-email", sensitiveLimiter, asyncHandler(async (req, res) => {
-  const input = verifyEmailSchema.parse(req.body);
-  const user = await verifyEmailToken(input.token);
+authRouter.post(
+  "/verify-email",
+  sensitiveLimiter,
+  asyncHandler(async (req, res) => {
+    const input = verifyEmailSchema.parse(req.body);
+    const user = await verifyEmailToken(input.token);
 
-  res.json({
-    message: "Email verified successfully.",
-    user
-  });
-}));
+    res.json({
+      message: "Email verified successfully.",
+      user,
+    });
+  }),
+);
 
-authRouter.post("/resend-verification", sensitiveLimiter, asyncHandler(async (req, res) => {
-  const input = resendVerificationSchema.parse(req.body);
-  await resendVerification(input.email);
+authRouter.post(
+  "/resend-verification",
+  sensitiveLimiter,
+  asyncHandler(async (req, res) => {
+    const input = resendVerificationSchema.parse(req.body);
+    await resendVerification(input.email);
 
-  res.json({
-    message: "If that account needs verification, a new email has been sent."
-  });
-}));
+    res.json({
+      message: "If that account needs verification, a new email has been sent.",
+    });
+  }),
+);
 
-authRouter.post("/forgot-password", sensitiveLimiter, asyncHandler(async (req, res) => {
-  const input = forgotPasswordSchema.parse(req.body);
-  await verifyCaptcha(input.captchaToken, req.ip);
-  await requestPasswordReset(input.email);
+authRouter.post(
+  "/forgot-password",
+  sensitiveLimiter,
+  asyncHandler(async (req, res) => {
+    const input = forgotPasswordSchema.parse(req.body);
+    await verifyCaptcha(input.captchaToken, req.ip);
+    await requestPasswordReset(input.email);
 
-  res.json({
-    message: "If an account exists for that email, a reset link has been sent."
-  });
-}));
+    res.json({
+      message:
+        "If an account exists for that email, a reset link has been sent.",
+    });
+  }),
+);
 
-authRouter.post("/reset-password", sensitiveLimiter, asyncHandler(async (req, res) => {
-  const input = resetPasswordSchema.parse(req.body);
-  await resetPassword(input.token, input.password);
-  clearAuthCookies(res);
+authRouter.post(
+  "/reset-password",
+  sensitiveLimiter,
+  asyncHandler(async (req, res) => {
+    const input = resetPasswordSchema.parse(req.body);
+    await resetPassword(input.token, input.password);
+    clearAuthCookies(res);
 
-  res.json({
-    message: "Password reset successfully. Please sign in with your new password."
-  });
-}));
+    res.json({
+      message:
+        "Password reset successfully. Please sign in with your new password.",
+    });
+  }),
+);
 
 authRouter.post(
   "/change-password",
@@ -162,7 +216,7 @@ authRouter.post(
     clearAuthCookies(res);
 
     res.json({
-      message: "Password changed successfully. Please sign in again."
+      message: "Password changed successfully. Please sign in again.",
     });
-  })
+  }),
 );

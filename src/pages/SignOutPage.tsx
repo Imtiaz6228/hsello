@@ -22,17 +22,39 @@ export function SignOutPage() {
 
   return (
     <main className="signout-page">
-      <Seo title="Sign out" description="Securely sign out of your HSello account." noIndex />
+      <Seo
+        title="Sign out"
+        description="Securely sign out of your HSello account."
+        noIndex
+      />
       <section className="signout-card">
-        <div className="signout-icon"><LogOut /></div>
+        <div className="signout-icon">
+          <LogOut />
+        </div>
         <span className="section-index">SECURE SESSION</span>
         <h1>Sign out of HSello?</h1>
-        <p>You are signed in as <strong>{user.firstName} {user.lastName}</strong>. Signing out will end this browser session.</p>
+        <p>
+          You are signed in as{" "}
+          <strong>
+            {user.firstName} {user.lastName}
+          </strong>
+          . Signing out will end this browser session.
+        </p>
         <div className="signout-actions">
-          <button className="danger-button solid" type="button" onClick={() => void confirmSignOut()}><LogOut size={17} /> Sign out now</button>
-          <Link className="secondary-button" to={returnPath}><ArrowLeft size={17} /> Return to dashboard</Link>
+          <button
+            className="danger-button solid"
+            type="button"
+            onClick={() => void confirmSignOut()}
+          >
+            <LogOut size={17} /> Sign out now
+          </button>
+          <Link className="secondary-button" to={returnPath}>
+            <ArrowLeft size={17} /> Return to dashboard
+          </Link>
         </div>
-        <small><ShieldCheck size={14} /> Your account data and orders remain safe.</small>
+        <small>
+          <ShieldCheck size={14} /> Your account data and orders remain safe.
+        </small>
       </section>
     </main>
   );

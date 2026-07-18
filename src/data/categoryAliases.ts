@@ -31,4 +31,3 @@ export function equivalentCategorySlugs(slug: string) {
   }
   return equivalents;
 }
-

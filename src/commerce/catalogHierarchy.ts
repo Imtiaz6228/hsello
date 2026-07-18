@@ -6,7 +6,9 @@ export function categoryAncestry(slug: string, categories: CatalogCategory[]) {
   let current = categories.find((category) => category.slug === slug);
   while (current?.parentSlug && !ancestry.has(current.parentSlug)) {
     ancestry.add(current.parentSlug);
-    current = categories.find((category) => category.slug === current?.parentSlug);
+    current = categories.find(
+      (category) => category.slug === current?.parentSlug,
+    );
   }
   return ancestry;
 }
@@ -32,4 +34,3 @@ export function productCategoryBuckets(
   }
   return buckets;
 }
-

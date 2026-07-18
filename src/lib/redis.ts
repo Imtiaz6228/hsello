@@ -6,7 +6,9 @@ function createRedisClient(): Redis | null {
   const url = process.env.REDIS_URL;
   if (!url) {
     if (process.env.NODE_ENV !== "production") {
-      console.warn("[redis] REDIS_URL not set — Redis features disabled in development.");
+      console.warn(
+        "[redis] REDIS_URL not set — Redis features disabled in development.",
+      );
     }
     return null;
   }
@@ -17,7 +19,9 @@ function createRedisClient(): Redis | null {
       if (times > 10) return null;
       return Math.min(times * 200, 2000);
     },
-    tls: url.startsWith("rediss://") ? { rejectUnauthorized: false } : undefined,
+    tls: url.startsWith("rediss://")
+      ? { rejectUnauthorized: false }
+      : undefined,
     lazyConnect: false,
   });
 
@@ -68,7 +72,11 @@ export async function cacheGet<T>(key: string): Promise<T | null> {
   }
 }
 
-export async function cacheSet(key: string, value: unknown, ttlSeconds = 300): Promise<void> {
+export async function cacheSet(
+  key: string,
+  value: unknown,
+  ttlSeconds = 300,
+): Promise<void> {
   if (!redis) return;
   try {
     await redis.set(key, JSON.stringify(value), "EX", ttlSeconds);

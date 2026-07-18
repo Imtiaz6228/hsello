@@ -10,21 +10,27 @@ export const profileRouter = Router();
 
 profileRouter.use(requireAuth, requireVerifiedUser);
 
-profileRouter.get("/", asyncHandler(async (req, res) => {
-  const user = await getCurrentUser(req.auth!.id);
+profileRouter.get(
+  "/",
+  asyncHandler(async (req, res) => {
+    const user = await getCurrentUser(req.auth!.id);
 
-  res.json({ user });
-}));
+    res.json({ user });
+  }),
+);
 
-profileRouter.patch("/", asyncHandler(async (req, res) => {
-  const input = updateProfileSchema.parse(req.body);
-  const user = await updateProfile(req.auth!.id, input);
+profileRouter.patch(
+  "/",
+  asyncHandler(async (req, res) => {
+    const input = updateProfileSchema.parse(req.body);
+    const user = await updateProfile(req.auth!.id, input);
 
-  res.json({
-    message: "Profile updated successfully.",
-    user
-  });
-}));
+    res.json({
+      message: "Profile updated successfully.",
+      user,
+    });
+  }),
+);
 
 profileRouter.post(
   "/avatar",
@@ -34,7 +40,7 @@ profileRouter.post(
 
     res.json({
       message: "Profile picture updated successfully.",
-      user
+      user,
     });
-  })
+  }),
 );

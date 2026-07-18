@@ -2,6 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
   "cleanUrls": true,
+  "trailingSlash": false,
   "installCommand": "npm ci",
   "buildCommand": "npm run build:web",
   "outputDirectory": "dist",
@@ -13,6 +14,29 @@
           "key": "Cache-Control",
           "value": "public, max-age=31536000, immutable"
         }
+      ]
+    },
+    {
+      "source": "/:file(favicon.svg|favicon-32x32.png|apple-touch-icon.png|icon-192.png|icon-512.png|icon-maskable-512.png|og-default.png|site.webmanifest)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
+      ]
+    },
+    {
+      "source": "/:page(cart|sign-in|sign-out|register|forgot-password|reset-password|verify-email|verify-required|dashboard|support|admin|seller|checkout)",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" },
+        { "key": "Cache-Control", "value": "private, no-store" }
+      ]
+    },
+    {
+      "source": "/:area(admin|seller|checkout|orders)/:path*",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" },
+        { "key": "Cache-Control", "value": "private, no-store" }
       ]
     },
     {
@@ -30,6 +54,9 @@
           "key": "Permissions-Policy",
           "value": "camera=(), microphone=(), geolocation=(), payment=(self)"
         },
+        { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
+        { "key": "Cross-Origin-Resource-Policy", "value": "same-site" },
+        { "key": "X-DNS-Prefetch-Control", "value": "on" },
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "X-Frame-Options", "value": "DENY" },
         {
@@ -37,6 +64,13 @@
           "value": "max-age=63072000; includeSubDomains; preload"
         }
       ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/index.html",
+      "destination": "/",
+      "permanent": true
     }
   ],
   "rewrites": [
@@ -56,6 +90,38 @@
       "source": "/uploads/:path*",
       "destination": "https://hsello-production.up.railway.app/uploads/:path*"
     },
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/catalog",
+      "destination": "https://hsello-production.up.railway.app/catalog"
+    },
+    {
+      "source": "/categories/:slug",
+      "destination": "https://hsello-production.up.railway.app/categories/:slug"
+    },
+    {
+      "source": "/products/:slug",
+      "destination": "https://hsello-production.up.railway.app/products/:slug"
+    },
+    {
+      "source": "/stores/:slug",
+      "destination": "https://hsello-production.up.railway.app/stores/:slug"
+    },
+    { "source": "/cart", "destination": "/index.html" },
+    { "source": "/sign-in", "destination": "/index.html" },
+    { "source": "/sign-out", "destination": "/index.html" },
+    { "source": "/register", "destination": "/index.html" },
+    { "source": "/forgot-password", "destination": "/index.html" },
+    { "source": "/reset-password", "destination": "/index.html" },
+    { "source": "/verify-email", "destination": "/index.html" },
+    { "source": "/verify-required", "destination": "/index.html" },
+    { "source": "/dashboard", "destination": "/index.html" },
+    { "source": "/support", "destination": "/index.html" },
+    { "source": "/checkout", "destination": "/index.html" },
+    { "source": "/checkout/:path*", "destination": "/index.html" },
+    { "source": "/orders/:path*", "destination": "/index.html" },
+    { "source": "/seller", "destination": "/index.html" },
+    { "source": "/seller/:path*", "destination": "/index.html" },
+    { "source": "/admin", "destination": "/index.html" },
+    { "source": "/admin/:path*", "destination": "/index.html" }
   ]
 }

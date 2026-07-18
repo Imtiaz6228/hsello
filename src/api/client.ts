@@ -1,4 +1,5 @@
-export type Role = "CUSTOMER" | "SELLER" | "MODERATOR" | "ADMIN" | "SUPER_ADMIN";
+export type Role =
+  "CUSTOMER" | "SELLER" | "MODERATOR" | "ADMIN" | "SUPER_ADMIN";
 
 export const STAFF_ROLES: Role[] = ["MODERATOR", "ADMIN", "SUPER_ADMIN"];
 
@@ -61,16 +62,23 @@ type ApiOptions = Omit<RequestInit, "body"> & {
 };
 
 function normalizeApiBaseUrl(value: string | undefined) {
-  return (value?.trim() || "")
-    .replace(/\/+$/, "")
-    .replace(/(?:\/api)+$/i, "");
+  return (value?.trim() || "").replace(/\/+$/, "").replace(/(?:\/api)+$/i, "");
 }
 
-const configuredApiUrl = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL as string | undefined);
-const useRemoteApi = (import.meta.env.VITE_USE_REMOTE_API as string | undefined)?.trim() === "true";
+// `import.meta.env` is injected by Vite. The fallback keeps shared content
+// modules safe to import during the build-time HTML prerender pass.
+const viteEnvironment = import.meta.env || {};
+const configuredApiUrl = normalizeApiBaseUrl(
+  viteEnvironment.VITE_API_BASE_URL as string | undefined,
+);
+const useRemoteApi =
+  (viteEnvironment.VITE_USE_REMOTE_API as string | undefined)?.trim() ===
+  "true";
 const API_BASE_URL = useRemoteApi ? configuredApiUrl : "";
 if (useRemoteApi && !configuredApiUrl) {
-  throw new Error("VITE_API_BASE_URL is required when VITE_USE_REMOTE_API=true.");
+  throw new Error(
+    "VITE_API_BASE_URL is required when VITE_USE_REMOTE_API=true.",
+  );
 }
 const csrfExemptUnsafePaths = new Set([
   "/api/auth/register",
@@ -80,7 +88,7 @@ const csrfExemptUnsafePaths = new Set([
   "/api/auth/verify-email",
   "/api/auth/resend-verification",
   "/api/auth/forgot-password",
-  "/api/auth/reset-password"
+  "/api/auth/reset-password",
 ]);
 
 let csrfToken: string | null = null;
@@ -90,7 +98,7 @@ export class ApiError extends Error {
     message: string,
     public status: number,
     public code?: string,
-    public details?: unknown
+    public details?: unknown,
   ) {
     super(message);
     this.name = "ApiError";
@@ -112,7 +120,12 @@ export function apiDownloadUrl(path: string) {
 
 export function mediaUrl(value?: string | null) {
   if (!value) return "";
-  if (/^https?:\/\//i.test(value) || value.startsWith("data:") || value.startsWith("blob:")) return value;
+  if (
+    /^https?:\/\//i.test(value) ||
+    value.startsWith("data:") ||
+    value.startsWith("blob:")
+  )
+    return value;
   if (value.startsWith("/uploads/")) {
     return API_BASE_URL ? `${API_BASE_URL}${value}` : value;
   }
@@ -129,12 +142,7 @@ async function request(path: string, init: RequestInit) {
   try {
     return await fetch(apiUrl(path), init);
   } catch (error) {
-    throw new ApiError(
-      networkErrorMessage(),
-      0,
-      "NETWORK_ERROR",
-      error
-    );
+    throw new ApiError(networkErrorMessage(), 0, "NETWORK_ERROR", error);
   }
 }
 
@@ -150,7 +158,7 @@ async function readJson(response: Response) {
         ? "The local authentication API is not responding with JSON. Make sure npm run dev:api is running on port 4000."
         : "The authentication API is not configured for this deployment. Check the Vercel /api rewrite and Railway public URL, then redeploy.",
       response.status,
-      "API_MISCONFIGURED"
+      "API_MISCONFIGURED",
     );
   }
 }
@@ -161,15 +169,15 @@ export async function getCsrfToken() {
   }
 
   const response = await request("/api/session/bootstrap", {
-    credentials: "include"
+    credentials: "include",
   });
 
-  const data = await readJson(response) as { csrfToken?: string } | undefined;
+  const data = (await readJson(response)) as { csrfToken?: string } | undefined;
   if (!response.ok || !data?.csrfToken) {
     throw new ApiError(
       "Could not initialize secure request token.",
       response.status,
-      "CSRF_INITIALIZATION_FAILED"
+      "CSRF_INITIALIZATION_FAILED",
     );
   }
 
@@ -187,14 +195,16 @@ function pathWithoutQuery(path: string) {
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !(value instanceof FormData);
+  return (
+    Boolean(value) && typeof value === "object" && !(value instanceof FormData)
+  );
 }
 
 async function refreshSession() {
   const data = await apiRequest<{ user: User; csrfToken: string }>(
     "/api/auth/refresh",
     { method: "POST" },
-    false
+    false,
   );
   csrfToken = data.csrfToken;
 
@@ -205,13 +215,16 @@ export async function apiRequest<T>(
   path: string,
   options: ApiOptions = {},
   retryOnUnauthorized = true,
-  retryOnCsrf = true
+  retryOnCsrf = true,
 ): Promise<T> {
   const method = options.method ?? "GET";
   const headers = new Headers(options.headers);
   let body = options.body ?? null;
 
-  if (isUnsafeMethod(method) && !csrfExemptUnsafePaths.has(pathWithoutQuery(path))) {
+  if (
+    isUnsafeMethod(method) &&
+    !csrfExemptUnsafePaths.has(pathWithoutQuery(path))
+  ) {
     headers.set("x-csrf-token", await getCsrfToken());
   }
 
@@ -225,10 +238,14 @@ export async function apiRequest<T>(
     method,
     headers,
     body: body as BodyInit | null,
-    credentials: "include"
+    credentials: "include",
   });
 
-  if (response.status === 401 && retryOnUnauthorized && path !== "/api/auth/refresh") {
+  if (
+    response.status === 401 &&
+    retryOnUnauthorized &&
+    path !== "/api/auth/refresh"
+  ) {
     await refreshSession();
     return apiRequest<T>(path, options, false, retryOnCsrf);
   }
@@ -236,7 +253,12 @@ export async function apiRequest<T>(
   const data = await readJson(response);
 
   if (!response.ok) {
-    if (response.status === 403 && data?.code === "CSRF_INVALID" && isUnsafeMethod(method) && retryOnCsrf) {
+    if (
+      response.status === 403 &&
+      data?.code === "CSRF_INVALID" &&
+      isUnsafeMethod(method) &&
+      retryOnCsrf
+    ) {
       csrfToken = null;
 
       return apiRequest<T>(
@@ -245,11 +267,11 @@ export async function apiRequest<T>(
           ...options,
           headers: {
             ...Object.fromEntries(new Headers(options.headers).entries()),
-            "x-csrf-token": await getCsrfToken()
-          }
+            "x-csrf-token": await getCsrfToken(),
+          },
         },
         retryOnUnauthorized,
-        false
+        false,
       );
     }
 
@@ -257,7 +279,7 @@ export async function apiRequest<T>(
       data?.message ?? `Request failed (${response.status}).`,
       response.status,
       data?.code,
-      data?.details
+      data?.details,
     );
   }
 

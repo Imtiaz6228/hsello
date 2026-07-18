@@ -17,7 +17,7 @@ import { EarningsChart } from "../components/EarningsChart";
 import { LocaleSwitcher } from "../components/LocaleSwitcher";
 import { useLocale } from "../i18n/LocaleContext";
 
-type Grant = { id: string; downloadCount: number; maxDownloads: number; expiresAt: string; productFile: { displayName: string; version: number } };
+type Grant = { id: string; downloadCount: number; maxDownloads: number; expiresAt: string; revokedAt?: string | null; productFile: { displayName: string; version: number } };
 type InventoryItem = { id: string; content: string; source: string; deliveredAt?: string | null };
 type Order = { id: string; orderNumber: string; invoiceNumber: string; status: string; totalCents: number; currency: string; createdAt: string; canOpenDispute?: boolean; disputeDeadline?: string; disputeWindowHours?: number; payment?: { method: string; status: string }; items: Array<{ id: string; productName: string; product: { slug: string; type: string; coverImageUrl?: string; afterSalesServiceHours?: number }; downloadGrants: Grant[]; inventoryItems?: InventoryItem[] }>; refunds: Array<{ status: string }>; disputes: Array<{ id?: string; status: string; subject?: string; refundDemanded?: boolean }> };
 
@@ -92,7 +92,6 @@ const buyerMenuGroups: Array<{ label: string; items: Array<{ tab: Tab; label: st
 
 function roleDashboardRedirect(role: string) {
   if (STAFF_ROLES.some((staffRole) => staffRole === role)) return "/admin";
-  if (role === "SELLER") return "/seller";
   return null;
 }
 
@@ -132,6 +131,8 @@ export function AccountDashboardPage() {
   const [sellerDisputes, setSellerDisputes] = useState<any[]>([]);
   const [sellerFinance, setSellerFinance] = useState<SellerFinance | null>(null);
   const [loading, setLoading] = useState(true);
+  const [dataIssue, setDataIssue] = useState("");
+  const [dashboardQuery, setDashboardQuery] = useState("");
   const [message, setMessage] = useState("");
   const [walletBalance, setWalletBalance] = useState(user?.balanceCents ?? 0);
   const userId = user?.id;
@@ -141,25 +142,45 @@ export function AccountDashboardPage() {
   const purchasedItems = useMemo(() => orders.flatMap((order) => order.items.map((item) => ({ order, item }))), [orders]);
   const deliveredItems = useMemo(() => purchasedItems.filter(({ item }) => Boolean(item.inventoryItems?.length)), [purchasedItems]);
   const availableFileCount = downloads.length + deliveredItems.length;
-  const totalSpent = useMemo(() => orders.reduce((sum, o) => sum + o.totalCents, 0), [orders]);
-  const activeOrders = useMemo(() => orders.filter((o) => !["COMPLETED", "CANCELLED", "REFUNDED"].includes(o.status)).length, [orders]);
+  const totalSpent = useMemo(() => orders.filter((order) => !["AWAITING_PAYMENT", "CANCELLED", "REFUNDED"].includes(order.status)).reduce((sum, order) => sum + order.totalCents, 0), [orders]);
+  const activeOrders = useMemo(() => orders.filter((order) => ["PAID", "PROCESSING", "DISPUTED"].includes(order.status)).length, [orders]);
+  const normalizedQuery = dashboardQuery.trim().toLowerCase();
   const visibleOrders = useMemo(() => {
-    if (tab === "active-orders") return orders.filter((order) => !["COMPLETED", "CANCELLED", "REFUNDED"].includes(order.status));
-    if (tab === "completed-orders") return orders.filter((order) => ["COMPLETED", "DELIVERED"].includes(order.status));
-    if (tab === "pending-orders") return orders.filter((order) => ["PENDING", "PENDING_PAYMENT", "PAID", "PROCESSING"].includes(order.status));
-    if (tab === "cancelled-orders") return orders.filter((order) => ["CANCELLED", "REFUNDED"].includes(order.status));
-    return orders;
-  }, [orders, tab]);
+    let result = orders;
+    if (tab === "active-orders") result = orders.filter((order) => ["PAID", "PROCESSING", "DISPUTED"].includes(order.status));
+    if (tab === "completed-orders") result = orders.filter((order) => ["COMPLETED", "DELIVERED"].includes(order.status));
+    if (tab === "pending-orders") result = orders.filter((order) => ["AWAITING_PAYMENT", "PAID", "PROCESSING"].includes(order.status));
+    if (tab === "cancelled-orders") result = orders.filter((order) => ["CANCELLED", "REFUNDED"].includes(order.status));
+    if (!normalizedQuery) return result;
+    return result.filter((order) => `${order.orderNumber} ${order.invoiceNumber} ${order.status} ${order.items.map((item) => item.productName).join(" ")}`.toLowerCase().includes(normalizedQuery));
+  }, [normalizedQuery, orders, tab]);
 
-  useEffect(() => {
-    void Promise.all([
-      apiRequest<{ orders: Order[] }>("/api/commerce/orders").then((d) => setOrders(d.orders)).catch(() => undefined),
-      apiRequest<{ tickets: Ticket[] }>("/api/commerce/tickets").then((d) => setTickets(d.tickets)).catch(() => undefined),
-      apiRequest<{ reviews: Review[] }>("/api/commerce/reviews").then((d) => setReviews(d.reviews)).catch(() => undefined),
-      apiRequest<{ chats: Chat[] }>("/api/commerce/chats").then((d) => setChats(d.chats)).catch(() => undefined),
-      apiRequest<{ disputes: Dispute[] }>("/api/commerce/disputes").then((d) => setDisputes(d.disputes)).catch(() => undefined),
-    ]).finally(() => setLoading(false));
+  const dashboardMatches = useMemo(() => {
+    if (!normalizedQuery) return [];
+    return [
+      ...orders.filter((order) => `${order.orderNumber} ${order.invoiceNumber} ${order.items.map((item) => item.productName).join(" ")}`.toLowerCase().includes(normalizedQuery)).slice(0, 4).map((order) => ({ key: order.id, tab: "orders" as Tab, label: order.orderNumber, detail: order.items.map((item) => item.productName).join(", "), icon: ShoppingBag })),
+      ...chats.filter((chat) => `${chat.orderNumber} ${chat.items.map((item) => item.productName).join(" ")}`.toLowerCase().includes(normalizedQuery)).slice(0, 3).map((chat) => ({ key: chat.id, tab: "messages" as Tab, label: chat.orderNumber, detail: "Order conversation", icon: MessageSquare })),
+      ...disputes.filter((dispute) => `${dispute.subject} ${dispute.order.orderNumber}`.toLowerCase().includes(normalizedQuery)).slice(0, 3).map((dispute) => ({ key: dispute.id, tab: "disputes" as Tab, label: dispute.subject, detail: dispute.order.orderNumber, icon: Gavel })),
+      ...tickets.filter((ticket) => `${ticket.ticketNumber} ${ticket.subject}`.toLowerCase().includes(normalizedQuery)).slice(0, 3).map((ticket) => ({ key: ticket.id, tab: "tickets" as Tab, label: ticket.subject, detail: ticket.ticketNumber, icon: Headphones }))
+    ].slice(0, 8);
+  }, [chats, disputes, normalizedQuery, orders, tickets]);
+
+  const loadBuyerData = useCallback(async () => {
+    setLoading(true);
+    setDataIssue("");
+    const results = await Promise.allSettled([
+      apiRequest<{ orders: Order[] }>("/api/commerce/orders").then((data) => setOrders(data.orders)),
+      apiRequest<{ tickets: Ticket[] }>("/api/commerce/tickets").then((data) => setTickets(data.tickets)),
+      apiRequest<{ reviews: Review[] }>("/api/commerce/reviews").then((data) => setReviews(data.reviews)),
+      apiRequest<{ chats: Chat[] }>("/api/commerce/chats").then((data) => setChats(data.chats)),
+      apiRequest<{ disputes: Dispute[] }>("/api/commerce/disputes").then((data) => setDisputes(data.disputes))
+    ]);
+    const failures = results.filter((result) => result.status === "rejected").length;
+    if (failures) setDataIssue(failures === results.length ? "Your dashboard could not be loaded." : "Some dashboard sections could not be refreshed.");
+    setLoading(false);
   }, []);
+
+  useEffect(() => { void loadBuyerData(); }, [loadBuyerData]);
 
   useEffect(() => {
     if (!userId) return;
@@ -342,7 +363,7 @@ export function AccountDashboardPage() {
       <section className="dashboard-main">
         <div className="dashboard-command-bar">
           <button className="buyer-mobile-menu" aria-label="Open buyer menu" onClick={() => setDrawerOpen(true)}><Menu /></button>
-          <label><Search size={16} /><input aria-label="Search dashboard" placeholder="Search orders, products, disputes…" /></label>
+          <label><Search size={16} /><input aria-label="Search dashboard" value={dashboardQuery} onChange={(event) => setDashboardQuery(event.target.value)} placeholder="Search orders, messages, disputes…" />{dashboardQuery ? <button type="button" aria-label="Clear search" onClick={() => setDashboardQuery("")}><X size={15} /></button> : null}</label>
           <div>
             <span className="buyer-sync-pill"><i /> ACCOUNT</span>
             <LocaleSwitcher />
@@ -350,7 +371,9 @@ export function AccountDashboardPage() {
             <Link className="account-switcher" to="/sign-out" title="Open sign-out page"><span>{user.firstName[0]}{user.lastName[0]}</span><b>{user.firstName}</b><LogOut size={15} /></Link>
           </div>
         </div>
+        {dashboardQuery ? <div className="buyer-command-results" role="region" aria-label="Dashboard search results">{dashboardMatches.length ? dashboardMatches.map((result) => { const Icon = result.icon; return <button type="button" key={`${result.tab}-${result.key}`} onClick={() => { selectTab(result.tab); setDashboardQuery(""); }}><Icon /><span><strong>{result.label}</strong><small>{result.detail}</small></span><ArrowRight /></button>; }) : <p><Search /> No dashboard records match “{dashboardQuery}”.</p>}</div> : null}
         {message ? <div className="dashboard-message" onClick={() => setMessage("")}>{message} <small>(click to dismiss)</small></div> : null}
+        {dataIssue ? <div className="dashboard-load-warning" role="alert"><ShieldAlert /><span><strong>{dataIssue}</strong><small>Your existing records have not been changed.</small></span><button type="button" onClick={() => void loadBuyerData()} disabled={loading}><RefreshCw /> {loading ? "Retrying…" : "Retry"}</button></div> : null}
 
         {tab === "overview" && (
           <div className="tab-content overview-tab">
@@ -524,8 +547,13 @@ export function AccountDashboardPage() {
 
             {tab === "downloads" && ((downloads.length || deliveredItems.length) ? (
               <div className="downloads-grid buyer-library-grid">
-                {downloads.map(({ order, item, grant }) => (
-                  <a href={apiDownloadUrl(`/api/commerce/downloads/${grant.id}`)} className="download-card" key={grant.id}>
+                {downloads.map(({ order, item, grant }) => {
+                  const unavailable = Boolean(grant.revokedAt) || grant.downloadCount >= grant.maxDownloads || new Date(grant.expiresAt).getTime() <= Date.now();
+                  return unavailable ? <article className="download-card download-unavailable" key={grant.id} aria-label={`${item.productName} download unavailable`}>
+                    <div className="dc-icon"><BuyerMedia src={item.product.coverImageUrl} alt={item.productName} fallback={<Download size={26} />} /></div>
+                    <div className="dc-info"><span className="buyer-library-badge">UNAVAILABLE</span><strong>{item.productName}</strong><small>{grant.productFile.displayName} · v{grant.productFile.version}</small><small>{grant.revokedAt ? "Access was revoked" : grant.downloadCount >= grant.maxDownloads ? "Download limit reached" : "Download link expired"}</small></div>
+                    <span className="buyer-download-button disabled"><LockKeyhole size={15} /> Unavailable</span>
+                  </article> : <a href={apiDownloadUrl(`/api/commerce/downloads/${grant.id}`)} className="download-card" key={grant.id}>
                     <div className="dc-icon"><BuyerMedia src={item.product.coverImageUrl} alt={item.productName} fallback={<Download size={26} />} /></div>
                     <div className="dc-info">
                       <span className="buyer-library-badge">PURCHASED</span>
@@ -536,8 +564,8 @@ export function AccountDashboardPage() {
                       {grant.expiresAt ? <small className="download-expiry">Expires {new Date(grant.expiresAt).toLocaleDateString()}</small> : null}
                     </div>
                     <span className="buyer-download-button"><Download size={15} /> Download</span>
-                  </a>
-                ))}
+                  </a>;
+                })}
                 {deliveredItems.map(({ order, item }) => (
                   <article className="download-card protected-download-card" key={`delivery-${item.id}`}>
                     <div className="dc-icon"><BuyerMedia src={item.product.coverImageUrl} alt={item.productName} fallback={<ShieldCheck size={26} />} /></div>
@@ -687,9 +715,9 @@ export function AccountDashboardPage() {
 
         {tab === "notifications" && (
           <div className="tab-content buyer-notification-center">
-            <header className="tab-header"><span className="section-index">NOTIFICATION CENTER</span><h1>Your notifications</h1><p>Order, message, refund and support updates grouped by recency.</p></header>
-            <div className="buyer-notification-toolbar"><button>All updates</button><button>Orders</button><button>Messages</button><button type="button">Mark all as read</button></div>
-            <section><h2>Today</h2>{activeOrders ? <article><span className="blue"><ShoppingBag /></span><div><strong>{activeOrders} active order{activeOrders === 1 ? "" : "s"}</strong><p>Track delivery progress or open the protected order conversation.</p><small>Live order update</small></div><i /></article> : null}{chats.length ? <article><span className="purple"><MessageSquare /></span><div><strong>{chats.length} seller conversation{chats.length === 1 ? "" : "s"}</strong><p>Your order-linked messages are available in Seller Chat.</p><small>Messages</small></div><i /></article> : null}{tickets.filter((ticket) => !["CLOSED", "RESOLVED"].includes(ticket.status)).length ? <article><span className="amber"><TicketCheck /></span><div><strong>Support ticket update</strong><p>You have an open support request awaiting progress.</p><small>Support</small></div><i /></article> : null}<article><span className="green"><ShieldCheck /></span><div><strong>Your buyer account is protected</strong><p>Wallet, order delivery and dispute records are secured.</p><small>System update</small></div></article></section>
+            <header className="tab-header"><span className="section-index">ACTION CENTER</span><h1>What needs your attention</h1><p>Current order, conversation, dispute, and support signals calculated from your account records.</p></header>
+            <div className="buyer-notification-toolbar"><button type="button" onClick={() => void loadBuyerData()} disabled={loading}><RefreshCw /> {loading ? "Refreshing…" : "Refresh activity"}</button></div>
+            <section><h2>Current activity</h2>{activeOrders ? <article><span className="blue"><ShoppingBag /></span><div><strong>{activeOrders} active order{activeOrders === 1 ? "" : "s"}</strong><p>Track delivery progress or open the protected order conversation.</p><small>Live order state</small></div><button type="button" onClick={() => selectTab("active-orders")}>View</button></article> : null}{chats.length ? <article><span className="purple"><MessageSquare /></span><div><strong>{chats.length} seller conversation{chats.length === 1 ? "" : "s"}</strong><p>Your order-linked messages are available in Messages.</p><small>Order conversations</small></div><button type="button" onClick={() => selectTab("messages")}>View</button></article> : null}{disputes.filter((dispute) => !["CLOSED", "RESOLVED_BUYER", "RESOLVED_SELLER"].includes(dispute.status)).length ? <article><span className="amber"><Gavel /></span><div><strong>Open dispute activity</strong><p>Review case status and any response deadline.</p><small>Buyer protection</small></div><button type="button" onClick={() => selectTab("disputes")}>View</button></article> : null}{tickets.filter((ticket) => !["CLOSED", "RESOLVED"].includes(ticket.status)).length ? <article><span className="amber"><TicketCheck /></span><div><strong>Open support request</strong><p>Review the latest ticket conversation and status.</p><small>Support</small></div><button type="button" onClick={() => selectTab("tickets")}>View</button></article> : null}{!activeOrders && !chats.length && !disputes.filter((dispute) => !["CLOSED", "RESOLVED_BUYER", "RESOLVED_SELLER"].includes(dispute.status)).length && !tickets.filter((ticket) => !["CLOSED", "RESOLVED"].includes(ticket.status)).length ? <div className="seller-all-caught"><CheckCircle2 /><strong>You’re all caught up</strong><p>No order or support action is waiting.</p></div> : null}</section>
           </div>
         )}
 
@@ -918,7 +946,7 @@ export function AccountDashboardPage() {
             </div> : null}
             {tab === "security" ? <div className="buyer-security-grid"><article><span><BadgeCheck /></span><div><small>IDENTITY</small><h3>Email verification</h3><p>{user.emailVerified ? "Your email address is verified." : "Verify your email to strengthen account recovery."}</p></div><b className={`status-pill ${user.emailVerified ? "completed" : "pending"}`}>{user.emailVerified ? "VERIFIED" : "PENDING"}</b></article><article><span><LockKeyhole /></span><div><small>PASSWORD</small><h3>Password protection</h3><p>Your password and reset flow remain protected by the existing authentication system.</p></div><Link to="/forgot-password">Manage <ArrowRight /></Link></article><article><span><Smartphone /></span><div><small>SESSIONS</small><h3>Trusted session</h3><p>This device uses secure, refreshable account sessions.</p></div><b className="status-pill completed">ACTIVE</b></article><article><span><ShieldCheck /></span><div><small>PRIVACY</small><h3>Buyer protection</h3><p>Orders, delivery records and disputes are retained for account protection.</p></div><Link to="/privacy">Review <ArrowRight /></Link></article></div> : null}
             {tab === "addresses" ? <div className="buyer-account-empty"><MapPin /><h2>Saved addresses</h2><p>Digital orders do not require a shipping address. Your country and city remain available in Profile.</p><button onClick={() => selectTab("profile")}>View profile <ArrowRight /></button></div> : null}
-            {tab === "payment-methods" ? <div className="buyer-payment-methods"><article><span><Wallet /></span><div><small>PRIMARY PAYMENT</small><h3>Marketplace wallet</h3><p>Available balance: {formatMoney(walletBalance)}</p></div><button onClick={() => selectTab("wallet")}>Top up <ArrowRight /></button></article><article><span><Bitcoin /></span><div><small>SUPPORTED TOP-UP</small><h3>Crypto networks</h3><p>USDT TRC20, BEP20, ERC20, Bitcoin, Ethereum and Solana.</p></div><button onClick={() => selectTab("wallet")}>Choose network <ArrowRight /></button></article></div> : null}
+            {tab === "payment-methods" ? <div className="buyer-payment-methods"><article><span><Wallet /></span><div><small>PRIMARY PAYMENT</small><h3>Marketplace wallet</h3><p>Available balance: {formatMoney(walletBalance)}</p></div><button onClick={() => selectTab("wallet")}>Top up <ArrowRight /></button></article><article><span><Bitcoin /></span><div><small>VERIFIED TOP-UP</small><h3>Configured crypto networks</h3><p>Only payment networks and destination addresses configured by marketplace administration are shown.</p></div><button onClick={() => selectTab("wallet")}>View availability <ArrowRight /></button></article></div> : null}
             {tab === "preferences" ? <div className="buyer-preference-list"><article><div><Bell /><span><strong>Order updates</strong><small>Keep delivery and payment progress visible.</small></span></div><b>Enabled</b></article><article><div><MessageSquare /><span><strong>Seller messages</strong><small>Show alerts for protected order conversations.</small></span></div><b>Enabled</b></article><article><div><Sparkles /><span><strong>Marketplace recommendations</strong><small>Display useful discovery sections in your dashboard.</small></span></div><b>Enabled</b></article><article><div><SlidersHorizontal /><span><strong>Responsive display</strong><small>Comfortable spacing automatically follows your device.</small></span></div><b>Automatic</b></article></div> : null}
           </div>
         )}
@@ -948,7 +976,7 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, m
   const [frozenBalance, setFrozenBalance] = useState(0);
   const [pendingWithdrawalCents, setPendingWithdrawalCents] = useState(0);
   const [busy, setBusy] = useState(false);
-  const [depositMethod, setDepositMethod] = useState("CRYPTO_TRC20");
+  const [depositMethod, setDepositMethod] = useState("");
   const [depositAmount, setDepositAmount] = useState("");
   const [activeTopup, setActiveTopup] = useState<Deposit | null>(null);
   const [proofTx, setProofTx] = useState("");
@@ -979,7 +1007,10 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, m
     setWithdrawals(summary.withdrawals ?? []);
     onBalanceChange(summary.availableBalanceCents ?? summary.balanceCents);
     setDeposits(depositHistory.deposits);
-    if (methodData.methods.length) setTopupMethods(methodData.methods);
+    setTopupMethods(methodData.methods);
+    setDepositMethod((current) => methodData.methods.some((method) => method.method === current)
+      ? current
+      : methodData.methods[0]?.method ?? "");
   }, [onBalanceChange]);
 
   useEffect(() => {
@@ -989,6 +1020,12 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, m
   }, [refreshWallet]);
 
   async function submitDeposit() {
+    if (!depositMethod || !topupMethods.some((method) => method.method === depositMethod)) {
+      const text = "Top-up methods are not configured yet. No payment has been created.";
+      setTopupFeedback({ kind: "error", text });
+      setMessage(text);
+      return;
+    }
     const cents = Math.round(parseFloat(depositAmount) * 100);
     if (!cents || cents < 100 || cents > 500000) {
       const text = "Enter an amount between $1.00 and $5,000.00.";
@@ -1081,15 +1118,12 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, m
     }
   }
 
-  const methods = [
-    { value: "CRYPTO_TRC20", label: "USDT · TRC20", icon: Bitcoin, network: "Tron network", address: "TDffsBmuyrMsNEQXzzLYfzAwz7W6Jmvb1W" },
-    { value: "CRYPTO_BEP20", label: "USDT · BEP20", icon: Bitcoin, network: "BNB Smart Chain", address: "0x5fe0bc617b00812396560e00a47b68a4d19933df" },
-    { value: "CRYPTO_ERC20", label: "USDT · ERC20", icon: Bitcoin, network: "Ethereum network", address: "0x5fe0bc617b00812396560e00a47b68a4d19933df" },
-    { value: "BTC", label: "Bitcoin · BTC", icon: Bitcoin, network: "Bitcoin network", address: "1CRoGe5BKjSTYBjxjPaS5NRCP8eyZ8cSpA" },
-    { value: "ETH", label: "Ethereum · ERC20", icon: DollarSign, network: "Ethereum network", address: "0x5fe0bc617b00812396560e00a47b68a4d19933df" },
-    { value: "SOL", label: "Solana · SOL", icon: Smartphone, network: "Solana network", address: "5K8sYDqmmMDeVMDcJjzmwdX2MGMwqCeNNnpDd82tXdf" }
-  ].map((method) => ({ ...method, ...(topupMethods.find((item) => item.method === method.value) ?? {}) }));
-  const selectedMethod = methods.find((method) => method.value === depositMethod) ?? methods[0];
+  const methods = topupMethods.map((method) => ({
+    ...method,
+    value: method.method,
+    icon: ["BTC", "CRYPTO_TRC20", "CRYPTO_BEP20", "CRYPTO_ERC20"].includes(method.method) ? Bitcoin : method.method === "SOL" ? Smartphone : DollarSign
+  }));
+  const selectedMethod = methods.find((method) => method.value === depositMethod) ?? null;
   const chains = ["TRC20 USDT", "ERC20 USDT", "BEP20 USDT", "BTC", "ETH", "SOL", "TON", "Polygon USDT"];
 
   return (
@@ -1143,7 +1177,7 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, m
         <div className="wallet-deposit-form">
           <h2>Crypto top-up</h2>
           <p>Choose one network only. The verified destination address is shown immediately below.</p>
-          <div className="deposit-method-tabs">
+          {methods.length ? <div className="deposit-method-tabs">
             {methods.map((m) => {
               const Icon = m.icon;
               return (
@@ -1157,12 +1191,12 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, m
                 </button>
               );
             })}
-          </div>
-          <div className="topup-network-address">
+          </div> : <div className="dashboard-empty compact" role="status"><ShieldAlert /><h3>Top-up is temporarily unavailable</h3><p>No verified payment destination is configured. Please return later or contact support—do not send funds to an address from another source.</p></div>}
+          {selectedMethod ? <div className="topup-network-address">
             <span><Bitcoin /><small>SELECTED PAYMENT ADDRESS</small><strong>{selectedMethod.label}</strong><b>{selectedMethod.network}</b></span>
             <code>{selectedMethod.address}</code>
             <button type="button" onClick={() => void navigator.clipboard?.writeText(selectedMethod.address)}><ClipboardCopy /> Copy address</button>
-          </div>
+          </div> : null}
           <div className="deposit-input-row">
             <div className="field">
               <span>Amount (USD)</span>
@@ -1176,7 +1210,7 @@ function WalletTabContent({ user, setMessage, initialBalance, onBalanceChange, m
                 onChange={(e) => setDepositAmount(e.target.value)}
               />
             </div>
-            <button type="button" className="primary-button" disabled={busy} onClick={() => void submitDeposit()}>
+            <button type="button" className="primary-button" disabled={busy || !selectedMethod} onClick={() => void submitDeposit()}>
               <PlusCircle size={16} /> {busy ? "Creating…" : "Create payment"}
             </button>
           </div>

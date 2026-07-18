@@ -338,7 +338,7 @@ export async function completePayment(orderId: string, approvedById?: string) {
         completedAt: autoDeliver ? paidAt : undefined
       }
     });
-    await createSellerEarningsForOrderItems(tx, order.items.map((item) => ({ id: item.id, sellerId: item.sellerId, totalCents: item.totalCents })), paidAt);
+    await createSellerEarningsForOrderItems(tx, order.id, order.totalCents, order.items.map((item) => ({ id: item.id, sellerId: item.sellerId, totalCents: item.totalCents })), paidAt);
     for (const item of order.items) {
       await tx.product.update({ where: { id: item.productId }, data: { salesCount: { increment: item.quantity } } });
       await tx.sellerProfile.updateMany({ where: { userId: item.sellerId }, data: { totalSales: { increment: item.quantity } } });

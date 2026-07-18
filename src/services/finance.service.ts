@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma.js";
+import { env } from "../config/env.js";
 import { ApiError } from "../middleware/error-handler.js";
 
 const HOLD_DAYS = 3;
@@ -34,19 +35,38 @@ export async function releaseAvailableSellerEarnings(userId?: string) {
   return { releasedCount: earnings.length, releasedCents: earnings.reduce((sum: number, earning: any) => sum + earning.netCents, 0) };
 }
 
-export async function createSellerEarningsForOrderItems(tx: any, items: Array<{ id: string; sellerId: string; totalCents: number }>, paidAt: Date) {
+export async function createSellerEarningsForOrderItems(tx: any, orderId: string, paidTotalCents: number, items: Array<{ id: string; sellerId: string; totalCents: number }>, paidAt: Date) {
   const availableAt = sellerFundsAvailableAt(paidAt);
-  for (const item of items) {
+  const itemSubtotalCents = items.reduce((sum, item) => sum + item.totalCents, 0);
+  let allocatedCents = 0;
+  for (const [index, item] of items.entries()) {
+    const grossCents = index === items.length - 1
+      ? Math.max(0, paidTotalCents - allocatedCents)
+      : Math.max(0, Math.min(paidTotalCents - allocatedCents, Math.round(paidTotalCents * item.totalCents / Math.max(1, itemSubtotalCents))));
+    allocatedCents += grossCents;
+    const platformFeeCents = Math.round(grossCents * env.COMMISSION_SALE_PERCENT / 100);
+    const netCents = grossCents - platformFeeCents;
     await tx.sellerEarning.upsert({
       where: { orderItemId: item.id },
       create: {
         sellerId: item.sellerId,
         orderItemId: item.id,
-        grossCents: item.totalCents,
-        platformFeeCents: 0,
-        netCents: item.totalCents,
+        grossCents,
+        platformFeeCents,
+        netCents,
         status: "FROZEN",
         availableAt
+      },
+      update: {}
+    });
+    await tx.adminTransaction.upsert({
+      where: { type_reference: { type: "COMMISSION_SALE", reference: item.id } },
+      create: {
+        type: "COMMISSION_SALE",
+        amountCents: platformFeeCents,
+        description: `${env.COMMISSION_SALE_PERCENT}% marketplace fee`,
+        reference: item.id,
+        orderId
       },
       update: {}
     });

@@ -3,7 +3,6 @@ import {
   ArrowRight,
   BadgeCheck,
   Bot,
-  Check,
   ChevronDown,
   Clock3,
   Cloud,
@@ -573,7 +572,7 @@ function ProductCard({ product }: { product: Product }) {
 export function MarketplaceHomePage() {
   const { user } = useAuth();
   const { count } = useCart();
-  const { t } = useLocale();
+  const { t, formatMoney } = useLocale();
   const navigate = useNavigate();
   const liveCatalogProducts = useMarketplaceProducts();
   const marketplaceCategories = useMarketplaceCategories();
@@ -725,6 +724,9 @@ export function MarketplaceHomePage() {
   const mainCategories = categories.filter((category) => ["gaming", "social-media-marketplace", "email-accounts-marketplace", "ai-marketplace", "software-marketplace", "digital-goods-marketplace", "professional-services"].includes(category.slug ?? "")).slice(0, 7);
   const focusedCategory = mainCategories.find((category) => category.name === browseCategory) ?? mainCategories[0] ?? categories[0];
   const featuredSellers = approvedStores.length ? approvedStores.slice(0,8).map((store,index)=>({slug:store.slug,name:store.name,mark:store.mark,focus:store.about,status:"Admin approved",response:store.sales?`${store.sales.toLocaleString()} sales`:"New verified store",accent:["purple","indigo","blue","orange"][index%4],logoUrl:store.logoUrl})) : fallbackSellers;
+  const heroProduct = displayProducts.find((product) => product.imageUrl) ?? displayProducts[0];
+  const HeroProductIcon = heroProduct?.icon ?? Bot;
+  const heroProductPath = heroProduct?.slug ? `/products/${heroProduct.slug}` : `/catalog?q=${encodeURIComponent(heroProduct?.title ?? "")}`;
 
   return (
     <main className="lux-home">
@@ -987,19 +989,15 @@ export function MarketplaceHomePage() {
           <div className="hero-orb orb-one" />
           <div className="hero-orb orb-two" />
           <article className="hero-feature-card">
-            <span className="hero-card-label">FEATURED DROP</span>
-            <div className="hero-feature-art">
-              <Bot size={74} />
-              <span>AI</span>
+            <span className="hero-card-label">MARKETPLACE PICK</span>
+            <div className={`hero-feature-art ${heroProduct?.imageUrl ? "has-image" : ""}`}>
+              {heroProduct?.imageUrl ? <img src={heroProduct.imageUrl} alt="" /> : <HeroProductIcon size={74} />}
+              <span>{heroProduct ? heroProduct.category.split(" /")[heroProduct.category.split(" /").length - 1]?.slice(0, 3).toUpperCase() : "NEW"}</span>
             </div>
-            <h2>
-              Work smarter.
-              <br />
-              Create faster.
-            </h2>
-            <p>Premium AI tools from verified sellers.</p>
-            <Link to="/catalog?category=ai-marketplace">
-              Explore AI tools <ArrowRight size={16} />
+            <h2>{heroProduct?.title ?? "Explore digital tools and expert services."}</h2>
+            <p>{heroProduct ? `${heroProduct.seller} · ${formatMoney(Math.round(heroProduct.price * 100))} · ${heroProduct.delivery}` : "Compare clear product details and seller terms."}</p>
+            <Link to={heroProductPath}>
+              {heroProduct ? "View product" : "Explore marketplace"} <ArrowRight size={16} />
             </Link>
           </article>
           <div className="floating-review">
@@ -1010,10 +1008,10 @@ export function MarketplaceHomePage() {
             <small>Clear listings. Reviewed sellers.</small>
           </div>
           <div className="floating-order">
-            <Check size={16} />
+            <Store size={16} />
             <span>
-              <strong>Order delivered</strong>
-              <small>in 2 minutes</small>
+              <strong>{approvedStores.length ? `${approvedStores.length} approved stores` : "Approved sellers"}</strong>
+              <small>{liveCatalogProducts.length ? `${liveCatalogProducts.length} live listings` : "Browse the live catalog"}</small>
             </span>
           </div>
         </div>
@@ -1048,6 +1046,13 @@ export function MarketplaceHomePage() {
             <small>Help whenever you need it</small>
           </span>
         </div>
+      </section>
+
+      <section className="lux-market-pulse" aria-label="Marketplace at a glance">
+        <div><small>LIVE CATALOG</small><strong>{liveCatalogProducts.length || "Explore"}</strong><span>{liveCatalogProducts.length ? "approved listings" : "current listings"}</span></div>
+        <div><small>DEPARTMENTS</small><strong>{marketplaceCategories.filter((category) => !category.parentId).length || categories.length}</strong><span>organized paths</span></div>
+        <div><small>SELLER NETWORK</small><strong>{approvedStores.length || "Reviewed"}</strong><span>{approvedStores.length ? "approved stores" : "seller profiles"}</span></div>
+        <div className="pulse-action"><ShieldCheck /><span><strong>Order-linked confidence</strong><small>Delivery, messages, support, and disputes stay attached to the purchase.</small></span><Link to="/support">How protection works <ArrowRight /></Link></div>
       </section>
 
       <section className="lux-section" id="categories">

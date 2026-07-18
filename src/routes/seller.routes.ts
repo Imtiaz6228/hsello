@@ -586,7 +586,7 @@ sellerRouter.get("/orders", requireSeller, asyncHandler(async (req, res) => {
     where: { sellerId: req.auth!.id },
     orderBy: { order: { createdAt: "desc" } },
     include: {
-      order: { include: { payment: true, buyer: { select: { firstName: true, lastName: true, email: true } }, messages: { orderBy: { createdAt: "desc" }, take: 1 }, disputes: { orderBy: { createdAt: "desc" }, take: 1 } } },
+      order: { include: { payment: true, buyer: { select: { firstName: true, lastName: true, email: true } }, messages: { orderBy: { createdAt: "desc" }, take: 1 }, disputes: { orderBy: { createdAt: "desc" }, take: 1 }, refunds: { orderBy: { createdAt: "desc" } } } },
       product: true,
       sellerEarning: true,
       inventoryItems: { where: { isActive: true }, select: { id: true, content: true, source: true, deliveredAt: true } }

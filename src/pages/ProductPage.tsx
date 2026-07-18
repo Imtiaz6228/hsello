@@ -9,7 +9,9 @@ import {
   Globe2,
   Layers3,
   MessageCircle,
+  Minus,
   PackageCheck,
+  Plus,
   RefreshCw,
   ShieldCheck,
   ShoppingBag,
@@ -34,6 +36,7 @@ export function ProductPage() {
   const [added, setAdded] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
   const [artMode, setArtMode] = useState<"cover" | "contents" | "license">("cover");
+  const [quantity, setQuantity] = useState(1);
   const { product, loading } = useMarketplaceProduct(slug);
   const marketplaceProducts = useMarketplaceProducts();
   const relatedProducts = useMemo(() => marketplaceProducts.filter((item) => item.id !== product?.id && (item.categorySlug === product?.categorySlug || item.type === product?.type)).slice(0, 4), [marketplaceProducts, product]);
@@ -73,7 +76,7 @@ export function ProductPage() {
   if (!product) return <Navigate to="/catalog" replace />;
 
   function addToCart() {
-    add(product!);
+    for (let index = 0; index < effectiveQuantity; index += 1) add(product!);
     setAdded(true);
     navigate("/cart");
   }
@@ -87,6 +90,11 @@ export function ProductPage() {
     ? ["Primary digital product files", "Setup and usage guide", "Future file corrections"]
     : ["Seller-delivered project scope", "Written delivery summary", "Order-linked revision window"]);
   const formats = product.formats ?? (product.type === "DOWNLOAD" ? ["Digital files", "PDF guide"] : ["Protected order delivery"]);
+  const minimumQuantity = Math.max(1, product.minimumOrder ?? 1);
+  const maximumQuantity = Math.max(minimumQuantity, Math.min(product.maximumOrder ?? 20, product.type === "SERVICE" ? 20 : product.stockCount ?? 0));
+  const effectiveQuantity = Math.min(maximumQuantity, Math.max(minimumQuantity, quantity));
+  const available = product.type === "SERVICE" || (product.stockCount ?? 0) > 0;
+  const requirementFacts = Object.entries(product.facts ?? {}).slice(0, 4);
 
   return (
     <main className="commerce-page">
@@ -190,9 +198,11 @@ export function ProductPage() {
           <span>One-time purchase</span>
           <strong>{formatMoney(product.priceCents)}</strong>
           <small>{currency} display · charged from the USD base price</small>
-          <button type="button" onClick={addToCart}>
+          <div className={`product-availability ${available ? "available" : "unavailable"}`}><i />{available ? product.type === "SERVICE" ? "Available to order" : `${product.stockCount} delivery ${product.stockCount === 1 ? "unit" : "units"} available` : "Currently unavailable"}</div>
+          {available && (maximumQuantity > 1 || minimumQuantity > 1) ? <div className="product-quantity"><span><strong>Quantity</strong><small>{minimumQuantity > 1 ? `Minimum ${minimumQuantity}` : `Maximum ${maximumQuantity}`}</small></span><div><button type="button" aria-label="Decrease quantity" disabled={effectiveQuantity <= minimumQuantity} onClick={() => setQuantity(effectiveQuantity - 1)}><Minus /></button><input aria-label="Quantity" type="number" min={minimumQuantity} max={maximumQuantity} value={effectiveQuantity} onChange={(event) => setQuantity(Number(event.target.value) || minimumQuantity)} /><button type="button" aria-label="Increase quantity" disabled={effectiveQuantity >= maximumQuantity} onClick={() => setQuantity(effectiveQuantity + 1)}><Plus /></button></div></div> : null}
+          <button type="button" onClick={addToCart} disabled={!available}>
             {added ? <Check /> : <ShoppingBag />}
-            {added ? "Added to cart" : "Add to cart"}
+            {available ? added ? "Added to cart" : "Continue to cart" : "Unavailable"}
           </button>
           <Link to="/cart">View cart</Link>
           <ul>
@@ -207,6 +217,17 @@ export function ProductPage() {
             </li>
           </ul>
         </aside>
+      </section>
+
+      <section className="product-market-brief">
+        <header><span className="section-index">PURCHASE BRIEF</span><h2>Know the handoff before checkout.</h2><p>Everything important is summarized here so the order starts with shared expectations.</p></header>
+        <div className="product-journey">
+          <article><b>01</b><span><strong>Review the listing</strong><small>Confirm scope, format, license, and any product-specific requirements.</small></span></article>
+          <article><b>02</b><span><strong>Place the order</strong><small>Payment confirmation and your invoice remain attached to the order record.</small></span></article>
+          <article><b>03</b><span><strong>Receive delivery</strong><small>{product.delivery}. Downloads or seller delivery remain available from your buyer workspace.</small></span></article>
+          <article><b>04</b><span><strong>Get contextual support</strong><small>Message the seller or open a case within the {product.afterSalesServiceHours ?? 12}-hour after-sales window.</small></span></article>
+        </div>
+        <aside><ShieldCheck /><div><small>BEFORE YOU CONTINUE</small><strong>{requirementFacts.length ? "Confirm these listing details" : "This listing has no extra prerequisites"}</strong>{requirementFacts.length ? <ul>{requirementFacts.map(([label, value]) => <li key={label}><span>{label.replace(/([A-Z])/g, " $1")}</span><b>{String(value)}</b></li>)}</ul> : <p>Review the included files and license above, then continue when the product fits your intended use.</p>}</div></aside>
       </section>
 
       <section className="product-information-grid">
@@ -272,6 +293,7 @@ export function ProductPage() {
         </div>
         <Link to={user ? "/support" : "/sign-in"}>Report product</Link>
       </section>
+      <div className="product-mobile-purchase"><span><small>{available ? product.delivery : "Unavailable"}</small><strong>{formatMoney(product.priceCents)}</strong></span><button type="button" disabled={!available} onClick={addToCart}><ShoppingBag /> {available ? "Continue" : "Unavailable"}</button></div>
       <MarketFooter />
     </main>
   );

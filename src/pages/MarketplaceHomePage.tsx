@@ -315,6 +315,43 @@ const blogPosts = [
   },
 ];
 
+const categoryArtworkFallbacks = [
+  "/category-art/social-media.webp",
+  "/category-art/ai-productivity.webp",
+  "/category-art/design-creative.webp",
+  "/category-art/software.webp",
+  "/category-art/business.webp",
+  "/category-art/courses.webp",
+];
+
+function categoryArtwork(category: Category, index: number) {
+  const key = `${category.slug ?? ""} ${category.name}`.toLowerCase();
+  if (key.includes("social")) return categoryArtworkFallbacks[0];
+  if (key.includes("ai") || key.includes("productiv"))
+    return categoryArtworkFallbacks[1];
+  if (
+    key.includes("design") ||
+    key.includes("creative") ||
+    key.includes("professional")
+  )
+    return categoryArtworkFallbacks[2];
+  if (
+    key.includes("software") ||
+    key.includes("developer") ||
+    key.includes("game")
+  )
+    return categoryArtworkFallbacks[3];
+  if (key.includes("business") || key.includes("email"))
+    return categoryArtworkFallbacks[4];
+  if (
+    key.includes("course") ||
+    key.includes("stream") ||
+    key.includes("subscription")
+  )
+    return categoryArtworkFallbacks[5];
+  return categoryArtworkFallbacks[index % categoryArtworkFallbacks.length];
+}
+
 function ProductCard({ product }: { product: Product }) {
   const Icon = product.icon;
   const { formatMoney } = useLocale();
@@ -378,14 +415,14 @@ function ProductCard({ product }: { product: Product }) {
 }
 
 export function MarketplaceHomePage() {
-  const { t, formatMoney } = useLocale();
+  const { t } = useLocale();
   const navigate = useNavigate();
   const liveCatalogProducts = useMarketplaceProducts();
   const marketplaceCategories = useMarketplaceCategories();
   const approvedStores = useMarketplaceStores();
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
-  const [browseCategory, setBrowseCategory] = useState("Gaming");
+  const [browseCategory, setBrowseCategory] = useState("");
   const categories = useMemo<Category[]>(() => {
     const parents = marketplaceCategories.filter((item) => !item.parentId);
     if (!parents.length) return fallbackCategories;
@@ -419,11 +456,11 @@ export function MarketplaceHomePage() {
     ];
     const preferredRoots = [
       "social-media",
-      "email-services",
-      "games",
       "ai-platforms",
-      "subscription-platforms",
       "professional-services",
+      "games",
+      "email-services",
+      "subscription-platforms",
     ];
     return parents
       .map((parent, index) => {
@@ -533,7 +570,7 @@ export function MarketplaceHomePage() {
     setBrowseCategory(name);
   }
 
-  const mainCategories = categories.slice(0, 7);
+  const mainCategories = categories.slice(0, 6);
   const focusedCategory =
     mainCategories.find((category) => category.name === browseCategory) ??
     mainCategories[0] ??
@@ -554,17 +591,6 @@ export function MarketplaceHomePage() {
     : import.meta.env.DEV
       ? fallbackSellers
       : [];
-  const heroProduct =
-    displayProducts.find((product) => product.imageUrl) ?? displayProducts[0];
-  const HeroProductIcon = heroProduct?.icon ?? Bot;
-  const heroProductPath = heroProduct?.slug
-    ? `/products/${heroProduct.slug}`
-    : "/catalog";
-  const heroCategory = heroProduct?.category.split(" /").slice(-1)[0];
-  const heroCategoryCode = heroCategory
-    ? heroCategory.slice(0, 3).toUpperCase()
-    : "NEW";
-
   return (
     <main className="lux-home pro-home commerce-page">
       <Seo
@@ -783,15 +809,14 @@ export function MarketplaceHomePage() {
 
       <section className="pro-market-hero">
         <div className="lux-hero-copy">
-          <span className="lux-eyebrow">
-            <i /> {t("homeEyebrow")}
-          </span>
           <h1>
             {t("homeTitleA")}
             <br />
-            <em>{t("homeTitleB")}</em>
+            {t("homeTitleB")}
           </h1>
           <p>{t("homeIntro")}</p>
+        </div>
+        <div className="pro-market-search-column">
           <form className="lux-search" onSubmit={submitSearch}>
             <Search size={21} />
             <input
@@ -805,90 +830,15 @@ export function MarketplaceHomePage() {
               <ArrowRight />
             </button>
           </form>
-          <nav className="lux-quick-categories" aria-label="Popular categories">
-            {mainCategories.slice(0, 5).map((category) => {
-              const Icon = category.icon;
-              return (
-                <Link
-                  key={`quick-${category.name}`}
-                  to={
-                    category.slug
-                      ? `/categories/${category.slug}`
-                      : `/catalog?q=${encodeURIComponent(category.name)}`
-                  }
-                  className={`accent-${category.accent}`}
-                >
-                  <span>
-                    <Icon />
-                  </span>
-                  <strong>{category.name}</strong>
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-        <div
-          className="lux-hero-stage"
-          aria-label="Featured marketplace products"
-        >
-          <div className="hero-orb orb-one" />
-          <div className="hero-orb orb-two" />
-          <article className="hero-feature-card">
-            <span className="hero-card-label">MARKETPLACE PICK</span>
-            <div
-              className={`hero-feature-art ${heroProduct?.imageUrl ? "has-image" : ""}`}
-            >
-              {heroProduct?.imageUrl ? (
-                <img
-                  src={heroProduct.imageUrl}
-                  alt=""
-                  decoding="async"
-                  fetchPriority="high"
-                />
-              ) : (
-                <HeroProductIcon size={74} />
-              )}
-              <span>{heroCategoryCode}</span>
-            </div>
-            <h2>
-              {heroProduct?.title ??
-                "Explore digital tools and expert services."}
-            </h2>
-            <p>
-              {heroProduct
-                ? `${heroProduct.seller} · ${formatMoney(Math.round(heroProduct.price * 100))} · ${heroProduct.delivery}`
-                : "Compare clear product details and seller terms."}
-            </p>
-            <Link to={heroProductPath}>
-              {heroProduct ? "View product" : "Explore marketplace"}{" "}
-              <ArrowRight size={16} />
-            </Link>
-          </article>
-          <div className="floating-review">
-            <span>
-              <ShieldCheck size={15} /> Buyer context
-            </span>
-            <strong>Make informed choices</strong>
-            <small>Clear listings. Reviewed sellers.</small>
-          </div>
-          <div className="floating-order">
-            <Store size={16} />
-            <span>
-              <strong>
-                {approvedStores.length
-                  ? `${approvedStores.length} approved stores`
-                  : "Approved sellers"}
-              </strong>
-              <small>
-                {liveCatalogProducts.length
-                  ? `${liveCatalogProducts.length} live listings`
-                  : "Browse the live catalog"}
-              </small>
-            </span>
+          <div className="pro-market-search-hints" aria-label="Marketplace highlights">
+            <span>Verified sellers</span>
+            <span>Protected checkout</span>
+            <span>Instant delivery options</span>
           </div>
         </div>
       </section>
 
+      {/* lux-quick-categories now use the richer visual category grid below. */}
       <section className="lux-section" id="categories">
         <div className="lux-section-head">
           <div>
@@ -904,7 +854,7 @@ export function MarketplaceHomePage() {
           role="tablist"
           aria-label="Main marketplace categories"
         >
-          {mainCategories.map((c) => {
+          {mainCategories.map((c, index) => {
             const Icon = c.icon;
             return (
               <button
@@ -914,15 +864,21 @@ export function MarketplaceHomePage() {
                 role="tab"
                 aria-selected={browseCategory === c.name}
               >
-                <span className="category-symbol">
-                  <Icon />
+                <span className="category-artwork">
+                  <img src={categoryArtwork(c, index)} alt="" />
+                  <span className="category-symbol">
+                    <Icon />
+                  </span>
                 </span>
-                <strong>{c.name}</strong>
+                <span className="category-card-label">
+                  <strong>{c.name}</strong>
+                  <ArrowRight />
+                </span>
               </button>
             );
           })}
         </div>
-        {focusedCategory ? (
+        {browseCategory && focusedCategory ? (
           <div className="lux-category-preview">
             <header>
               <div>

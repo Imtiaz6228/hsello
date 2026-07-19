@@ -9,7 +9,6 @@ import {
   Gamepad2,
   Gift,
   Globe2,
-  Headphones,
   KeyRound,
   LogOut,
   Mail,
@@ -28,7 +27,6 @@ import {
   WalletCards,
   Wifi,
   X,
-  Zap,
   type LucideIcon,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -932,42 +930,27 @@ export function MarketplaceHomePage() {
               <ArrowRight />
             </button>
           </form>
-          <div className="lux-hero-actions">
-            <Link to="/catalog">
-              Browse marketplace <ArrowRight size={16} />
-            </Link>
-            <a href="#categories">Explore categories</a>
-          </div>
-          <div className="lux-popular">
-            <span>Trending:</span>
-            {[
-              "Design templates",
-              "AI workflows",
-              "Code starters",
-              "Business kits",
-            ].map((t) => (
-              <button
-                key={t}
-                onClick={() => navigate(`/catalog?q=${encodeURIComponent(t)}`)}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-          <div className="lux-proof">
-            <div>
-              <strong>Reviewed</strong>
-              <span>Seller profiles</span>
-            </div>
-            <div>
-              <strong>Clear</strong>
-              <span>Delivery terms</span>
-            </div>
-            <div>
-              <strong>Human</strong>
-              <span>Support available</span>
-            </div>
-          </div>
+          <nav className="lux-quick-categories" aria-label="Popular categories">
+            {mainCategories.slice(0, 5).map((category) => {
+              const Icon = category.icon;
+              return (
+                <Link
+                  key={`quick-${category.name}`}
+                  to={
+                    category.slug
+                      ? `/categories/${category.slug}`
+                      : `/catalog?q=${encodeURIComponent(category.name)}`
+                  }
+                  className={`accent-${category.accent}`}
+                >
+                  <span>
+                    <Icon />
+                  </span>
+                  <strong>{category.name}</strong>
+                </Link>
+              );
+            })}
+          </nav>
         </div>
         <div
           className="lux-hero-stage"
@@ -1028,80 +1011,6 @@ export function MarketplaceHomePage() {
               </small>
             </span>
           </div>
-        </div>
-      </section>
-
-      <section className="lux-trust">
-        <div>
-          <ShieldCheck />
-          <span>
-            <strong>Buyer protection</strong>
-            <small>Eligible orders are covered</small>
-          </span>
-        </div>
-        <div>
-          <BadgeCheck />
-          <span>
-            <strong>Verified sellers</strong>
-            <small>Reviewed before they can sell</small>
-          </span>
-        </div>
-        <div>
-          <Zap />
-          <span>
-            <strong>Fast delivery</strong>
-            <small>Timing is shown before checkout</small>
-          </span>
-        </div>
-        <div>
-          <Headphones />
-          <span>
-            <strong>Real support</strong>
-            <small>Help whenever you need it</small>
-          </span>
-        </div>
-      </section>
-
-      <section
-        className="lux-market-pulse"
-        aria-label="Marketplace at a glance"
-      >
-        <div>
-          <small>LIVE CATALOG</small>
-          <strong>{liveCatalogProducts.length || "Explore"}</strong>
-          <span>
-            {liveCatalogProducts.length
-              ? "approved listings"
-              : "current listings"}
-          </span>
-        </div>
-        <div>
-          <small>DEPARTMENTS</small>
-          <strong>
-            {marketplaceCategories.filter((category) => !category.parentId)
-              .length || categories.length}
-          </strong>
-          <span>organized paths</span>
-        </div>
-        <div>
-          <small>SELLER NETWORK</small>
-          <strong>{approvedStores.length || "Reviewed"}</strong>
-          <span>
-            {approvedStores.length ? "approved stores" : "seller profiles"}
-          </span>
-        </div>
-        <div className="pulse-action">
-          <ShieldCheck />
-          <span>
-            <strong>Order-linked confidence</strong>
-            <small>
-              Delivery, messages, support, and disputes stay attached to the
-              purchase.
-            </small>
-          </span>
-          <Link to="/support">
-            How protection works <ArrowRight />
-          </Link>
         </div>
       </section>
 
@@ -1182,63 +1091,6 @@ export function MarketplaceHomePage() {
         ) : null}
       </section>
 
-      <section className="lux-flash">
-        <div className="flash-copy">
-          <span>
-            <Zap size={15} fill="currentColor" /> CURATED COLLECTION
-          </span>
-          <h2>
-            Useful tools.
-            <br />
-            Clear purchase context.
-          </h2>
-          <p>
-            Compare delivery terms, seller details, and product information
-            before choosing.
-          </p>
-          <Link to="/catalog">
-            Explore the collection <ArrowRight size={17} />
-          </Link>
-        </div>
-        <div className="flash-countdown">
-          <span>A SIMPLE PATH</span>
-          <div>
-            <strong>01</strong>
-            <small>COMPARE</small>
-          </div>
-          <b>→</b>
-          <div>
-            <strong>02</strong>
-            <small>REVIEW</small>
-          </div>
-          <b>→</b>
-          <div>
-            <strong>03</strong>
-            <small>CHOOSE</small>
-          </div>
-        </div>
-        <div className="flash-product">
-          <div className="flash-art">
-            <KeyRound size={55} />
-            <span>NEW</span>
-          </div>
-          <div>
-            <small>FEATURED CATEGORY</small>
-            <h3>
-              Productivity
-              <br />
-              resources
-            </h3>
-            <p>
-              <strong>Clear terms</strong>
-            </p>
-            <span>
-              <ShieldCheck size={13} /> Reviewed seller context
-            </span>
-          </div>
-        </div>
-      </section>
-
       <section className="lux-section" id="products">
         <div className="lux-section-head">
           <div>
@@ -1267,7 +1119,7 @@ export function MarketplaceHomePage() {
         </div>
         {visibleProducts.length ? (
           <div className="lux-product-grid">
-            {visibleProducts.map((p) => (
+            {visibleProducts.slice(0, 8).map((p) => (
               <ProductCard key={p.title} product={p} />
             ))}
           </div>
@@ -1286,6 +1138,37 @@ export function MarketplaceHomePage() {
             </button>
           </div>
         )}
+      </section>
+
+      <section className="lux-trust" aria-label="Marketplace protections">
+        <div>
+          <ShieldCheck />
+          <span>
+            <strong>Buyer protection</strong>
+            <small>Eligible orders are covered</small>
+          </span>
+        </div>
+        <div>
+          <BadgeCheck />
+          <span>
+            <strong>Reviewed sellers</strong>
+            <small>Profiles checked before selling</small>
+          </span>
+        </div>
+        <div>
+          <Clock3 />
+          <span>
+            <strong>Clear delivery</strong>
+            <small>Timing shown before checkout</small>
+          </span>
+        </div>
+        <div>
+          <MessageCircle />
+          <span>
+            <strong>Order-linked support</strong>
+            <small>Help stays with your purchase</small>
+          </span>
+        </div>
       </section>
 
       <section className="lux-new-section">

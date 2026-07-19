@@ -48,7 +48,8 @@ test("seller cases, reviews, exports, and analytics use real records", async () 
 test("public marketplace presents factual live context and stock-aware purchasing", async () => {
   const home = await read("src/pages/MarketplaceHomePage.tsx");
   const product = await read("src/pages/ProductPage.tsx");
-  assert.match(home, /lux-market-pulse/);
+  assert.match(home, /lux-quick-categories/);
+  assert.ok(home.indexOf('id="categories"') < home.indexOf('id="products"'));
   assert.doesNotMatch(home, /Order delivered[\s\S]{0,80}in 2 minutes/);
   assert.match(product, /const available = product\.type === "SERVICE"/);
   assert.match(product, /product-market-brief/);

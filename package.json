@@ -19,6 +19,7 @@
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",
     "prisma:migrate": "prisma migrate deploy",
+    "prisma:migrate:recover": "node scripts/recover-failed-migration.mjs",
     "prisma:migrate:dev": "prisma migrate dev",
     "set-role": "node dist-api/scripts/promote-admin.js",
     "promote-admin": "node dist-api/scripts/promote-admin.js",

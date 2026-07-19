@@ -5,7 +5,7 @@
     "buildCommand": "npm run build:railway"
   },
   "deploy": {
-    "preDeployCommand": "npm run prisma:migrate",
+    "preDeployCommand": "npm run prisma:migrate:recover && npm run prisma:migrate",
     "startCommand": "npm start",
     "healthcheckPath": "/api/health",
     "healthcheckTimeout": 300,

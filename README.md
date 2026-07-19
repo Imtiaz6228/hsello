@@ -59,6 +59,14 @@ MAX_PRODUCT_FILE_BYTES=104857600
 
 Railway injects its own `PORT`; you do not need to create that variable. Before every release, `prisma migrate deploy` applies committed migrations to PostgreSQL. A failed migration stops the release before the new API starts.
 
+The Railway pre-deploy step also checks for the known failed
+`202607180001_commission_transaction_idempotency` attempt. When present, it
+marks only that attempt as rolled back and immediately retries the repaired,
+restart-safe migration. It does not reset the database. If duplicate historical
+commission rows exist, the migration keeps the oldest live record and preserves
+the other rows in `AdminTransactionDuplicateArchive` for audit before enforcing
+the idempotency constraint.
+
 Public images (product covers, store logo/banner, profile photos, chat attachments, and top-up proof screenshots) are saved to PostgreSQL and cached at `/app/uploads`, so a stateless redeploy no longer breaks newly uploaded media. A Railway volume at `/app/uploads` is still recommended for faster cache hits, but PostgreSQL is the durable source of truth.
 
 Mount a second private volume at `/app/private-uploads` for seller delivery files. That directory is never exposed as static content; files are released only through validated download grants.

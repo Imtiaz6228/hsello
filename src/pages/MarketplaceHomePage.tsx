@@ -1,18 +1,15 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import {
   ArrowRight,
   BadgeCheck,
   Bot,
-  ChevronDown,
   Clock3,
   Cloud,
   Gamepad2,
   Gift,
   Globe2,
   KeyRound,
-  LogOut,
   Mail,
-  Menu,
   MessageCircle,
   Search,
   ShieldCheck,
@@ -21,25 +18,20 @@ import {
   Sparkles,
   Star,
   Store,
-  UserPlus,
   TrendingUp,
   Users,
   WalletCards,
   Wifi,
-  X,
   type LucideIcon,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { STAFF_ROLES } from "../api/client";
-import { useAuth } from "../auth/AuthContext";
 import {
   useMarketplaceCategories,
   useMarketplaceProducts,
   useMarketplaceStores,
 } from "../commerce/useMarketplace";
-import { useCart } from "../commerce/CartContext";
 import { categoryMatches } from "../commerce/catalogHierarchy";
-import { LocaleSwitcher } from "../components/LocaleSwitcher";
+import { MarketFooter, MarketHeader } from "../components/MarketHeader";
 import { Seo } from "../components/Seo";
 import { useLocale } from "../i18n/LocaleContext";
 
@@ -323,95 +315,6 @@ const blogPosts = [
   },
 ];
 
-const platformSlugs: Record<string, string> = {
-  Facebook: "facebook",
-  Instagram: "instagram",
-  TikTok: "tiktok",
-  "X / Twitter": "twitter-x",
-  LinkedIn: "linkedin",
-  Snapchat: "snapchat",
-  Gmail: "gmail",
-  Outlook: "outlook",
-  Yahoo: "yahoo-mail",
-  "Proton Mail": "proton-mail",
-  Steam: "pc-games-steam",
-  PlayStation: "playstation",
-  Xbox: "xbox",
-  "Epic Games": "epic-games",
-  Valorant: "valorant",
-  Roblox: "roblox",
-  Netflix: "netflix",
-  Spotify: "spotify",
-  "Disney+": "disney-plus",
-  YouTube: "youtube-premium",
-  "Prime Video": "prime-video",
-  ChatGPT: "chatgpt",
-  Claude: "claude",
-  Midjourney: "midjourney",
-  Gemini: "gemini",
-  Canva: "canva",
-  "Microsoft 365": "microsoft-365",
-  Windows: "microsoft-365",
-};
-
-function detailOptions(platform: string, category: string) {
-  if (platform === "Facebook")
-    return [
-      "Page design kits",
-      "Ad creative templates",
-      "Group moderation guides",
-      "Business page setup",
-      "Analytics reviews",
-    ];
-  if (
-    ["Instagram", "TikTok", "X / Twitter", "LinkedIn", "Snapchat"].includes(
-      platform,
-    )
-  )
-    return [
-      `${platform} content templates`,
-      "Publishing calendars",
-      "Audience analytics",
-      "Profile audits",
-      "Business workflows",
-    ];
-  if (category === "Gaming" || category === "Game currency")
-    return [
-      `${platform} coaching guides`,
-      "UI and stream assets",
-      "Server resources",
-      "Strategy sessions",
-      "Creator packs",
-    ];
-  if (category === "Email products" || category === "Messaging")
-    return [
-      `${platform} templates`,
-      "Setup guides",
-      "Organization workflows",
-      "Automation blueprints",
-      "Support resources",
-    ];
-  if (
-    category === "Streaming" ||
-    category === "AI & productivity" ||
-    category === "Software"
-  )
-    return [
-      "Setup guides",
-      "Workflow templates",
-      "Training resources",
-      "Integration help",
-      "Team documentation",
-    ];
-  return [
-    "Templates",
-    "Guides",
-    "Creator assets",
-    "Expert services",
-    "Support resources",
-  ];
-}
-
 function ProductCard({ product }: { product: Product }) {
   const Icon = product.icon;
   const { formatMoney } = useLocale();
@@ -475,8 +378,6 @@ function ProductCard({ product }: { product: Product }) {
 }
 
 export function MarketplaceHomePage() {
-  const { user } = useAuth();
-  const { count } = useCart();
   const { t, formatMoney } = useLocale();
   const navigate = useNavigate();
   const liveCatalogProducts = useMarketplaceProducts();
@@ -485,35 +386,6 @@ export function MarketplaceHomePage() {
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [browseCategory, setBrowseCategory] = useState("Gaming");
-  const [mobileMenu, setMobileMenu] = useState(false);
-  const [mobileCatalogOpen, setMobileCatalogOpen] = useState(false);
-  const [mobileCategory, setMobileCategory] = useState("Social media");
-  const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    if (!mobileMenu) return;
-    closeButtonRef.current?.focus();
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setMobileMenu(false);
-        menuButtonRef.current?.focus();
-      }
-    };
-    document.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [mobileMenu]);
-  const accountPath = user
-    ? STAFF_ROLES.includes(user.role)
-      ? "/admin"
-      : user.role === "SELLER"
-        ? "/seller"
-        : "/dashboard"
-    : "/sign-in";
   const categories = useMemo<Category[]>(() => {
     const parents = marketplaceCategories.filter((item) => !item.parentId);
     if (!parents.length) return fallbackCategories;
@@ -694,7 +566,7 @@ export function MarketplaceHomePage() {
     : "NEW";
 
   return (
-    <main className="lux-home">
+    <main className="lux-home pro-home commerce-page">
       <Seo
         title="HSello — trusted digital products and expert services"
         description="Discover digital products and expert services with clear delivery terms, reviewed sellers, protected order records, and human support."
@@ -720,6 +592,8 @@ export function MarketplaceHomePage() {
           },
         ]}
       />
+      <MarketHeader />
+      {/* Retained for reference while the shared marketplace header replaces it.
       <div className="lux-topbar">
         <span>
           <Sparkles size={14} /> Curated digital products with clear delivery
@@ -905,8 +779,9 @@ export function MarketplaceHomePage() {
           </Link>
         </div>
       </header>
+      */}
 
-      <section className="lux-hero">
+      <section className="pro-market-hero">
         <div className="lux-hero-copy">
           <span className="lux-eyebrow">
             <i /> {t("homeEyebrow")}
@@ -1344,6 +1219,7 @@ export function MarketplaceHomePage() {
         </div>
       </section>
 
+      {/* The shared footer keeps every public storefront route consistent.
       <footer className="lux-footer">
         <div className="footer-lead">
           <Link className="lux-logo" to="/">
@@ -1399,6 +1275,8 @@ export function MarketplaceHomePage() {
           <span>Built for the world’s digital economy.</span>
         </div>
       </footer>
+      */}
+      <MarketFooter />
     </main>
   );
 }

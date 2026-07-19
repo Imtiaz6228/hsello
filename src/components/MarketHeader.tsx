@@ -7,8 +7,8 @@ import {
   UserPlus,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { STAFF_ROLES } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { useCart } from "../commerce/CartContext";
@@ -19,7 +19,9 @@ export function MarketHeader() {
   const { user } = useAuth();
   const { count } = useCart();
   const { t } = useLocale();
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [globalQuery, setGlobalQuery] = useState("");
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const accountPath = user
@@ -47,15 +49,34 @@ export function MarketHeader() {
     window.setTimeout(() => menuButtonRef.current?.focus(), 0);
   }
 
+  function submitSearch(event: FormEvent) {
+    event.preventDefault();
+    const query = globalQuery.trim();
+    navigate(`/catalog${query ? `?q=${encodeURIComponent(query)}` : ""}`);
+    setMenuOpen(false);
+  }
+
   return (
     <header className="commerce-header">
       <Link className="brand-lockup" to="/">
         <span className="brand-glyph">H</span>
         <span>
           <strong>HSELLO</strong>
-          <small>DIGITAL EXCHANGE</small>
+          <small>DIGITAL MARKETPLACE</small>
         </span>
       </Link>
+      <form className="commerce-global-search" onSubmit={submitSearch}>
+        <Search aria-hidden="true" />
+        <input
+          value={globalQuery}
+          onChange={(event) => setGlobalQuery(event.target.value)}
+          aria-label="Search the marketplace"
+          placeholder="Search products, services, and creators"
+        />
+        <button type="submit" aria-label="Search">
+          <ArrowRight aria-hidden="true" />
+        </button>
+      </form>
       <button
         ref={menuButtonRef}
         className="commerce-menu-button"
@@ -84,8 +105,26 @@ export function MarketHeader() {
         <div className="commerce-mobile-locale">
           <LocaleSwitcher />
         </div>
+        <form className="commerce-mobile-search" onSubmit={submitSearch}>
+          <Search aria-hidden="true" />
+          <input
+            value={globalQuery}
+            onChange={(event) => setGlobalQuery(event.target.value)}
+            aria-label="Search the marketplace"
+            placeholder="Search marketplace"
+          />
+          <button type="submit" aria-label="Search">
+            <ArrowRight aria-hidden="true" />
+          </button>
+        </form>
         <Link to="/catalog" onClick={() => setMenuOpen(false)}>
-          <Search size={15} /> {t("explore")}
+          {t("explore")}
+        </Link>
+        <Link to="/catalog#departments" onClick={() => setMenuOpen(false)}>
+          {t("categories")}
+        </Link>
+        <Link to="/seller/apply" onClick={() => setMenuOpen(false)}>
+          {t("sellOn")}
         </Link>
         <Link to="/buyer-protection" onClick={() => setMenuOpen(false)}>
           {t("protection")}

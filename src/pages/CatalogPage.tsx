@@ -247,7 +247,7 @@ export function CatalogPage() {
           </button>
         ))}
       </section>
-      <section className="catalog-discovery-intro">
+      <section className="catalog-discovery-intro" id="departments">
         <div className="catalog-section-heading">
           <div>
             <span className="section-index">

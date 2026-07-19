@@ -1,4 +1,5 @@
 import {
+  BadgeCheck,
   Clock3,
   Eye,
   PackageCheck,
@@ -65,6 +66,12 @@ export function MarketplaceProductCard({
             </Link>
             <Link to={`/products/${product.slug}`}>
               <h2>{product.title}</h2>
+            </Link>
+            <Link
+              className="market-product-seller"
+              to={`/stores/${product.sellerSlug}`}
+            >
+              {product.seller} <BadgeCheck aria-hidden="true" />
             </Link>
           </div>
         </div>

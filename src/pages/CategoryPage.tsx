@@ -45,7 +45,7 @@ export function CategoryPage() {
   const { add } = useCart();
   const navigate = useNavigate();
   const [sort, setSort] = useState<SortMode>("popular");
-  const [view, setView] = useState<ViewMode>("list");
+  const [view, setView] = useState<ViewMode>("grid");
   const [subFilter, setSubFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<"all" | "DOWNLOAD" | "SERVICE">("all");

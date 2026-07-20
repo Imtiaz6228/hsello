@@ -159,6 +159,7 @@ export function AdminEarningsPage() {
 
   return (
     <main
+      className="admin-earnings-page"
       style={{
         maxWidth: "1200px",
         margin: "0 auto",

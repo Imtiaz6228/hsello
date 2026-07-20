@@ -18,6 +18,7 @@ import "./system-polish.css";
 import "./marketplace-experience.css";
 import "./enterprise-catalog.css";
 import "./storefront-pro.css";
+import "./final-polish.css";
 import { LocaleProvider } from "./i18n/LocaleContext";
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
 

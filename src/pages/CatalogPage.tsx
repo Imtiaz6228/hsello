@@ -61,7 +61,7 @@ export function CatalogPage() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [categoryQuery, setCategoryQuery] = useState("");
   const [sort, setSort] = useState<SortMode>("popular");
-  const [view, setView] = useState<ViewMode>("list");
+  const [view, setView] = useState<ViewMode>("grid");
   const [stockOnly, setStockOnly] = useState(false);
   const [kind, setKind] = useState<ProductKind>("all");
   const [priceBand, setPriceBand] = useState<PriceBand>("all");

@@ -8,7 +8,7 @@ export function NotFoundPage() {
     <main className="commerce-page not-found-page">
       <Seo
         title="Page not found"
-        description="The page you requested could not be found. Browse the HSello marketplace or search the catalog."
+        description="The page you requested could not be found. Browse the Ysello marketplace or search the catalog."
         noIndex
       />
       <MarketHeader />

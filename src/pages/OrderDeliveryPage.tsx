@@ -345,7 +345,7 @@ export function OrderDeliveryPage() {
     <main className="commerce-page order-workspace">
       <Seo
         title="Order delivery workspace"
-        description="Protected buyer and seller messages for a HSello order."
+        description="Protected buyer and seller messages for a Ysello order."
         noIndex
       />
       <MarketHeader />

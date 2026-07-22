@@ -73,9 +73,9 @@ export function Seo({
   );
 
   useEffect(() => {
-    const pageTitle = title.toLowerCase().includes("hsello")
+    const pageTitle = title.toLowerCase().includes("ysello")
       ? title
-      : `${title} · HSello`;
+      : `${title} · Ysello`;
     const canonicalUrl = canonicalPathname(canonicalPath);
     document.title = pageTitle;
     setMeta('meta[name="description"]', "name", "description", description);
@@ -101,7 +101,7 @@ export function Seo({
       'meta[property="og:site_name"]',
       "property",
       "og:site_name",
-      "HSello",
+      "Ysello",
     );
     setMeta(
       'meta[property="og:locale"]',
@@ -133,7 +133,7 @@ export function Seo({
     );
     const imageUrl = absoluteUrl(image || "/og-default.png");
     const resolvedImageAlt =
-      imageAlt || (image ? title : "HSello digital marketplace");
+      imageAlt || (image ? title : "Ysello digital marketplace");
     setMeta('meta[property="og:image"]', "property", "og:image", imageUrl);
     setMeta(
       'meta[property="og:image:alt"]',

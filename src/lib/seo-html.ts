@@ -65,7 +65,7 @@ export function absolutePublicUrl(siteUrl: string, value?: string | null) {
 }
 
 export function crawlableHeader() {
-  return `<header><a href="/" aria-label="HSello home">HSello Digital Marketplace</a><nav aria-label="Marketplace pages"><a href="/catalog">Browse products and services</a><a href="/blog">Guides</a><a href="/buyer-protection">Buyer protection</a><a href="/refund-policy">Refund policy</a><a href="/seller-policy">Seller policy</a><a href="/prohibited-products">Prohibited products</a><a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/copyright">IP complaints</a><a href="/about">About</a><a href="/contact">Contact</a></nav></header>`;
+  return `<header><a href="/" aria-label="Ysello home">Ysello Digital Marketplace</a><nav aria-label="Marketplace pages"><a href="/catalog">Browse products and services</a><a href="/blog">Guides</a><a href="/buyer-protection">Buyer protection</a><a href="/refund-policy">Refund policy</a><a href="/seller-policy">Seller policy</a><a href="/prohibited-products">Prohibited products</a><a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/copyright">IP complaints</a><a href="/about">About</a><a href="/contact">Contact</a></nav></header>`;
 }
 
 export function renderSeoDocument(
@@ -78,7 +78,7 @@ export function renderSeoDocument(
     new URL("/og-default.png", options.canonicalUrl).toString();
   const socialImageAlt =
     options.imageAlt ||
-    (options.imageUrl ? options.title : "HSello digital marketplace");
+    (options.imageUrl ? options.title : "Ysello digital marketplace");
   let html = template.replace(
     /<title>[^<]*<\/title>/i,
     `<title>${escapeHtml(options.title)}</title>`,
@@ -87,7 +87,7 @@ export function renderSeoDocument(
   html = replaceMeta(html, "name", "robots", robots);
   html = replaceMeta(html, "name", "googlebot", robots);
   html = replaceMeta(html, "name", "bingbot", robots);
-  html = replaceMeta(html, "property", "og:site_name", "HSello");
+  html = replaceMeta(html, "property", "og:site_name", "Ysello");
   html = replaceMeta(html, "property", "og:locale", "en_US");
   html = replaceMeta(html, "property", "og:title", options.title);
   html = replaceMeta(html, "property", "og:description", options.description);

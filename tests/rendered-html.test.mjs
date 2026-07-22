@@ -22,25 +22,25 @@ function assets(responses) {
 test("serves a prerendered public page without falling through to the SPA", async () => {
   const worker = await workerUnderTest();
   const response = await worker.fetch(
-    new Request("https://market.example/about", {
+    new Request("https://ysello.com/about", {
       headers: { accept: "text/html" },
     }),
     {
       ASSETS: assets({
-        "/about.html": new Response("<!doctype html><h1>About HSello</h1>", {
+        "/about.html": new Response("<!doctype html><h1>About Ysello</h1>", {
           headers: { "content-type": "text/html" },
         }),
       }),
     },
   );
   assert.equal(response.status, 200);
-  assert.match(await response.text(), /About HSello/);
+  assert.match(await response.text(), /About Ysello/);
 });
 
 test("marks private SPA routes noindex", async () => {
   const worker = await workerUnderTest();
   const response = await worker.fetch(
-    new Request("https://market.example/dashboard", {
+    new Request("https://ysello.com/dashboard", {
       headers: { accept: "text/html" },
     }),
     {
@@ -59,7 +59,7 @@ test("marks private SPA routes noindex", async () => {
 test("returns a real 404 with noindex for unknown routes", async () => {
   const worker = await workerUnderTest();
   const response = await worker.fetch(
-    new Request("https://market.example/missing-page", {
+    new Request("https://ysello.com/missing-page", {
       headers: { accept: "text/html" },
     }),
     {

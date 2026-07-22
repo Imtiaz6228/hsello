@@ -5,11 +5,12 @@ import helmet from "helmet";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { ProductStatus } from "@prisma/client";
-import { env, isProduction } from "./config/env.js";
+import { env, isProduction, TRUSTED_APP_ORIGINS } from "./config/env.js";
 import { issueCsrfToken } from "./lib/cookies.js";
 import { uploadRoot } from "./middleware/upload.js";
 import { csrfProtection } from "./middleware/csrf.js";
 import {
+  ApiError,
   asyncHandler,
   errorHandler,
   notFound,
@@ -44,6 +45,7 @@ function normalizeOrigin(value: string) {
 }
 
 const allowedOriginRules = [
+  ...TRUSTED_APP_ORIGINS,
   env.APP_URL,
   env.API_URL,
   ...(env.CORS_ORIGIN?.split(",") ?? []),
@@ -86,7 +88,13 @@ app.use(
         return;
       }
 
-      callback(new Error("Origin is not allowed by CORS."));
+      callback(
+        new ApiError(
+          403,
+          "Origin is not allowed by CORS.",
+          "CORS_ORIGIN_DENIED",
+        ),
+      );
     },
   }),
 );
@@ -355,9 +363,9 @@ if (isProduction && fs.existsSync(frontendIndex)) {
     sendHtml(
       res,
       renderSeoDocument(frontendTemplate, {
-        title: "Page not found · HSello",
+        title: "Page not found · Ysello",
         description:
-          "The requested page could not be found. Browse the HSello marketplace or return to the homepage.",
+          "The requested page could not be found. Browse the Ysello marketplace or return to the homepage.",
         canonicalUrl: canonicalUrl("/404"),
         noIndex: true,
         body: shell(
@@ -410,9 +418,9 @@ if (isProduction && fs.existsSync(frontendIndex)) {
       sendHtml(
         res,
         renderSeoDocument(frontendTemplate, {
-          title: "Browse digital products and services · HSello",
+          title: "Browse digital products and services · Ysello",
           description:
-            "Explore approved digital products and expert services by category, seller, price, and delivery type on HSello.",
+            "Explore approved digital products and expert services by category, seller, price, and delivery type on Ysello.",
           canonicalUrl: url,
           body: shell(
             "Browse digital products and expert services",
@@ -422,9 +430,9 @@ if (isProduction && fs.existsSync(frontendIndex)) {
           schema: {
             "@context": "https://schema.org",
             "@type": "CollectionPage",
-            name: "HSello digital marketplace catalog",
+            name: "Ysello digital marketplace catalog",
             description:
-              "Approved digital products and expert services on HSello.",
+              "Approved digital products and expert services on Ysello.",
             url,
           },
         }),
@@ -491,10 +499,10 @@ if (isProduction && fs.existsSync(frontendIndex)) {
       const url = canonicalUrl(`/categories/${category.slug}`);
       const customTitle = category.seoTitle?.trim();
       const title = customTitle
-        ? customTitle.toLowerCase().includes("hsello")
+        ? customTitle.toLowerCase().includes("ysello")
           ? customTitle
-          : `${customTitle} · HSello`
-        : `${category.name} digital products and services · HSello`;
+          : `${customTitle} · Ysello`
+        : `${category.name} digital products and services · Ysello`;
       const description =
         category.seoDescription?.trim() || category.description;
       const itemList = products.map((item, index) => ({
@@ -579,10 +587,10 @@ if (isProduction && fs.existsSync(frontendIndex)) {
       const seller = product.seller.sellerProfile;
       const customTitle = product.seoTitle?.trim();
       const title = customTitle
-        ? customTitle.toLowerCase().includes("hsello")
+        ? customTitle.toLowerCase().includes("ysello")
           ? customTitle
-          : `${customTitle} · HSello`
-        : `${product.name} · HSello`;
+          : `${customTitle} · Ysello`
+        : `${product.name} · Ysello`;
       const description =
         product.seoDescription?.trim() || product.shortDescription;
       const schema: Record<string, unknown> = {
@@ -691,7 +699,7 @@ if (isProduction && fs.existsSync(frontendIndex)) {
       sendHtml(
         res,
         renderSeoDocument(frontendTemplate, {
-          title: `${store.storeName} digital store · HSello`,
+          title: `${store.storeName} digital store · Ysello`,
           description: store.about,
           canonicalUrl: url,
           imageUrl,

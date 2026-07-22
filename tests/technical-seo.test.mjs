@@ -37,9 +37,15 @@ test("every fixed public route ships useful, unique, indexable HTML", () => {
     );
     titles.add(title);
     descriptions.add(description);
-    assert.match(html, /<link rel="canonical" href="\//);
+    assert.match(
+      html,
+      /<link rel="canonical" href="https:\/\/ysello\.com(?:\/[^"]*)?"/,
+    );
     assert.match(html, /<meta name="robots" content="index, follow/);
-    assert.match(html, /<meta property="og:image" content="\/og-default\.png"/);
+    assert.match(
+      html,
+      /<meta property="og:image" content="https:\/\/ysello\.com\/og-default\.png"/,
+    );
     assert.match(
       html,
       /<meta name="twitter:card" content="summary_large_image"/,

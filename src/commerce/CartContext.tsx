@@ -21,7 +21,7 @@ type CartContextValue = {
 };
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
-const storageKey = "hsello-cart-v1";
+const storageKey = "ysello-cart-v1";
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>(() => {

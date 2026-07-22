@@ -594,7 +594,7 @@ export function MarketplaceHomePage() {
   return (
     <main className="lux-home pro-home commerce-page">
       <Seo
-        title="HSello — trusted digital products and expert services"
+        title="Ysello — trusted digital products and expert services"
         description="Discover digital products and expert services with clear delivery terms, reviewed sellers, protected order records, and human support."
         canonicalPath="/"
         type="website"
@@ -602,13 +602,13 @@ export function MarketplaceHomePage() {
           {
             "@context": "https://schema.org",
             "@type": "Organization",
-            name: "HSello",
+            name: "Ysello",
             url: window.location.origin,
           },
           {
             "@context": "https://schema.org",
             "@type": "WebSite",
-            name: "HSello",
+            name: "Ysello",
             url: window.location.origin,
             potentialAction: {
               "@type": "SearchAction",
@@ -630,10 +630,10 @@ export function MarketplaceHomePage() {
         </Link>
       </div>
       <header className="lux-header">
-        <Link className="lux-logo" to="/" aria-label="HSello home">
-          <span>H</span>
+        <Link className="lux-logo" to="/" aria-label="Ysello home">
+          <span>Y</span>
           <div>
-            <strong>HSELLO</strong>
+            <strong>YSELLO</strong>
             <small>DIGITAL MARKET</small>
           </div>
         </Link>
@@ -1032,7 +1032,7 @@ export function MarketplaceHomePage() {
       <section className="lux-sellers lux-section" id="sellers">
         <div className="lux-section-head">
           <div>
-            <span>THE BEST OF HSELLO</span>
+            <span>THE BEST OF YSELLO</span>
             <h2>Featured sellers</h2>
           </div>
           <Link to="/catalog">
@@ -1081,7 +1081,7 @@ export function MarketplaceHomePage() {
 
       <section className="lux-seller-cta">
         <div>
-          <span>SELL WITH HSELLO</span>
+          <span>SELL WITH YSELLO</span>
           <h2>
             Your digital business
             <br />
@@ -1124,7 +1124,7 @@ export function MarketplaceHomePage() {
       <section className="lux-journal lux-section" id="journal">
         <div className="lux-section-head">
           <div>
-            <span>THE HSELLO JOURNAL</span>
+            <span>THE YSELLO JOURNAL</span>
             <h2>Ideas worth opening</h2>
           </div>
           <Link to="/blog">
@@ -1182,9 +1182,9 @@ export function MarketplaceHomePage() {
       <footer className="lux-footer">
         <div className="footer-lead">
           <Link className="lux-logo" to="/">
-            <span>H</span>
+            <span>Y</span>
             <div>
-              <strong>HSELLO</strong>
+              <strong>YSELLO</strong>
               <small>DIGITAL MARKET</small>
             </div>
           </Link>
@@ -1230,7 +1230,7 @@ export function MarketplaceHomePage() {
           <Link to="/prohibited-products">Prohibited products</Link>
         </div>
         <div className="footer-bottom">
-          <span>© 2026 HSello Digital Market. All rights reserved.</span>
+          <span>© 2026 Ysello Digital Market. All rights reserved.</span>
           <span>Built for the world’s digital economy.</span>
         </div>
       </footer>

@@ -72,7 +72,7 @@ export const blogPosts: BlogPost[] = [
   {
     slug: "why-account-and-credential-trading-is-not-allowed",
     tag: "TRUST & SAFETY",
-    title: "Why HSello does not allow account or credential trading",
+    title: "Why Ysello does not allow account or credential trading",
     excerpt:
       "The practical security, consent, fraud, and ownership problems behind the line we draw.",
     time: "5 min",

@@ -873,7 +873,7 @@ export function OperationsAdminPage() {
     >
       <Seo
         title="Admin dashboard"
-        description="HSello administration for seller approval, product moderation, deposits, orders, and support."
+        description="Ysello administration for seller approval, product moderation, deposits, orders, and support."
         noIndex
       />
       {mobileNavOpen ? (
@@ -889,9 +889,9 @@ export function OperationsAdminPage() {
       >
         <div className="admin-brand-row">
           <Link className="brand-lockup" to="/">
-            <span className="brand-glyph">H</span>
+            <span className="brand-glyph">Y</span>
             <span>
-              <strong>HSELLO</strong>
+              <strong>YSELLO</strong>
               <small>CONTROL CENTER</small>
             </span>
           </Link>

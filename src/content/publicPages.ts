@@ -14,7 +14,7 @@ export const siteContentLastModified = "2026-07-18";
 export const publicPages: PublicPage[] = [
   {
     path: "/",
-    title: "HSello — trusted digital products and expert services",
+    title: "Ysello — trusted digital products and expert services",
     description:
       "Discover digital products and expert services with clear delivery terms, reviewed sellers, protected order records, and human support.",
     heading: "Buy digital products. Hire trusted experts.",
@@ -25,9 +25,9 @@ export const publicPages: PublicPage[] = [
   },
   {
     path: "/catalog",
-    title: "Browse digital products and services · HSello",
+    title: "Browse digital products and services · Ysello",
     description:
-      "Explore digital products and expert services by category, seller, price, and delivery type on HSello.",
+      "Explore digital products and expert services by category, seller, price, and delivery type on Ysello.",
     heading: "Browse digital products and expert services",
     intro:
       "Find professional assets, software, education, creative tools, and seller-delivered services with clear purchase details.",
@@ -36,7 +36,7 @@ export const publicPages: PublicPage[] = [
   },
   {
     path: "/blog",
-    title: "Digital marketplace buying and selling guides · HSello",
+    title: "Digital marketplace buying and selling guides · Ysello",
     description:
       "Practical guides for buying, selling, licensing, delivery, and trust in digital marketplaces.",
     heading: "Digital marketplace field notes",
@@ -47,8 +47,8 @@ export const publicPages: PublicPage[] = [
   },
   {
     path: "/terms",
-    title: "Terms and Conditions · HSello",
-    description: "The rules for using HSello as a buyer, seller, or visitor.",
+    title: "Terms and Conditions · Ysello",
+    description: "The rules for using Ysello as a buyer, seller, or visitor.",
     heading: "Terms and Conditions",
     intro:
       "Read the marketplace rules that apply to visitors, buyers, sellers, payments, and platform enforcement.",
@@ -57,9 +57,9 @@ export const publicPages: PublicPage[] = [
   },
   {
     path: "/privacy",
-    title: "Privacy Policy · HSello",
+    title: "Privacy Policy · Ysello",
     description:
-      "What HSello collects, why it is used, and the choices available to you.",
+      "What Ysello collects, why it is used, and the choices available to you.",
     heading: "Privacy Policy",
     intro:
       "Understand the information used to operate accounts, orders, support, security, and marketplace services.",
@@ -68,7 +68,7 @@ export const publicPages: PublicPage[] = [
   },
   {
     path: "/refund-policy",
-    title: "Refund Policy · HSello",
+    title: "Refund Policy · Ysello",
     description:
       "How refund requests are evaluated for digital downloads and expert services.",
     heading: "Refund Policy",
@@ -79,9 +79,9 @@ export const publicPages: PublicPage[] = [
   },
   {
     path: "/seller-policy",
-    title: "Seller Policy · HSello",
+    title: "Seller Policy · Ysello",
     description:
-      "Standards for approved HSello sellers and every digital product or service they publish.",
+      "Standards for approved Ysello sellers and every digital product or service they publish.",
     heading: "Seller Policy",
     intro:
       "Review listing, delivery, customer-care, safety, and enforcement standards for marketplace sellers.",
@@ -90,9 +90,9 @@ export const publicPages: PublicPage[] = [
   },
   {
     path: "/buyer-protection",
-    title: "Buyer Protection Policy · HSello",
+    title: "Buyer Protection Policy · Ysello",
     description:
-      "The safeguards around payment, delivery, downloads, support, refunds, and disputes on HSello.",
+      "The safeguards around payment, delivery, downloads, support, refunds, and disputes on Ysello.",
     heading: "Buyer Protection Policy",
     intro:
       "See how listing details, payment confirmation, delivery records, support, and disputes work together.",
@@ -101,9 +101,9 @@ export const publicPages: PublicPage[] = [
   },
   {
     path: "/prohibited-products",
-    title: "Prohibited Products Policy · HSello",
+    title: "Prohibited Products Policy · Ysello",
     description:
-      "Products and services that are not permitted on the HSello digital marketplace.",
+      "Products and services that are not permitted on the Ysello digital marketplace.",
     heading: "Prohibited Products Policy",
     intro:
       "Understand the marketplace boundaries for accounts, credentials, abusive tools, illegal goods, and stolen material.",
@@ -112,9 +112,9 @@ export const publicPages: PublicPage[] = [
   },
   {
     path: "/copyright",
-    title: "Copyright and IP Complaint Policy · HSello",
+    title: "Copyright and IP Complaint Policy · Ysello",
     description:
-      "How rights holders can report allegedly infringing marketplace content to HSello.",
+      "How rights holders can report allegedly infringing marketplace content to Ysello.",
     heading: "Copyright and IP Complaint Policy",
     intro:
       "Find the information required for an intellectual-property notice and learn how complaints are reviewed.",
@@ -123,10 +123,10 @@ export const publicPages: PublicPage[] = [
   },
   {
     path: "/contact",
-    title: "Contact and marketplace support · HSello",
+    title: "Contact and marketplace support · Ysello",
     description:
-      "Find the right HSello contact route for orders, technical help, trust and safety, business, media, legal, and IP questions.",
-    heading: "Contact HSello",
+      "Find the right Ysello contact route for orders, technical help, trust and safety, business, media, legal, and IP questions.",
+    heading: "Contact Ysello",
     intro:
       "Choose the appropriate support route so the right context reaches the right team.",
     changeFrequency: "yearly",
@@ -134,12 +134,12 @@ export const publicPages: PublicPage[] = [
   },
   {
     path: "/about",
-    title: "About the HSello digital marketplace",
+    title: "About the Ysello digital marketplace",
     description:
-      "Learn why HSello is built around original digital work, clear delivery terms, marketplace safeguards, and human support.",
-    heading: "About HSello",
+      "Learn why Ysello is built around original digital work, clear delivery terms, marketplace safeguards, and human support.",
+    heading: "About Ysello",
     intro:
-      "HSello brings original digital downloads and expert services into one marketplace with clear purchase and delivery records.",
+      "Ysello brings original digital downloads and expert services into one marketplace with clear purchase and delivery records.",
     changeFrequency: "yearly",
     priority: 0.6,
   },

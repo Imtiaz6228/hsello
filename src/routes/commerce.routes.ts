@@ -119,7 +119,7 @@ commerceRouter.post(
   "/crypto/webhook",
   asyncHandler(async (req, res) => {
     const providedSecret =
-      req.get("x-hsello-crypto-secret") ||
+      req.get("x-ysello-crypto-secret") ||
       z.string().optional().parse(req.body?.secret);
     if (
       !env.CRYPTO_WEBHOOK_SECRET ||
@@ -402,11 +402,11 @@ commerceRouter.get(
           `<tr><td>${escapeHtml(item.productName)}</td><td>${item.quantity}</td><td>${formatInvoiceMoney(item.unitPriceCents, order.currency)}</td><td>${formatInvoiceMoney(item.totalCents, order.currency)}</td></tr>`,
       )
       .join("");
-    const invoice = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Invoice ${escapeHtml(order.invoiceNumber)}</title><style>body{margin:0;padding:32px;color:#172033;background:#f4f7fb;font:15px/1.55 Inter,Arial,sans-serif}.invoice{max-width:820px;margin:auto;padding:38px;border-radius:24px;background:#fff;box-shadow:0 22px 60px rgba(15,23,42,.1)}header{display:flex;justify-content:space-between;gap:24px;padding-bottom:24px;border-bottom:2px solid #eef1f5}h1{margin:0;font-size:38px}header b{color:#5b47d3;font-size:22px}.meta{margin:24px 0;display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.meta div{padding:14px;border-radius:12px;background:#f7f8fc}.meta small{display:block;color:#718096}table{width:100%;border-collapse:collapse}th,td{padding:13px 10px;border-bottom:1px solid #e9edf3;text-align:left}th{color:#64748b;font-size:12px}.totals{width:min(340px,100%);margin:24px 0 0 auto}.totals div{padding:8px;display:flex;justify-content:space-between}.totals .grand{margin-top:8px;padding-top:14px;border-top:2px solid #e5e9f0;font-size:20px;font-weight:800}footer{margin-top:34px;color:#64748b;font-size:12px}@media print{body{padding:0;background:#fff}.invoice{max-width:none;padding:20px;box-shadow:none}}@media(max-width:600px){body{padding:12px}.invoice{padding:22px 16px}header{flex-direction:column}.meta{grid-template-columns:1fr}table{font-size:12px}}</style></head><body><main class="invoice"><header><div><small>HSELLO DIGITAL EXCHANGE</small><h1>Invoice</h1></div><b>${escapeHtml(order.invoiceNumber)}</b></header><section class="meta"><div><small>Billed to</small><strong>${escapeHtml(order.buyerName)}</strong><br>${escapeHtml(order.buyerEmail)}</div><div><small>Order</small><strong>${escapeHtml(order.orderNumber)}</strong><br>${new Date(order.createdAt).toLocaleString("en-US")}</div><div><small>Payment status</small><strong>${escapeHtml(order.payment?.status?.replaceAll("_", " ") ?? order.status.replaceAll("_", " "))}</strong></div><div><small>Payment method</small><strong>${escapeHtml(order.payment?.method?.replaceAll("_", " ") ?? "Not recorded")}</strong></div></section><table><thead><tr><th>Product</th><th>Qty</th><th>Unit price</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table><section class="totals"><div><span>Subtotal</span><strong>${formatInvoiceMoney(order.subtotalCents, order.currency)}</strong></div><div><span>Discount</span><strong>-${formatInvoiceMoney(order.discountCents, order.currency)}</strong></div><div class="grand"><span>Total</span><strong>${formatInvoiceMoney(order.totalCents, order.currency)}</strong></div></section><footer>This invoice is linked to your protected HSello order. Use your order workspace for delivery support, seller chat, refunds, or disputes.</footer></main></body></html>`;
+    const invoice = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Invoice ${escapeHtml(order.invoiceNumber)}</title><style>body{margin:0;padding:32px;color:#172033;background:#f4f7fb;font:15px/1.55 Inter,Arial,sans-serif}.invoice{max-width:820px;margin:auto;padding:38px;border-radius:24px;background:#fff;box-shadow:0 22px 60px rgba(15,23,42,.1)}header{display:flex;justify-content:space-between;gap:24px;padding-bottom:24px;border-bottom:2px solid #eef1f5}h1{margin:0;font-size:38px}header b{color:#5b47d3;font-size:22px}.meta{margin:24px 0;display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.meta div{padding:14px;border-radius:12px;background:#f7f8fc}.meta small{display:block;color:#718096}table{width:100%;border-collapse:collapse}th,td{padding:13px 10px;border-bottom:1px solid #e9edf3;text-align:left}th{color:#64748b;font-size:12px}.totals{width:min(340px,100%);margin:24px 0 0 auto}.totals div{padding:8px;display:flex;justify-content:space-between}.totals .grand{margin-top:8px;padding-top:14px;border-top:2px solid #e5e9f0;font-size:20px;font-weight:800}footer{margin-top:34px;color:#64748b;font-size:12px}@media print{body{padding:0;background:#fff}.invoice{max-width:none;padding:20px;box-shadow:none}}@media(max-width:600px){body{padding:12px}.invoice{padding:22px 16px}header{flex-direction:column}.meta{grid-template-columns:1fr}table{font-size:12px}}</style></head><body><main class="invoice"><header><div><small>YSELLO DIGITAL EXCHANGE</small><h1>Invoice</h1></div><b>${escapeHtml(order.invoiceNumber)}</b></header><section class="meta"><div><small>Billed to</small><strong>${escapeHtml(order.buyerName)}</strong><br>${escapeHtml(order.buyerEmail)}</div><div><small>Order</small><strong>${escapeHtml(order.orderNumber)}</strong><br>${new Date(order.createdAt).toLocaleString("en-US")}</div><div><small>Payment status</small><strong>${escapeHtml(order.payment?.status?.replaceAll("_", " ") ?? order.status.replaceAll("_", " "))}</strong></div><div><small>Payment method</small><strong>${escapeHtml(order.payment?.method?.replaceAll("_", " ") ?? "Not recorded")}</strong></div></section><table><thead><tr><th>Product</th><th>Qty</th><th>Unit price</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table><section class="totals"><div><span>Subtotal</span><strong>${formatInvoiceMoney(order.subtotalCents, order.currency)}</strong></div><div><span>Discount</span><strong>-${formatInvoiceMoney(order.discountCents, order.currency)}</strong></div><div class="grand"><span>Total</span><strong>${formatInvoiceMoney(order.totalCents, order.currency)}</strong></div></section><footer>This invoice is linked to your protected Ysello order. Use your order workspace for delivery support, seller chat, refunds, or disputes.</footer></main></body></html>`;
     res.setHeader("content-type", "text/html; charset=utf-8");
     res.setHeader(
       "content-disposition",
-      `inline; filename="${order.invoiceNumber.replace(/[^a-z0-9-]+/gi, "-") || "hsello-invoice"}.html"`,
+      `inline; filename="${order.invoiceNumber.replace(/[^a-z0-9-]+/gi, "-") || "ysello-invoice"}.html"`,
     );
     res.send(invoice);
   }),
@@ -504,7 +504,7 @@ commerceRouter.get(
     res.setHeader("content-type", "application/zip");
     res.setHeader(
       "content-disposition",
-      `attachment; filename="${orderItem.productName.replace(/[^a-z0-9-]+/gi, "-").slice(0, 80) || "hsello-download"}.zip"`,
+      `attachment; filename="${orderItem.productName.replace(/[^a-z0-9-]+/gi, "-").slice(0, 80) || "ysello-download"}.zip"`,
     );
     res.send(zip);
   }),
@@ -545,7 +545,7 @@ commerceRouter.get(
       `${orderItem.productName}-${orderItem.order.orderNumber}`
         .replace(/[^a-z0-9-]+/gi, "-")
         .replace(/^-|-$/g, "")
-        .slice(0, 90) || "hsello-delivery";
+        .slice(0, 90) || "ysello-delivery";
     const text = orderItem.inventoryItems
       .map((item) => item.content)
       .join("\n");
@@ -564,7 +564,7 @@ commerceRouter.get(
         {
           name: "README.txt",
           content:
-            "Your protected HSello delivery. Keep these account details private and contact the seller through the order chat if assistance is required.",
+            "Your protected Ysello delivery. Keep these account details private and contact the seller through the order chat if assistance is required.",
         },
       ]);
       res.setHeader("content-type", "application/zip");

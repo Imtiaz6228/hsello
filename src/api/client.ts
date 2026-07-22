@@ -135,7 +135,7 @@ export function mediaUrl(value?: string | null) {
 function networkErrorMessage() {
   return import.meta.env.DEV
     ? "Cannot reach the local authentication service. Start the API server with npm run dev:api and keep the Vite proxy on /api."
-    : "Cannot reach the HSello service. Check the configured API origin and try again.";
+    : "Cannot reach the Ysello service. Check the configured API origin and try again.";
 }
 
 async function request(path: string, init: RequestInit) {

@@ -1,4 +1,4 @@
-name: Deploy HSello Marketplace
+name: Deploy Ysello Marketplace
 
 on:
   workflow_run:

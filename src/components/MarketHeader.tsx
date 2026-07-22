@@ -91,9 +91,9 @@ export function MarketHeader() {
   return (
     <header className="commerce-header">
       <Link className="brand-lockup" to="/">
-        <span className="brand-glyph">H</span>
+        <span className="brand-glyph">Y</span>
         <span>
-          <strong>HSELLO</strong>
+          <strong>YSELLO</strong>
           <small>DIGITAL MARKETPLACE</small>
         </span>
       </Link>
@@ -262,7 +262,7 @@ export function MarketFooter() {
   return (
     <footer className="commerce-footer">
       <div>
-        <span className="brand-glyph">H</span>
+        <span className="brand-glyph">Y</span>
         <p>Original digital goods and expert services, protected end to end.</p>
       </div>
       <div>
@@ -286,7 +286,7 @@ export function MarketFooter() {
         <Link to="/copyright">IP complaints</Link>
       </div>
       <small>
-        © 2026 HSello Digital Exchange. Verified sellers. Protected accounts.
+        © 2026 Ysello Digital Exchange. Verified sellers. Protected accounts.
         Secure checkout.
       </small>
     </footer>

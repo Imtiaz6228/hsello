@@ -121,7 +121,7 @@ async function ensureAdminSellerProfile(userId: string) {
     select: { username: true },
   });
   const base = slugBase(
-    user?.username ? `${user.username}-official` : "hsello-official",
+    user?.username ? `${user.username}-official` : "ysello-official",
   );
   let slug = base;
   let suffix = 2;
@@ -135,10 +135,10 @@ async function ensureAdminSellerProfile(userId: string) {
   return prisma.sellerProfile.create({
     data: {
       userId,
-      storeName: "HSello Official",
+      storeName: "Ysello Official",
       slug,
       about:
-        "Official marketplace catalog managed by the HSello administration team.",
+        "Official marketplace catalog managed by the Ysello administration team.",
       policy:
         "Products are reviewed and supported through the marketplace order system.",
       isVerified: true,
@@ -1532,7 +1532,7 @@ adminRouter.get(
     res.setHeader("content-type", "text/csv; charset=utf-8");
     res.setHeader(
       "content-disposition",
-      `attachment; filename="hsello-orders-${new Date().toISOString().slice(0, 10)}.csv"`,
+      `attachment; filename="ysello-orders-${new Date().toISOString().slice(0, 10)}.csv"`,
     );
     res.send(rows.map((row) => row.map(csvCell).join(",")).join("\n"));
   }),

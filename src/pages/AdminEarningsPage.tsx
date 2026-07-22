@@ -171,7 +171,7 @@ export function AdminEarningsPage() {
     >
       <Seo
         title="Admin Earnings"
-        description="HSello marketplace earnings analytics"
+        description="Ysello marketplace earnings analytics"
         noIndex
       />
       <header style={{ marginBottom: "24px" }}>

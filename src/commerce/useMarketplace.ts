@@ -367,7 +367,7 @@ export function useMarketplaceStore(slug?: string) {
           about: data.store.about,
           policy:
             data.store.policy ||
-            "HSello buyer protection applies to every order.",
+            "Ysello buyer protection applies to every order.",
           rating: Number(data.store.averageRating),
           sales: data.store.totalSales.toLocaleString(),
           joined: new Date(data.store.createdAt).getFullYear().toString(),

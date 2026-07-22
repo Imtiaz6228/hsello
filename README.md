@@ -1,6 +1,6 @@
-# HSello digital marketplace
+# Ysello digital marketplace
 
-HSello is a full-stack marketplace for reviewed digital downloads and service-based products. It includes secure authentication, seller approval, product moderation, cart and checkout, Stripe and PayPal hosted payment flows, manual payment approval, expiring downloads, invoices, support tickets, reviews, disputes, refunds, seller storefronts, legal pages, SEO metadata, sitemaps, reports, and an operations console.
+Ysello is a full-stack marketplace for reviewed digital downloads and service-based products. It includes secure authentication, seller approval, product moderation, cart and checkout, Stripe and PayPal hosted payment flows, manual payment approval, expiring downloads, invoices, support tickets, reviews, disputes, refunds, seller storefronts, legal pages, SEO metadata, sitemaps, reports, and an operations console.
 
 The trust policy is enforced throughout the product: account and credential trading, hacking tools, stolen files, fake reviews, spam, and bot services are prohibited.
 
@@ -24,22 +24,23 @@ There are no `frontend` or `backend` root folders and neither platform needs a R
 ```env
 NODE_ENV=production
 DATABASE_URL=${{Postgres.DATABASE_URL}}
-APP_URL=https://YOUR-VERCEL-PROJECT.vercel.app
-API_URL=https://YOUR-RAILWAY-SERVICE.up.railway.app
-CORS_ORIGIN=https://YOUR-VERCEL-PROJECT.vercel.app
+APP_URL=https://ysello.com
+API_URL=https://api.ysello.com
+CORS_ORIGIN=https://ysello.com,https://www.ysello.com
 COOKIE_DOMAIN=
 JWT_SECRET=GENERATE_A_RANDOM_SECRET_OF_AT_LEAST_32_CHARACTERS
 CSRF_SECRET=GENERATE_A_DIFFERENT_RANDOM_SECRET_OF_AT_LEAST_32_CHARACTERS
 ACCESS_TOKEN_MINUTES=15
 REFRESH_TOKEN_DAYS=30
 SHORT_REFRESH_TOKEN_HOURS=24
-SMTP_HOST=YOUR_SMTP_HOST
+# Optional email delivery. Registration and sign-in do not require SMTP.
+SMTP_HOST=
 SMTP_PORT=587
 SMTP_SECURE=false
-SMTP_USER=YOUR_SMTP_USER
-SMTP_PASS=YOUR_SMTP_PASSWORD
-EMAIL_FROM=Hsello <no-reply@your-domain.com>
-ADMIN_NOTIFICATION_EMAIL=admin@your-domain.com
+SMTP_USER=
+SMTP_PASS=
+EMAIL_FROM=
+ADMIN_NOTIFICATION_EMAIL=
 UPLOAD_DIR=/app/uploads
 MAX_UPLOAD_BYTES=8388608
 TURNSTILE_REQUIRED=false
@@ -55,7 +56,7 @@ PRIVATE_UPLOAD_DIR=/app/private-uploads
 MAX_PRODUCT_FILE_BYTES=104857600
 ```
 
-`COOKIE_DOMAIN` must remain blank. `APP_URL`, `API_URL`, and each comma-separated `CORS_ORIGIN` entry must be a complete HTTPS origin without a path. Prefer exact preview URLs over broad wildcards.
+`COOKIE_DOMAIN` must remain blank. Keep `APP_URL=https://ysello.com`, `API_URL=https://api.ysello.com`, and `CORS_ORIGIN=https://ysello.com,https://www.ysello.com`. These values are required for browser authentication after the custom-domain move.
 
 Railway injects its own `PORT`; you do not need to create that variable. Before every release, `prisma migrate deploy` applies committed migrations to PostgreSQL. A failed migration stops the release before the new API starts.
 
@@ -80,17 +81,17 @@ Railway can also host the complete app at its public URL. To start with that sam
 1. Import the same repository and leave **Root Directory** blank.
 2. Select `main` as the Production Branch.
 3. Vercel reads `vercel.json`, proxies `/api` and `/uploads` to Railway, and runs `npm run build:web`.
-4. Update the Railway URL inside `vercel.json` if your Railway service URL is different, then redeploy Vercel.
+4. Keep the API rewrites pointed at `https://api.ysello.com`, then redeploy Vercel.
 
-Set `VITE_SITE_URL` to the final public Vercel origin (for example, `https://market.example.com`). The build prerenders unique titles, descriptions, canonical links, Open Graph tags, and Twitter tags for the home, catalog, blog, article, company, and legal routes. Vercel's generated production URL is used automatically for previews when the explicit value is absent.
+Set `VITE_SITE_URL=https://ysello.com`. The build prerenders unique titles, descriptions, canonical links, Open Graph tags, and Twitter tags for the home, catalog, blog, article, company, and legal routes. Vercel's generated production URL is used automatically for previews when the explicit value is absent.
 
 Set any real webmaster verification tokens using the optional `VITE_GOOGLE_SITE_VERIFICATION`, `VITE_BING_SITE_VERIFICATION`, `VITE_YANDEX_SITE_VERIFICATION`, and `VITE_BAIDU_SITE_VERIFICATION` variables. Empty variables produce no tag. Domain redirects, sitemap submission, and post-deployment indexing checks are documented in `SEO_DEPLOYMENT.md`.
 
-Leave `VITE_API_BASE_URL` blank for the normal Vercel setup. If you intentionally want browser requests to call Railway directly, set `VITE_USE_REMOTE_API=true` and `VITE_API_BASE_URL=https://YOUR-RAILWAY-SERVICE.up.railway.app`, then redeploy. Do not append `/api`.
+Use `VITE_USE_REMOTE_API=false` for the normal Vercel setup so browser requests stay on `ysello.com` and use the included `/api` rewrite. `VITE_API_BASE_URL=https://api.ysello.com` remains available for an intentional direct-API deployment; do not append `/api`.
 
 If Turnstile is enabled, also set `VITE_TURNSTILE_SITE_KEY` on Vercel and the matching `TURNSTILE_SECRET_KEY` on Railway. Add a Vercel preview URL to Railway's `CORS_ORIGIN` only when you intend to test that preview.
 
-After Vercel has its final URL, confirm that Railway's `APP_URL` and `CORS_ORIGIN` use that URL and redeploy Railway once.
+After deploying this update, redeploy Railway so the Ysello origin allowlist is active, then redeploy Vercel.
 
 ## GitHub autodeploy safety
 

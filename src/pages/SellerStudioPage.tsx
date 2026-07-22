@@ -1319,9 +1319,9 @@ export function SellerStudioPage() {
       <aside className={`seller-pro-sidebar ${drawerOpen ? "open" : ""}`}>
         <div className="seller-sidebar-head">
           <Link className="brand-lockup" to="/">
-            <span className="brand-glyph">H</span>
+            <span className="brand-glyph">Y</span>
             <span>
-              <strong>HSELLO</strong>
+              <strong>YSELLO</strong>
               <small>SELLER CENTER</small>
             </span>
           </Link>

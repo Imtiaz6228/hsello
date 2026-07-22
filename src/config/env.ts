@@ -3,6 +3,13 @@ import { z } from "zod";
 
 dotenv.config();
 
+export const CANONICAL_APP_ORIGIN = "https://ysello.com";
+export const CANONICAL_API_ORIGIN = "https://api.ysello.com";
+export const TRUSTED_APP_ORIGINS = [
+  CANONICAL_APP_ORIGIN,
+  "https://www.ysello.com",
+] as const;
+
 const emptyToUndefined = (value: unknown) => (value === "" ? undefined : value);
 const booleanFromEnv = z.preprocess((value) => {
   if (typeof value === "string") {

@@ -811,7 +811,7 @@ model PublicUpload {
   @@index([createdAt])
 }
 
-// ===== HSello marketplace support models =====
+// ===== Ysello marketplace support models =====
 
 model TopupRequest {
   id              String      @id @default(uuid())

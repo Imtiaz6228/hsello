@@ -199,7 +199,7 @@ export function OrderConfirmationPage() {
     <main className="commerce-page confirmation-page">
       <Seo
         title="Order confirmation"
-        description="Payment and digital delivery status for your HSello order."
+        description="Payment and digital delivery status for your Ysello order."
         noIndex
       />
       <MarketHeader />

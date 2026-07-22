@@ -1088,7 +1088,7 @@ a {
   background: var(--lime);
 }
 .seller-cta::after {
-  content: "H";
+  content: "Y";
   position: absolute;
   right: 18%;
   bottom: -150px;

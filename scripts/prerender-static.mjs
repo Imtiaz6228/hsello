@@ -26,7 +26,7 @@ const commonLinks = [
   ["/catalog", "Browse products and services"],
   ["/blog", "Buying and selling guides"],
   ["/buyer-protection", "Buyer protection"],
-  ["/about", "About HSello"],
+  ["/about", "About Ysello"],
   ["/contact", "Contact and support"],
   ["/refund-policy", "Refund policy"],
   ["/seller-policy", "Seller policy"],
@@ -38,7 +38,7 @@ const commonLinks = [
 
 const articlePages = blogPosts.map((post) => ({
   path: `/blog/${post.slug}`,
-  title: `${post.title} · HSello`,
+  title: `${post.title} · Ysello`,
   description: post.excerpt,
   heading: post.title,
   intro: post.excerpt,
@@ -104,7 +104,7 @@ function pageBody(page) {
     content = `<section><h2>A marketplace designed for clear digital trade</h2><p>Explore approved listings, review seller and delivery information, and keep checkout, delivery, messages, and support connected to the order.</p><div class="seo-link-list"><a href="/catalog">Explore all listings</a><a href="/seller-policy">Read seller standards</a><a href="/prohibited-products">Review prohibited products</a></div></section>`;
   }
 
-  return `<main class="seo-static-shell"><header><a href="/" aria-label="HSello home">HSello Digital Marketplace</a>${staticNavigation()}</header><article><h1>${escapeHtml(page.heading)}</h1><p>${escapeHtml(page.intro)}</p>${content}</article></main>`;
+  return `<main class="seo-static-shell"><header><a href="/" aria-label="Ysello home">Ysello Digital Marketplace</a>${staticNavigation()}</header><article><h1>${escapeHtml(page.heading)}</h1><p>${escapeHtml(page.intro)}</p>${content}</article></main>`;
 }
 
 function structuredData(page, canonical) {
@@ -119,21 +119,21 @@ function structuredData(page, canonical) {
         datePublished: article.publishedIso,
         dateModified: article.publishedIso,
         mainEntityOfPage: canonical,
-        author: { "@type": "Organization", name: "HSello", url: siteHome },
-        publisher: { "@type": "Organization", name: "HSello", url: siteHome },
+        author: { "@type": "Organization", name: "Ysello", url: siteHome },
+        publisher: { "@type": "Organization", name: "Ysello", url: siteHome },
       }
     : page.path === "/"
       ? [
           {
             "@context": "https://schema.org",
             "@type": "Organization",
-            name: "HSello",
+            name: "Ysello",
             url: siteHome,
           },
           {
             "@context": "https://schema.org",
             "@type": "WebSite",
-            name: "HSello",
+            name: "Ysello",
             url: siteHome,
             potentialAction: {
               "@type": "SearchAction",
@@ -171,7 +171,7 @@ function renderPage(page, { noIndex = false } = {}) {
   html = replaceMeta(html, "name", "robots", robots);
   html = replaceMeta(html, "name", "googlebot", robots);
   html = replaceMeta(html, "name", "bingbot", robots);
-  html = replaceMeta(html, "property", "og:site_name", "HSello");
+  html = replaceMeta(html, "property", "og:site_name", "Ysello");
   html = replaceMeta(html, "property", "og:locale", "en_US");
   html = replaceMeta(html, "property", "og:title", page.title);
   html = replaceMeta(html, "property", "og:description", page.description);
@@ -182,7 +182,7 @@ function renderPage(page, { noIndex = false } = {}) {
     html,
     "property",
     "og:image:alt",
-    "HSello digital marketplace",
+    "Ysello digital marketplace",
   );
   html = replaceMeta(html, "name", "twitter:card", "summary_large_image");
   html = replaceMeta(html, "name", "twitter:title", page.title);
@@ -192,7 +192,7 @@ function renderPage(page, { noIndex = false } = {}) {
     html,
     "name",
     "twitter:image:alt",
-    "HSello digital marketplace",
+    "Ysello digital marketplace",
   );
   html = html.replace(/<link\s+rel=["']canonical["'][^>]*>/i, "");
   html = html.replace(
@@ -217,9 +217,9 @@ for (const page of pages) {
 
 const notFoundPage = {
   path: "/404",
-  title: "Page not found · HSello",
+  title: "Page not found · Ysello",
   description:
-    "The requested page could not be found. Browse the HSello marketplace or return to the homepage.",
+    "The requested page could not be found. Browse the Ysello marketplace or return to the homepage.",
   heading: "That page does not exist",
   intro:
     "The address may be outdated or mistyped. Continue with a valid marketplace page below.",

@@ -1,6 +1,6 @@
 /* global Headers, Response */
 
-const DEFAULT_API_ORIGIN = "https://hsello-production.up.railway.app";
+const DEFAULT_API_ORIGIN = "https://api.ysello.com";
 
 function upstreamRequest(request, apiOrigin) {
   const url = new URL(request.url);

@@ -21,11 +21,11 @@ export function AuthShell({
         <Link
           className="brand-lockup auth-brand"
           to="/"
-          aria-label="HSello home"
+          aria-label="Ysello home"
         >
-          <span className="brand-glyph">H</span>
+          <span className="brand-glyph">Y</span>
           <span>
-            <strong>HSELLO</strong>
+            <strong>YSELLO</strong>
             <small>DIGITAL EXCHANGE</small>
           </span>
         </Link>
@@ -66,7 +66,7 @@ export function AuthShell({
       <section className="auth-panel">
         <div className="auth-panel-inner">
           <Link className="mobile-auth-brand" to="/">
-            HSello
+            Ysello
           </Link>
           {children}
         </div>

@@ -197,12 +197,12 @@ export function CatalogPage() {
     <main className="commerce-page market-browse-page">
       <Seo
         title="Browse products and categories"
-        description="Explore approved digital products and expert services by category, seller, price, delivery type, and availability on HSello."
+        description="Explore approved digital products and expert services by category, seller, price, delivery type, and availability on Ysello."
         canonicalPath="/catalog"
         schema={{
           "@context": "https://schema.org",
           "@type": "CollectionPage",
-          name: "HSello digital marketplace catalog",
+          name: "Ysello digital marketplace catalog",
           description:
             "Approved digital products and expert services with clear delivery and seller details.",
           url: `${window.location.origin}/catalog`,

@@ -831,7 +831,7 @@ export function AccountDashboardPage() {
     <main className="account-dashboard-page buyer-premium-dashboard">
       <Seo
         title="Account dashboard"
-        description="Manage HSello orders, downloads, invoices, support, and seller activity."
+        description="Manage Ysello orders, downloads, invoices, support, and seller activity."
         noIndex
       />
 
@@ -846,9 +846,9 @@ export function AccountDashboardPage() {
         className={`dashboard-sidebar buyer-sidebar ${drawerOpen ? "open" : ""}`}
       >
         <Link className="brand-lockup" to="/">
-          <span className="brand-glyph">H</span>
+          <span className="brand-glyph">Y</span>
           <span>
-            <strong>HSELLO</strong>
+            <strong>YSELLO</strong>
             <small>BUYER CENTER</small>
           </span>
         </Link>
@@ -3665,7 +3665,7 @@ function WalletTabContent({
         <Link className="seller-application-cta" to="/seller/apply">
           <Store size={21} />
           <span>
-            <small>GROW WITH HSELLO</small>
+            <small>GROW WITH YSELLO</small>
             <strong>Apply to become a seller</strong>
             <b>
               Open application <ArrowRight size={15} />

@@ -41,7 +41,7 @@ export function VerifyEmailPage() {
     <main className="center-page">
       <Seo
         title="Email verification"
-        description="Complete a requested HSello account verification step."
+        description="Complete a requested Ysello account verification step."
         noIndex
       />
       <section className="message-card">

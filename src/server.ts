@@ -6,7 +6,7 @@ import { ensureDefaultMarketplaceCategories } from "./services/category.service.
 const server = await (async () => {
   await ensureDefaultMarketplaceCategories();
   return app.listen(env.PORT, () => {
-    console.log(`HSello API listening on port ${env.PORT}`);
+    console.log(`Ysello API listening on port ${env.PORT}`);
   });
 })().catch(async (error) => {
   console.error("API startup failed", error);

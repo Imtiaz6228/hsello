@@ -98,7 +98,7 @@ async function createStripeSession(order: {
   body.set("line_items[0][price_data][unit_amount]", String(order.totalCents));
   body.set(
     "line_items[0][price_data][product_data][name]",
-    `HSello order ${order.orderNumber}`,
+    `Ysello order ${order.orderNumber}`,
   );
   body.set("line_items[0][quantity]", "1");
 
@@ -986,7 +986,7 @@ export async function issueRefund(refundId: string) {
     const body = new URLSearchParams({
       payment_intent: session.payment_intent,
       amount: String(refund.amountCents),
-      "metadata[hselloRefundId]": refund.id,
+      "metadata[yselloRefundId]": refund.id,
     });
     const response = await fetch("https://api.stripe.com/v1/refunds", {
       method: "POST",

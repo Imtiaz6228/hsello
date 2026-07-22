@@ -61,7 +61,7 @@ export function VerifyRequiredPage() {
     <main className="center-page">
       <Seo
         title="Check your email"
-        description="Continue a requested HSello account verification step."
+        description="Continue a requested Ysello account verification step."
         noIndex
       />
       <section className="message-card">

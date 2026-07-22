@@ -217,7 +217,7 @@ export function StorePage() {
           <h2>Seller policy</h2>
           <p>{store.policy}</p>
           <small>
-            All purchases remain covered by HSello buyer protection and the
+            All purchases remain covered by Ysello buyer protection and the
             platform refund policy.
           </small>
         </aside>

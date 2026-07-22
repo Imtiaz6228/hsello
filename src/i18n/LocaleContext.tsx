@@ -64,7 +64,7 @@ const copy: Record<LocaleCode, Record<string, string>> = {
     releases: "New releases",
     notes: "Field notes",
     sell: "Sell with us",
-    sellOn: "Sell on HSello",
+    sellOn: "Sell on Ysello",
     search: "Search products, sellers and categories…",
     browse: "Browse, filter, and buy.",
     allCategories: "All categories",
@@ -108,7 +108,7 @@ const copy: Record<LocaleCode, Record<string, string>> = {
     releases: "新品",
     notes: "指南",
     sell: "成为卖家",
-    sellOn: "在 HSello 销售",
+    sellOn: "在 Ysello 销售",
     search: "搜索产品、卖家和分类…",
     browse: "浏览、筛选并购买。",
     allCategories: "全部分类",
@@ -152,7 +152,7 @@ const copy: Record<LocaleCode, Record<string, string>> = {
     releases: "新品",
     notes: "指南",
     sell: "成為賣家",
-    sellOn: "在 HSello 銷售",
+    sellOn: "在 Ysello 銷售",
     search: "搜尋產品、賣家和分類…",
     browse: "瀏覽、篩選並購買。",
     allCategories: "所有分類",
@@ -196,7 +196,7 @@ const copy: Record<LocaleCode, Record<string, string>> = {
     releases: "Новинки",
     notes: "Гайды",
     sell: "Стать продавцом",
-    sellOn: "Продавать на HSello",
+    sellOn: "Продавать на Ysello",
     search: "Поиск товаров, продавцов и категорий…",
     browse: "Ищите, фильтруйте и покупайте.",
     allCategories: "Все категории",
@@ -240,7 +240,7 @@ const copy: Record<LocaleCode, Record<string, string>> = {
     releases: "Sản phẩm mới",
     notes: "Hướng dẫn",
     sell: "Trở thành người bán",
-    sellOn: "Bán trên HSello",
+    sellOn: "Bán trên Ysello",
     search: "Tìm sản phẩm, người bán và danh mục…",
     browse: "Duyệt, lọc và mua.",
     allCategories: "Tất cả danh mục",
@@ -294,12 +294,12 @@ type LocaleValue = {
 const LocaleContext = createContext<LocaleValue | null>(null);
 
 function storedLocale(): LocaleCode {
-  const value = localStorage.getItem("hsello-locale") as LocaleCode | null;
+  const value = localStorage.getItem("ysello-locale") as LocaleCode | null;
   return value && validLocales.has(value) ? value : "en";
 }
 
 function storedCurrency(): CurrencyCode {
-  const value = localStorage.getItem("hsello-currency") as CurrencyCode | null;
+  const value = localStorage.getItem("ysello-currency") as CurrencyCode | null;
   return value && validCurrencies.has(value) ? value : "USD";
 }
 
@@ -310,10 +310,10 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     document.documentElement.lang = locale;
     document.documentElement.dir = "ltr";
-    localStorage.setItem("hsello-locale", locale);
+    localStorage.setItem("ysello-locale", locale);
   }, [locale]);
   useEffect(() => {
-    localStorage.setItem("hsello-currency", currency);
+    localStorage.setItem("ysello-currency", currency);
   }, [currency]);
 
   const value = useMemo<LocaleValue>(

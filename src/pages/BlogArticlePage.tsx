@@ -26,12 +26,12 @@ export function BlogArticlePage() {
           mainEntityOfPage: `${window.location.origin}/blog/${post.slug}`,
           author: {
             "@type": "Organization",
-            name: "HSello",
+            name: "Ysello",
             url: window.location.origin,
           },
           publisher: {
             "@type": "Organization",
-            name: "HSello",
+            name: "Ysello",
             url: window.location.origin,
           },
         }}

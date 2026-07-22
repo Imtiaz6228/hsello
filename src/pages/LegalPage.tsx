@@ -16,7 +16,7 @@ export const legalPages: Record<string, LegalPageContent> = {
   "/terms": {
     title: "Terms and Conditions",
     eyebrow: "LEGAL · UPDATED JULY 2026",
-    description: "The rules for using HSello as a buyer, seller, or visitor.",
+    description: "The rules for using Ysello as a buyer, seller, or visitor.",
     sections: [
       {
         title: "Using the platform",
@@ -24,7 +24,7 @@ export const legalPages: Record<string, LegalPageContent> = {
       },
       {
         title: "Marketplace relationship",
-        body: "Sellers are responsible for their listings, licenses, delivery promises, and legal compliance. HSello provides marketplace, payment coordination, digital delivery, support, and dispute tools. Product approval is not an endorsement or guarantee.",
+        body: "Sellers are responsible for their listings, licenses, delivery promises, and legal compliance. Ysello provides marketplace, payment coordination, digital delivery, support, and dispute tools. Product approval is not an endorsement or guarantee.",
       },
       {
         title: "Payments and enforcement",
@@ -40,11 +40,11 @@ export const legalPages: Record<string, LegalPageContent> = {
     title: "Privacy Policy",
     eyebrow: "PRIVACY FIRST",
     description:
-      "What HSello collects, why it is used, and the choices available to you.",
+      "What Ysello collects, why it is used, and the choices available to you.",
     sections: [
       {
         title: "Data we collect",
-        body: "We collect account details, verification status, order and payment references, support messages, security logs, device information, and content you choose to upload. Payment providers handle full payment credentials; HSello stores provider references and status.",
+        body: "We collect account details, verification status, order and payment references, support messages, security logs, device information, and content you choose to upload. Payment providers handle full payment credentials; Ysello stores provider references and status.",
       },
       {
         title: "How data is used",
@@ -80,7 +80,7 @@ export const legalPages: Record<string, LegalPageContent> = {
       },
       {
         title: "Process",
-        body: "Submit a request from the order dashboard. Sellers may respond, but HSello makes the platform decision. Approved provider refunds return to the original method when possible; bank, crypto, or manual payments may require separate payout details.",
+        body: "Submit a request from the order dashboard. Sellers may respond, but Ysello makes the platform decision. Approved provider refunds return to the original method when possible; bank, crypto, or manual payments may require separate payout details.",
       },
     ],
   },
@@ -100,7 +100,7 @@ export const legalPages: Record<string, LegalPageContent> = {
       },
       {
         title: "Customer care",
-        body: "Respond professionally, meet delivery commitments, assist with legitimate defects, and participate in disputes. Never pressure buyers for positive reviews or ask them to pay or communicate outside HSello.",
+        body: "Respond professionally, meet delivery commitments, assist with legitimate defects, and participate in disputes. Never pressure buyers for positive reviews or ask them to pay or communicate outside Ysello.",
       },
       {
         title: "Enforcement",
@@ -120,7 +120,7 @@ export const legalPages: Record<string, LegalPageContent> = {
       },
       {
         title: "Protected payment",
-        body: "Hosted card and PayPal payments are confirmed server-side. Bank, crypto, and manual methods require staff approval before delivery. HSello never asks you to send passwords or full payment credentials in messages.",
+        body: "Hosted card and PayPal payments are confirmed server-side. Bank, crypto, and manual methods require staff approval before delivery. Ysello never asks you to send passwords or full payment credentials in messages.",
       },
       {
         title: "Delivery and evidence",
@@ -128,14 +128,14 @@ export const legalPages: Record<string, LegalPageContent> = {
       },
       {
         title: "When something goes wrong",
-        body: "Open an order-linked ticket, refund request, or dispute. Keep communication and files in HSello so support can review the evidence. Outcomes may include repair, replacement, partial refund, full refund, or denial.",
+        body: "Open an order-linked ticket, refund request, or dispute. Keep communication and files in Ysello so support can review the evidence. Outcomes may include repair, replacement, partial refund, full refund, or denial.",
       },
     ],
   },
   "/prohibited-products": {
     title: "Prohibited Products Policy",
     eyebrow: "NO GREY MARKET",
-    description: "Products and services that do not belong on HSello.",
+    description: "Products and services that do not belong on Ysello.",
     sections: [
       {
         title: "Accounts and access",
@@ -163,7 +163,7 @@ export const legalPages: Record<string, LegalPageContent> = {
     sections: [
       {
         title: "Submitting a notice",
-        body: "Provide your identity and contact details, the protected work, the exact HSello URL, a good-faith statement, an accuracy and authority statement, and your physical or electronic signature. Incomplete notices may delay review.",
+        body: "Provide your identity and contact details, the protected work, the exact Ysello URL, a good-faith statement, an accuracy and authority statement, and your physical or electronic signature. Incomplete notices may delay review.",
       },
       {
         title: "Our review",
@@ -198,14 +198,14 @@ export const legalPages: Record<string, LegalPageContent> = {
     ],
   },
   "/about": {
-    title: "About HSello",
+    title: "About Ysello",
     eyebrow: "A MORE USEFUL DIGITAL MARKET",
     description:
-      "Why HSello is built around original work, clear delivery, and human support.",
+      "Why Ysello is built around original work, clear delivery, and human support.",
     sections: [
       {
         title: "The idea",
-        body: "Digital marketplaces are better when the rules are legible. HSello brings original downloads and expert services into one exchange with product review, seller verification, secure payment confirmation, delivery records, and real support.",
+        body: "Digital marketplaces are better when the rules are legible. Ysello brings original downloads and expert services into one exchange with product review, seller verification, secure payment confirmation, delivery records, and real support.",
       },
       {
         title: "What belongs here",
@@ -217,7 +217,7 @@ export const legalPages: Record<string, LegalPageContent> = {
       },
       {
         title: "Still becoming",
-        body: "HSello is designed to grow carefully. New payment methods, categories, and seller tools should make the exchange safer and more useful—not merely larger.",
+        body: "Ysello is designed to grow carefully. New payment methods, categories, and seller tools should make the exchange safer and more useful—not merely larger.",
       },
     ],
   },

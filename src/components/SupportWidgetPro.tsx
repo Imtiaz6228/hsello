@@ -349,7 +349,7 @@ export function SupportWidgetPro() {
               id="support-dialog-title"
               style={{ color: "#fafafa", fontSize: "14px" }}
             >
-              {humanMode ? "Admin conversation" : "HSello Support"}
+              {humanMode ? "Admin conversation" : "Ysello Support"}
             </strong>
             <div style={{ fontSize: "11px", color: "#34d399" }}>
               ●{" "}
@@ -527,7 +527,7 @@ export function SupportWidgetPro() {
       >
         <ShieldCheck size={17} color="#34d399" aria-hidden="true" />
         <label className="sr-only" htmlFor="support-message">
-          Message to HSello support
+          Message to Ysello support
         </label>
         <input
           ref={inputRef}
@@ -537,7 +537,7 @@ export function SupportWidgetPro() {
             setInput(e.target.value);
             debouncedTyping(true);
           }}
-          placeholder={user ? "Write a message…" : "Ask about HSello…"}
+          placeholder={user ? "Write a message…" : "Ask about Ysello…"}
           style={{
             flex: 1,
             background: "#0A0A0B",

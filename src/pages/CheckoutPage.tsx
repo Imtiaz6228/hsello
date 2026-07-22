@@ -159,7 +159,7 @@ export function CheckoutPage() {
     <main className="commerce-page checkout-page">
       <Seo
         title="Secure checkout"
-        description="Complete your protected HSello order."
+        description="Complete your protected Ysello order."
         noIndex
       />
       <MarketHeader />

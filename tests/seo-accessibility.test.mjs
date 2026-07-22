@@ -8,9 +8,9 @@ test("prerenders public routes with unique metadata", () => {
     "dist/blog/evaluate-digital-product-before-checkout.html",
     "utf8",
   );
-  assert.match(about, /<title>About the HSello digital marketplace<\/title>/);
-  assert.match(about, /rel="canonical" href="\/about"/);
-  assert.match(about, /<h1>About HSello<\/h1>/);
+  assert.match(about, /<title>About the Ysello digital marketplace<\/title>/);
+  assert.match(about, /rel="canonical" href="https:\/\/ysello\.com\/about"/);
+  assert.match(about, /<h1>About Ysello<\/h1>/);
   assert.match(about, /<h2>The idea<\/h2>/);
   assert.match(blog, /property="og:type" content="article"/);
   assert.match(blog, /name="twitter:description"/);

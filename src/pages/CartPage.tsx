@@ -45,7 +45,7 @@ export function CartPage() {
     <main className="commerce-page">
       <Seo
         title="Your cart"
-        description="Review your HSello digital products and continue to checkout."
+        description="Review your Ysello digital products and continue to checkout."
         noIndex
       />
       <MarketHeader />

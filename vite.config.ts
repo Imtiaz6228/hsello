@@ -42,7 +42,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       {
-        name: "hsello-deployment-metadata",
+        name: "ysello-deployment-metadata",
         transformIndexHtml() {
           return verificationTags;
         },

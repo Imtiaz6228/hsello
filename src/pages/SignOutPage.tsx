@@ -24,7 +24,7 @@ export function SignOutPage() {
     <main className="signout-page">
       <Seo
         title="Sign out"
-        description="Securely sign out of your HSello account."
+        description="Securely sign out of your Ysello account."
         noIndex
       />
       <section className="signout-card">
@@ -32,7 +32,7 @@ export function SignOutPage() {
           <LogOut />
         </div>
         <span className="section-index">SECURE SESSION</span>
-        <h1>Sign out of HSello?</h1>
+        <h1>Sign out of Ysello?</h1>
         <p>
           You are signed in as{" "}
           <strong>

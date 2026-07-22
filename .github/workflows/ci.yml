@@ -17,19 +17,19 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_DB: hsello_ci
+          POSTGRES_DB: ysello_ci
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U postgres -d hsello_ci"
+          --health-cmd "pg_isready -U postgres -d ysello_ci"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
 
     env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/hsello_ci?schema=public
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ysello_ci?schema=public
 
     steps:
       - name: Check out repository

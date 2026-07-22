@@ -149,7 +149,7 @@ export function SellerApplicationPage() {
     <main className="center-page">
       <Seo
         title="Seller application"
-        description="Apply for reviewed HSello seller access."
+        description="Apply for reviewed Ysello seller access."
         noIndex
       />
       <form className="auth-form wide" onSubmit={submit}>

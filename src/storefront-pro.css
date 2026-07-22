@@ -305,12 +305,7 @@
 .pro-home .pro-market-hero h1 {
   margin: 0 0 8px;
   color: var(--store-ink);
-  font-family:
-    "Arial Black",
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    sans-serif;
+  font-family: "Arial Black", Inter, ui-sans-serif, system-ui, sans-serif;
   font-size: clamp(34px, 3.35vw, 48px);
   font-weight: 900;
   line-height: 0.96;
@@ -422,11 +417,7 @@
 .pro-home .lux-section-head h2 {
   margin: 3px 0 0;
   color: var(--store-ink);
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    sans-serif;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
   font-size: clamp(22px, 2.4vw, 31px);
   font-weight: 860;
   line-height: 1.05;
@@ -566,11 +557,7 @@
 .pro-home .lux-category-preview h3 {
   margin: 2px 0 2px;
   color: var(--store-ink);
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    sans-serif;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
   font-size: 18px;
   font-weight: 850;
   letter-spacing: -0.025em;
@@ -764,11 +751,7 @@
   min-height: 0;
   margin: 5px 0 7px;
   color: var(--store-ink);
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    sans-serif;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
   font-size: 14px;
   font-weight: 850;
   line-height: 1.25;
@@ -1067,11 +1050,7 @@
 .catalog-section-heading h2 {
   margin: 5px 0 6px;
   color: var(--store-ink);
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    sans-serif;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
   font-size: clamp(23px, 2.8vw, 34px);
   line-height: 1.05;
   letter-spacing: -0.04em;
@@ -1390,11 +1369,7 @@
 .market-product-card h2 {
   margin: 4px 0 0;
   color: var(--store-ink);
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    sans-serif;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
   font-size: 15px;
   line-height: 1.25;
   letter-spacing: -0.02em;
@@ -1480,7 +1455,11 @@
   border-radius: 13px;
   color: var(--store-ink);
   background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.92), rgba(245, 242, 255, 0.94)),
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.92),
+      rgba(245, 242, 255, 0.94)
+    ),
     #fff;
   box-shadow: none;
 }
@@ -1494,12 +1473,7 @@
 .category-heading-copy h1 {
   margin: 4px 0 8px;
   color: var(--store-ink);
-  font-family:
-    "Arial Black",
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    sans-serif;
+  font-family: "Arial Black", Inter, ui-sans-serif, system-ui, sans-serif;
   font-size: clamp(34px, 4.8vw, 56px);
   font-weight: 900;
   line-height: 0.98;
@@ -1734,12 +1708,7 @@
 
 .product-detail-copy h1 {
   color: var(--store-ink);
-  font-family:
-    "Arial Black",
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    sans-serif;
+  font-family: "Arial Black", Inter, ui-sans-serif, system-ui, sans-serif;
   font-size: clamp(32px, 3.6vw, 48px);
   font-weight: 900;
   line-height: 1;
@@ -1874,12 +1843,7 @@
 
 .store-banner h1 {
   color: var(--store-ink);
-  font-family:
-    "Arial Black",
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    sans-serif;
+  font-family: "Arial Black", Inter, ui-sans-serif, system-ui, sans-serif;
   font-size: clamp(36px, 4.5vw, 54px);
   letter-spacing: -0.05em;
 }
@@ -1946,12 +1910,7 @@
 .simple-hero h1 {
   margin: 5px 0 7px;
   color: var(--store-ink);
-  font-family:
-    "Arial Black",
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    sans-serif;
+  font-family: "Arial Black", Inter, ui-sans-serif, system-ui, sans-serif;
   font-size: clamp(38px, 5vw, 58px);
   font-weight: 900;
   letter-spacing: -0.055em;
@@ -2024,12 +1983,7 @@
 
 .checkout-main h1 {
   color: var(--store-ink);
-  font-family:
-    "Arial Black",
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    sans-serif;
+  font-family: "Arial Black", Inter, ui-sans-serif, system-ui, sans-serif;
   font-size: clamp(38px, 5vw, 58px);
   font-weight: 900;
   letter-spacing: -0.055em;
@@ -2126,12 +2080,7 @@
 .blog-article header h1,
 .not-found-card h1 {
   color: var(--store-ink);
-  font-family:
-    "Arial Black",
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    sans-serif;
+  font-family: "Arial Black", Inter, ui-sans-serif, system-ui, sans-serif;
   font-weight: 900;
   letter-spacing: -0.055em;
 }
@@ -2169,11 +2118,7 @@
 .blog-card h2,
 .blog-card h2 a {
   color: var(--store-ink);
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    sans-serif;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
 }
 
 .blog-card p,
@@ -2223,11 +2168,7 @@
 
 .blog-article-body h2 {
   color: var(--store-ink);
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    sans-serif;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
 }
 
 .legal-hero h1 {
@@ -2288,11 +2229,7 @@
 
 .legal-layout h2 {
   color: var(--store-ink);
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    sans-serif;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
 }
 
 .legal-layout p {
@@ -2347,11 +2284,7 @@
 .support-layout h2,
 .ticket-modal h2 {
   color: var(--store-ink);
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    sans-serif;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
 }
 
 .support-layout > div > header button,
@@ -2434,7 +2367,11 @@
 .auth-copy {
   color: #fff;
   background:
-    radial-gradient(circle at 18% 14%, rgba(200, 242, 74, 0.2), transparent 28%),
+    radial-gradient(
+      circle at 18% 14%,
+      rgba(200, 242, 74, 0.2),
+      transparent 28%
+    ),
     #191927;
 }
 

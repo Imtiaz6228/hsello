@@ -2,14 +2,17 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const failedMigrationName =
-  "202607180001_commission_transaction_idempotency";
+const failedMigrationName = "202607180001_commission_transaction_idempotency";
 
 test("Railway safely recovers and retries the known failed migration", async () => {
   const [packageJson, railwayJson, recoveryScript, migrationSql] =
     await Promise.all([
-      readFile(new URL("../package.json", import.meta.url), "utf8").then(JSON.parse),
-      readFile(new URL("../railway.json", import.meta.url), "utf8").then(JSON.parse),
+      readFile(new URL("../package.json", import.meta.url), "utf8").then(
+        JSON.parse,
+      ),
+      readFile(new URL("../railway.json", import.meta.url), "utf8").then(
+        JSON.parse,
+      ),
       readFile(
         new URL("../scripts/recover-failed-migration.mjs", import.meta.url),
         "utf8",
@@ -57,6 +60,9 @@ test("all Prisma models missing from the old history now have migrations", async
     "ChatMessage",
     "AdminWallet",
   ]) {
-    assert.match(migrationSql, new RegExp(`CREATE TABLE IF NOT EXISTS "${table}"`));
+    assert.match(
+      migrationSql,
+      new RegExp(`CREATE TABLE IF NOT EXISTS "${table}"`),
+    );
   }
 });

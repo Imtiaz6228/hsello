@@ -8,7 +8,7 @@ import {
   X,
 } from "lucide-react";
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { STAFF_ROLES } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { useCart } from "../commerce/CartContext";
@@ -20,10 +20,12 @@ export function MarketHeader() {
   const { count } = useCart();
   const { t } = useLocale();
   const navigate = useNavigate();
+  const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [globalQuery, setGlobalQuery] = useState("");
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const navigationRef = useRef<HTMLElement>(null);
   const accountPath = user
     ? STAFF_ROLES.includes(user.role)
       ? "/admin"
@@ -35,14 +37,44 @@ export function MarketHeader() {
   useEffect(() => {
     if (!menuOpen) return;
     closeButtonRef.current?.focus();
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      setMenuOpen(false);
-      menuButtonRef.current?.focus();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setMenuOpen(false);
+        menuButtonRef.current?.focus();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusable = Array.from(
+        navigationRef.current?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      );
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, [menuOpen]);
+
+  useEffect(() => setMenuOpen(false), [location.hash, location.pathname]);
+
+  function pageCurrent(path: string) {
+    return location.pathname === path ? ("page" as const) : undefined;
+  }
 
   function closeMenu() {
     setMenuOpen(false);
@@ -89,6 +121,7 @@ export function MarketHeader() {
         <Menu aria-hidden="true" />
       </button>
       <nav
+        ref={navigationRef}
         id="marketplace-navigation"
         className={menuOpen ? "open" : ""}
         aria-label="Marketplace"
@@ -117,19 +150,35 @@ export function MarketHeader() {
             <ArrowRight aria-hidden="true" />
           </button>
         </form>
-        <Link to="/catalog" onClick={() => setMenuOpen(false)}>
+        <Link
+          to="/catalog"
+          aria-current={pageCurrent("/catalog")}
+          onClick={() => setMenuOpen(false)}
+        >
           {t("explore")}
         </Link>
         <Link to="/catalog#departments" onClick={() => setMenuOpen(false)}>
           {t("categories")}
         </Link>
-        <Link to="/seller/apply" onClick={() => setMenuOpen(false)}>
+        <Link
+          to="/seller/apply"
+          aria-current={pageCurrent("/seller/apply")}
+          onClick={() => setMenuOpen(false)}
+        >
           {t("sellOn")}
         </Link>
-        <Link to="/buyer-protection" onClick={() => setMenuOpen(false)}>
+        <Link
+          to="/buyer-protection"
+          aria-current={pageCurrent("/buyer-protection")}
+          onClick={() => setMenuOpen(false)}
+        >
           {t("protection")}
         </Link>
-        <Link to="/support" onClick={() => setMenuOpen(false)}>
+        <Link
+          to="/support"
+          aria-current={pageCurrent("/support")}
+          onClick={() => setMenuOpen(false)}
+        >
           {t("support")}
         </Link>
         {!user ? (
@@ -137,6 +186,7 @@ export function MarketHeader() {
             <Link
               className="commerce-mobile-auth"
               to="/sign-in"
+              aria-current={pageCurrent("/sign-in")}
               onClick={() => setMenuOpen(false)}
             >
               {t("signIn")}
@@ -144,6 +194,7 @@ export function MarketHeader() {
             <Link
               className="commerce-mobile-auth primary"
               to="/register"
+              aria-current={pageCurrent("/register")}
               onClick={() => setMenuOpen(false)}
             >
               <UserPlus size={16} /> {t("register")}
@@ -154,6 +205,7 @@ export function MarketHeader() {
             <Link
               className="commerce-mobile-auth"
               to={accountPath}
+              aria-current={pageCurrent(accountPath)}
               onClick={() => setMenuOpen(false)}
             >
               {t("dashboard")}
@@ -170,14 +222,26 @@ export function MarketHeader() {
       </nav>
       <div className="commerce-header-actions">
         <LocaleSwitcher />
-        <Link className="cart-link" to="/cart">
+        <Link
+          className="cart-link"
+          to="/cart"
+          aria-current={pageCurrent("/cart")}
+        >
           <ShoppingBag size={17} /> {t("cart")} <b>{count}</b>
         </Link>
-        <Link className="header-account" to={accountPath}>
+        <Link
+          className="header-account"
+          to={accountPath}
+          aria-current={pageCurrent(accountPath)}
+        >
           {user ? t("account") : t("signIn")} <ArrowRight size={15} />
         </Link>
         {!user ? (
-          <Link className="header-register" to="/register">
+          <Link
+            className="header-register"
+            to="/register"
+            aria-current={pageCurrent("/register")}
+          >
             {t("register")}
           </Link>
         ) : null}

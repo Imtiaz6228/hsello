@@ -97,6 +97,9 @@ export function CategoryPage() {
       }),
     [categories, products, slug],
   );
+  const downloadCount = categoryProducts.filter(
+    (product) => product.type === "DOWNLOAD",
+  ).length;
 
   if (loading)
     return (
@@ -164,21 +167,17 @@ export function CategoryPage() {
         <aside className="category-hero-facts">
           <div>
             <strong>{categoryProducts.length}</strong>
-            <span>curated products</span>
+            <span>
+              curated product{categoryProducts.length === 1 ? "" : "s"}
+            </span>
           </div>
           <div>
             <strong>{children.length}</strong>
-            <span>specialties</span>
+            <span>specialt{children.length === 1 ? "y" : "ies"}</span>
           </div>
           <div>
-            <strong>
-              {
-                categoryProducts.filter(
-                  (product) => product.type === "DOWNLOAD",
-                ).length
-              }
-            </strong>
-            <span>instant downloads</span>
+            <strong>{downloadCount}</strong>
+            <span>instant download{downloadCount === 1 ? "" : "s"}</span>
           </div>
         </aside>
       </section>
@@ -195,6 +194,7 @@ export function CategoryPage() {
               <button
                 type="button"
                 className={subFilter === child.slug ? "active" : ""}
+                aria-pressed={subFilter === child.slug}
                 key={child.slug}
                 onClick={() => setSubFilter(child.slug)}
               >
@@ -215,15 +215,19 @@ export function CategoryPage() {
       {children.length ? (
         <section className="subcategory-strip">
           <button
+            type="button"
             className={subFilter === "all" ? "active" : ""}
+            aria-pressed={subFilter === "all"}
             onClick={() => setSubFilter("all")}
           >
             All
           </button>
           {children.map((child) => (
             <button
+              type="button"
               key={child.slug}
               className={subFilter === child.slug ? "active" : ""}
+              aria-pressed={subFilter === child.slug}
               onClick={() => setSubFilter(child.slug)}
             >
               {child.name}
@@ -246,7 +250,7 @@ export function CategoryPage() {
         <div className="market-filter-bar">
           <div>
             <strong>{filteredProducts.length}</strong>
-            <span>products found</span>
+            <span>product{filteredProducts.length === 1 ? "" : "s"} found</span>
           </div>
           <div className="filter-controls">
             <label className="category-inline-search">
@@ -285,16 +289,20 @@ export function CategoryPage() {
               </select>
             </label>
             <button
+              type="button"
               className={view === "list" ? "active" : ""}
               onClick={() => setView("list")}
               aria-label="List view"
+              aria-pressed={view === "list"}
             >
               <List />
             </button>
             <button
+              type="button"
               className={view === "grid" ? "active" : ""}
               onClick={() => setView("grid")}
               aria-label="Grid view"
+              aria-pressed={view === "grid"}
             >
               <Grid2X2 />
             </button>

@@ -227,6 +227,7 @@ export function CatalogPage() {
       <section className="mobile-category-pills" aria-label="Quick categories">
         <button
           className={category === "all" ? "active" : ""}
+          aria-pressed={category === "all"}
           onClick={() => setCategory("all")}
         >
           {t("allCategories")} <span>{products.length}</span>
@@ -235,6 +236,7 @@ export function CatalogPage() {
           <button
             key={item.slug}
             className={category === item.slug ? "active" : ""}
+            aria-pressed={category === item.slug}
             onClick={() => {
               setCategory(item.slug);
               setExpanded(item.slug);
@@ -270,6 +272,7 @@ export function CatalogPage() {
               type="button"
               key={item.slug}
               className={category === item.slug ? "active" : ""}
+              aria-pressed={category === item.slug}
               onClick={() => {
                 setCategory(item.slug);
                 setExpanded(item.slug);
@@ -284,7 +287,10 @@ export function CatalogPage() {
                 <small>
                   {(childrenByParent.get(item.slug) ?? []).length} specialties ·{" "}
                   {categoryCounts.get(item.slug) ?? item.productCount ?? 0}{" "}
-                  products
+                  {(categoryCounts.get(item.slug) ?? item.productCount ?? 0) ===
+                  1
+                    ? "product"
+                    : "products"}
                 </small>
               </div>
               <ArrowRight />
@@ -388,6 +394,7 @@ export function CatalogPage() {
               className={
                 category === "all" ? "directory-all active" : "directory-all"
               }
+              aria-pressed={category === "all"}
               onClick={() => setCategory("all")}
             >
               {t("viewAll")} <span>{products.length}</span>
@@ -404,6 +411,8 @@ export function CatalogPage() {
                 >
                   <button
                     className={category === parent.slug ? "active" : ""}
+                    aria-expanded={open}
+                    aria-pressed={category === parent.slug}
                     onClick={() => {
                       setExpanded(open ? "" : parent.slug);
                       setCategory(parent.slug);
@@ -425,6 +434,7 @@ export function CatalogPage() {
                         <button
                           type="button"
                           className={category === child.slug ? "active" : ""}
+                          aria-pressed={category === child.slug}
                           key={child.slug}
                           onClick={() => setCategory(child.slug)}
                         >
@@ -463,12 +473,15 @@ export function CatalogPage() {
           <div className="market-filter-bar">
             <div>
               <strong>{filteredProducts.length}</strong>
-              <span>{activeCategory ? activeCategory.name : "products"}</span>
+              <span>
+                {filteredProducts.length === 1 ? "product" : "products"}
+              </span>
             </div>
             <div className="filter-controls">
               <label>
                 <SlidersHorizontal />{" "}
                 <select
+                  aria-label="Sort products"
                   value={sort}
                   onChange={(event) => setSort(event.target.value as SortMode)}
                 >
@@ -482,6 +495,7 @@ export function CatalogPage() {
                 className={view === "list" ? "active" : ""}
                 onClick={() => setView("list")}
                 aria-label="List view"
+                aria-pressed={view === "list"}
               >
                 <List />
               </button>
@@ -489,6 +503,7 @@ export function CatalogPage() {
                 className={view === "grid" ? "active" : ""}
                 onClick={() => setView("grid")}
                 aria-label="Grid view"
+                aria-pressed={view === "grid"}
               >
                 <Grid2X2 />
               </button>

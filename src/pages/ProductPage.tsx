@@ -174,12 +174,12 @@ export function ProductPage() {
       <MarketHeader />
       <div className="breadcrumbs">
         <Link to="/">Home</Link>
-        <span>/</span>
+        <span aria-hidden="true">/</span>
         <Link to={`/categories/${product.categorySlug}`}>
           {product.category}
         </Link>
-        <span>/</span>
-        <span>{product.title}</span>
+        <span aria-hidden="true">/</span>
+        <span aria-current="page">{product.title}</span>
       </div>
       <section className="product-detail">
         <div className="product-gallery">
@@ -221,24 +221,31 @@ export function ProductPage() {
           </div>
           <div
             className="product-gallery-thumbs"
+            role="group"
             aria-label="Product information views"
           >
             <button
+              type="button"
               className={artMode === "cover" ? "active" : ""}
+              aria-pressed={artMode === "cover"}
               onClick={() => setArtMode("cover")}
             >
               <span>{product.icon}</span>
               <small>Preview</small>
             </button>
             <button
+              type="button"
               className={artMode === "contents" ? "active" : ""}
+              aria-pressed={artMode === "contents"}
               onClick={() => setArtMode("contents")}
             >
               <PackageCheck />
               <small>Included</small>
             </button>
             <button
+              type="button"
               className={artMode === "license" ? "active" : ""}
+              aria-pressed={artMode === "license"}
               onClick={() => setArtMode("license")}
             >
               <ShieldCheck />

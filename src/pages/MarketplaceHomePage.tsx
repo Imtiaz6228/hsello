@@ -830,7 +830,10 @@ export function MarketplaceHomePage() {
               <ArrowRight />
             </button>
           </form>
-          <div className="pro-market-search-hints" aria-label="Marketplace highlights">
+          <div
+            className="pro-market-search-hints"
+            aria-label="Marketplace highlights"
+          >
             <span>Verified sellers</span>
             <span>Protected checkout</span>
             <span>Instant delivery options</span>
@@ -851,7 +854,7 @@ export function MarketplaceHomePage() {
         </div>
         <div
           className="lux-main-category-row"
-          role="tablist"
+          role="group"
           aria-label="Main marketplace categories"
         >
           {mainCategories.map((c, index) => {
@@ -859,10 +862,10 @@ export function MarketplaceHomePage() {
             return (
               <button
                 key={c.name}
+                type="button"
                 onClick={() => pickCategory(c.name)}
                 className={`${browseCategory === c.name ? "active " : ""}accent-${c.accent}`}
-                role="tab"
-                aria-selected={browseCategory === c.name}
+                aria-pressed={browseCategory === c.name}
               >
                 <span className="category-artwork">
                   <img src={categoryArtwork(c, index)} alt="" />

@@ -19,13 +19,16 @@ import "./marketplace-experience.css";
 import "./enterprise-catalog.css";
 import "./storefront-pro.css";
 import "./final-polish.css";
+import "./ui-audit.css";
 import { LocaleProvider } from "./i18n/LocaleContext";
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <AppErrorBoundary>
-      <BrowserRouter>
+      <BrowserRouter
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
         <LocaleProvider>
           <AuthProvider>
             <CartProvider>

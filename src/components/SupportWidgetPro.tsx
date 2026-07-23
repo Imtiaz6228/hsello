@@ -169,7 +169,7 @@ export function SupportWidgetPro() {
       if (!user) {
         const normalized = text.toLowerCase();
         const reply = normalized.includes("sell")
-          ? "Create an account, verify your email, then submit a seller application. Approved sellers can publish products from Seller Studio."
+          ? "Create an account, then submit a seller application. Approved sellers can publish products from Seller Studio."
           : normalized.includes("protect") || normalized.includes("refund")
             ? "Payments, delivery records, order chat, dispute windows, and admin review protect marketplace purchases. Sign in for help with a specific order."
             : "Browse the catalog, review the seller and delivery terms, add a product to cart, then sign in to complete protected checkout.";

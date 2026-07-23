@@ -9,17 +9,18 @@ export type PublicPage = {
   priority: number;
 };
 
-export const siteContentLastModified = "2026-07-18";
+export const siteContentLastModified = "2026-07-23";
 
 export const publicPages: PublicPage[] = [
   {
     path: "/",
-    title: "Ysello — trusted digital products and expert services",
+    title:
+      "Digital Products Marketplace — Software, Assets & Services | Ysello",
     description:
-      "Discover digital products and expert services with clear delivery terms, reviewed sellers, protected order records, and human support.",
-    heading: "Buy digital products. Hire trusted experts.",
+      "Browse trusted digital products, software, creative assets, courses, and expert services from reviewed sellers with clear delivery and protected checkout.",
+    heading: "Buy digital products from trusted sellers",
     intro:
-      "Compare clear marketplace listings, understand delivery and licensing before checkout, and keep support attached to each order.",
+      "Compare software, creative assets, courses, business resources, and expert services with delivery, licensing, seller, and support details in view.",
     changeFrequency: "daily",
     priority: 1,
   },

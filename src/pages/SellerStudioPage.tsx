@@ -27,6 +27,7 @@ import {
   FolderKanban,
   Gift,
   Grid3X3,
+  Home,
   ImageIcon,
   ImagePlus,
   KeyRound,
@@ -1398,6 +1399,9 @@ export function SellerStudioPage() {
           <ArrowRight />
         </div>
         <div className="seller-pro-sidebar-footer">
+          <Link to="/">
+            <Home size={16} /> Home
+          </Link>
           <Link to="/dashboard">
             <ArrowLeft size={16} /> Buyer account
           </Link>
@@ -1429,6 +1433,9 @@ export function SellerStudioPage() {
             />
           </label>
           <div>
+            <Link className="panel-home-link" to="/">
+              <Home size={17} /> Home
+            </Link>
             <button
               className="seller-icon-button"
               onClick={() => selectTab("notifications")}

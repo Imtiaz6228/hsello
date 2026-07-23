@@ -8,7 +8,7 @@ type ProtectedRouteProps = {
 };
 
 export function ProtectedRoute({
-  requireVerified = true,
+  requireVerified = false,
   roles,
 }: ProtectedRouteProps) {
   const { user, loading } = useAuth();

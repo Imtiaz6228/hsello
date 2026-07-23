@@ -46,8 +46,8 @@ export function AuthShell({
             <div>
               <BadgeCheck />
               <span>
-                <strong>Verified access</strong>
-                <small>Role-aware security</small>
+                <strong>Instant account access</strong>
+                <small>No email code or verification link</small>
               </span>
             </div>
             <div>

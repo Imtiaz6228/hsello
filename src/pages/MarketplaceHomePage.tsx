@@ -594,8 +594,8 @@ export function MarketplaceHomePage() {
   return (
     <main className="lux-home pro-home commerce-page">
       <Seo
-        title="Ysello — trusted digital products and expert services"
-        description="Discover digital products and expert services with clear delivery terms, reviewed sellers, protected order records, and human support."
+        title="Digital Products Marketplace — Software, Assets & Services | Ysello"
+        description="Browse trusted digital products, software, creative assets, courses, and expert services from reviewed sellers with clear delivery and protected checkout."
         canonicalPath="/"
         type="website"
         schema={[
@@ -604,6 +604,7 @@ export function MarketplaceHomePage() {
             "@type": "Organization",
             name: "Ysello",
             url: window.location.origin,
+            logo: `${window.location.origin}/icon-512.png`,
           },
           {
             "@context": "https://schema.org",
@@ -615,6 +616,56 @@ export function MarketplaceHomePage() {
               target: `${window.location.origin}/catalog?q={search_term_string}`,
               "query-input": "required name=search_term_string",
             },
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            name: "Ysello digital products marketplace",
+            description:
+              "A curated marketplace for software, creative assets, courses, productivity tools, and expert digital services.",
+            url: window.location.origin,
+            mainEntity: {
+              "@type": "ItemList",
+              numberOfItems: Math.min(displayProducts.length, 10),
+              itemListElement: displayProducts
+                .slice(0, 10)
+                .map((product, index) => ({
+                  "@type": "ListItem",
+                  position: index + 1,
+                  name: product.title,
+                  url: `${window.location.origin}${product.slug ? `/products/${product.slug}` : "/catalog"}`,
+                })),
+            },
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: [
+              {
+                "@type": "Question",
+                name: "What can I buy on Ysello?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "Ysello features approved digital products and expert services, including software, creative assets, business templates, courses, and productivity resources.",
+                },
+              },
+              {
+                "@type": "Question",
+                name: "How does digital delivery work?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "Each listing explains its delivery method and timing before checkout. Eligible instant-download products are made available through the buyer dashboard after payment.",
+                },
+              },
+              {
+                "@type": "Question",
+                name: "Do I need to verify my email before using my account?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "No. New buyers can register and enter their account immediately without an email code or verification link.",
+                },
+              },
+            ],
           },
         ]}
       />
@@ -809,12 +860,21 @@ export function MarketplaceHomePage() {
 
       <section className="pro-market-hero">
         <div className="lux-hero-copy">
+          <span className="homepage-hero-kicker">
+            <Sparkles size={14} /> THE DIGITAL MARKETPLACE, REFINED
+          </span>
           <h1>
             {t("homeTitleA")}
             <br />
             {t("homeTitleB")}
           </h1>
           <p>{t("homeIntro")}</p>
+          <div className="homepage-hero-actions">
+            <Link to="/catalog">
+              Browse all products <ArrowRight size={16} />
+            </Link>
+            <Link to="/seller/apply">Become a seller</Link>
+          </div>
         </div>
         <div className="pro-market-search-column">
           <form className="lux-search" onSubmit={submitSearch}>
@@ -838,7 +898,87 @@ export function MarketplaceHomePage() {
             <span>Protected checkout</span>
             <span>Instant delivery options</span>
           </div>
+          <div
+            className="homepage-quick-categories"
+            aria-label="Popular categories"
+          >
+            {mainCategories.map((category) => {
+              const Icon = category.icon;
+              return (
+                <Link
+                  key={`hero-${category.name}`}
+                  to={`/catalog?category=${encodeURIComponent(category.slug ?? "")}`}
+                >
+                  <Icon aria-hidden="true" />
+                  <span>{category.short}</span>
+                </Link>
+              );
+            })}
+          </div>
+          <div className="homepage-market-facts">
+            <span>
+              <strong>{displayProducts.length || "New"}</strong>
+              <small>approved listings</small>
+            </span>
+            <span>
+              <strong>{categories.length}</strong>
+              <small>market departments</small>
+            </span>
+            <span>
+              <strong>24/7</strong>
+              <small>marketplace access</small>
+            </span>
+          </div>
         </div>
+      </section>
+
+      <section className="lux-section homepage-product-section" id="products">
+        <div className="lux-section-head">
+          <div>
+            <span>EXPLORE PRODUCTS</span>
+            <h2>{t("popularNow")}</h2>
+          </div>
+          <Link className="homepage-see-all" to="/catalog">
+            See all products <ArrowRight size={16} />
+          </Link>
+        </div>
+        <div
+          className="lux-tabs"
+          role="group"
+          aria-label="Filter featured products"
+        >
+          {["All", ...categories.slice(0, 6).map((c) => c.name)].map((c) => (
+            <button
+              key={c}
+              className={activeCategory === c ? "active" : ""}
+              aria-pressed={activeCategory === c}
+              onClick={() => setActiveCategory(c)}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+        {visibleProducts.length ? (
+          <div className="lux-product-grid">
+            {visibleProducts.slice(0, 10).map((p) => (
+              <ProductCard key={p.title} product={p} />
+            ))}
+          </div>
+        ) : (
+          <div className="lux-empty">
+            <Search />
+            <h3>No matching products</h3>
+            <p>Try another search or browse all categories.</p>
+            <button
+              onClick={() => {
+                setQuery("");
+                setActiveCategory("All");
+              }}
+            >
+              Reset filters
+            </button>
+          </div>
+        )}
       </section>
 
       {/* lux-quick-categories now use the richer visual category grid below. */}
@@ -923,55 +1063,6 @@ export function MarketplaceHomePage() {
             ) : null}
           </div>
         ) : null}
-      </section>
-
-      <section className="lux-section" id="products">
-        <div className="lux-section-head">
-          <div>
-            <span>CURATED FOR YOU</span>
-            <h2>{t("popularNow")}</h2>
-          </div>
-          <Link to="/catalog">
-            View all products <ArrowRight size={16} />
-          </Link>
-        </div>
-        <div
-          className="lux-tabs"
-          role="group"
-          aria-label="Filter featured products"
-        >
-          {["All", ...categories.slice(0, 6).map((c) => c.name)].map((c) => (
-            <button
-              key={c}
-              className={activeCategory === c ? "active" : ""}
-              aria-pressed={activeCategory === c}
-              onClick={() => setActiveCategory(c)}
-            >
-              {c}
-            </button>
-          ))}
-        </div>
-        {visibleProducts.length ? (
-          <div className="lux-product-grid">
-            {visibleProducts.slice(0, 8).map((p) => (
-              <ProductCard key={p.title} product={p} />
-            ))}
-          </div>
-        ) : (
-          <div className="lux-empty">
-            <Search />
-            <h3>No matching products</h3>
-            <p>Try another search or browse all categories.</p>
-            <button
-              onClick={() => {
-                setQuery("");
-                setActiveCategory("All");
-              }}
-            >
-              Reset filters
-            </button>
-          </div>
-        )}
       </section>
 
       <section className="lux-trust" aria-label="Marketplace protections">
@@ -1156,6 +1247,42 @@ export function MarketplaceHomePage() {
               </div>
             </article>
           ))}
+        </div>
+      </section>
+
+      <section className="lux-section homepage-faq" aria-labelledby="faq-title">
+        <div className="lux-section-head">
+          <div>
+            <span>MARKETPLACE HELP</span>
+            <h2 id="faq-title">Digital shopping, made clearer.</h2>
+          </div>
+          <Link to="/support">
+            Visit support <ArrowRight size={16} />
+          </Link>
+        </div>
+        <div className="homepage-faq-grid">
+          <details>
+            <summary>What can I buy on Ysello?</summary>
+            <p>
+              Browse approved software, creative assets, business templates,
+              courses, productivity resources, and expert digital services.
+            </p>
+          </details>
+          <details>
+            <summary>How does digital delivery work?</summary>
+            <p>
+              Every listing explains its delivery method and timing before
+              checkout. Eligible instant downloads appear in your buyer
+              dashboard after payment.
+            </p>
+          </details>
+          <details>
+            <summary>Is email verification required?</summary>
+            <p>
+              No. Register and enter your account immediately without an email
+              code or verification link.
+            </p>
+          </details>
         </div>
       </section>
 

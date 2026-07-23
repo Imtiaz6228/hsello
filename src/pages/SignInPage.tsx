@@ -57,14 +57,14 @@ export function SignInPage() {
 
   return (
     <AuthShell
-      eyebrow="Protected marketplace access"
-      title="Welcome back to the exchange."
-      subtitle="Sign in to manage orders, inventory and protected transactions from one secure workspace."
+      eyebrow="Simple, secure account access"
+      title="Welcome back to Ysello."
+      subtitle="Sign in with your email and password. No email code or verification link is required."
     >
       <form className="auth-form" onSubmit={handleSubmit}>
         <div className="form-heading">
           <h2>Welcome back</h2>
-          <p>Enter your account details.</p>
+          <p>Enter your email and password to continue instantly.</p>
         </div>
 
         {status ? <Alert type={status.type} message={status.message} /> : null}

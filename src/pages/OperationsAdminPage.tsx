@@ -40,6 +40,7 @@ import {
   Command,
   Database,
   HardDrive,
+  Home,
   Menu,
   Moon,
   Server,
@@ -1052,6 +1053,9 @@ export function OperationsAdminPage() {
               <small>{user?.role.replace("_", " ")}</small>
             </div>
           </div>
+          <Link className="secondary-button" to="/">
+            <Home size={14} /> Home
+          </Link>
           <Link className="secondary-button" to="/sign-out">
             <LogOut size={14} /> Sign out
           </Link>
@@ -1069,6 +1073,9 @@ export function OperationsAdminPage() {
             >
               <Menu />
             </button>
+            <Link className="panel-home-link" to="/">
+              <Home size={17} /> Home
+            </Link>
             <div className="admin-global-search">
               <Search />
               <input

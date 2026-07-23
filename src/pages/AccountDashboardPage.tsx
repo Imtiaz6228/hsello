@@ -930,6 +930,9 @@ export function AccountDashboardPage() {
           ))}
         </div>
         <div className="sidebar-footer">
+          <Link to="/" className="secondary-button">
+            <Home size={16} /> Home
+          </Link>
           <Link to="/catalog" className="secondary-button">
             <Sparkles size={16} /> Explore marketplace
           </Link>
@@ -970,6 +973,9 @@ export function AccountDashboardPage() {
             <span className="buyer-sync-pill">
               <i /> ACCOUNT
             </span>
+            <Link className="panel-home-link" to="/" aria-label="Go to home">
+              <Home size={17} /> Home
+            </Link>
             <LocaleSwitcher />
             <button
               className="command-icon"

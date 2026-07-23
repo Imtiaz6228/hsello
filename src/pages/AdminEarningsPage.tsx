@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import {
+  ArrowLeft,
   Download,
   TrendingUp,
   DollarSign,
+  Home,
+  LogOut,
   Wallet,
   BarChart3,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { apiRequest } from "../api/client";
 import { Seo } from "../components/Seo";
 import { EarningsChart, MiniBars } from "../components/EarningsChart";
@@ -174,23 +178,39 @@ export function AdminEarningsPage() {
         description="Ysello marketplace earnings analytics"
         noIndex
       />
-      <header style={{ marginBottom: "24px" }}>
-        <span
-          style={{
-            fontSize: "12px",
-            color: "#71717a",
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-          }}
-        >
-          ADMIN
-        </span>
-        <h1 style={{ fontSize: "28px", margin: "4px 0" }}>
-          Earnings Analytics
-        </h1>
-        <p style={{ color: "#a1a1aa" }}>
-          Track commission revenue from sales (10%) and withdrawals (3%)
-        </p>
+      <header
+        className="admin-earnings-header"
+        style={{ marginBottom: "24px" }}
+      >
+        <div>
+          <span
+            style={{
+              fontSize: "12px",
+              color: "#71717a",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+            }}
+          >
+            ADMIN
+          </span>
+          <h1 style={{ fontSize: "28px", margin: "4px 0" }}>
+            Earnings Analytics
+          </h1>
+          <p style={{ color: "#a1a1aa" }}>
+            Track commission revenue from sales (10%) and withdrawals (3%)
+          </p>
+        </div>
+        <nav aria-label="Admin earnings navigation">
+          <Link to="/admin">
+            <ArrowLeft size={16} /> Admin
+          </Link>
+          <Link to="/">
+            <Home size={16} /> Home
+          </Link>
+          <Link to="/sign-out">
+            <LogOut size={16} /> Sign out
+          </Link>
+        </nav>
       </header>
 
       <div style={{ marginBottom: "24px" }}>

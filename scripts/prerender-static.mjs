@@ -101,7 +101,7 @@ function pageBody(page) {
   } else if (page.path === "/catalog") {
     content = `<section><h2>What you can explore</h2><p>Browse creative assets, software, education, professional services, and other approved digital listings. Use the live catalog to compare delivery type, price, seller, license, availability, and support terms.</p></section><section><h2>Buy with the important details in view</h2><p>Each public listing should explain what is included, when it is delivered, how it may be used, and what support is available after purchase.</p></section>`;
   } else if (page.path === "/") {
-    content = `<section><h2>A marketplace designed for clear digital trade</h2><p>Explore approved listings, review seller and delivery information, and keep checkout, delivery, messages, and support connected to the order.</p><div class="seo-link-list"><a href="/catalog">Explore all listings</a><a href="/seller-policy">Read seller standards</a><a href="/prohibited-products">Review prohibited products</a></div></section>`;
+    content = `<section><h2>Explore software, assets, courses, and digital services</h2><p>Compare approved listings, seller information, delivery timing, licensing, and support terms before checkout.</p><div class="seo-link-list"><a href="/catalog">Explore all products</a><a href="/seller-policy">Read seller standards</a><a href="/prohibited-products">Review prohibited products</a></div></section><section><h2>Digital marketplace questions</h2><h3>What can I buy on Ysello?</h3><p>Ysello features approved software, creative assets, business templates, courses, productivity resources, and expert digital services.</p><h3>How does digital delivery work?</h3><p>Each listing explains its delivery method and timing before checkout. Eligible instant downloads are available through the buyer dashboard after payment.</p><h3>Is email verification required?</h3><p>No. New buyers can register and enter their account immediately without an email code or verification link.</p></section>`;
   }
 
   return `<main class="seo-static-shell"><header><a href="/" aria-label="Ysello home">Ysello Digital Marketplace</a>${staticNavigation()}</header><article><h1>${escapeHtml(page.heading)}</h1><p>${escapeHtml(page.intro)}</p>${content}</article></main>`;
@@ -140,6 +140,36 @@ function structuredData(page, canonical) {
               target: `${configuredSiteUrl}/catalog?q={search_term_string}`,
               "query-input": "required name=search_term_string",
             },
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: [
+              {
+                "@type": "Question",
+                name: "What can I buy on Ysello?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "Ysello features approved software, creative assets, business templates, courses, productivity resources, and expert digital services.",
+                },
+              },
+              {
+                "@type": "Question",
+                name: "How does digital delivery work?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "Each listing explains its delivery method and timing before checkout. Eligible instant downloads are available through the buyer dashboard after payment.",
+                },
+              },
+              {
+                "@type": "Question",
+                name: "Is email verification required?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: "No. New buyers can register and enter their account immediately without an email code or verification link.",
+                },
+              },
+            ],
           },
         ]
       : {

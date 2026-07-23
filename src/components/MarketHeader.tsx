@@ -1,9 +1,16 @@
 import {
   ArrowRight,
+  BookOpen,
+  Grid2X2,
+  Home,
+  LifeBuoy,
   LogOut,
   Menu,
+  PackageSearch,
   Search,
+  ShieldCheck,
   ShoppingBag,
+  Store,
   UserPlus,
   X,
 } from "lucide-react";
@@ -150,37 +157,63 @@ export function MarketHeader() {
             <ArrowRight aria-hidden="true" />
           </button>
         </form>
+        <p className="commerce-menu-label">Browse</p>
+        <Link
+          to="/"
+          aria-current={pageCurrent("/")}
+          onClick={() => setMenuOpen(false)}
+        >
+          <Home aria-hidden="true" /> Home
+        </Link>
         <Link
           to="/catalog"
           aria-current={pageCurrent("/catalog")}
           onClick={() => setMenuOpen(false)}
         >
-          {t("explore")}
+          <PackageSearch aria-hidden="true" /> Marketplace
         </Link>
-        <Link to="/catalog#departments" onClick={() => setMenuOpen(false)}>
-          {t("categories")}
+        <Link to="/#products" onClick={() => setMenuOpen(false)}>
+          <Grid2X2 aria-hidden="true" /> Products
         </Link>
+        <Link to="/#categories" onClick={() => setMenuOpen(false)}>
+          <Grid2X2 aria-hidden="true" /> {t("categories")}
+        </Link>
+        <Link to="/#sellers" onClick={() => setMenuOpen(false)}>
+          <Store aria-hidden="true" /> Top sellers
+        </Link>
+        <Link to="/blog" onClick={() => setMenuOpen(false)}>
+          <BookOpen aria-hidden="true" /> Guides
+        </Link>
+        <p className="commerce-menu-label">Sell & support</p>
         <Link
           to="/seller/apply"
           aria-current={pageCurrent("/seller/apply")}
           onClick={() => setMenuOpen(false)}
         >
-          {t("sellOn")}
+          <Store aria-hidden="true" /> {t("sellOn")}
         </Link>
         <Link
           to="/buyer-protection"
           aria-current={pageCurrent("/buyer-protection")}
           onClick={() => setMenuOpen(false)}
         >
-          {t("protection")}
+          <ShieldCheck aria-hidden="true" /> {t("protection")}
         </Link>
         <Link
           to="/support"
           aria-current={pageCurrent("/support")}
           onClick={() => setMenuOpen(false)}
         >
-          {t("support")}
+          <LifeBuoy aria-hidden="true" /> {t("support")}
         </Link>
+        <Link
+          to="/cart"
+          aria-current={pageCurrent("/cart")}
+          onClick={() => setMenuOpen(false)}
+        >
+          <ShoppingBag aria-hidden="true" /> {t("cart")} ({count})
+        </Link>
+        <p className="commerce-menu-label">Account</p>
         {!user ? (
           <>
             <Link

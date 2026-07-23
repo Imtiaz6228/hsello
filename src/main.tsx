@@ -20,6 +20,7 @@ import "./enterprise-catalog.css";
 import "./storefront-pro.css";
 import "./final-polish.css";
 import "./ui-audit.css";
+import "./marketplace-refresh.css";
 import { LocaleProvider } from "./i18n/LocaleContext";
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
 

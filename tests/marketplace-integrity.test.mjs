@@ -49,11 +49,16 @@ test("public marketplace presents factual live context and stock-aware purchasin
   const home = await read("src/pages/MarketplaceHomePage.tsx");
   const header = await read("src/components/MarketHeader.tsx");
   const storefront = await read("src/storefront-pro.css");
+  const refresh = await read("src/marketplace-refresh.css");
   const product = await read("src/pages/ProductPage.tsx");
   assert.match(home, /lux-quick-categories/);
   assert.match(home, /pro-market-hero/);
-  assert.ok(home.indexOf('id="categories"') < home.indexOf('id="products"'));
+  assert.ok(home.indexOf('id="products"') < home.indexOf('id="categories"'));
   assert.match(header, /commerce-global-search/);
+  assert.match(header, /PackageSearch aria-hidden="true" \/> Marketplace/);
+  assert.match(header, /Grid2X2 aria-hidden="true" \/> Products/);
+  assert.match(refresh, /grid-template-columns: repeat\(5,/);
+  assert.match(refresh, /aspect-ratio: 16 \/ 10/);
   assert.match(storefront, /@media \(max-width: 700px\)/);
   assert.match(storefront, /\.market-product-seller/);
   assert.doesNotMatch(home, /Order delivered[\s\S]{0,80}in 2 minutes/);

@@ -139,14 +139,14 @@ export function RegisterPage() {
 
   return (
     <AuthShell
-      eyebrow="Join the marketplace"
-      title="Your next trade starts here."
-      subtitle="Create your buyer account now. Seller access is reviewed separately by marketplace staff."
+      eyebrow="Join the marketplace instantly"
+      title="Create your Ysello account."
+      subtitle="Register once and enter your dashboard immediately—no email code or verification link required."
     >
       <form className="auth-form wide" onSubmit={handleSubmit}>
         <div className="form-heading">
           <h2>Register</h2>
-          <p>Complete your account information.</p>
+          <p>Complete your details for immediate account access.</p>
         </div>
 
         {status ? <Alert type={status.type} message={status.message} /> : null}

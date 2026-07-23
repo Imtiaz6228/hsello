@@ -1,5 +1,7 @@
 node_modules/
 node_modules
+.sites-runtime/
+.npm-cache/
 dist/
 dist-api/
 *.tsbuildinfo

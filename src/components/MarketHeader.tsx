@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   ShoppingBag,
   Store,
+  UserRound,
   UserPlus,
   X,
 } from "lucide-react";
@@ -30,9 +31,11 @@ export function MarketHeader() {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [globalQuery, setGlobalQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const navigationRef = useRef<HTMLElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const accountPath = user
     ? STAFF_ROLES.includes(user.role)
       ? "/admin"
@@ -79,6 +82,35 @@ export function MarketHeader() {
 
   useEffect(() => setMenuOpen(false), [location.hash, location.pathname]);
 
+  useEffect(() => {
+    const focusSearch = (event: KeyboardEvent) => {
+      if (
+        event.key !== "/" ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.altKey ||
+        event.target instanceof HTMLInputElement ||
+        event.target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+      event.preventDefault();
+      searchInputRef.current?.focus();
+    };
+    window.addEventListener("keydown", focusSearch);
+    return () => window.removeEventListener("keydown", focusSearch);
+  }, []);
+
+  const searchSuggestions = [
+    "AI productivity tools",
+    "Social media templates",
+    "Business starter kits",
+    "Creative assets",
+    "Software licenses",
+  ].filter((item) =>
+    item.toLowerCase().includes(globalQuery.trim().toLowerCase()),
+  );
+
   function pageCurrent(path: string) {
     return location.pathname === path ? ("page" as const) : undefined;
   }
@@ -113,14 +145,56 @@ export function MarketHeader() {
       <form className="commerce-global-search" onSubmit={submitSearch}>
         <Search aria-hidden="true" />
         <input
+          ref={searchInputRef}
           value={globalQuery}
           onChange={(event) => setGlobalQuery(event.target.value)}
+          onFocus={() => setSearchOpen(true)}
+          onBlur={() => window.setTimeout(() => setSearchOpen(false), 120)}
           aria-label="Search the marketplace"
+          aria-autocomplete="list"
+          aria-controls="marketplace-search-suggestions"
+          aria-expanded={searchOpen}
           placeholder="Search products, services, and creators"
         />
+        <kbd aria-label="Keyboard shortcut">/</kbd>
         <button type="submit" aria-label="Search">
           <ArrowRight aria-hidden="true" />
         </button>
+        {searchOpen ? (
+          <div
+            id="marketplace-search-suggestions"
+            className="commerce-search-suggestions"
+            role="listbox"
+            aria-label="Search suggestions"
+          >
+            <span>Trending searches</span>
+            {(searchSuggestions.length
+              ? searchSuggestions
+              : ["Browse all products"]
+            ).map((suggestion) => (
+              <button
+                key={suggestion}
+                type="button"
+                role="option"
+                aria-selected="false"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  const query =
+                    suggestion === "Browse all products" ? "" : suggestion;
+                  setGlobalQuery(query);
+                  setSearchOpen(false);
+                  navigate(
+                    `/catalog${query ? `?q=${encodeURIComponent(query)}` : ""}`,
+                  );
+                }}
+              >
+                <Search aria-hidden="true" />
+                <span>{suggestion}</span>
+                <ArrowRight aria-hidden="true" />
+              </button>
+            ))}
+          </div>
+        ) : null}
       </form>
       <button
         ref={menuButtonRef}
@@ -274,7 +348,17 @@ export function MarketHeader() {
           to={accountPath}
           aria-current={pageCurrent(accountPath)}
         >
-          {user ? t("account") : t("signIn")} <ArrowRight size={15} />
+          <span className="header-avatar" aria-hidden="true">
+            {user?.profileImageUrl ? (
+              <img src={user.profileImageUrl} alt="" />
+            ) : user ? (
+              `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`
+            ) : (
+              <UserRound />
+            )}
+          </span>
+          <span>{user ? t("account") : t("signIn")}</span>
+          <ArrowRight size={15} />
         </Link>
         {!user ? (
           <Link

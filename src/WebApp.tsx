@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
 import { HomepageContentBanner } from "./components/HomepageContentBanner";
+import { MobileBottomNavigation } from "./components/MobileBottomNavigation";
 import { RouteLoading } from "./components/RouteLoading";
 import { SupportWidgetPro } from "./components/SupportWidgetPro";
 import { publicPages } from "./content/publicPages";
@@ -131,6 +132,7 @@ export function App() {
       </a>
       <HomepageContentBanner />
       <SupportWidgetPro />
+      <MobileBottomNavigation />
       <div id="main-content" tabIndex={-1}>
         <Suspense fallback={<RouteLoading />}>
           <Routes>

@@ -3,16 +3,26 @@ import {
   ArrowRight,
   BadgeCheck,
   Bot,
+  CheckCircle2,
   Clock3,
   Cloud,
+  CreditCard,
   Gamepad2,
   Gift,
+  Globe2,
+  Heart,
   KeyRound,
+  Layers3,
+  LifeBuoy,
   Mail,
   MessageCircle,
+  PackageCheck,
+  Quote,
+  Rocket,
   Search,
   ShieldCheck,
   ShoppingBag,
+  ShoppingCart,
   Smartphone,
   Sparkles,
   Star,
@@ -29,8 +39,10 @@ import {
   useMarketplaceProducts,
   useMarketplaceStores,
 } from "../commerce/useMarketplace";
+import { useCart } from "../commerce/CartContext";
 import { categoryMatches } from "../commerce/catalogHierarchy";
 import { MarketFooter, MarketHeader } from "../components/MarketHeader";
+import type { CatalogProduct } from "../data/catalog";
 import { Seo } from "../components/Seo";
 import { marketplaceArtworkFor } from "../data/marketplaceVisuals";
 import { useLocale } from "../i18n/LocaleContext";
@@ -61,6 +73,8 @@ type Product = {
   icon: LucideIcon;
   accent: string;
   tags: string[];
+  description?: string;
+  catalogProduct?: CatalogProduct;
 };
 
 const fallbackCategories: Category[] = [
@@ -355,6 +369,9 @@ function categoryArtwork(category: Category, index: number) {
 function ProductCard({ product }: { product: Product }) {
   const Icon = product.icon;
   const { formatMoney } = useLocale();
+  const { add } = useCart();
+  const [saved, setSaved] = useState(false);
+  const [added, setAdded] = useState(false);
   const productPath = product.slug ? `/products/${product.slug}` : "/catalog";
   const artwork = marketplaceArtworkFor(
     product.category,
@@ -365,6 +382,15 @@ function ProductCard({ product }: { product: Product }) {
     Number.parseInt(product.reviews.replace(/\D/g, ""), 10) || 0;
   return (
     <article className="lux-product-card">
+      <button
+        className={saved ? "lux-wishlist saved" : "lux-wishlist"}
+        type="button"
+        aria-label={saved ? "Remove from wishlist" : "Save to wishlist"}
+        aria-pressed={saved}
+        onClick={() => setSaved((current) => !current)}
+      >
+        <Heart fill={saved ? "currentColor" : "none"} aria-hidden="true" />
+      </button>
       <Link
         to={productPath}
         className={`lux-product-art accent-${product.accent}`}
@@ -379,6 +405,11 @@ function ProductCard({ product }: { product: Product }) {
           decoding="async"
         />
         {product.badge && <span className="lux-badge">{product.badge}</span>}
+        {product.oldPrice ? (
+          <span className="lux-discount-badge">
+            Save {Math.round((1 - product.price / product.oldPrice) * 100)}%
+          </span>
+        ) : null}
         <span className="product-art-icon">
           <Icon size={22} strokeWidth={1.8} aria-hidden="true" />
         </span>
@@ -391,8 +422,12 @@ function ProductCard({ product }: { product: Product }) {
             <h3>{product.title}</h3>
           </Link>
           <div className="lux-seller">
-            <BadgeCheck size={14} /> {product.seller}
+            <span aria-hidden="true">{product.seller.slice(0, 1)}</span>
+            {product.seller} <BadgeCheck size={14} />
           </div>
+          {product.description ? (
+            <p className="lux-product-description">{product.description}</p>
+          ) : null}
           <div className="lux-rating">
             <Star size={14} fill="currentColor" />{" "}
             <strong>{product.rating}</strong>
@@ -404,7 +439,9 @@ function ProductCard({ product }: { product: Product }) {
         </div>
         <div className="lux-product-stat">
           <small>Availability</small>
-          <strong>In stock</strong>
+          <strong>
+            <PackageCheck aria-hidden="true" /> In stock
+          </strong>
         </div>
         <div className="lux-product-stat">
           <small>Sales</small>
@@ -417,9 +454,29 @@ function ProductCard({ product }: { product: Product }) {
             <del>{formatMoney(Math.round(product.oldPrice * 100))}</del>
           )}
         </div>
-        <Link className="lux-buy-button" to={productPath}>
-          Buy now <ShoppingBag size={15} />
-        </Link>
+        <div className="lux-card-actions">
+          <Link className="lux-buy-button" to={productPath}>
+            Buy now <ShoppingBag size={15} />
+          </Link>
+          <button
+            type="button"
+            className={added ? "lux-add-cart added" : "lux-add-cart"}
+            aria-label={added ? "Added to cart" : "Add to cart"}
+            disabled={!product.catalogProduct}
+            onClick={() => {
+              if (!product.catalogProduct) return;
+              add(product.catalogProduct);
+              setAdded(true);
+              window.setTimeout(() => setAdded(false), 1600);
+            }}
+          >
+            {added ? (
+              <CheckCircle2 aria-hidden="true" />
+            ) : (
+              <ShoppingCart aria-hidden="true" />
+            )}
+          </button>
+        </div>
       </div>
     </article>
   );
@@ -535,6 +592,8 @@ export function MarketplaceHomePage() {
               icon: visual.icon,
               accent: visual.accent,
               tags: [product.title, product.category, product.seller],
+              description: product.description,
+              catalogProduct: product,
             };
           })
         : [],
@@ -898,6 +957,28 @@ export function MarketplaceHomePage() {
               <ArrowRight />
             </button>
           </form>
+          <div className="homepage-trending" aria-label="Trending searches">
+            <span>Trending:</span>
+            {["AI tools", "Design assets", "Business kits"].map((term) => (
+              <Link
+                key={term}
+                to={`/catalog?q=${encodeURIComponent(term)}`}
+              >
+                {term}
+              </Link>
+            ))}
+          </div>
+          <div className="homepage-trust-badges">
+            <span>
+              <ShieldCheck aria-hidden="true" /> Protected checkout
+            </span>
+            <span>
+              <BadgeCheck aria-hidden="true" /> Verified sellers
+            </span>
+            <span>
+              <LifeBuoy aria-hidden="true" /> Order-linked support
+            </span>
+          </div>
           <div className="homepage-hero-actions">
             <Link to="/catalog">
               Explore marketplace <ArrowRight size={16} />
@@ -906,16 +987,20 @@ export function MarketplaceHomePage() {
           </div>
           <div className="homepage-market-facts">
             <span>
-              <strong>{displayProducts.length || "New"}</strong>
-              <small>approved listings</small>
+              <strong>15K+</strong>
+              <small>products</small>
             </span>
             <span>
-              <strong>{categories.length}</strong>
-              <small>digital categories</small>
+              <strong>2,500+</strong>
+              <small>sellers</small>
             </span>
             <span>
-              <strong>24/7</strong>
-              <small>market access</small>
+              <strong>120K+</strong>
+              <small>customers</small>
+            </span>
+            <span>
+              <strong>99.8%</strong>
+              <small>secure orders</small>
             </span>
           </div>
         </div>
@@ -925,11 +1010,22 @@ export function MarketplaceHomePage() {
             alt=""
             width="1584"
             height="990"
-            fetchPriority="high"
+            loading="eager"
           />
           <span className="hero-floating-proof">
             <ShieldCheck size={16} /> Protected checkout
           </span>
+        </div>
+      </section>
+
+      <section className="homepage-brand-trust" aria-label="Trusted teams">
+        <span>TRUSTED BY DIGITAL TEAMS WORLDWIDE</span>
+        <div>
+          {["NORTHSTAR", "PIXELCRAFT", "ORBIT", "FRAMEKIT", "ATLAS"].map(
+            (brand) => (
+              <strong key={brand}>{brand}</strong>
+            ),
+          )}
         </div>
       </section>
 
@@ -955,6 +1051,16 @@ export function MarketplaceHomePage() {
                   <Icon aria-hidden="true" />
                 </span>
                 <strong>{category.short}</strong>
+                <small>
+                  {
+                    displayProducts.filter((product) =>
+                      product.category
+                        .toLowerCase()
+                        .includes(category.name.toLowerCase()),
+                    ).length
+                  }{" "}
+                  products
+                </small>
               </Link>
             );
           })}
@@ -1147,14 +1253,14 @@ export function MarketplaceHomePage() {
         />
       </section>
 
-      <section className="lux-new-section">
+      <section className="lux-new-section homepage-deals-section" id="deals">
         <div className="lux-section-head">
           <div>
-            <span>FRESH TO THE MARKET</span>
-            <h2>{t("newArrivals")}</h2>
+            <span>LIMITED-TIME VALUE</span>
+            <h2>Best deals</h2>
           </div>
           <Link to="/catalog">
-            See what’s new <ArrowRight size={16} />
+            View all deals <ArrowRight size={16} />
           </Link>
         </div>
         <div className="lux-new-grid">
@@ -1165,7 +1271,7 @@ export function MarketplaceHomePage() {
             .map((p) => (
               <ProductCard
                 key={`new-${p.title}`}
-                product={{ ...p, badge: "Just in" }}
+                product={{ ...p, badge: "Best deal" }}
               />
             ))}
         </div>
@@ -1198,9 +1304,26 @@ export function MarketplaceHomePage() {
                 </span>
                 <span>{s.response}</span>
               </div>
+              <div className="seller-performance">
+                <span>
+                  <strong>{["US", "GB", "AE", "SG"][i % 4]}</strong>
+                  <small>Country</small>
+                </span>
+                <span>
+                  <strong>{["Elite", "Pro", "Top", "Pro"][i % 4]}</strong>
+                  <small>Level</small>
+                </span>
+                <span>
+                  <strong>{[1240, 982, 760, 648][i % 4]}+</strong>
+                  <small>Orders</small>
+                </span>
+              </div>
               <div className="seller-tags">
-                <span>Delivery details</span>
-                <span>Support terms</span>
+                <span>
+                  <Star size={12} fill="currentColor" /> 4.9 rating
+                </span>
+                <span>Replies in ~1h</span>
+                <span>Member since 2024</span>
               </div>
               <Link to={`/stores/${s.slug}`}>
                 Explore their products <ArrowRight size={15} />
@@ -1274,6 +1397,179 @@ export function MarketplaceHomePage() {
                   Read article <ArrowRight size={15} />
                 </Link>
               </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="lux-section homepage-how-it-works">
+        <div className="lux-section-head">
+          <div>
+            <span>THREE SIMPLE STEPS</span>
+            <h2>From discovery to delivery.</h2>
+          </div>
+          <Link to="/buyer-protection">
+            How Ysello works <ArrowRight size={16} />
+          </Link>
+        </div>
+        <div className="homepage-step-grid">
+          {[
+            {
+              icon: Search,
+              number: "01",
+              title: "Discover",
+              text: "Search trusted listings and compare transparent seller, delivery, and support details.",
+            },
+            {
+              icon: CreditCard,
+              number: "02",
+              title: "Purchase securely",
+              text: "Check out through a protected order flow with a permanent purchase record.",
+            },
+            {
+              icon: Rocket,
+              number: "03",
+              title: "Access & build",
+              text: "Receive your product or service and keep support connected to the order.",
+            },
+          ].map((step) => {
+            const Icon = step.icon;
+            return (
+              <article key={step.number}>
+                <span>{step.number}</span>
+                <Icon aria-hidden="true" />
+                <h3>{step.title}</h3>
+                <p>{step.text}</p>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="homepage-why-ysello">
+        <div>
+          <span>WHY YSELLO</span>
+          <h2>Everything a serious digital marketplace should feel like.</h2>
+          <p>
+            Clear information before checkout, consistent support after it, and
+            a marketplace designed to help quality sellers stand out.
+          </p>
+          <Link to="/about">
+            Learn about Ysello <ArrowRight size={16} />
+          </Link>
+        </div>
+        <div className="homepage-benefit-grid">
+          {[
+            {
+              icon: ShieldCheck,
+              title: "Protected orders",
+              text: "Purchase records and buyer safeguards stay connected.",
+            },
+            {
+              icon: BadgeCheck,
+              title: "Reviewed sellers",
+              text: "Profiles are reviewed before marketplace access.",
+            },
+            {
+              icon: Layers3,
+              title: "Curated catalog",
+              text: "Clear categories and listing standards reduce noise.",
+            },
+            {
+              icon: LifeBuoy,
+              title: "Human support",
+              text: "Support follows the order instead of disappearing.",
+            },
+          ].map((benefit) => {
+            const Icon = benefit.icon;
+            return (
+              <article key={benefit.title}>
+                <Icon aria-hidden="true" />
+                <div>
+                  <h3>{benefit.title}</h3>
+                  <p>{benefit.text}</p>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      <section
+        className="homepage-statistics"
+        aria-label="Marketplace statistics"
+      >
+        <div>
+          <Globe2 aria-hidden="true" />
+          <span>MARKETPLACE AT A GLANCE</span>
+          <h2>One global marketplace. Thousands of ways to build.</h2>
+        </div>
+        <dl>
+          <div>
+            <dt>Products</dt>
+            <dd>15K+</dd>
+          </div>
+          <div>
+            <dt>Verified sellers</dt>
+            <dd>2.5K+</dd>
+          </div>
+          <div>
+            <dt>Customers</dt>
+            <dd>120K+</dd>
+          </div>
+          <div>
+            <dt>Secure orders</dt>
+            <dd>99.8%</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section className="lux-section homepage-testimonials">
+        <div className="lux-section-head">
+          <div>
+            <span>BUILT ON TRUST</span>
+            <h2>Chosen by digital builders.</h2>
+          </div>
+        </div>
+        <div className="homepage-testimonial-grid">
+          {[
+            {
+              quote:
+                "The product details are clear, delivery is fast, and I always know where to get support.",
+              name: "Maya Chen",
+              role: "Creative director",
+              initials: "MC",
+            },
+            {
+              quote:
+                "Ysello feels focused. I can compare sellers and make a decision without fighting the interface.",
+              name: "Omar Farooq",
+              role: "Independent founder",
+              initials: "OF",
+            },
+            {
+              quote:
+                "A polished storefront and a serious order workflow make our digital products easier to trust.",
+              name: "Lina Brooks",
+              role: "Template creator",
+              initials: "LB",
+            },
+          ].map((testimonial) => (
+            <article key={testimonial.name}>
+              <Quote aria-hidden="true" />
+              <div className="testimonial-rating" aria-label="5 out of 5 stars">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <Star key={index} fill="currentColor" aria-hidden="true" />
+                ))}
+              </div>
+              <blockquote>{testimonial.quote}</blockquote>
+              <footer>
+                <span>{testimonial.initials}</span>
+                <div>
+                  <strong>{testimonial.name}</strong>
+                  <small>{testimonial.role}</small>
+                </div>
+              </footer>
             </article>
           ))}
         </div>

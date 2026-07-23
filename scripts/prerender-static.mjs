@@ -6,16 +6,12 @@ import { publicPages } from "../src/content/publicPages.ts";
 
 const vercelHost =
   process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
+const canonicalSiteUrl = "https://ysello.com";
 const configuredSiteUrl = (
   process.env.VITE_SITE_URL ||
   process.env.APP_URL ||
-  (vercelHost ? `https://${vercelHost}` : "")
+  (vercelHost ? `https://${vercelHost}` : canonicalSiteUrl)
 ).replace(/\/+$/, "");
-if (process.env.VERCEL && !configuredSiteUrl) {
-  throw new Error(
-    "VITE_SITE_URL is required for production prerendering on Vercel.",
-  );
-}
 
 const template = await readFile("dist/index.html", "utf8");
 const indexRobots =

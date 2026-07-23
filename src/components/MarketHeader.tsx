@@ -98,7 +98,13 @@ export function MarketHeader() {
   return (
     <header className="commerce-header">
       <Link className="brand-lockup" to="/">
-        <span className="brand-glyph">Y</span>
+        <img
+          className="brand-glyph"
+          src="/ysello-mark.svg"
+          alt=""
+          width="44"
+          height="44"
+        />
         <span>
           <strong>YSELLO</strong>
           <small>DIGITAL MARKETPLACE</small>
@@ -296,7 +302,13 @@ export function MarketFooter() {
   return (
     <footer className="commerce-footer">
       <div>
-        <span className="brand-glyph">Y</span>
+        <img
+          className="brand-glyph"
+          src="/ysello-mark.svg"
+          alt=""
+          width="44"
+          height="44"
+        />
         <p>Original digital goods and expert services, protected end to end.</p>
       </div>
       <div>

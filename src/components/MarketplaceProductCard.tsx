@@ -9,8 +9,8 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { CatalogProduct } from "../data/catalog";
+import { marketplaceArtworkFor } from "../data/marketplaceVisuals";
 import { useLocale } from "../i18n/LocaleContext";
-import { useState } from "react";
 
 type Props = {
   product: CatalogProduct;
@@ -24,11 +24,15 @@ export function MarketplaceProductCard({
   layout = "grid",
 }: Props) {
   const { formatMoney, t } = useLocale();
-  const [imageFailed, setImageFailed] = useState(false);
   const stockLabel =
     product.type === "SERVICE"
       ? "Service slot"
       : `${product.stockCount ?? 0} in stock`;
+  const artwork = marketplaceArtworkFor(
+    product.category,
+    product.categorySlug,
+    product.title,
+  );
 
   return (
     <article
@@ -39,17 +43,17 @@ export function MarketplaceProductCard({
         to={`/products/${product.slug}`}
         aria-label={product.title}
       >
-        {product.imageUrl && !imageFailed ? (
-          <img
-            src={product.imageUrl}
-            alt={`${product.title} product preview`}
-            loading="lazy"
-            decoding="async"
-            onError={() => setImageFailed(true)}
-          />
-        ) : (
-          <b>{product.icon}</b>
-        )}
+        <img
+          src={artwork}
+          alt=""
+          width="900"
+          height="675"
+          loading="lazy"
+          decoding="async"
+        />
+        <span className="market-product-icon" aria-hidden="true">
+          {product.icon}
+        </span>
         <span className="badge green">{product.badge}</span>
         {product.sales !== "0" ? (
           <span className="badge amber">Sold {product.sales}</span>

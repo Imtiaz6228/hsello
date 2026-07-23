@@ -22,6 +22,7 @@ import "./final-polish.css";
 import "./ui-audit.css";
 import "./marketplace-refresh.css";
 import "./marketplace-reference.css";
+import "./commercial-premium.css";
 import { LocaleProvider } from "./i18n/LocaleContext";
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
 

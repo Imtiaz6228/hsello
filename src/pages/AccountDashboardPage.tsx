@@ -846,7 +846,13 @@ export function AccountDashboardPage() {
         className={`dashboard-sidebar buyer-sidebar ${drawerOpen ? "open" : ""}`}
       >
         <Link className="brand-lockup" to="/">
-          <span className="brand-glyph">Y</span>
+          <img
+            className="brand-glyph"
+            src="/ysello-mark.svg"
+            alt=""
+            width="44"
+            height="44"
+          />
           <span>
             <strong>YSELLO</strong>
             <small>BUYER CENTER</small>

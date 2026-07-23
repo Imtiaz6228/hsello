@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
@@ -15,6 +16,58 @@ test("the Ysello custom domain is trusted by the authentication API", async () =
   assert.match(config, /"https:\/\/www\.ysello\.com"/);
   assert.match(api, /\.\.\.TRUSTED_APP_ORIGINS/);
   assert.match(api, /CORS_ORIGIN_DENIED/);
+});
+
+test("production public URLs are normalized before strict HTTPS validation", () => {
+  const result = spawnSync(
+    process.execPath,
+    [
+      "--import",
+      "tsx",
+      "--input-type=module",
+      "--eval",
+      'const { env } = await import("./src/config/env.ts"); console.log(JSON.stringify({ app: env.APP_URL, api: env.API_URL }));',
+    ],
+    {
+      cwd: new URL("..", import.meta.url),
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        NODE_ENV: "production",
+        DATABASE_URL: "postgresql://user:pass@localhost:5432/ysello",
+        APP_URL: "ysello.com",
+        API_URL: "http://api.ysello.com",
+        JWT_SECRET: "j".repeat(40),
+        CSRF_SECRET: "c".repeat(40),
+      },
+    },
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout.trim()), {
+    app: "https://ysello.com",
+    api: "https://api.ysello.com",
+  });
+});
+
+test("the Railway start command repairs insecure public URLs before server import", () => {
+  const result = spawnSync(process.execPath, ["scripts/start-production.mjs"], {
+    cwd: new URL("..", import.meta.url),
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      NODE_ENV: "production",
+      APP_URL: "http://ysello.com",
+      API_URL: "http://api.ysello.com",
+      STARTUP_PREFLIGHT_ONLY: "1",
+    },
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout.trim()), {
+    app: "https://ysello.com",
+    api: "https://api.ysello.com",
+  });
 });
 
 test("registration creates an active session without SMTP", async () => {

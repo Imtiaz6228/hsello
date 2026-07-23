@@ -7,7 +7,6 @@ import {
   Cloud,
   Gamepad2,
   Gift,
-  Globe2,
   KeyRound,
   Mail,
   MessageCircle,
@@ -33,6 +32,7 @@ import {
 import { categoryMatches } from "../commerce/catalogHierarchy";
 import { MarketFooter, MarketHeader } from "../components/MarketHeader";
 import { Seo } from "../components/Seo";
+import { marketplaceArtworkFor } from "../data/marketplaceVisuals";
 import { useLocale } from "../i18n/LocaleContext";
 
 type Category = {
@@ -355,33 +355,34 @@ function categoryArtwork(category: Category, index: number) {
 function ProductCard({ product }: { product: Product }) {
   const Icon = product.icon;
   const { formatMoney } = useLocale();
-  const [imageFailed, setImageFailed] = useState(false);
   const productPath = product.slug ? `/products/${product.slug}` : "/catalog";
+  const artwork = marketplaceArtworkFor(
+    product.category,
+    product.categorySlug,
+    product.title,
+  );
   const salesCount =
     Number.parseInt(product.reviews.replace(/\D/g, ""), 10) || 0;
   return (
     <article className="lux-product-card">
       <Link
         to={productPath}
-        className={`lux-product-art accent-${product.accent} ${product.imageUrl && !imageFailed ? "has-image" : ""}`}
+        className={`lux-product-art accent-${product.accent}`}
         aria-label={`View ${product.title}`}
       >
+        <img
+          src={artwork}
+          alt=""
+          width="900"
+          height="675"
+          loading="lazy"
+          decoding="async"
+        />
         {product.badge && <span className="lux-badge">{product.badge}</span>}
-        {product.imageUrl && !imageFailed ? (
-          <img
-            src={product.imageUrl}
-            alt={`${product.title} product preview`}
-            loading="lazy"
-            decoding="async"
-            onError={() => setImageFailed(true)}
-          />
-        ) : (
-          <>
-            <span className="art-ring" />
-            <Icon size={30} strokeWidth={1.6} />
-            <span className="art-name">{product.category}</span>
-          </>
-        )}
+        <span className="product-art-icon">
+          <Icon size={22} strokeWidth={1.8} aria-hidden="true" />
+        </span>
+        <span className="art-name">{product.category}</span>
       </Link>
       <div className="lux-product-body">
         <div className="lux-product-main">
@@ -869,41 +870,65 @@ export function MarketplaceHomePage() {
       */}
 
       <section className="pro-market-hero">
-        <div className="lux-hero-copy">
-          <span className="homepage-hero-kicker">
-            <Sparkles size={14} /> YSELLO DIGITAL MARKETPLACE
-          </span>
-          <h1>Find the right digital product in seconds.</h1>
-          <p>
-            Search verified listings, compare prices and buy from trusted
-            sellers without scrolling through a promotional landing page.
-          </p>
+        <div className="homepage-hero-content">
+          <div className="lux-hero-copy">
+            <span className="homepage-hero-kicker">
+              <Sparkles size={14} /> THE TRUSTED DIGITAL MARKETPLACE
+            </span>
+            <h1>
+              Buy better.
+              <br />
+              Build faster.
+            </h1>
+            <p>
+              Discover verified digital products and expert services with clear
+              delivery, transparent seller information, and protected checkout.
+            </p>
+          </div>
+          <form className="lux-search" onSubmit={submitSearch}>
+            <Search size={21} />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t("homeSearch")}
+              aria-label="Search products"
+            />
+            <button type="submit" aria-label={t("searchMarketplace")}>
+              <span>Search marketplace</span>
+              <ArrowRight />
+            </button>
+          </form>
+          <div className="homepage-hero-actions">
+            <Link to="/catalog">
+              Explore marketplace <ArrowRight size={16} />
+            </Link>
+            <Link to="/seller/apply">Start selling</Link>
+          </div>
+          <div className="homepage-market-facts">
+            <span>
+              <strong>{displayProducts.length || "New"}</strong>
+              <small>approved listings</small>
+            </span>
+            <span>
+              <strong>{categories.length}</strong>
+              <small>digital categories</small>
+            </span>
+            <span>
+              <strong>24/7</strong>
+              <small>market access</small>
+            </span>
+          </div>
         </div>
-        <form className="lux-search" onSubmit={submitSearch}>
-          <Search size={21} />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t("homeSearch")}
-            aria-label="Search products"
+        <div className="homepage-hero-visual" aria-hidden="true">
+          <img
+            src="/marketplace-assets/hero-marketplace.webp"
+            alt=""
+            width="1584"
+            height="990"
+            fetchPriority="high"
           />
-          <button type="submit" aria-label={t("searchMarketplace")}>
-            <span>Search products</span>
-            <ArrowRight />
-          </button>
-        </form>
-        <div className="homepage-market-facts">
-          <span>
-            <strong>{displayProducts.length || "New"}</strong>
-            <small>approved listings</small>
-          </span>
-          <span>
-            <strong>{categories.length}</strong>
-            <small>categories</small>
-          </span>
-          <span>
-            <strong>24/7</strong>
-            <small>market access</small>
+          <span className="hero-floating-proof">
+            <ShieldCheck size={16} /> Protected checkout
           </span>
         </div>
       </section>
@@ -1100,6 +1125,28 @@ export function MarketplaceHomePage() {
         </div>
       </section>
 
+      <section className="homepage-trust-banner">
+        <div>
+          <span>BUY WITH CONFIDENCE</span>
+          <h2>Protection that stays with every eligible order.</h2>
+          <p>
+            Clear delivery terms, verified purchase records, and order-linked
+            support help buyers choose with confidence.
+          </p>
+          <Link to="/buyer-protection">
+            How buyer protection works <ArrowRight size={16} />
+          </Link>
+        </div>
+        <img
+          src="/marketplace-assets/buyer-protection.webp"
+          alt="Illustration of protected digital checkout"
+          width="1774"
+          height="887"
+          loading="lazy"
+          decoding="async"
+        />
+      </section>
+
       <section className="lux-new-section">
         <div className="lux-section-head">
           <div>
@@ -1138,18 +1185,7 @@ export function MarketplaceHomePage() {
           {featuredSellers.map((s, i) => (
             <article key={s.name}>
               <span className="seller-rank">0{i + 1}</span>
-              <div className={`seller-avatar accent-${s.accent}`}>
-                {"logoUrl" in s && typeof s.logoUrl === "string" ? (
-                  <img
-                    src={s.logoUrl}
-                    alt={`${s.name} logo`}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ) : (
-                  s.mark
-                )}
-              </div>
+              <div className={`seller-avatar accent-${s.accent}`}>{s.mark}</div>
               <div className="seller-name">
                 <h3>
                   {s.name} <BadgeCheck size={15} />
@@ -1190,29 +1226,18 @@ export function MarketplaceHomePage() {
             Start a seller application <ArrowRight size={17} />
           </Link>
         </div>
-        <div className="cta-console">
-          <div>
-            <span>SELLER WORKSPACE</span>
-            <strong>One clear view</strong>
-            <small>Listings, orders, support, and analytics</small>
-          </div>
-          <div className="mini-chart" aria-hidden="true">
-            <i />
-            <i />
-            <i />
-            <i />
-            <i />
-            <i />
-            <i />
-          </div>
-          <footer>
-            <span>
-              <Store size={18} /> Storefront tools
-            </span>
-            <span>
-              <Globe2 size={18} /> Multi-currency display
-            </span>
-          </footer>
+        <div className="seller-cta-visual">
+          <img
+            src="/marketplace-assets/seller-growth.webp"
+            alt="Illustration of a growing digital storefront"
+            width="1774"
+            height="887"
+            loading="lazy"
+            decoding="async"
+          />
+          <span>
+            <Store size={16} /> Professional seller workspace
+          </span>
         </div>
       </section>
 

@@ -890,7 +890,13 @@ export function OperationsAdminPage() {
       >
         <div className="admin-brand-row">
           <Link className="brand-lockup" to="/">
-            <span className="brand-glyph">Y</span>
+            <img
+              className="brand-glyph"
+              src="/ysello-mark.svg"
+              alt=""
+              width="44"
+              height="44"
+            />
             <span>
               <strong>YSELLO</strong>
               <small>CONTROL CENTER</small>

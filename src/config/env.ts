@@ -11,6 +11,44 @@ export const TRUSTED_APP_ORIGINS = [
 ] as const;
 
 const emptyToUndefined = (value: unknown) => (value === "" ? undefined : value);
+
+export function normalizeDeploymentPublicUrl(
+  value: unknown,
+  canonicalOrigin: string,
+) {
+  if (typeof value !== "string") return value;
+  const raw = value.trim();
+  if (!raw || process.env.NODE_ENV !== "production") return raw;
+
+  const candidate = /^[a-z][a-z\d+.-]*:\/\//i.test(raw)
+    ? raw
+    : `https://${raw}`;
+
+  try {
+    const url = new URL(candidate);
+    const isPrivateHost =
+      url.hostname === "localhost" ||
+      url.hostname === "127.0.0.1" ||
+      url.hostname === "::1" ||
+      url.hostname.endsWith(".internal") ||
+      url.hostname.endsWith(".local");
+
+    if (isPrivateHost) return canonicalOrigin;
+    if (url.protocol === "http:") url.protocol = "https:";
+    return url.pathname === "/" && !url.search && !url.hash
+      ? url.origin
+      : url.toString().replace(/\/$/, "");
+  } catch {
+    return raw;
+  }
+}
+
+const deploymentPublicUrl = (canonicalOrigin: string) =>
+  z.preprocess(
+    (value) => normalizeDeploymentPublicUrl(value, canonicalOrigin),
+    z.string().url(),
+  );
+
 const booleanFromEnv = z.preprocess((value) => {
   if (typeof value === "string") {
     return ["true", "1", "yes", "on"].includes(value.toLowerCase());
@@ -25,8 +63,8 @@ const envSchema = z.object({
     .default("development"),
   PORT: z.coerce.number().int().positive().default(4000),
   DATABASE_URL: z.string().url(),
-  APP_URL: z.string().url(),
-  API_URL: z.string().url(),
+  APP_URL: deploymentPublicUrl(CANONICAL_APP_ORIGIN),
+  API_URL: deploymentPublicUrl(CANONICAL_API_ORIGIN),
   CORS_ORIGIN: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   COOKIE_DOMAIN: z.preprocess(emptyToUndefined, z.string().optional()),
   JWT_SECRET: z.string().min(32),

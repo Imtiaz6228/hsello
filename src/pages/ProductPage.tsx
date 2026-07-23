@@ -29,6 +29,7 @@ import {
 import { useLocale } from "../i18n/LocaleContext";
 import { MarketplaceProductCard } from "../components/MarketplaceProductCard";
 import type { CatalogProduct } from "../data/catalog";
+import { marketplaceArtworkFor } from "../data/marketplaceVisuals";
 import { NotFoundPage } from "./NotFoundPage";
 
 export function ProductPage() {
@@ -38,7 +39,6 @@ export function ProductPage() {
   const navigate = useNavigate();
   const { add } = useCart();
   const [added, setAdded] = useState(false);
-  const [imageFailed, setImageFailed] = useState(false);
   const [artMode, setArtMode] = useState<"cover" | "contents" | "license">(
     "cover",
   );
@@ -68,16 +68,16 @@ export function ProductPage() {
             url: `${window.location.origin}/products/${product.slug}`,
             sku: product.sku || product.id,
             category: product.category,
-            ...(product.imageUrl
-              ? {
-                  image: [
-                    new URL(
-                      product.imageUrl,
-                      window.location.origin,
-                    ).toString(),
-                  ],
-                }
-              : {}),
+            image: [
+              new URL(
+                marketplaceArtworkFor(
+                  product.category,
+                  product.categorySlug,
+                  product.title,
+                ),
+                window.location.origin,
+              ).toString(),
+            ],
             offers: {
               "@type": "Offer",
               url: `${window.location.origin}/products/${product.slug}`,
@@ -115,6 +115,11 @@ export function ProductPage() {
       </main>
     );
   if (!product) return <NotFoundPage />;
+  const productArtwork = marketplaceArtworkFor(
+    product.category,
+    product.categorySlug,
+    product.title,
+  );
 
   function addToCart() {
     for (let index = 0; index < effectiveQuantity; index += 1) add(product!);
@@ -166,7 +171,7 @@ export function ProductPage() {
         title={product.title}
         description={product.description}
         canonicalPath={`/products/${product.slug}`}
-        image={product.imageUrl ?? undefined}
+        image={productArtwork}
         imageAlt={`${product.title} product preview`}
         type="product"
         schema={schema}
@@ -185,17 +190,14 @@ export function ProductPage() {
         <div className="product-gallery">
           <div className={`product-detail-art product-art-${artMode}`}>
             {artMode === "cover" ? (
-              product.imageUrl && !imageFailed ? (
-                <img
-                  src={product.imageUrl}
-                  alt={product.title}
-                  decoding="async"
-                  fetchPriority="high"
-                  onError={() => setImageFailed(true)}
-                />
-              ) : (
-                <b>{product.icon}</b>
-              )
+              <img
+                src={productArtwork}
+                alt={`${product.title} category artwork`}
+                width="900"
+                height="675"
+                decoding="async"
+                fetchPriority="high"
+              />
             ) : artMode === "contents" ? (
               <div className="product-art-information">
                 <PackageCheck />

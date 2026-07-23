@@ -23,7 +23,13 @@ export function AuthShell({
           to="/"
           aria-label="Ysello home"
         >
-          <span className="brand-glyph">Y</span>
+          <img
+            className="brand-glyph"
+            src="/ysello-mark.svg"
+            alt=""
+            width="44"
+            height="44"
+          />
           <span>
             <strong>YSELLO</strong>
             <small>DIGITAL EXCHANGE</small>

@@ -16,6 +16,7 @@ import {
 } from "../commerce/useMarketplace";
 import { useLocale } from "../i18n/LocaleContext";
 import { catalogProducts } from "../data/catalog";
+import { marketplaceArtworkFor } from "../data/marketplaceVisuals";
 import { NotFoundPage } from "./NotFoundPage";
 
 const stores: Record<string, PublicStore> = {
@@ -113,46 +114,26 @@ export function StorePage() {
         title={`${store.name} digital store`}
         description={store.about}
         canonicalPath={`/stores/${slug}`}
-        image={store.logoUrl ?? undefined}
-        imageAlt={`${store.name} logo`}
+        image="/marketplace-assets/seller-growth.webp"
+        imageAlt={`${store.name} digital storefront`}
         schema={{
           "@context": "https://schema.org",
           "@type": "Store",
           name: store.name,
           description: store.about,
           url: `${window.location.origin}/stores/${slug}`,
-          ...(store.logoUrl
-            ? {
-                image: new URL(
-                  store.logoUrl,
-                  window.location.origin,
-                ).toString(),
-              }
-            : {}),
+          image: `${window.location.origin}/marketplace-assets/seller-growth.webp`,
         }}
       />
       <MarketHeader />
       <section
-        className={`store-banner ${store.bannerUrl ? "has-store-banner" : ""}`}
-        style={
-          store.bannerUrl
-            ? {
-                backgroundImage: `linear-gradient(100deg, rgba(8,12,26,.93), rgba(49,35,112,.74)), url(${store.bannerUrl})`,
-              }
-            : undefined
-        }
+        className="store-banner has-store-banner"
+        style={{
+          backgroundImage:
+            "linear-gradient(100deg, rgba(8,12,26,.96), rgba(31,38,102,.72)), url(/marketplace-assets/seller-growth.webp)",
+        }}
       >
-        <div className="store-monogram">
-          {store.logoUrl ? (
-            <img
-              src={store.logoUrl}
-              alt={`${store.name} logo`}
-              decoding="async"
-            />
-          ) : (
-            store.mark
-          )}
-        </div>
+        <div className="store-monogram">{store.mark}</div>
         <div>
           <span className="verified-store">
             <BadgeCheck /> VERIFIED SELLER
@@ -181,16 +162,18 @@ export function StorePage() {
             {products.map((product) => (
               <article key={product.id}>
                 <div className="store-product-image">
-                  {product.imageUrl ? (
-                    <img
-                      src={product.imageUrl}
-                      alt={`${product.title} product preview`}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  ) : (
-                    product.icon
-                  )}
+                  <img
+                    src={marketplaceArtworkFor(
+                      product.category,
+                      product.categorySlug,
+                      product.title,
+                    )}
+                    alt=""
+                    width="900"
+                    height="675"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </div>
                 <span>{product.badge}</span>
                 <Link to={`/products/${product.slug}`}>

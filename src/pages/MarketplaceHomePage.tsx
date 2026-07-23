@@ -357,6 +357,8 @@ function ProductCard({ product }: { product: Product }) {
   const { formatMoney } = useLocale();
   const [imageFailed, setImageFailed] = useState(false);
   const productPath = product.slug ? `/products/${product.slug}` : "/catalog";
+  const salesCount =
+    Number.parseInt(product.reviews.replace(/\D/g, ""), 10) || 0;
   return (
     <article className="lux-product-card">
       <Link
@@ -376,39 +378,47 @@ function ProductCard({ product }: { product: Product }) {
         ) : (
           <>
             <span className="art-ring" />
-            <Icon size={56} strokeWidth={1.45} />
+            <Icon size={30} strokeWidth={1.6} />
             <span className="art-name">{product.category}</span>
           </>
         )}
       </Link>
       <div className="lux-product-body">
-        <span className="lux-product-category">{product.category}</span>
-        <Link to={productPath}>
-          <h3>{product.title}</h3>
-        </Link>
-        <div className="lux-seller">
-          <BadgeCheck size={14} /> {product.seller}
+        <div className="lux-product-main">
+          <span className="lux-product-category">{product.category}</span>
+          <Link to={productPath}>
+            <h3>{product.title}</h3>
+          </Link>
+          <div className="lux-seller">
+            <BadgeCheck size={14} /> {product.seller}
+          </div>
+          <div className="lux-rating">
+            <Star size={14} fill="currentColor" />{" "}
+            <strong>{product.rating}</strong>
+            <span>({product.reviews})</span>
+            <i />
+            <Clock3 size={13} />
+            <span>{product.delivery}</span>
+          </div>
         </div>
-        <div className="lux-rating">
-          <Star size={14} fill="currentColor" />{" "}
-          <strong>{product.rating}</strong>
-          <span>({product.reviews})</span>
-          <i />
-          <Clock3 size={13} />
-          <span>{product.delivery}</span>
+        <div className="lux-product-stat">
+          <small>Availability</small>
+          <strong>In stock</strong>
+        </div>
+        <div className="lux-product-stat">
+          <small>Sales</small>
+          <strong>{salesCount}</strong>
         </div>
         <div className="lux-price">
-          <div>
-            <small>From</small>
-            <strong>{formatMoney(Math.round(product.price * 100))}</strong>
-            {product.oldPrice && (
-              <del>{formatMoney(Math.round(product.oldPrice * 100))}</del>
-            )}
-          </div>
-          <Link to={productPath} aria-label="Open product">
-            <ArrowRight size={18} />
-          </Link>
+          <small>Price</small>
+          <strong>{formatMoney(Math.round(product.price * 100))}</strong>
+          {product.oldPrice && (
+            <del>{formatMoney(Math.round(product.oldPrice * 100))}</del>
+          )}
         </div>
+        <Link className="lux-buy-button" to={productPath}>
+          Buy now <ShoppingBag size={15} />
+        </Link>
       </div>
     </article>
   );
@@ -861,74 +871,68 @@ export function MarketplaceHomePage() {
       <section className="pro-market-hero">
         <div className="lux-hero-copy">
           <span className="homepage-hero-kicker">
-            <Sparkles size={14} /> THE DIGITAL MARKETPLACE, REFINED
+            <Sparkles size={14} /> YSELLO DIGITAL MARKETPLACE
           </span>
-          <h1>
-            {t("homeTitleA")}
-            <br />
-            {t("homeTitleB")}
-          </h1>
-          <p>{t("homeIntro")}</p>
-          <div className="homepage-hero-actions">
-            <Link to="/catalog">
-              Browse all products <ArrowRight size={16} />
-            </Link>
-            <Link to="/seller/apply">Become a seller</Link>
-          </div>
+          <h1>Find the right digital product in seconds.</h1>
+          <p>
+            Search verified listings, compare prices and buy from trusted
+            sellers without scrolling through a promotional landing page.
+          </p>
         </div>
-        <div className="pro-market-search-column">
-          <form className="lux-search" onSubmit={submitSearch}>
-            <Search size={21} />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={t("homeSearch")}
-              aria-label="Search products"
-            />
-            <button type="submit" aria-label={t("searchMarketplace")}>
-              <span>{t("searchMarketplace")}</span>
-              <ArrowRight />
-            </button>
-          </form>
-          <div
-            className="pro-market-search-hints"
-            aria-label="Marketplace highlights"
-          >
-            <span>Verified sellers</span>
-            <span>Protected checkout</span>
-            <span>Instant delivery options</span>
+        <form className="lux-search" onSubmit={submitSearch}>
+          <Search size={21} />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t("homeSearch")}
+            aria-label="Search products"
+          />
+          <button type="submit" aria-label={t("searchMarketplace")}>
+            <span>Search products</span>
+            <ArrowRight />
+          </button>
+        </form>
+        <div className="homepage-market-facts">
+          <span>
+            <strong>{displayProducts.length || "New"}</strong>
+            <small>approved listings</small>
+          </span>
+          <span>
+            <strong>{categories.length}</strong>
+            <small>categories</small>
+          </span>
+          <span>
+            <strong>24/7</strong>
+            <small>market access</small>
+          </span>
+        </div>
+      </section>
+
+      <section className="homepage-category-strip" id="categories">
+        <div className="homepage-strip-head">
+          <div>
+            <span>MARKETPLACE DIRECTORY</span>
+            <h2>All categories</h2>
           </div>
-          <div
-            className="homepage-quick-categories"
-            aria-label="Popular categories"
-          >
-            {mainCategories.map((category) => {
-              const Icon = category.icon;
-              return (
-                <Link
-                  key={`hero-${category.name}`}
-                  to={`/catalog?category=${encodeURIComponent(category.slug ?? "")}`}
-                >
+          <Link to="/catalog">
+            Show all <ArrowRight size={15} />
+          </Link>
+        </div>
+        <div className="homepage-category-icons" aria-label="All categories">
+          {categories.slice(0, 12).map((category) => {
+            const Icon = category.icon;
+            return (
+              <Link
+                key={`directory-${category.name}`}
+                to={`/catalog?category=${encodeURIComponent(category.slug ?? "")}`}
+              >
+                <span className={`accent-${category.accent}`}>
                   <Icon aria-hidden="true" />
-                  <span>{category.short}</span>
-                </Link>
-              );
-            })}
-          </div>
-          <div className="homepage-market-facts">
-            <span>
-              <strong>{displayProducts.length || "New"}</strong>
-              <small>approved listings</small>
-            </span>
-            <span>
-              <strong>{categories.length}</strong>
-              <small>market departments</small>
-            </span>
-            <span>
-              <strong>24/7</strong>
-              <small>marketplace access</small>
-            </span>
-          </div>
+                </span>
+                <strong>{category.short}</strong>
+              </Link>
+            );
+          })}
         </div>
       </section>
 
@@ -959,7 +963,7 @@ export function MarketplaceHomePage() {
           ))}
         </div>
         {visibleProducts.length ? (
-          <div className="lux-product-grid">
+          <div className="lux-product-grid marketplace-list">
             {visibleProducts.slice(0, 10).map((p) => (
               <ProductCard key={p.title} product={p} />
             ))}
@@ -982,7 +986,7 @@ export function MarketplaceHomePage() {
       </section>
 
       {/* lux-quick-categories now use the richer visual category grid below. */}
-      <section className="lux-section" id="categories">
+      <section className="lux-section homepage-category-directory">
         <div className="lux-section-head">
           <div>
             <span>EXPLORE THE MARKETPLACE</span>

@@ -126,6 +126,7 @@ export function MarketHeader() {
         aria-label={t("menu")}
       >
         <Menu aria-hidden="true" />
+        <span>{t("categories")}</span>
       </button>
       <nav
         ref={navigationRef}

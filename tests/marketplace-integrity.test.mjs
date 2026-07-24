@@ -71,3 +71,38 @@ test("public marketplace presents factual live context and stock-aware purchasin
   assert.match(product, /product-market-brief/);
   assert.match(product, /product-mobile-purchase/);
 });
+
+test("admin product moderation approves listings without a stuck pending state", async () => {
+  const routes = await read("src/routes/admin.routes.ts");
+  const admin = await read("src/pages/OperationsAdminPage.tsx");
+  assert.match(routes, /status: input\.status/);
+  assert.match(routes, /Product approved and published/);
+  assert.match(routes, /deliveryReady/);
+  assert.doesNotMatch(routes, /PRODUCT_DELIVERY_REQUIRED/);
+  assert.match(admin, /moderateProduct\(product, "APPROVED"\)/);
+  assert.match(admin, /setProducts\(\(current\) =>/);
+  assert.match(admin, /productStatusFilter/);
+});
+
+test("product surfaces use responsive icon grids instead of unrelated artwork", async () => {
+  const card = await read("src/components/MarketplaceProductCard.tsx");
+  const home = await read("src/pages/MarketplaceHomePage.tsx");
+  const store = await read("src/pages/StorePage.tsx");
+  const product = await read("src/pages/ProductPage.tsx");
+  const catalog = await read("src/pages/CatalogPage.tsx");
+  const styles = await read("src/product-grid.css");
+
+  for (const source of [card, home, store, product])
+    assert.doesNotMatch(source, /marketplaceArtworkFor/);
+  assert.doesNotMatch(card, /<img/);
+  assert.match(card, /ys-product-glyph/);
+  assert.match(card, /disabled=\{!canPurchase\}/);
+  assert.match(home, /ys-home-product-identity/);
+  assert.match(store, /store-product-icon/);
+  assert.match(product, /product-icon-preview/);
+  assert.match(catalog, /function CategoryGlyph/);
+  assert.doesNotMatch(catalog, /\{parent\.icon\}/);
+  assert.match(styles, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(styles, /@media \(max-width: 760px\)/);
+  assert.match(styles, /grid-template-columns: 1fr !important/);
+});

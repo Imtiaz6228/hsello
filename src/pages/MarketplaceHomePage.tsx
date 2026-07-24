@@ -44,7 +44,6 @@ import { categoryMatches } from "../commerce/catalogHierarchy";
 import { MarketFooter, MarketHeader } from "../components/MarketHeader";
 import type { CatalogProduct } from "../data/catalog";
 import { Seo } from "../components/Seo";
-import { marketplaceArtworkFor } from "../data/marketplaceVisuals";
 import { useLocale } from "../i18n/LocaleContext";
 
 type Category = {
@@ -373,15 +372,14 @@ function ProductCard({ product }: { product: Product }) {
   const [saved, setSaved] = useState(false);
   const [added, setAdded] = useState(false);
   const productPath = product.slug ? `/products/${product.slug}` : "/catalog";
-  const artwork = marketplaceArtworkFor(
-    product.category,
-    product.categorySlug,
-    product.title,
-  );
   const salesCount =
     Number.parseInt(product.reviews.replace(/\D/g, ""), 10) || 0;
+  const available =
+    !product.catalogProduct ||
+    product.catalogProduct.type === "SERVICE" ||
+    (product.catalogProduct.stockCount ?? 0) > 0;
   return (
-    <article className="lux-product-card">
+    <article className="lux-product-card ys-home-product-card">
       <button
         className={saved ? "lux-wishlist saved" : "lux-wishlist"}
         type="button"
@@ -391,30 +389,24 @@ function ProductCard({ product }: { product: Product }) {
       >
         <Heart fill={saved ? "currentColor" : "none"} aria-hidden="true" />
       </button>
-      <Link
-        to={productPath}
-        className={`lux-product-art accent-${product.accent}`}
-        aria-label={`View ${product.title}`}
-      >
-        <img
-          src={artwork}
-          alt=""
-          width="900"
-          height="675"
-          loading="lazy"
-          decoding="async"
-        />
-        {product.badge && <span className="lux-badge">{product.badge}</span>}
-        {product.oldPrice ? (
-          <span className="lux-discount-badge">
-            Save {Math.round((1 - product.price / product.oldPrice) * 100)}%
-          </span>
-        ) : null}
-        <span className="product-art-icon">
+      <div className="ys-home-product-identity">
+        <Link
+          to={productPath}
+          className={`ys-home-product-icon accent-${product.accent}`}
+          aria-label={`View ${product.title}`}
+        >
           <Icon size={22} strokeWidth={1.8} aria-hidden="true" />
-        </span>
-        <span className="art-name">{product.category}</span>
-      </Link>
+        </Link>
+        <div>
+          {product.badge && <span className="lux-badge">{product.badge}</span>}
+          {product.oldPrice ? (
+            <span className="lux-discount-badge">
+              Save {Math.round((1 - product.price / product.oldPrice) * 100)}%
+            </span>
+          ) : null}
+          <small>{product.category}</small>
+        </div>
+      </div>
       <div className="lux-product-body">
         <div className="lux-product-main">
           <span className="lux-product-category">{product.category}</span>
@@ -440,7 +432,8 @@ function ProductCard({ product }: { product: Product }) {
         <div className="lux-product-stat">
           <small>Availability</small>
           <strong>
-            <PackageCheck aria-hidden="true" /> In stock
+            <PackageCheck aria-hidden="true" />{" "}
+            {available ? "Available" : "Out of stock"}
           </strong>
         </div>
         <div className="lux-product-stat">
@@ -456,13 +449,13 @@ function ProductCard({ product }: { product: Product }) {
         </div>
         <div className="lux-card-actions">
           <Link className="lux-buy-button" to={productPath}>
-            Buy now <ShoppingBag size={15} />
+            View details <ArrowRight size={15} />
           </Link>
           <button
             type="button"
             className={added ? "lux-add-cart added" : "lux-add-cart"}
             aria-label={added ? "Added to cart" : "Add to cart"}
-            disabled={!product.catalogProduct}
+            disabled={!product.catalogProduct || !available}
             onClick={() => {
               if (!product.catalogProduct) return;
               add(product.catalogProduct);
@@ -960,10 +953,7 @@ export function MarketplaceHomePage() {
           <div className="homepage-trending" aria-label="Trending searches">
             <span>Trending:</span>
             {["AI tools", "Design assets", "Business kits"].map((term) => (
-              <Link
-                key={term}
-                to={`/catalog?q=${encodeURIComponent(term)}`}
-              >
+              <Link key={term} to={`/catalog?q=${encodeURIComponent(term)}`}>
                 {term}
               </Link>
             ))}

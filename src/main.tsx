@@ -24,6 +24,7 @@ import "./marketplace-refresh.css";
 import "./marketplace-reference.css";
 import "./commercial-premium.css";
 import "./premium-redesign.css";
+import "./product-grid.css";
 import { LocaleProvider } from "./i18n/LocaleContext";
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
 

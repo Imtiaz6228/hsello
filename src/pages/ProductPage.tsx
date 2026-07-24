@@ -29,7 +29,6 @@ import {
 import { useLocale } from "../i18n/LocaleContext";
 import { MarketplaceProductCard } from "../components/MarketplaceProductCard";
 import type { CatalogProduct } from "../data/catalog";
-import { marketplaceArtworkFor } from "../data/marketplaceVisuals";
 import { NotFoundPage } from "./NotFoundPage";
 
 export function ProductPage() {
@@ -68,16 +67,6 @@ export function ProductPage() {
             url: `${window.location.origin}/products/${product.slug}`,
             sku: product.sku || product.id,
             category: product.category,
-            image: [
-              new URL(
-                marketplaceArtworkFor(
-                  product.category,
-                  product.categorySlug,
-                  product.title,
-                ),
-                window.location.origin,
-              ).toString(),
-            ],
             offers: {
               "@type": "Offer",
               url: `${window.location.origin}/products/${product.slug}`,
@@ -115,11 +104,6 @@ export function ProductPage() {
       </main>
     );
   if (!product) return <NotFoundPage />;
-  const productArtwork = marketplaceArtworkFor(
-    product.category,
-    product.categorySlug,
-    product.title,
-  );
 
   function addToCart() {
     for (let index = 0; index < effectiveQuantity; index += 1) add(product!);
@@ -171,8 +155,6 @@ export function ProductPage() {
         title={product.title}
         description={product.description}
         canonicalPath={`/products/${product.slug}`}
-        image={productArtwork}
-        imageAlt={`${product.title} product preview`}
         type="product"
         schema={schema}
       />
@@ -190,14 +172,16 @@ export function ProductPage() {
         <div className="product-gallery">
           <div className={`product-detail-art product-art-${artMode}`}>
             {artMode === "cover" ? (
-              <img
-                src={productArtwork}
-                alt={`${product.title} category artwork`}
-                width="900"
-                height="675"
-                decoding="async"
-                fetchPriority="high"
-              />
+              <div className="product-art-information product-icon-preview">
+                <PackageCheck />
+                <small>{product.category}</small>
+                <strong>{product.title}</strong>
+                <span>
+                  {product.type === "SERVICE"
+                    ? "Seller-delivered service"
+                    : "Protected digital delivery"}
+                </span>
+              </div>
             ) : artMode === "contents" ? (
               <div className="product-art-information">
                 <PackageCheck />
@@ -232,7 +216,7 @@ export function ProductPage() {
               aria-pressed={artMode === "cover"}
               onClick={() => setArtMode("cover")}
             >
-              <span>{product.icon}</span>
+              <PackageCheck />
               <small>Preview</small>
             </button>
             <button

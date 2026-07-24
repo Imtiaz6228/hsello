@@ -20,6 +20,7 @@ import {
   LayoutTemplate,
   LogOut,
   ImagePlus,
+  PackageOpen,
   PackagePlus,
   PackageCheck,
   RefreshCw,
@@ -56,7 +57,6 @@ import { Link } from "react-router-dom";
 import {
   ApiError,
   apiRequest,
-  mediaUrl,
   type Role,
   type SellerApplication,
 } from "../api/client";
@@ -412,24 +412,6 @@ function Status({ value }: { value: string }) {
   );
 }
 
-function AdminMedia({ src, alt }: { src?: string | null; alt: string }) {
-  const [failed, setFailed] = useState(false);
-  useEffect(() => setFailed(false), [src]);
-  return src && !failed ? (
-    <img
-      src={mediaUrl(src)}
-      alt={alt}
-      loading="lazy"
-      onError={() => setFailed(true)}
-    />
-  ) : (
-    <span className="admin-media-fallback">
-      <ImagePlus />
-      <b>{alt.slice(0, 2).toUpperCase()}</b>
-    </span>
-  );
-}
-
 export function OperationsAdminPage() {
   const { user } = useAuth();
   const [tab, setTabState] = useState<Tab>(() => {
@@ -488,6 +470,7 @@ export function OperationsAdminPage() {
   });
   const [categoryCreating, setCategoryCreating] = useState(false);
   const [productCreatorOpen, setProductCreatorOpen] = useState(false);
+  const [productStatusFilter, setProductStatusFilter] = useState("PENDING");
   const [productCreating, setProductCreating] = useState(false);
   const [adminCoverImage, setAdminCoverImage] = useState<File | null>(null);
   const [adminCoverPreview, setAdminCoverPreview] = useState("");
@@ -693,6 +676,39 @@ export function OperationsAdminPage() {
     }
   };
 
+  const moderateProduct = async (
+    product: Product,
+    status: "APPROVED" | "REJECTED" | "REMOVED",
+    reason?: string,
+  ) => {
+    setBusy(product.id);
+    setMessage("");
+    try {
+      const result = await apiRequest<{
+        product: Product;
+        message?: string;
+        deliveryReady?: boolean;
+      }>(`/api/admin/products/${product.id}/status`, {
+        method: "PATCH",
+        body: { status, ...(reason ? { reason } : {}) },
+      });
+      setProducts((current) =>
+        current.map((entry) =>
+          entry.id === product.id ? { ...entry, ...result.product } : entry,
+        ),
+      );
+      setMessage(result.message ?? "Product status updated.");
+    } catch (error) {
+      setMessage(
+        error instanceof ApiError
+          ? error.message
+          : "Product status could not be updated.",
+      );
+    } finally {
+      setBusy("");
+    }
+  };
+
   const post = async (
     id: string,
     path: string,
@@ -788,6 +804,10 @@ export function OperationsAdminPage() {
     (overview?.pendingDeposits ?? 0) +
     (overview?.pendingWithdrawals ?? 0) +
     (overview?.openTickets ?? 0);
+  const visibleAdminProducts =
+    productStatusFilter === "ALL"
+      ? products
+      : products.filter((product) => product.status === productStatusFilter);
 
   async function createAdminProduct(event: FormEvent) {
     event.preventDefault();
@@ -1377,15 +1397,38 @@ export function OperationsAdminPage() {
                 </small>
               )}
             </header>
+            <div
+              className="admin-product-filter"
+              role="group"
+              aria-label="Filter products by status"
+            >
+              {["PENDING", "APPROVED", "REJECTED", "ALL"].map((status) => (
+                <button
+                  type="button"
+                  key={status}
+                  className={productStatusFilter === status ? "active" : ""}
+                  aria-pressed={productStatusFilter === status}
+                  onClick={() => setProductStatusFilter(status)}
+                >
+                  {status === "ALL" ? "All products" : status.toLowerCase()}
+                  <span>
+                    {status === "ALL"
+                      ? products.length
+                      : products.filter((product) => product.status === status)
+                          .length}
+                  </span>
+                </button>
+              ))}
+            </div>
             <section className="admin-product-grid">
-              {products.length ? (
-                products.map((product) => (
+              {visibleAdminProducts.length ? (
+                visibleAdminProducts.map((product) => (
                   <article className="admin-product-card" key={product.id}>
-                    <div className="admin-product-image">
-                      <AdminMedia
-                        src={product.coverImageUrl}
-                        alt={product.name}
-                      />
+                    <div className="admin-product-identity">
+                      <span aria-hidden="true">
+                        <PackageOpen />
+                      </span>
+                      <small>{product.type ?? "DIGITAL"}</small>
                     </div>
                     <div className="admin-product-copy">
                       <div>
@@ -1424,29 +1467,24 @@ export function OperationsAdminPage() {
                     <footer>
                       <button
                         className="approve"
-                        disabled={busy === product.id}
+                        disabled={
+                          busy === product.id || product.status === "APPROVED"
+                        }
                         onClick={() =>
-                          void act(
-                            product.id,
-                            `/api/admin/products/${product.id}/status`,
-                            { status: "APPROVED" },
-                          )
+                          void moderateProduct(product, "APPROVED")
                         }
                       >
-                        <BadgeCheck size={14} /> Approve
+                        <BadgeCheck size={14} />{" "}
+                        {product.status === "APPROVED" ? "Approved" : "Approve"}
                       </button>
                       <button
                         disabled={busy === product.id}
                         onClick={() =>
-                          void act(
-                            product.id,
-                            `/api/admin/products/${product.id}/status`,
-                            {
-                              status: "REJECTED",
-                              reason:
-                                window.prompt("Reason for rejection") ||
-                                "Product needs changes before approval.",
-                            },
+                          void moderateProduct(
+                            product,
+                            "REJECTED",
+                            window.prompt("Reason for rejection") ||
+                              "Product needs changes before approval.",
                           )
                         }
                       >
@@ -1456,15 +1494,11 @@ export function OperationsAdminPage() {
                         className="danger"
                         disabled={busy === product.id}
                         onClick={() =>
-                          void act(
-                            product.id,
-                            `/api/admin/products/${product.id}/status`,
-                            {
-                              status: "REMOVED",
-                              reason:
-                                window.prompt("Removal reason") ||
-                                "Removed by marketplace admin.",
-                            },
+                          void moderateProduct(
+                            product,
+                            "REMOVED",
+                            window.prompt("Removal reason") ||
+                              "Removed by marketplace admin.",
                           )
                         }
                       >
@@ -1474,7 +1508,9 @@ export function OperationsAdminPage() {
                   </article>
                 ))
               ) : (
-                <EmptyState label="No products found. Add the first official catalog product." />
+                <EmptyState
+                  label={`No ${productStatusFilter === "ALL" ? "" : productStatusFilter.toLowerCase()} products found.`}
+                />
               )}
             </section>
           </section>

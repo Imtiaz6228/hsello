@@ -1,8 +1,18 @@
 import {
+  AppWindow,
   ArrowRight,
+  Bot,
+  BriefcaseBusiness,
   ChevronDown,
+  Gamepad2,
+  GraduationCap,
   Grid2X2,
+  Headphones,
   List,
+  Mail,
+  MessageCircle,
+  PackageOpen,
+  Palette,
   RotateCcw,
   Search,
   ShieldCheck,
@@ -30,6 +40,44 @@ type SortMode = "popular" | "price_asc" | "price_desc" | "newest";
 type ViewMode = "list" | "grid";
 type ProductKind = "all" | "DOWNLOAD" | "SERVICE";
 type PriceBand = "all" | "under_25" | "25_50" | "over_50";
+
+function CategoryGlyph({ slug }: { slug: string }) {
+  const key = slug.toLowerCase();
+  const Icon =
+    key.includes("email") || key.includes("google")
+      ? Mail
+      : key === "ai" ||
+          key.startsWith("ai-") ||
+          key.includes("artificial-intelligence") ||
+          key.includes("workflow")
+        ? Bot
+        : key.includes("game")
+          ? Gamepad2
+          : key.includes("design") ||
+              key.includes("creative") ||
+              key.includes("art")
+            ? Palette
+            : key.includes("audio") ||
+                key.includes("music") ||
+                key.includes("stream")
+              ? Headphones
+              : key.includes("software") || key.includes("app")
+                ? AppWindow
+                : key.includes("course") || key.includes("education")
+                  ? GraduationCap
+                  : key.includes("business")
+                    ? BriefcaseBusiness
+                    : key.includes("social") ||
+                        key.includes("instagram") ||
+                        key.includes("facebook") ||
+                        key.includes("twitter") ||
+                        key.includes("discord") ||
+                        key.includes("telegram") ||
+                        key.includes("tiktok")
+                      ? MessageCircle
+                      : PackageOpen;
+  return <Icon aria-hidden="true" />;
+}
 
 function sortProducts(products: CatalogProduct[], sort: SortMode) {
   return [...products].sort((a, b) => {
@@ -281,7 +329,9 @@ export function CatalogPage() {
                   ?.scrollIntoView({ behavior: "smooth", block: "start" });
               }}
             >
-              <span>{item.icon}</span>
+              <span>
+                <CategoryGlyph slug={item.slug} />
+              </span>
               <div>
                 <strong>{item.name}</strong>
                 <small>
@@ -418,7 +468,9 @@ export function CatalogPage() {
                       setCategory(parent.slug);
                     }}
                   >
-                    <span className="cat-icon">{parent.icon}</span>
+                    <span className="cat-icon">
+                      <CategoryGlyph slug={parent.slug} />
+                    </span>
                     <strong>{parent.name}</strong>
                     <small>
                       {categoryCounts.get(parent.slug) ??
@@ -451,7 +503,9 @@ export function CatalogPage() {
         <div className="market-results-panel">
           <div className="catalog-results-context">
             <div>
-              <span>{activeCategory?.icon ?? "✦"}</span>
+              <span>
+                <CategoryGlyph slug={activeCategory?.slug ?? "marketplace"} />
+              </span>
               <div>
                 <small>
                   {activeCategory ? "SELECTED CATEGORY" : "ALL PRODUCTS"}

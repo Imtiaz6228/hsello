@@ -824,40 +824,47 @@ adminRouter.patch(
       });
       return;
     }
-    if (input.status === "APPROVED") {
-      const productForApproval = await prisma.product.findUnique({
-        where: { id },
-        include: {
-          files: { where: { isActive: true } },
-          inventoryItems: {
-            where: { isActive: true, orderItemId: null },
-            select: { id: true },
-          },
+    const productForModeration = await prisma.product.findUnique({
+      where: { id },
+      include: {
+        files: { where: { isActive: true } },
+        inventoryItems: {
+          where: { isActive: true, orderItemId: null },
+          select: { id: true },
         },
-      });
-      if (!productForApproval)
-        throw new ApiError(404, "Product not found.", "PRODUCT_NOT_FOUND");
-      if (
-        productForApproval.type === "DOWNLOAD" &&
-        productForApproval.files.length === 0 &&
-        productForApproval.inventoryItems.length === 0
-      ) {
-        throw new ApiError(
-          400,
-          "Add at least one delivery file or inventory row before approving this digital product.",
-          "PRODUCT_DELIVERY_REQUIRED",
-        );
-      }
-    }
+      },
+    });
+    if (!productForModeration)
+      throw new ApiError(404, "Product not found.", "PRODUCT_NOT_FOUND");
+
+    // Moderation and fulfillment readiness are separate concerns. Admins must
+    // be able to approve the listing itself; a download without delivery stock
+    // is published as unavailable until the seller adds a file or inventory.
+    const deliveryReady =
+      productForModeration.type !== ProductType.DOWNLOAD ||
+      productForModeration.files.length > 0 ||
+      productForModeration.inventoryItems.length > 0;
     const product = await prisma.product.update({
       where: { id },
       data: {
         status: input.status,
         rejectionReason: input.status === "APPROVED" ? null : input.reason,
-        publishedAt: input.status === "APPROVED" ? new Date() : undefined,
+        publishedAt:
+          input.status === "APPROVED"
+            ? (productForModeration.publishedAt ?? new Date())
+            : null,
       },
     });
-    res.json({ product });
+    res.json({
+      product,
+      deliveryReady,
+      message:
+        input.status === "APPROVED"
+          ? deliveryReady
+            ? "Product approved and published."
+            : "Product approved. It will remain unavailable to purchase until the seller adds delivery inventory."
+          : `Product ${input.status.toLowerCase()}.`,
+    });
   }),
 );
 

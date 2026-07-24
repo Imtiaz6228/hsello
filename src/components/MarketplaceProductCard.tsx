@@ -1,15 +1,16 @@
 import {
   BadgeCheck,
+  BriefcaseBusiness,
   Clock3,
   Eye,
   PackageCheck,
+  PackageOpen,
   ShoppingCart,
   Star,
   Zap,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { CatalogProduct } from "../data/catalog";
-import { marketplaceArtworkFor } from "../data/marketplaceVisuals";
 import { useLocale } from "../i18n/LocaleContext";
 
 type Props = {
@@ -28,37 +29,33 @@ export function MarketplaceProductCard({
     product.type === "SERVICE"
       ? "Service slot"
       : `${product.stockCount ?? 0} in stock`;
-  const artwork = marketplaceArtworkFor(
-    product.category,
-    product.categorySlug,
-    product.title,
-  );
+  const canPurchase =
+    product.type === "SERVICE" || (product.stockCount ?? 0) > 0;
+  const ProductIcon =
+    product.type === "SERVICE" ? BriefcaseBusiness : PackageOpen;
+  const categoryParts = product.category.split(" / ");
+  const categoryLabel =
+    categoryParts[categoryParts.length - 1] ?? product.category;
 
   return (
     <article
-      className={`market-product-card ${layout === "list" ? "list" : ""}`}
+      className={`market-product-card ys-product-card ${layout === "list" ? "list" : ""}`}
     >
-      <Link
-        className="market-product-thumb"
-        to={`/products/${product.slug}`}
-        aria-label={product.title}
-      >
-        <img
-          src={artwork}
-          alt=""
-          width="900"
-          height="675"
-          loading="lazy"
-          decoding="async"
-        />
-        <span className="market-product-icon" aria-hidden="true">
-          {product.icon}
-        </span>
-        <span className="badge green">{product.badge}</span>
-        {product.sales !== "0" ? (
-          <span className="badge amber">Sold {product.sales}</span>
-        ) : null}
-      </Link>
+      <div className="ys-product-card-top">
+        <Link
+          className="ys-product-glyph"
+          to={`/products/${product.slug}`}
+          aria-label={`View ${product.title}`}
+        >
+          <ProductIcon aria-hidden="true" />
+        </Link>
+        <div className="ys-product-badges">
+          <span className="badge green">{product.badge}</span>
+          <span className="ys-product-kind">
+            {product.type === "SERVICE" ? "Service" : "Digital product"}
+          </span>
+        </div>
+      </div>
       <div className="market-product-body">
         <div className="market-product-title-row">
           <div>
@@ -66,7 +63,7 @@ export function MarketplaceProductCard({
               className="market-product-category"
               to={`/categories/${product.categorySlug}`}
             >
-              {product.category}
+              {categoryLabel}
             </Link>
             <Link to={`/products/${product.slug}`}>
               <h2>{product.title}</h2>
@@ -104,8 +101,12 @@ export function MarketplaceProductCard({
             <Link to={`/products/${product.slug}`}>
               <Eye /> {t("details")}
             </Link>
-            <button type="button" onClick={() => onBuy(product)}>
-              <ShoppingCart /> {t("purchase")}
+            <button
+              type="button"
+              disabled={!canPurchase}
+              onClick={() => onBuy(product)}
+            >
+              <ShoppingCart /> {canPurchase ? t("purchase") : "Unavailable"}
             </button>
           </div>
         </footer>

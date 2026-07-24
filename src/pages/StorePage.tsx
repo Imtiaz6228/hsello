@@ -2,6 +2,7 @@ import {
   BadgeCheck,
   CalendarDays,
   MessageCircle,
+  PackageCheck,
   ShieldCheck,
   ShoppingBag,
   Star,
@@ -16,7 +17,6 @@ import {
 } from "../commerce/useMarketplace";
 import { useLocale } from "../i18n/LocaleContext";
 import { catalogProducts } from "../data/catalog";
-import { marketplaceArtworkFor } from "../data/marketplaceVisuals";
 import { NotFoundPage } from "./NotFoundPage";
 
 const stores: Record<string, PublicStore> = {
@@ -161,19 +161,8 @@ export function StorePage() {
           <div className="store-products">
             {products.map((product) => (
               <article key={product.id}>
-                <div className="store-product-image">
-                  <img
-                    src={marketplaceArtworkFor(
-                      product.category,
-                      product.categorySlug,
-                      product.title,
-                    )}
-                    alt=""
-                    width="900"
-                    height="675"
-                    loading="lazy"
-                    decoding="async"
-                  />
+                <div className="store-product-icon" aria-hidden="true">
+                  <PackageCheck />
                 </div>
                 <span>{product.badge}</span>
                 <Link to={`/products/${product.slug}`}>
